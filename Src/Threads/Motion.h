@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include "Framework/FrameExecutionUnit.h"
+#include "Tools/Framework/BHExecutionUnit.h"
 
 /**
  * @class Motion
  *
  * The execution unit for the motion thread.
  */
-class Motion : public FrameExecutionUnit
+class Motion : public BHExecutionUnit
 {
 public:
   bool beforeFrame() override;

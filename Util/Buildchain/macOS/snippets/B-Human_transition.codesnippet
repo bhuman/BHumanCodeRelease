@@ -16,13 +16,13 @@
     }
 </string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>E1A2E3FD-92C4-406B-BFDA-D1D04F4CC678</string>
+	<string>B-Human_transition</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Transition of a Cabsl state.</string>
+	<string>B-Human: Define transition block of a CABSL state.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Cabsl transition</string>
+	<string>CABSL Transition</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

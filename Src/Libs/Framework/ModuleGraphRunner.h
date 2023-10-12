@@ -63,7 +63,7 @@ private:
     {}
   };
 
-  thread_local static ModuleGraphRunner* instance; /** The only instance of this class in the thread. */
+  thread_local static ModuleGraphRunner* instance; /**< The only instance of this class in the thread. */
   std::unordered_map<std::string, ModuleBase*> allModules; /**< A map of all modules for quick access via name. */
   bool validConfiguration = false;
 

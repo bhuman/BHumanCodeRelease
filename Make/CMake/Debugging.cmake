@@ -18,6 +18,7 @@ set(DEBUGGING_SOURCES
     "${DEBUGGING_ROOT_DIR}/DebugRequest.cpp"
     "${DEBUGGING_ROOT_DIR}/DebugRequest.h"
     "${DEBUGGING_ROOT_DIR}/Modify.h"
+    "${DEBUGGING_ROOT_DIR}/Plot.h"
     "${DEBUGGING_ROOT_DIR}/Stopwatch.h"
     "${DEBUGGING_ROOT_DIR}/TcpConnection.cpp"
     "${DEBUGGING_ROOT_DIR}/TcpConnection.h"

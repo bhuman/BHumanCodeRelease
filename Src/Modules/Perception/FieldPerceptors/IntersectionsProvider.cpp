@@ -18,7 +18,7 @@
 #include "Tools/Math/Transformation.h"
 #include <cmath>
 
-MAKE_MODULE(IntersectionsProvider, perception);
+MAKE_MODULE(IntersectionsProvider);
 
 
 IntersectionsProvider::IntersectionsProvider() : network(&Global::getAsmjitRuntime())
@@ -54,10 +54,9 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
     if(Transformation::robotToImage(theWorldModelPrediction.ballPosition, theCameraMatrix, theCameraInfo, ballPositionInImage))
     {
       ballIsInImageAndCanBeUsed = true;
-      ballPositionInFieldCoordinates = Transformation::robotToField(theWorldModelPrediction.robotPose, theWorldModelPrediction.ballPosition);
+      ballPositionInFieldCoordinates = theWorldModelPrediction.robotPose * theWorldModelPrediction.ballPosition;
       ballRadiusInImageScaled = Projection::getSizeByDistance(theCameraInfo, theBallSpecification.radius,
                                                               theWorldModelPrediction.ballPosition.norm()) * ballRadiusInImageScale;
-
     }
   }
 
@@ -74,7 +73,7 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
 
       //only continue if the angle between the two lines is roughly 90°
       const float dot = theLinesPercept.lines[i].line.direction.normalized().dot(theLinesPercept.lines[j].line.direction.normalized());
-      const float angle = std::acos(dot);//angle between lines (in rad)
+      const float angle = std::acos(std::clamp(dot, -1.f, 1.f));//angle between lines (in rad)
       const float angleDiff = std::abs(angle - pi_2);
       if(angleDiff > maxAllowedIntersectionAngleDifference)
       {
@@ -203,8 +202,8 @@ bool IntersectionsProvider::isPointInSegment(const LinesPercept::Line& line, con
 
 // note: removed const
 void IntersectionsProvider::addIntersection(IntersectionsPercept& intersectionsPercept, IntersectionsPercept::Intersection::IntersectionType type,
-    const Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2,
-    unsigned line1, unsigned line2)
+                                            Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2,
+                                            unsigned line1, unsigned line2)
 {
   Vector2f pInImg;
   if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
@@ -215,8 +214,12 @@ void IntersectionsProvider::addIntersection(IntersectionsPercept& intersectionsP
       if(threshold > 0.f && !IntersectionsProvider::classifyIntersection(type, intersection, pInImg))
         return;
     }
+    Matrix2f cov;
+
+    // the position of the intersection on the field needs to be recalculated again as the transformation is not linear so the maxima of the distribution (previous value of intersection) may not be at the same location as the expected value
+    theMeasurementCovariance.transformWithCov(pInImg, 0.f, intersection, cov);
+    intersectionsPercept.intersections.emplace_back(type, intersection, cov, dir1, dir2, line1, line2);
   }
-  intersectionsPercept.intersections.emplace_back(type, intersection, dir1, dir2, line1, line2);
 
   COMPLEX_DRAWING("module:IntersectionsProvider:intersections")
   {
@@ -255,9 +258,11 @@ bool IntersectionsProvider::classifyIntersection(IntersectionsPercept::Intersect
     PatchUtilities::extractPatch(center.cast<int>(), Vector2i(inputSize, inputSize), Vector2i(tempPatchSize, tempPatchSize), theECImage.grayscaled, patch);
 
     // The patch height is 64p. But we need a 32x32 patch. So we cut off the first and last 16 pixels to get the center.
-    for(unsigned int i = patchSize/2; i < patch.height - patchSize/2; i++) {
+    for(unsigned int i = patchSize/2; i < patch.height - patchSize/2; i++)
+    {
       // Stretch the image along the x-Axis by taking every other value of the image-width.
-      for(unsigned int j = 0; j < patch.width; j += stretchingFactor) {
+      for(unsigned int j = 0; j < patch.width; j += stretchingFactor)
+      {
         // Corrected indices for resizedPatch because we only take half of the height and every other value of the width.
         resizedPatch[i - patchSize/2][j - (j/2)] = patch[i][j];
       }
@@ -271,7 +276,7 @@ bool IntersectionsProvider::classifyIntersection(IntersectionsPercept::Intersect
     float t = network.output(0)[2];
     float x = network.output(0)[3];
 
-    if (none >= threshold + 0.15f)
+    if(none >= threshold + 0.15f)
       return false;
     else if(l >= threshold)
     {

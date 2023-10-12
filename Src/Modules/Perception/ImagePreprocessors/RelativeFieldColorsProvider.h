@@ -37,7 +37,4 @@ class RelativeFieldColorsProvider : public RelativeFieldColorsProviderBase
    * @return The approximated average.
    */
   [[nodiscard]] float approximateAverage(const Image<PixelTypes::GrayscaledPixel>& image) const;
-
-private:
-  bool rfcParametersSet = false;
 };

@@ -114,9 +114,9 @@ float InExprMemory::readLiteral(const char*& ptr)
   }
 }
 
-InExprMapFile::InExprMapFile(const std::string& name, std::unordered_map<std::string, float> symbols, unsigned errorMask) :
+InExprMapFile::InExprMapFile(const std::string& name, const std::unordered_map<std::string, float>& symbols, unsigned errorMask) :
   InMapFile(name, errorMask),
-  symbols(std::move(symbols))
+  symbols(symbols)
 {}
 
 In* InExprMapFile::createLiteralStream(const std::string& literal)

@@ -14,11 +14,11 @@
   &lt;#statements#&gt;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>D70E6D11-0297-4BAB-88AA-86D5D5CBBC5D</string>
+	<string>B-Human_if</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for executing code only when a certain condition is true.</string>
+	<string>B-Human: Execute code only when a certain condition is true.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>If Statement</string>
 	<key>IDECodeSnippetUserSnippet</key>

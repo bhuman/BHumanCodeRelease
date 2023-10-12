@@ -26,7 +26,7 @@ cd "$(dirname "$(which "$0")")"
 CMAKE=../../Util/Buildchain/macOS/bin/cmake
 PROJECTDIR=../../Build/macOS
 PROJECTPATH=B-Human.xcodeproj
-PROJECTSRC=$PROJECTDIR/B-Human-temp.xcodeproj
+PROJECTSRC=$PROJECTDIR/B-Human.xcodeproj
 PLIST="/usr/libexec/PlistBuddy -c"
 TEMPPATH=/tmp/generate.tmp
 TEMPPATH2=/tmp/generate2.tmp
@@ -35,14 +35,18 @@ TEMPPATH3=/tmp/generate3.tmp
 # Create a symbolic link to cmake.
 if [ ! -e "$CMAKE" ]; then
   echo -n "Searching for CMake... "
-  while read file; do
-    if [ -f "$file/Contents/bin/cmake" ]; then
-      ln -sf "$file/Contents/bin/cmake" "$CMAKE"
-    fi
-  done <<<"$(/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -dump \
-  | grep "^[ 	]*path:" \
-  | grep "CMake" \
-  | sed -e "s%[ 	]*path: *%%" -e "s% (.*%%")"
+  if [ -e "$(which cmake)" ]; then
+    ln -sf "$(which cmake)" "$CMAKE"
+  else
+    while read file; do
+      if [ -f "$file/Contents/bin/cmake" ]; then
+        ln -sf "$file/Contents/bin/cmake" "$CMAKE"
+      fi
+    done <<<"$(/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -dump \
+    | grep "^[ 	]*path:" \
+    | grep "CMake" \
+    | sed -e "s%[ 	]*path: *%%" -e "s% (.*%%")"
+  fi
 
   # Could the link be created?
   if [ -e "$CMAKE" ]; then
@@ -121,7 +125,9 @@ if [ -d "$PROJECTPATH/CMakeFiles" ]; then
 fi
 
 # Create project.
-"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA
+PYTHON_PATH="$(dirname "$(dirname "$(readlink -f "$(xcrun -f python3)")")")"
+"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA -DPython3_ROOT_DIR="$PYTHON_PATH"
+xattr -w com.apple.xcode.CreatedByBuildSystem true "$PROJECTDIR"
 
 # Backwards compatibility: Remove the link to project if it exists.
 if [ -L "$PROJECTPATH" ]; then
@@ -151,7 +157,6 @@ done <<<"$DIRONLY"
 # Assign folders to most source groups and improve use of object link libraries.
 grep <$PROJECTSRC/project.pbxproj -v '/Make/CMake/CMakeLists.txt' \
 | sed \
-  -e 's%B-Human-temp%B-Human%' \
   -e 's%/Build/macOS/CMakeFiles/%/Make/macOS/B-Human.xcodeproj/CMakeFiles/%' \
   -e 's%\("[^"]*\.o"\),*%~\1,~%g' \
   -e 's%~~%~%g' \
@@ -199,7 +204,7 @@ else
   echo "Updating Xcode project"
 
   # Sort folders Libs.
-  for NUM in 1 2 3; do
+  for NUM in 1 2 3 4; do
     BEFORE=$(($(grep <$TEMPPATH -Fnm $NUM '/* Libs */ =' | tail -1 | sed 's%:.*%%') + 2))
     SIZE=$(($(tail <$TEMPPATH +$(($BEFORE + 1)) | grep -Fnm 1 ");" | sed 's%:.*%%') - 1))
     AFTER=$(($BEFORE + $SIZE + 1))
@@ -236,7 +241,7 @@ else
   # Deactivate some building targets.
   SCHEMETEMPLATE=$SCHEMESRC/SimRobot.xcscheme
   sed <$SCHEMETEMPLATE >$TEMPPATH2 \
-  -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
+  -e 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%' \
   -e 's%debugDocumentVersioning *= *"YES"/>%debugDocumentVersioning = "YES">\
    </ProfileAction>%' \
   -e 's%<Testables/>%<Testables>\
@@ -246,7 +251,7 @@ else
     echo '         <TestableReference'
     echo '            skipped = "NO">'
     sed <$SCHEMESRC/Tests.xcscheme -n '/BuildableReference/,/\/BuildActionEntry/{/\/BuildActionEntry/!p;};/\/BuildActionEntry/q' \
-    | sed 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%'
+    | sed 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%'
     echo "         </TestableReference>"
     sed <$TEMPPATH2 -n '/<\/Testables>/,$p'
   ) \
@@ -277,35 +282,11 @@ else
   sed <"$SCHEMEDIR/SimRobot - Debug.xcscheme" >$TEMPPATH 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%'
   mv $TEMPPATH "$SCHEMEDIR/SimRobot - Release.xcscheme"
 
-  # Create two schemes for other apps from the ones CMake created.
-  # Disable GPU validation to suppress some output. Deactivate some building targets.
-  for PROJECT in bush; do
-    SCHEMETEMPLATE=$SCHEMESRC/$PROJECT.xcscheme
-    sed <$SCHEMETEMPLATE >$TEMPPATH2 \
-    -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
-    -e 's%debugDocumentVersioning *= *"YES"/>%debugDocumentVersioning = "YES">\
-   </ProfileAction>%'
-    (
-      sed <$TEMPPATH2 -n '/<\/ProfileAction>/q;p'
-      sed <$TEMPPATH2 -n '/BuildableProductRunnable/,/\/BuildableProductRunnable/p;/\/BuildableProductRunnable/q'
-      sed <$TEMPPATH2 -n '/<\/ProfileAction>/,$p'
-    ) \
-    | sed >$TEMPPATH \
-      -e 's%launchStyle *= *"0"%launchStyle = "0"\
-      enableGPUValidationMode = "1"%' \
-      -e 's%buildForTesting *= *"YES"%buildForTesting = "NO"%' \
-      -e 's%buildForArchiving *= *"YES"%buildForArchiving = "NO"%' \
-      -e 's%buildConfiguration *= *".*"%buildConfiguration="Debug"%'
-    mv $TEMPPATH "$SCHEMEDIR/$PROJECT - Debug.xcscheme"
-    sed <"$SCHEMEDIR/$PROJECT - Debug.xcscheme" >$TEMPPATH 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%'
-    mv $TEMPPATH "$SCHEMEDIR/$PROJECT - Release.xcscheme"
-  done
-
   # Create three schemes for Nao from the one CMake created.
   # Set the deployDialog as runnable target. Deactivate some building targets.
-  SCHEMETEMPLATE=$SCHEMESRC/Nao.xcscheme
+  SCHEMETEMPLATE=$SCHEMESRC/DeployDialog.xcscheme
   sed <$SCHEMETEMPLATE >$TEMPPATH \
-  -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
+  -e 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%' \
   -e 's%selectedDebuggerIdentifier.*%selectedDebuggerIdentifier = ""%' \
   -e 's%selectedLauncherIdentifier.*%selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"%' \
   -e 's%buildForTesting *= *"YES"%buildForTesting = "NO"%' \
@@ -364,7 +345,7 @@ sed <../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow
 
 # Install certificate for app signing.
 cp ../../Util/Buildchain/macOS/B-Human_Code_Release.keychain-db ~/Library/Keychains/
-security find-certificate -c B-Human_Code_Release_Code_Release >/dev/null 2>/dev/null
+security find-certificate -c B-Human_Code_Release >/dev/null 2>/dev/null
 if [ ! $? = 0 ]; then
   security list-keychains -s `security list-keychains | tr '\n' ' ' | tr '\"' ' '` B-Human_Code_Release.keychain-db
 fi

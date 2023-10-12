@@ -1,26 +1,26 @@
 <RCC>
-    <qresource prefix="/">
-        <file>Icons/Player/loop.png</file>
-        <file>Icons/Player/nextFrame.png</file>
-        <file>Icons/Player/nextImage.png</file>
-        <file>Icons/Player/pause.png</file>
-        <file>Icons/Player/play.png</file>
-        <file>Icons/Player/prevFrame.png</file>
-        <file>Icons/Player/prevImage.png</file>
-        <file>Icons/Player/repeat.png</file>
-        <file>Icons/Player/stop.png</file>
-        <file>Icons/kick_new.png</file>
-        <file>Icons/kick_save.png</file>
-        <file>Icons/kick_open.png</file>
-        <file>Icons/kick_save_as.png</file>
-        <file>Icons/folder.png</file>
-        <file>Icons/headAngle.png</file>
-        <file>Icons/arrow_refresh.png</file>
-        <file>Icons/upload.png</file>
-        <file>Icons/page_white_h.png</file>
-        <file>Icons/stand.png</file>
-        <file>Icons/sitDown.png</file>
-        <file>Icons/edit_undo.png</file>
-        <file>Icons/edit_redo.png</file>
-    </qresource>
+  <qresource prefix="/">
+    <file>Icons/Player/icons8-back-50.png</file>
+    <file>Icons/Player/icons8-end-50.png</file>
+    <file>Icons/Player/icons8-fast-forward-50.png</file>
+    <file>Icons/Player/icons8-forward-50.png</file>
+    <file>Icons/Player/icons8-pause-50.png</file>
+    <file>Icons/Player/icons8-reset-50.png</file>
+    <file>Icons/Player/icons8-rewind-50.png</file>
+    <file>Icons/Player/icons8-stop-50.png</file>
+    <file>Icons/icons8-drag-50.png</file>
+    <file>Icons/icons8-hierarchy-50.png</file>
+    <file>Icons/icons8-image-50.png</file>
+    <file>Icons/icons8-parallel-workflow-50.png</file>
+    <file>Icons/icons8-price-tag-50.png</file>
+    <file>Icons/icons8-squats-50.png</file>
+    <file>Icons/icons8-stadium-50.png</file>
+    <file>Icons/icons8-standing-man-50.png</file>
+    <file>Icons/icons8-start-50.png</file>
+    <file>Icons/icons8-stopwatch-50.png</file>
+    <file>Icons/icons8-synchronize-50.png</file>
+    <file>Icons/icons8-upload-50.png</file>
+    <file>Icons/icons8-view-50.png</file>
+    <file>Icons/b-human.png</file>
+  </qresource>
 </RCC>

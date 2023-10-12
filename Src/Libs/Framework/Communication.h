@@ -132,7 +132,7 @@ public:
     Receiver<PacketType>(thread, senderThreadName)
   {
     if(size > 0)
-      PacketType::setSize(size);
+      PacketType::reserve(size);
   }
 };
 
@@ -201,6 +201,7 @@ protected:
   static bool terminating; /**< Is the current thread terminating? */
 
   friend class RoboCupCtrl; /**< RoboCupCtrl will set this flag. */
+  friend class Controller; /**< (Python)Controller will set this flag. */
 };
 
 /**
@@ -226,7 +227,7 @@ public:
     Sender<PacketType>(receiver, receiverThreadName)
   {
     if(size > 0)
-      PacketType::setSize(size, reserveForInfrastructure);
+      PacketType::reserve(size, reserveForInfrastructure);
   }
 
   /**
@@ -234,11 +235,11 @@ public:
    * All other receiver may get it later if they request for it before the packet is changed.
    * In function will only send a packet if it is not empty.
    *
-   * @param block Whether to block when the packet cannot be send immediatly
+   * @param block Whether to block when the packet cannot be send immediately
    */
   void send(bool block = false)
   {
-    if(!Sender<PacketType>::isEmpty())
+    if(!Sender<PacketType>::empty())
     {
       bool requestedNew = Sender<PacketType>::requestedNew();
       if(block)

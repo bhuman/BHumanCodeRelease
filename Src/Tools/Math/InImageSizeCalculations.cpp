@@ -9,32 +9,6 @@
 #include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 
-float IISC::calcBallVisibilityInImageByCenter(const Vector2f& center, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification, const Angle greenEdge)
-{
-  Vector2f centerPoint;
-  if(!Transformation::imageToRobot(center, theCameraMatix, theCameraInfo, centerPoint))
-    return -1.f;
-
-  const Vector2f slightlyRightPoint(center.x() + 1.f, center.y());
-  Vector2f slightlyRightField;
-  if(!Transformation::imageToRobot(slightlyRightPoint, theCameraMatix, theCameraInfo, slightlyRightField))
-    return -1.f;
-
-  const Vector3f centerPoint3f(centerPoint.x(), centerPoint.y(), theBallSpecification.radius);
-  const Vector3f cameraPointVector(centerPoint3f - theCameraMatix.translation);
-  const Vector3f slightlyRightField3f(slightlyRightField.x(), slightlyRightField.y(), theBallSpecification.radius);
-  const Vector3f rightVector(slightlyRightField3f - centerPoint3f);
-
-  const Vector3f dir(rightVector.cross(cameraPointVector));
-  const Angle dirAngle(std::asin(dir.normalized(theBallSpecification.radius).z() / theBallSpecification.radius));
-  if(greenEdge + dirAngle < pi_2)
-    return 1.f;
-
-  const Angle angleDiff = greenEdge + dirAngle - pi_2;
-  ASSERT(angleDiff > 0_deg && angleDiff <= 90_deg);
-  return 0.5f + 0.5f * std::cos(angleDiff);
-}
-
 bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification, const Angle greenEdge)
 {
   Vector2f startPoint;
@@ -84,11 +58,6 @@ bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry:
 float IISC::getImageLineDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const FieldDimensions& theFieldDimensions)
 {
   return getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.fieldLinesWidth, start, theCameraInfo, theCameraMatix);
-}
-
-float IISC::getImagePenaltyMarkDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)
-{
-  return getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.penaltyMarkSize, start, theCameraInfo, theCameraMatrix);
 }
 
 bool IISC::calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)

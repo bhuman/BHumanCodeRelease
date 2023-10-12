@@ -22,7 +22,7 @@ STREAMABLE(GameState,
     afterHalf, /**< The half is over. */
     timeout, /**< A team or the referee has taken a timeout. */
 
-    playing, /**< Regular play, no special priviliges or restrictions (except for potential illegal goals). */
+    playing, /**< Regular play, no special privileges or restrictions (except for potential illegal goals). */
 
     setupOwnKickOff, /**< The ready phase before an own kick-off. */
     setupOpponentKickOff, /**< The ready phase before an opponent kick-off. */
@@ -77,34 +77,46 @@ STREAMABLE(GameState,
     penalizedRequestForPickup, /**< The robot is picked up. */
     penalizedLocalGameStuck, /**< The robot is penalized for causing a local game stuck (at the sideline, 45s). */
     penalizedIllegalPositionInSet, /**< The robot is penalized for an illegal position in set (at the sideline, 15s). */
+    penalizedPlayerStance, /**< The robot is penalized for an illegal stance (at the sideline, at least 45s). */
     substitute, /**< The robot is a substitute. */
     active, /**< The robot is playing according to the global game state. */
   });
 
+  ENUM(CompetitionPhase,
+  {,
+    roundRobin, /**< Preliminary games, the clock is not stopped in ready and set. */
+    playOff, /**< Final games. The clock is stopped in ready and set. */
+  });
+
   STREAMABLE(Team,
   {
-    /**
-     * This method returns the number of a player that a given player substitutes or the original number if it doesn't substitute any other player.
-     * @param number The (unsubstituted) player number.
-     * @return The (substituted) player number.
-     */
-    int getSubstitutedPlayerNumber(int playerNumber) const;
+    using Color = Settings::TeamColor;
 
     /**
      * Checks whether a given player is the goalkeeper in a team.
      * @param playerNumber The player number.
      * @return Whether the player has goalkeeper privileges.
      */
-    static bool isGoalkeeper(int playerNumber)
+    bool isGoalkeeper(int playerNumber) const
     {
-      return playerNumber == 1;
+      return playerNumber == goalkeeperNumber;
     }
 
-    using Color = Settings::TeamColor,
+    /**
+     * Returns the jersey color of a given player in a team.
+     * @param playerNumber The player number.
+     * @return The jersey color of the given player.
+     */
+    Color color(int playerNumber) const
+    {
+      return isGoalkeeper(playerNumber) ? goalkeeperColor : fieldPlayerColor;
+    },
 
     (std::array<PlayerState, Settings::highestValidPlayerNumber - Settings::lowestValidPlayerNumber + 1>)({}) playerStates, /**< The states of the players, indexed by jersey number - Settings::lowestValidPlayerNumber. */
     (int)(0) number, /**< The team number in the GameController. */
-    (Color)(Color::black) color, /**< The jersey color. */
+    (Color)(Color::black) fieldPlayerColor, /**< The jersey color of field players. */
+    (Color)(Color::blue) goalkeeperColor, /**< The jersey color of the goalkeeper. */
+    (int)(1) goalkeeperNumber, /**< The player number of the goalkeeper. */
     (unsigned int)(0u) score, /**< The current score. */
     (unsigned int)(1200u) messageBudget, /**< The remaining message budget. */
   });
@@ -369,6 +381,7 @@ STREAMABLE(GameState,
            state == penalizedRequestForPickup ||
            state == penalizedLocalGameStuck ||
            state == penalizedIllegalPositionInSet ||
+           state == penalizedPlayerStance ||
            state == substitute;
   }
 
@@ -380,6 +393,11 @@ STREAMABLE(GameState,
   bool isGoalkeeper() const
   {
     return ownTeam.isGoalkeeper(playerNumber);
+  }
+
+  Team::Color color() const
+  {
+    return ownTeam.color(playerNumber);
   },
 
   (Phase)(firstHalf) phase, /**< The current phase of the game. */
@@ -394,6 +412,9 @@ STREAMABLE(GameState,
   (PlayerState)(unstiff) playerState, /**< The current state of this player. */
   (unsigned)(0) timeWhenPlayerStateStarted, /**< Time when the current player state started. */
   (bool)(false) gameControllerActive, /**< Whether a GameController is active. */
+  (bool)(true) leftHandTeam, /**< Whether the own team plays on the left side from the GameController PoV*/
+  (CompetitionPhase)(roundRobin) competitionPhase, /**< The phase of the tournament we are in. */
+  (bool)(false) whistled, /**< State was switched due to a whistle. */
 });
 
 STREAMABLE(ExtendedGameState,
@@ -433,7 +454,6 @@ STREAMABLE(ExtendedGameState,
   (unsigned)(1200u) messageBudgetLastFrame, /**< Message budget of the own team in the last frame. */
   (bool)(false) returnFromGameControllerPenalty, /**< Is the robot returning from a GameController penalty this frame? */
   (bool)(false) returnFromManualPenalty, /**< Is the robot returning from a manual penalty this frame? */
-  (bool)(false) manuallyPlaced, /**< During a set phase: Has the robot been manually placed? */
 
   (std::array<unsigned, GameState::numOfStates>)({}) timeWhenStateStarted, /**< For each state: Time when this state started last. */
   (std::array<unsigned, GameState::numOfPlayerStates>)({}) timeWhenPlayerStateStarted, /**< For each player state: Time when this state started last. */

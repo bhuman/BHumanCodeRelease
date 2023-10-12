@@ -21,11 +21,12 @@ Settings::Settings(const std::string& headName, const std::string& bodyName) :
     OUTPUT_ERROR("Could not load settings for robot \"" << headName.c_str() << "\" from settings.cfg");
 }
 
-Settings::Settings(const std::string& headName, const std::string& bodyName, int teamNumber, TeamColor teamColor, int playerNumber, const std::string& location, const std::string& scenario, unsigned char magicNumber) :
+Settings::Settings(const std::string& headName, const std::string& bodyName, int teamNumber, TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber, const std::string& location, const std::string& scenario, unsigned char magicNumber) :
   headName(headName),
   bodyName(bodyName),
   teamNumber(teamNumber),
-  teamColor(teamColor),
+  fieldPlayerColor(fieldPlayerColor),
+  goalkeeperColor(goalkeeperColor),
   playerNumber(playerNumber),
   location(location),
   scenario(scenario),
@@ -46,7 +47,7 @@ Settings::Settings(const std::string& logFileName, const std::string* location, 
       goto settingsRead;
     }
   }
-  LoggingTools::parseName(logFileName, nullptr, &headName, &bodyName, &this->scenario, &this->location, nullptr, &playerNumber);
+  LoggingTools::parseName(logFileName, &headName, &bodyName, &this->scenario, &this->location, nullptr, &playerNumber);
 settingsRead:
   if(location)
     this->location = *location;

@@ -30,7 +30,6 @@ SKILL_IMPLEMENTATION(BlockImpl,
     (float)(200.f) overrideArmsDistance, /**< When closer than this to the block target, the arms are not taken back anymore. */
     (float)(400.f) ignoreObstaclesDistance, /**< When closer than this to the block target, obstacle avoidance is disabled. */
     (float)(70.f) halfRobotWidth, /**< The half of the robot width that is used to determine coverage of the ball from the target. */
-    (Angle)(45_deg) targetInFrontThreshold, /**< The block target is considered to be in front of me if its angle is inside +- this cone. */
     (Angle)(7_deg) angleDifferenceThreshold, /**< Threshold to control when a blocking robot starts to track the blocked robot. */
   }),
 });

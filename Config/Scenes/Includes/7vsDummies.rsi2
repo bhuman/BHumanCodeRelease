@@ -1,0 +1,77 @@
+<Simulation>
+
+  <Compound name="robots">
+    <Body ref="Nao" name="robot1">
+      <Translation x="4" y="-3" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="purple"/>
+    </Body>
+    <Body ref="Nao" name="robot2">
+      <Translation x="3" y="-3" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robot3">
+      <Translation x="2" y="-3" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robot4">
+      <Translation x="1" y="-3" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robot5">
+      <Translation x="0" y="-3" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robot6">
+      <Translation x="3" y="-2" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robot7">
+      <Translation x="2" y="-2" z="320mm"/>
+      <Rotation z="-90degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+  </Compound>
+
+  <Compound name="extras">
+    <Body ref="NaoDummy" name="robot21">
+      <Translation x="-4.5" z="320mm"/>
+      <Set name="NaoColor" value="blue"/>
+    </Body>
+    <Body ref="NaoDummy" name="robot22">
+      <Translation x="-1.5" y="-0.9" z="320mm"/>
+      <Set name="NaoColor" value="red"/>
+    </Body>
+    <Body ref="NaoDummy" name="robot23">
+      <Translation x="-1.1" y="1.3" z="320mm"/>
+      <Set name="NaoColor" value="red"/>
+    </Body>
+    <Body ref="NaoDummy" name="robot24">
+      <Translation x="-0.9" z="320mm"/>
+      <Set name="NaoColor" value="red"/>
+    </Body>
+    <Body ref="NaoDummy" name="robot25">
+      <Translation x="-2" y="0.4" z="320mm"/>
+      <Set name="NaoColor" value="red"/>
+    </Body>
+  </Compound>
+
+  <Compound name="teams">
+    <Compound name="B-Human">
+      <Compound name="5"/>
+      <Compound name="black"/>
+      <Compound name="purple"/>
+    </Compound>
+    <Compound name="B-Team">
+      <Compound name="70"/>
+      <Compound name="red"/>
+      <Compound name="blue"/>
+    </Compound>
+  </Compound>
+
+</Simulation>

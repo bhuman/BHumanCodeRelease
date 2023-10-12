@@ -1,0 +1,21 @@
+#!/bin/bash
+# Start a terminal to login on a NAO.
+# The ip address of the NAO has to be passed as argument.
+
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
+cd "$basePath"
+
+if [ "$(uname)" == "Darwin" ]; then
+  if [ -n "$(osascript -e "tell application \"Finder\" to return name of application file id \"com.googlecode.iterm2\"" 2>/dev/null)" ]; then
+    osascript -e "tell application \"iterm2\" to create window with default profile command \"$basePath/login -b $*\"" 2>/dev/null
+  else
+    osascript -e "tell application \"Terminal\" to activate" 2>/dev/null
+    osascript -e "tell application \"Terminal\" to do script \"$basePath/login -b $* || read; exit\"" >/dev/null 2>/dev/null
+  fi
+elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+  cmd.exe /c start cmd.exe /c "bash ../Common/login -b $* || pause & exit"
+elif [ ! -z "$(which gnome-terminal)" ]; then
+  gnome-terminal -- bash -c "./login -b $* || read" </dev/null >/dev/null 2>&1 &
+else
+  xterm -hold -e ./login -b $* </dev/null >/dev/null 2>&1 &
+fi

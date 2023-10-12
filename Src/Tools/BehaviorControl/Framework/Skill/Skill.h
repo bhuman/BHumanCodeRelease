@@ -25,6 +25,7 @@ struct BehaviorStatus;
 struct CalibrationRequest;
 struct HeadMotionRequest;
 struct MotionRequest;
+struct OptionalImageRequest;
 
 class SkillRegistry : public SkillRegistryBase
 {
@@ -38,9 +39,10 @@ public:
    * @param calibrationRequest The calibration request that can be modified by skills.
    * @param headMotionRequest The head motion request that can be modified by skills.
    * @param motionRequest The motion request that can be modified by skills.
+   * @param optionalImageRequest The request for an optional image for the referee gesture detection that can be modified.
    */
   SkillRegistry(const char* skillConfig, ActivationGraph& activationGraph, ArmMotionRequest& armMotionRequest,
-                BehaviorStatus& behaviorStatus, CalibrationRequest& calibrationRequest, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest);
+                BehaviorStatus& behaviorStatus, CalibrationRequest& calibrationRequest, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest, OptionalImageRequest& theOptionalImageRequest);
 
   /** Destructor. */
   ~SkillRegistry();
@@ -49,9 +51,10 @@ public:
 
   ArmMotionRequest& theArmMotionRequest; /**< The arm motion request that can be modified by skills. */
   BehaviorStatus& theBehaviorStatus; /**< The behavior status that can be modified by skills. */
-  CalibrationRequest& theCalibrationRequest; /** The calibration request that can be modified by skills. */
+  CalibrationRequest& theCalibrationRequest; /**< The calibration request that can be modified by skills. */
   HeadMotionRequest& theHeadMotionRequest; /**< The head motion request that can be modified by skills. */
   MotionRequest& theMotionRequest; /**< The motion request that can be modified by skills. */
+  OptionalImageRequest& theOptionalImageRequest; /**< The optional image request request that can be modified by skills. */
 };
 
 #define _SKILL_REGISTRY SkillRegistry

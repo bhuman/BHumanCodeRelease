@@ -13,9 +13,9 @@
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Whistle.h"
+#include "Tools/Communication/RobotStatus.h"
 #include "Streaming/AutoStreamable.h"
 
 STREAMABLE(Teammate,
@@ -27,16 +27,11 @@ STREAMABLE(Teammate,
 
   (int)(-1) number,
   (bool)(false) isGoalkeeper, /**< This is for a teammate what \c theGameState.isGoalkeeper() is for the player itself. */
-  (bool)(true) isUpright,
-  (unsigned)(0) timeWhenLastUpright,
 
-  (signed char)(0) sequenceNumber,
-  (signed char)(0) returnSequenceNumber,
-
+  (RobotStatus) theRobotStatus,
   (RobotPose) theRobotPose,
   (BallModel) theBallModel,
   (FrameInfo) theFrameInfo,
-  (ObstacleModel) theObstacleModel,
   (BehaviorStatus) theBehaviorStatus,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,

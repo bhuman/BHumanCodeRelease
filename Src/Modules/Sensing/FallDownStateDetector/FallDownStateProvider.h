@@ -10,7 +10,6 @@
 #include "Framework/Module.h"
 #include "Math/Geometry.h"
 #include "Math/UnscentedKalmanFilter.h"
-#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
@@ -23,7 +22,6 @@
 
 MODULE(FallDownStateProvider,
 {,
-  REQUIRES(FootOffset),
   REQUIRES(FrameInfo),
   REQUIRES(FsrSensorData),
   REQUIRES(GroundContactState),
@@ -49,7 +47,6 @@ MODULE(FallDownStateProvider,
     (float)(225.f) maxTorsoHeightToKeepSquatting,
     (float)(210.f) minTorsoHeightToKeepUpright,
     (float)(3.f) sigmaArea,
-    (float)(80.f) maxFootHeightDiff,
     (int)(150) minTimeBetweenSound,
     (int)(0) minTimeWithoutGroundContactToAssumePickup,
     (Vector2a)(55_deg, 55_deg) minTorsoOrientationToDetermineDirection,
@@ -67,16 +64,16 @@ class FallDownStateProvider : public FallDownStateProviderBase, public Cabsl<Fal
 public:
   FallDownStateProvider();
 private:
-  bool falling; /** Is the com outside of the support polygon */
-  bool stable; /** Torso has very limited rotational motion. */
-  bool torsoUpright; /** Is the com within sub support polygon? */
-  bool toSquatting; /** Are all conditions for a return to squatting from a fall met? */
-  bool toUpright; /** Are all conditions for a return to upright from a fall met? */
-  bool isPickedUp; /** Are all conditions for a return to picked up from a fall met? */
-  bool useTorsoOrientation; /** Torso orientation is big enough to be used. */
-  const InertialSensorData* theSensorData; /** Pointer to the sensor data.*/
-  FallDownState* theFallDownState; /** Pointer to the fall down state updated.*/
-  FallDownState::Direction direction; /** The fall direction. Always computed, even if not falling. */
+  bool falling; /**< Is the com outside of the support polygon */
+  bool stable; /**< Torso has very limited rotational motion. */
+  bool torsoUpright; /**< Is the com within sub support polygon? */
+  bool toSquatting; /**< Are all conditions for a return to squatting from a fall met? */
+  bool toUpright; /**< Are all conditions for a return to upright from a fall met? */
+  bool isPickedUp; /**< Are all conditions for a return to picked up from a fall met? */
+  bool useTorsoOrientation; /**< Torso orientation is big enough to be used. */
+  const InertialSensorData* theSensorData; /**< Pointer to the sensor data.*/
+  FallDownState* theFallDownState; /**< Pointer to the fall down state updated.*/
+  FallDownState::Direction direction; /**< The fall direction. Always computed, even if not falling. */
   float torsoAboveGround; /**< The distance of the torso above the ground (in mm). */
 
   UKF<5> ukf = UKF<5>(Vector5f::Zero()); // The statevector of the ukf is composed of: com, velocity;
@@ -125,10 +122,10 @@ private:
   bool isFalling() const;
 
   /**
-   * Check if the point is inside of the polgyon.
+   * Check if the point is inside of the polygon.
    * @param point The point to check.
    * @param polygon The polygon of the support foot.
-   * @return ture, if the point is inside of the polgyon.
+   * @return true, if the point is inside of the polygon.
    */
   bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& polygon) const;
 
@@ -164,245 +161,5 @@ private:
    */
   void say(const char* text);
 
-  /**
-   * The root option sets the fall down states for undefined, upright, and
-   * staggering. A fall is handled by the suboption Fall.
-   */
-  option(Root)
-  {
-    initial_state(pickedUp)
-    {
-      transition
-      {
-        if(toUpright)
-          goto upright;
-        else if(toSquatting)
-          goto squatting;
-      }
-      action
-      {
-        setState(FallDownState::pickedUp);
-      }
-    }
-
-    state(upright)
-    {
-      transition
-      {
-        if(falling)
-        {
-          goto preFall;
-        }
-        else if(!torsoUpright)
-          goto staggering;
-        else if(!theGroundContactState.contact)
-          goto uprightToPickedUp;
-        else if(toSquatting)
-        {
-          say("squatting");
-          goto squatting;
-        }
-      }
-      action
-      {
-        setState(FallDownState::upright);
-      }
-    }
-
-    state(uprightToPickedUp)
-    {
-      transition
-      {
-        if(falling)
-        {
-          goto preFall;
-        }
-        else if(!torsoUpright)
-          goto staggering;
-        else if(theGroundContactState.contact)
-          goto upright;
-        else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
-        {
-          say("Picked up");
-          goto pickedUp;
-        }
-      }
-      action
-      {
-        setState(FallDownState::upright);
-      }
-    }
-
-    state(staggering)
-    {
-      transition
-      {
-        if(falling)
-          goto preFall;
-        else if(torsoUpright)
-          goto upright;
-        else if(state_time > maxTimeStaggering)
-        {
-          ANNOTATION("FallDownStateProvider", "Staggering state kept too long. Resetting filter");
-          OUTPUT_WARNING("FallDownStateProvider: Staggering state kept too long. Resetting filter.");
-          resetFilter = true;
-          goto upright;
-        }
-      }
-      action
-      {
-        setState(FallDownState::staggering);
-      }
-    }
-
-    state(preFall)
-    {
-      transition
-      {
-        if(falling)
-        {
-          say("Falling");
-          goto fall;
-        }
-        else if(toUpright && stable)
-        {
-          say("Upright");
-          goto upright;
-        }
-        else if(toSquatting && stable)
-        {
-          say("Squatting");
-          goto squatting;
-        }
-        else
-        {
-          goto staggering;
-        }
-      }
-      action
-      {
-        setState(FallDownState::staggering);
-      }
-    }
-
-    state(fall)
-    {
-      transition
-      {
-        if(toUpright && stable)
-        {
-          say("Upright");
-          goto upright;
-        }
-        else if(toSquatting && stable)
-        {
-          say("Squatting");
-          goto squatting;
-        }
-        else if(isPickedUp)
-        {
-          say("Picked up");
-          goto pickedUp;
-        }
-      }
-      action
-      {
-        Fall();
-      }
-    }
-
-    state(squatting)
-    {
-      transition
-      {
-        if(falling)
-        {
-          say("Falling");
-          goto fall;
-        }
-        else if(toUpright)
-        {
-          say("Upright");
-          goto upright;
-        }
-        else if(!theGroundContactState.contact)
-          goto squattingToPickedUp;
-      }
-      action
-      {
-        setState(FallDownState::squatting, direction);
-      }
-    }
-
-    state(squattingToPickedUp)
-    {
-      transition
-      {
-        if(falling)
-        {
-          say("Falling");
-          goto fall;
-        }
-        else if(theGroundContactState.contact)
-          goto squatting;
-        else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
-        {
-          say("Picked up");
-          goto pickedUp;
-        }
-      }
-      action
-      {
-        setState(FallDownState::squatting);
-      }
-    }
-  }
-
-  /**
-   * This option handles a fall and sets the fall down states falling and onGround.
-   * If the torso's orientation is big enough, it also updates the odometry to
-   * handle situations where the robot is on its side and then rolls on its front
-   * or back.
-   */
-  option(Fall)
-  {
-    initial_state(fallingWithoutOdometryUpdate)
-    {
-      transition
-      {
-        if(useTorsoOrientation)
-          goto fallingWithOdometryUpdate;
-      }
-      action
-      {
-        setState(FallDownState::falling, direction);
-      }
-    }
-
-    state(fallingWithOdometryUpdate)
-    {
-      transition
-      {
-        if(!useTorsoOrientation)
-          goto fallingWithoutOdometryUpdate;
-        else if(stable)
-        {
-          say("Fallen");
-          goto fallen;
-        }
-      }
-      action
-      {
-        setStateWithPossibleDirectionChange(FallDownState::falling);
-      }
-    }
-
-    state(fallen)
-    {
-      action
-      {
-        setStateWithPossibleDirectionChange(FallDownState::fallen);
-      }
-    }
-  }
+#include "Options.h"
 };

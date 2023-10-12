@@ -362,6 +362,16 @@ bool InFile::getEof() const
   return stream != nullptr && stream->eof();
 }
 
+size_t InFile::getSize() const
+{
+  return stream != nullptr ? stream->getSize() : 0;
+}
+
+size_t InFile::getPosition() const
+{
+  return stream != nullptr ? stream->getPosition() : 0;
+}
+
 void InFile::open(const std::string& name)
 {
   if(stream == nullptr)
@@ -372,6 +382,12 @@ void InFile::readFromStream(void* p, size_t size)
 {
   if(stream != nullptr)
     stream->read(p, size);
+}
+
+void InFile::skipInStream(size_t size)
+{
+  if(stream != nullptr)
+    stream->skip(size);
 }
 
 void InMemory::readFromStream(void* p, size_t size)
@@ -487,7 +503,10 @@ void InMap::select(const char* name, int type, const char* enumType)
     if(array)
     {
       if(type < static_cast<int>(array->size()))
+      {
+        (*array)[type]->accessed = true;
         stack.emplace_back(name, (*array)[type], type, enumType);
+      }
       else
       {
         printError("array index out of range", outOfRange);
@@ -507,7 +526,10 @@ void InMap::select(const char* name, int type, const char* enumType)
     {
       auto i = record->find(name);
       if(i != record->end())
+      {
+        i->second->accessed = true;
         stack.emplace_back(name, i->second, type, enumType);
+      }
       else
       {
         printError(std::string("attribute '") + name + "' not found", missingAttribute);
@@ -524,6 +546,24 @@ void InMap::select(const char* name, int type, const char* enumType)
 
 void InMap::deselect()
 {
+  const SimpleMap::Value* value = stack.back().value;
+  if(errorMask & bit(unusedElement))
+  {
+    const auto* array = dynamic_cast<const SimpleMap::Array*>(value);
+    if(array)
+      for(size_t i = 0; i < array->size(); ++i)
+        if(!(*array)[i]->accessed)
+          printError("unused array element " + std::to_string(i), unusedElement);
+  }
+  if(errorMask & bit(unusedAttribute))
+  {
+    const auto* record = dynamic_cast<const SimpleMap::Record*>(value);
+    if(record)
+      for(const auto& [name, attribute] : *record)
+        if(!attribute->accessed)
+          printError("unused attribute " + name, unusedAttribute);
+  }
+
   stack.pop_back();
 }
 

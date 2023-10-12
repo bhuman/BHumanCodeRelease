@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script creates a root image for the NAO robot using Ubuntu 20.04.
+# This script creates a root image for the NAO robot using Ubuntu 22.04.
 # It is based on something published by the Nao Devils.
 # Thanks!
 
@@ -83,14 +83,14 @@ fi
 
 # Install a minimal Ubuntu.
 mkdir -p "${rootDir}"
-debootstrap --variant=minbase --arch=amd64 focal "${rootDir}" http://archive.ubuntu.com/ubuntu
+debootstrap --variant=minbase --arch=amd64 jammy "${rootDir}" http://archive.ubuntu.com/ubuntu
 
 # Adjust sources.
 cat >"${rootDir}/etc/apt/sources.list" <<EOF
-deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu focal-security main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu jammy-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse
 EOF
 
 mount -o bind /dev "${rootDir}/dev"
@@ -108,10 +108,10 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y alsa gdb htop i2c-tools libusb
 # wpa_supplicant does not need to run by itself, it will be started by netplan if necessary.
 systemctl disable wpa_supplicant.service
 
-addgroup --system nao --gid 1001
-addgroup hal --gid 99
-addgroup usb --gid 85
-addgroup rt --gid 113
+addgroup --gid 1001 nao
+addgroup --system hal
+addgroup --system usb
+addgroup --system rt
 useradd -s /bin/bash -g nao -G tty,uucp,audio,video,plugdev,systemd-journal,syslog,hal,usb,rt,sudo,render -u 1001 -M nao
 echo "nao:nao" | chpasswd
 echo "root:root" | chpasswd
@@ -190,8 +190,6 @@ cp "${baseDir}/Files/chest-harakiri" "${rootDir}/opt/bhuman/libexec"
 cp "${baseDir}/Files/flash-cx3" "${rootDir}/opt/aldebaran/libexec"
 cp "${baseDir}/Files/reset-cameras.sh" "${rootDir}/opt/aldebaran/libexec"
 cp "${baseDir}/Files/harakiri" "${rootDir}/lib/systemd/system-shutdown"
-
-rm "${rootDir}/etc/systemd/system/multi-user.target.wants/ondemand.service"
 
 # Copy HAL, LoLA and other blobs from an original image.
 if [ ! -e "${naoImage}" ]; then

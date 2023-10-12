@@ -34,7 +34,7 @@ void OracledWorldModelProvider::computeBallModel()
   const Vector2f ballPosition = theGroundTruthWorldState.balls[0].position.head<2>();
   const Vector2f ballVelocity = theGroundTruthWorldState.balls[0].velocity.head<2>();
 
-  theBallModel.estimate.position = theRobotPose.inversePose * ballPosition;
+  theBallModel.estimate.position = theRobotPose.inverse() * ballPosition;
   theBallModel.estimate.velocity = ballVelocity.rotated(-theRobotPose.rotation);
   theBallModel.lastPerception = theBallModel.estimate.position;
   theBallModel.timeWhenLastSeen = theFrameInfo.time;
@@ -67,6 +67,39 @@ void OracledWorldModelProvider::update(TeammatesBallModel& teammatesBallModel)
   teammatesBallModel.isValid = true;
 }
 
+void OracledWorldModelProvider::update(GlobalOpponentsModel& globalOpponentsModel)
+{
+  computeRobotPose();
+  globalOpponentsModel.opponents.clear();
+  if (!Global::settingsExist())
+    return;
+
+  auto toOpponent = [this, &globalOpponentsModel](const GroundTruthWorldState::GroundTruthPlayer& player, bool isTeammate)
+  {
+    const Vector2f center(theRobotPose.inverse() * player.pose.translation);
+    Vector2f left = center.normalized(Obstacle::getRobotDepth());
+    Vector2f right = left;
+    left.rotateLeft();
+    right.rotateRight();
+    left += center;
+    right += center;
+
+    if (center.squaredNorm() >= sqr(obstacleModelMaxDistance))
+      return;
+    if (!isTeammate)
+    {
+      GlobalOpponentsModel::OpponentEstimate opponent;
+      opponent.position = center;
+      opponent.left = left;
+      opponent.right = right;
+      globalOpponentsModel.opponents.emplace_back(opponent);
+    }
+  };
+
+  for (unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
+    toOpponent(theGroundTruthWorldState.opponentTeamPlayers[i], false);
+}
+
 void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
 {
   computeRobotPose();
@@ -76,7 +109,7 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
 
   auto toObstacle = [this, &obstacleModel](const GroundTruthWorldState::GroundTruthPlayer& player, bool isTeammate)
   {
-    const Vector2f center(theRobotPose.inversePose * player.pose.translation);
+    const Vector2f center(theRobotPose.inverse() * player.pose.translation);
     if(center.squaredNorm() >= sqr(obstacleModelMaxDistance))
       return;
     obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), center, theFrameInfo.time,
@@ -89,21 +122,6 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
     toObstacle(theGroundTruthWorldState.ownTeamPlayers[i], true);
   for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
     toObstacle(theGroundTruthWorldState.opponentTeamPlayers[i], false);
-
-  //add goal posts
-  float squaredObstacleModelMaxDistance = sqr(obstacleModelMaxDistance);
-  Vector2f goalPost = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal);
-  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
-    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, theFrameInfo.time, Obstacle::goalpost);
-  goalPost = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal);
-  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
-    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, theFrameInfo.time, Obstacle::goalpost);
-  goalPost = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
-  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
-    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, theFrameInfo.time, Obstacle::goalpost);
-  goalPost = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
-  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
-    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, theFrameInfo.time, Obstacle::goalpost);
 }
 
 void OracledWorldModelProvider::update(RobotPose& robotPose)
@@ -120,4 +138,4 @@ void OracledWorldModelProvider::update(GroundTruthRobotPose& groundTruthRobotPos
   groundTruthRobotPose.timestamp = theFrameInfo.time;
 }
 
-MAKE_MODULE(OracledWorldModelProvider, infrastructure);
+MAKE_MODULE(OracledWorldModelProvider);

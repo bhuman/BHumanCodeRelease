@@ -49,6 +49,18 @@ public:
    * @return End of stream reached?
    */
   virtual bool getEof() const = 0;
+
+  /**
+   * The function returns the size of stream in bytes.
+   * @return The size in bytes or 0 if it is unknown.
+   */
+  virtual size_t getSize() const = 0;
+
+  /**
+   * Returns the current position in the stream.
+   * @return The number of bytes away from the begin of the stream.
+   */
+  virtual size_t getPosition() const = 0;
 };
 
 /**
@@ -173,147 +185,6 @@ protected:
    * @return End of stream reached?
    */
   virtual bool isEof(const PhysicalInStream& stream) const = 0;
-};
-
-/**
- * @class InStream
- *
- * Generic class for classes that do both formatted and physical reading of data from streams.
- */
-template<typename S, typename R> class InStream : public S, public R, public In
-{
-public:
-  /**
-   * The function reads a number of bytes from a stream.
-   * @param p The address the data is written to. Note that p
-   *          must point to a memory area that is at least
-   *          "size" bytes large.
-   * @param size The number of bytes to be read.
-   */
-  void read(void* p, size_t size) override
-  {
-    R::readData(p, size, *this);
-  }
-
-  /**
-   * The function skips a number of bytes in the stream.
-   * @param size The number of bytes to be skipped.
-   */
-  void skip(size_t size) override
-  {
-    R::skipData(size, *this);
-  }
-
-  /**
-   * Determines whether the end of file has been reached.
-   */
-  bool eof() const override { return R::isEof(*this); }
-
-protected:
-  /**
-   * Virtual redirection for operator>>(bool& value).
-   */
-  void inBool(bool& d) override
-  {
-    R::readBool(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(char& value).
-   */
-  void inChar(char& d) override
-  {
-    R::readChar(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(signed char& value).
-   */
-  void inSChar(signed char& d) override
-  {
-    R::readSChar(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(unsigned char& value).
-   */
-  void inUChar(unsigned char& d) override
-  {
-    R::readUChar(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(short& value).
-   */
-  void inShort(short& d) override
-  {
-    R::readShort(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(unsigned short& value).
-   */
-  void inUShort(unsigned short& d) override
-  {
-    R::readUShort(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(int& value).
-   */
-  void inInt(int& d) override
-  {
-    R::readInt(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(unsigned int& value).
-   */
-  void inUInt(unsigned int& d) override
-  {
-    R::readUInt(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(float& value).
-   */
-  void inFloat(float& d) override
-  {
-    R::readFloat(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(double& value).
-   */
-  void inDouble(double& d) override
-  {
-    R::readDouble(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(std::string& value).
-   */
-  void inString(std::string& d) override
-  {
-    R::readString(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(Angle& value).
-   */
-  void inAngle(Angle& d) override
-  {
-    R::readAngle(d, *this);
-  }
-
-  /**
-   * Virtual redirection for operator>>(In& (*f)(In&)) that reads
-   * the symbol "endl";
-   */
-  void inEndL() override
-  {
-    R::readEndl(*this);
-  }
 };
 
 /**
@@ -773,13 +644,25 @@ public:
    * The function states whether the file actually exists.
    * @return Does the file exist?
    */
-  virtual bool exists() const;
+  virtual bool exists() const override;
 
   /**
    * The function states whether the end of the file has been reached.
    * @return End of file reached?
    */
-  virtual bool getEof() const;
+  virtual bool getEof() const override;
+
+  /**
+   * The function returns the size of stream in bytes.
+   * @return The size in bytes or 0 if it is unknown.
+   */
+  virtual size_t getSize() const override;
+
+  /**
+   * Returns the current position in the stream.
+   * @return The number of bytes away from the begin of the stream.
+   */
+  virtual size_t getPosition() const override;
 
   /**
    * The function gives access to the underlying File object.
@@ -802,7 +685,13 @@ protected:
    *          "size" bytes large.
    * @param size The number of bytes to be read.
    */
-  virtual void readFromStream(void* p, size_t size);
+  virtual void readFromStream(void* p, size_t size) override;
+
+  /**
+   * The function skips a number of bytes.
+   * @param size The number of bytes to be skipped.
+   */
+  virtual void skipInStream(size_t size) override;
 };
 
 /**
@@ -814,6 +703,7 @@ class InMemory : public PhysicalInStream
 {
 private:
   const char* memory = nullptr, /**< Points to the next byte to read from memory. */
+            * start = nullptr, /**< Points to the begin of the memory block. */
             * end = nullptr; /**< Points to the end of the memory block. */
 
 public:
@@ -834,6 +724,18 @@ public:
     return memory != nullptr && memory >= end;
   }
 
+  /**
+   * The function returns the size of stream in bytes.
+   * @return The size in bytes or 0 if it is unknown.
+   */
+  virtual size_t getSize() const override {return end - start;}
+
+  /**
+   * Returns the current position in the stream.
+   * @return The number of bytes away from the begin of the stream.
+   */
+  virtual size_t getPosition() const override {return memory - start;}
+
 protected:
   /**
    * Opens the stream.
@@ -847,7 +749,7 @@ protected:
   {
     if(memory == nullptr)
     {
-      memory = reinterpret_cast<const char*>(mem);
+      start = memory = reinterpret_cast<const char*>(mem);
       end = memory + size;
     }
   }
@@ -866,6 +768,164 @@ protected:
    * @param size The number of bytes to be skipped.
    */
   void skipInStream(size_t size) override {memory += size;}
+};
+
+/**
+ * @class InStream
+ *
+ * Generic class for classes that do both formatted and physical reading of data from streams.
+ */
+template<typename S, typename R> class InStream : public S, public R, public In
+{
+public:
+  /**
+   * The function reads a number of bytes from a stream.
+   * @param p The address the data is written to. Note that p
+   *          must point to a memory area that is at least
+   *          "size" bytes large.
+   * @param size The number of bytes to be read.
+   */
+  void read(void* p, size_t size) override
+  {
+    R::readData(p, size, *this);
+  }
+
+  /**
+   * Reads the complete remaining stream and returns it as a single string.
+   * @return The string containing the remaining contents of the stream.
+   */
+  std::string readAll()
+  {
+    static_assert(std::is_base_of_v<InText, R>, "readAll can only be used in text streams");
+    std::string result;
+    std::string buffer;
+    while(!eof())
+    {
+      *this >> buffer;
+      result += buffer;
+    }
+    return result;
+  }
+
+  /**
+   * The function skips a number of bytes in the stream.
+   * @param size The number of bytes to be skipped.
+   */
+  void skip(size_t size) override
+  {
+    R::skipData(size, *this);
+  }
+
+  /**
+   * Determines whether the end of file has been reached.
+   */
+  bool eof() const override { return R::isEof(*this); }
+
+protected:
+  /**
+   * Virtual redirection for operator>>(bool& value).
+   */
+  void inBool(bool& d) override
+  {
+    R::readBool(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(char& value).
+   */
+  void inChar(char& d) override
+  {
+    R::readChar(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(signed char& value).
+   */
+  void inSChar(signed char& d) override
+  {
+    R::readSChar(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(unsigned char& value).
+   */
+  void inUChar(unsigned char& d) override
+  {
+    R::readUChar(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(short& value).
+   */
+  void inShort(short& d) override
+  {
+    R::readShort(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(unsigned short& value).
+   */
+  void inUShort(unsigned short& d) override
+  {
+    R::readUShort(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(int& value).
+   */
+  void inInt(int& d) override
+  {
+    R::readInt(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(unsigned int& value).
+   */
+  void inUInt(unsigned int& d) override
+  {
+    R::readUInt(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(float& value).
+   */
+  void inFloat(float& d) override
+  {
+    R::readFloat(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(double& value).
+   */
+  void inDouble(double& d) override
+  {
+    R::readDouble(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(std::string& value).
+   */
+  void inString(std::string& d) override
+  {
+    R::readString(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(Angle& value).
+   */
+  void inAngle(Angle& d) override
+  {
+    R::readAngle(d, *this);
+  }
+
+  /**
+   * Virtual redirection for operator>>(In& (*f)(In&)) that reads
+   * the symbol "endl";
+   */
+  void inEndL() override
+  {
+    R::readEndl(*this);
+  }
 };
 
 /**
@@ -1021,7 +1081,9 @@ public:
     wrongLiteralFormat, /**< Error message when a literal can not be parsed. */
     wrongValueType, /**< Error message when a value has the wrong type (i.e. the map is structurally wrong). */
     missingAttribute, /**< Error message when an attribute of a record is missing. */
-    outOfRange /**< Error message when an array element beyond the end is selected. */
+    outOfRange, /**< Error message when an array element beyond the end is selected. */
+    unusedElement, /**< Error message when an array element is not read. */
+    unusedAttribute /**< Error message when an attribute of a record is not read. */
   };
 
 private:

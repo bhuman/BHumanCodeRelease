@@ -23,7 +23,7 @@
 #endif
 #include <cstdio>
 
-MAKE_MODULE(CameraProvider, infrastructure);
+MAKE_MODULE(CameraProvider);
 
 thread_local CameraProvider* CameraProvider::theInstance = nullptr;
 #ifdef TARGET_ROBOT
@@ -72,23 +72,27 @@ void CameraProvider::update(CameraImage& theCameraImage)
   {
     theCameraImage.setReference(cameraInfo.width / 2, cameraInfo.height, const_cast<unsigned char*>(camera->getImage()), std::max(lastImageTimestamp + 1, timestamp));
 
-    if(theCameraImage.timestamp - timestampLastRowChange > 3000)
+    if(whichCamera == CameraInfo::lower)
     {
-      timestampLastRowChange = theCameraImage.timestamp;
-      currentRow = Random::uniformInt(1, cameraInfo.height - 2);
-      rowBuffer.clear();
-    }
-    std::string res = MD5().digestMemory(reinterpret_cast<unsigned char*>(theCameraImage[currentRow]), cameraInfo.width * sizeof(CameraImage::PixelType));
-    rowBuffer.push_front(res);
-
-    int appearances = 0;
-    for(auto i = rowBuffer.begin(); i != rowBuffer.end(); ++i)
-      if(*i == res && ++appearances > 25)
+      if(theCameraImage.timestamp - timestampLastRowChange > 3000)
       {
-        OUTPUT_ERROR("Probably encountered a distorted image!");
-        camera->resetRequired = true;
-        return;
+        timestampLastRowChange = theCameraImage.timestamp;
+        currentRow = Random::uniformInt(1, cameraInfo.height - 2);
+        rowBuffer.clear();
       }
+      std::string res = MD5().digestMemory(reinterpret_cast<unsigned char*>(theCameraImage[currentRow]), cameraInfo.width * sizeof(CameraImage::PixelType));
+      rowBuffer.push_front(res);
+
+      int appearances = 0;
+      for(auto i = rowBuffer.begin(); i != rowBuffer.end(); ++i)
+        if(*i == res && ++appearances > 25)
+        {
+          OUTPUT_ERROR("Probably encountered a distorted image (row " << currentRow << ", hash " << res << ")!");
+          ANNOTATION("CameraProvider", "Probably encountered a distorted image (row " << currentRow << ", hash " << res << ")!");
+          camera->resetRequired = true;
+          return;
+        }
+    }
   }
   else if(theCameraImage.isReference())
   {
@@ -335,6 +339,7 @@ void CameraProvider::waitForFrameData()
   if(theInstance)
   {
     theInstance->takeNextImage.post();
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:delay") Thread::sleep(2000);
     theInstance->imageTaken.wait();
   }
 #endif

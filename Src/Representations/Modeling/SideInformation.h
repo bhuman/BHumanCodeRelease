@@ -19,10 +19,9 @@
  */
 STREAMABLE(SideInformation,
 {
-  /** Verifies that representation contains valid values. */
+  /** Verifies that the representation contains valid values. */
   void verify() const,
 
-  (bool)(false) mirror,                          /**< Indicates whether ball model of others is mirrored to own ball model. */
   (bool)(false) robotMustBeInOwnHalf,            /**< The robot must still be on its own half of the field (as it did not walk far enough or due some special configuration [debugging / testing / demo feature / technical challenge]). */
   (bool)(false) robotMustBeInOpponentHalf,       /**< The robot must be in the opponent half of the field (debugging / testing / demo feature / technical challenge). */
   (float)(100000.f) largestXCoordinatePossible,  /**< The largest x-coordinate that the robot could have walked to. Actual x-coordinate is smaller. */

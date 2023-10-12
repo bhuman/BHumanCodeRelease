@@ -12,7 +12,7 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Math/Eigen.h"
-#include "Math/Pose3f.h"
+#include "Math/SE3fWithCov.h"
 #include "RobotParts/Limbs.h"
 #include "Streaming/EnumIndexedArray.h"
 
@@ -50,8 +50,8 @@ STREAMABLE(RobotModel,
   /** Creates a 3-D drawing of the robot model. */
   void draw() const,
 
-  (ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
-  (Pose3f) soleLeft,
-  (Pose3f) soleRight,
+  (ENUM_INDEXED_ARRAY(SE3WithCov, Limbs::Limb)) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
+  (SE3WithCov) soleLeft,
+  (SE3WithCov) soleRight,
   (Vector3f)(Vector3f::Zero()) centerOfMass, /**< Position of the center of mass (center of gravity) relative to the robot's origin. */
 });

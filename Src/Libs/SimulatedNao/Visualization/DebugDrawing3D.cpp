@@ -10,37 +10,37 @@
 #include "Platform/BHAssert.h"
 #include "Representations/Infrastructure/CameraImage.h"
 
-bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType)
+bool DebugDrawing3D::addShapeFromQueue(In& stream, Drawings3D::ShapeType shapeType)
 {
   switch(shapeType)
   {
     case Drawings3D::translate:
     {
-      message.bin >> trans.x();
-      message.bin >> trans.y();
-      message.bin >> trans.z();
+      stream >> trans.x();
+      stream >> trans.y();
+      stream >> trans.z();
       break;
     }
     case Drawings3D::scale:
     {
-      message.bin >> scale.x();
-      message.bin >> scale.y();
-      message.bin >> scale.z();
+      stream >> scale.x();
+      stream >> scale.y();
+      stream >> scale.z();
       break;
     }
     case Drawings3D::rotate:
     {
-      message.bin >> rotate.x();
-      message.bin >> rotate.y();
-      message.bin >> rotate.z();
+      stream >> rotate.x();
+      stream >> rotate.y();
+      stream >> rotate.z();
       break;
     }
     case Drawings3D::coordinates:
     {
       float width;
       float length;
-      message.bin >> length;
-      message.bin >> width;
+      stream >> length;
+      stream >> width;
       this->line(0, 0, 0, length, 0, 0, width, ColorRGBA::red);
       this->line(0, 0, 0, 0, length, 0, width, ColorRGBA::green);
       this->line(0, 0, 0, 0, 0, length, width, ColorRGBA::blue);
@@ -50,11 +50,11 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
     {
       std::array<Vector3f, 4> points;
       ColorRGBA c;
-      message.bin >> points[0];
-      message.bin >> points[1];
-      message.bin >> points[2];
-      message.bin >> points[3];
-      message.bin >> c;
+      stream >> points[0];
+      stream >> points[1];
+      stream >> points[2];
+      stream >> points[3];
+      stream >> c;
       this->quad(points, c);
       break;
     }
@@ -63,10 +63,10 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       Vector3f start, end;
       float width;
       ColorRGBA c;
-      message.bin >> start;
-      message.bin >> end;
-      message.bin >> width;
-      message.bin >> c;
+      stream >> start;
+      stream >> end;
+      stream >> width;
+      stream >> c;
       this->line(start, end, width, c);
       break;
     }
@@ -76,10 +76,10 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       float width;
       ColorRGBA c;
       for(int i = 0; i < 8; i++)
-        message.bin >> points[i];
+        stream >> points[i];
 
-      message.bin >> width;
-      message.bin >> c;
+      stream >> width;
+      stream >> c;
       this->line(points[0], points[1], width, c); //AB
       this->line(points[0], points[2], width, c); //AC
       this->line(points[0], points[4], width, c); //AE
@@ -100,10 +100,10 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       float w;
       ColorRGBA c;
       bool withLines;
-      message.bin >> v;
-      message.bin >> w;
-      message.bin >> c;
-      message.bin >> withLines;
+      stream >> v;
+      stream >> w;
+      stream >> c;
+      stream >> withLines;
       this->dot(v, w, c);
 
       if(withLines)
@@ -128,9 +128,9 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       Vector3f v;
       float r;
       ColorRGBA c;
-      message.bin >> v;
-      message.bin >> r;
-      message.bin >> c;
+      stream >> v;
+      stream >> r;
+      stream >> c;
       this->sphere(v, r, c);
       break;
     }
@@ -139,9 +139,9 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       Pose3f p;
       Vector3f s;
       ColorRGBA c;
-      message.bin >> p;
-      message.bin >> s;
-      message.bin >> c;
+      stream >> p;
+      stream >> s;
+      stream >> c;
       this->ellipsoid(p, s, c);
       break;
     }
@@ -150,12 +150,12 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       Vector3f v, rot;
       float r, r2, h;
       ColorRGBA c;
-      message.bin >> v;
-      message.bin >> rot;
-      message.bin >> r;
-      message.bin >> r2;
-      message.bin >> h;
-      message.bin >> c;
+      stream >> v;
+      stream >> rot;
+      stream >> r;
+      stream >> r2;
+      stream >> h;
+      stream >> c;
       this->cylinder(v, rot, r, r2, h, c);
       break;
     }
@@ -164,11 +164,11 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       Vector3f v, rot;
       float w, h;
       CameraImage* ci = new CameraImage;
-      message.bin >> v;
-      message.bin >> rot;
-      message.bin >> w;
-      message.bin >> h;
-      message.bin >> *ci;
+      stream >> v;
+      stream >> rot;
+      stream >> w;
+      stream >> h;
+      stream >> *ci;
       this->image(v, rot, w, h, ci);
       break;
     }

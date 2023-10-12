@@ -1,0 +1,26 @@
+echo Use keyboard to select referee signal.
+echo - Shift+Ctrl+H:\tkickInBlue
+echo - Shift+Ctrl+J:\tkickInRed
+echo - Shift+Ctrl+K:\tgoalKickBlue
+echo - Shift+Ctrl+L:\tgoalKickRed
+echo - Shift+Ctrl+X:\tcornerKickBlue
+echo - Shift+Ctrl+C:\tcornerKickRed
+echo - Shift+Ctrl+V:\tpushingFreeKickBlue
+echo - Shift+Ctrl+N:\tpushingFreeKickRed
+
+call Includes/Normal
+
+# all views are defined in another script
+call Includes/Views
+
+ar trueGameState off
+
+dr debugDrawing3d:representation:RobotPose
+dr debugDrawing3d:representation:GameState:playerNumber
+dr representation:SetupPoses:place
+
+vid upper module:KeypointsProvider:mask
+vid upper representation:Keypoints:patch
+vid upper representation:Keypoints
+
+call Includes/Referee

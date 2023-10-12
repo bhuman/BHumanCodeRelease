@@ -1,191 +1,247 @@
 /**
  * @file MessageQueue.cpp
  *
- * Implementation of class MessageQueue and helper classes
+ * This file implements a class that a bag of streamed data (see header for details).
  *
- * @author Martin Lötzsch
+ * @author Thomas Röfer
  */
 
 #include "MessageQueue.h"
-#include "Platform/BHAssert.h"
-#include "Streaming/Output.h"
-#include <cstring>
 
-void MessageQueue::handleAllMessages(MessageHandler& handler)
+void MessageQueue::OutQueue::open(MessageID id, MessageQueue& queue)
 {
-  for(int i = 0; i < queue.numberOfMessages; ++i)
+  maxCapacity = queue.calcMaxCapacity(id);
+  if(queue.ensureCapacity(queue.used + sizeof(MessageHeader), maxCapacity))
   {
-    queue.setSelectedMessageForReading(i);
-    in.text.reset();
-    handler.handleMessage(in);
+    this->queue = &queue;
+    originalSize = queue.used;
+    const MessageHeader header = {{{id, 0}}};
+    *reinterpret_cast<MessageHeader*>(queue.buffer + originalSize) = header;
+    queue.used += sizeof(MessageHeader);
   }
+  else
+    this->queue = nullptr;
 }
 
-void MessageQueue::copyAllMessages(MessageQueue& other)
+void MessageQueue::OutQueue::writeToStream(const void* p, size_t size)
 {
-  if(queue.usedSize >= MessageQueueBase::headerSize)
+  if(queue)
   {
-    if(!queue.mappedIDs)
+    if(queue->ensureCapacity(queue->used + size, maxCapacity))
     {
-      char* dest = other.queue.reserve(queue.usedSize - MessageQueueBase::headerSize);
-      if(dest)
-      {
-        memcpy(dest - MessageQueueBase::headerSize, queue.buf, queue.usedSize);
-        other.queue.numberOfMessages += queue.numberOfMessages;
-        other.queue.usedSize += queue.usedSize;
-        other.queue.writePosition = 0;
-        return;
-      }
+      std::memcpy(queue->buffer + queue->used, p, size);
+      queue->used += size;
+      reinterpret_cast<MessageHeader*>(queue->buffer + originalSize)->size += static_cast<unsigned>(size);
     }
-
-    /*
-    * Copy step by step by step, because not all messages will fit
-    * or the message ids should be translated.
-    */
-    for(int i = 0; i < queue.numberOfMessages; ++i)
-      copyMessage(i, other);
+    else
+    {
+      queue->used = originalSize;
+      queue = nullptr;
+    }
   }
 }
 
-void MessageQueue::moveAllMessages(MessageQueue& other)
+size_t MessageQueue::calcMaxCapacity(MessageID id) const
 {
-  copyAllMessages(other);
-  clear();
+  constexpr unsigned unprotected = bit(idDebugDrawing - numOfDataMessageIDs)
+    | bit(idDebugDrawing3D - numOfDataMessageIDs)
+    | bit(idDebugImage - numOfDataMessageIDs)
+    | bit(idPlot - numOfDataMessageIDs)
+    | bit(idText - numOfDataMessageIDs);
+
+  return id <= idFrameFinished || (id >= numOfDataMessageIDs && !(bit(id - numOfDataMessageIDs) & unprotected))
+         ? maxCapacity : maxCapacity - protectedCapacity;
 }
 
-void MessageQueue::patchMessage(int message, int index, const std::string& value)
+bool MessageQueue::ensureCapacity(size_t capacity, size_t maxCapacity)
 {
-  queue.setSelectedMessageForReading(message);
-  ASSERT(index >= 0 && index < queue.getMessageSize());
-  // streamed strings have 4 Bytes before the real string
-  ASSERT(value.size() + 4 == static_cast<size_t>(queue.getMessageSize()));
-  OutBinaryMemory stream(value.size() + 4, const_cast<char*>(queue.getData() + index));
-  stream << value;
+  if(capacity > maxCapacity)
+    return false;
+  else if(capacity <= this->capacity)
+    return true;
+#ifndef TARGET_ROBOT
+  else
+  {
+    size_t newCapacity = std::max(static_cast<size_t>(1), this->capacity);
+    while(newCapacity < capacity)
+      newCapacity *= 2;
+    newCapacity = std::min(newCapacity, this->maxCapacity);
+    char* newBuffer = static_cast<char*>(realloc(buffer, newCapacity));
+    if(newBuffer)
+    {
+      buffer = newBuffer;
+      this->capacity = newCapacity;
+      return true;
+    }
+  }
+#endif
+  return false;
 }
 
-void MessageQueue::copyMessage(int message, MessageQueue& other)
+void MessageQueue::copyMessages(size_t size, const std::function<void(void*, size_t)>& copy)
 {
-  queue.setSelectedMessageForReading(message);
-  other.out.bin.write(queue.getData(), queue.getMessageSize());
-  other.out.finishMessage(queue.getMessageID());
+  MessageHeader header;
+  while(size > 0)
+  {
+    copy(&header, sizeof(header));
+    if(ensureCapacity(used + sizeof(MessageHeader) + header.size, calcMaxCapacity(header.id)))
+    {
+      *reinterpret_cast<MessageHeader*>(buffer + used) = header;
+      used += sizeof(MessageHeader);
+      copy(buffer + used, header.size);
+      used += header.size;
+    }
+    else
+      copy(nullptr, header.size);
+    size -= sizeof(MessageHeader) + header.size;
+  }
+}
+
+void MessageQueue::read(In& stream)
+{
+  QueueHeader header;
+  stream.read(&header, sizeof(header));
+  const size_t size = header.sizeLow | static_cast<size_t>(header.sizeHigh) << 32;
+  if(ensureCapacity(used + size, maxCapacity - protectedCapacity))
+  {
+    stream.read(buffer + used, size);
+    used += size;
+  }
+  else
+    copyMessages(size, [&](void* dest, size_t size)
+    {
+      if(dest)
+        stream.read(dest, size);
+      else
+        stream.skip(size);
+    });
 }
 
 void MessageQueue::write(Out& stream) const
 {
-  stream << static_cast<unsigned>(queue.usedSize) << ((queue.numberOfMessages & 0x0fffffff) | (static_cast<unsigned>(queue.usedSize >> 4) & 0xf0000000));
-  stream.write(queue.buf, queue.usedSize);
+  const QueueHeader header = {used, 0, used >> 32};
+  stream.write(&header, sizeof(header));
+  append(stream);
 }
 
-void MessageQueue::writeAppendableHeader(Out& stream) const
+MessageQueue::MessageQueue()
+#ifdef TARGET_ROBOT
+: capacity(0),
+  maxCapacity(0),
+  buffer(nullptr)
+#else
+  : capacity(16384),
+    maxCapacity(0x4000000),
+    buffer(static_cast<char*>(malloc(capacity)))
+#endif
 {
-  stream << -1 << -1;
+}
+
+MessageQueue::~MessageQueue()
+{
+  if(ownBuffer)
+    free(buffer);
+}
+
+MessageQueue& MessageQueue::operator=(const MessageQueue& other)
+{
+  if(ownBuffer)
+    free(buffer);
+  ownBuffer = true;
+  used = capacity = other.used;
+  maxCapacity = other.maxCapacity;
+  buffer = static_cast<char*>(malloc(capacity));
+  std::memcpy(buffer, other.buffer, used);
+  return *this;
+}
+
+MessageQueue& MessageQueue::operator<<(const std::pair<const_iterator, const_iterator>& range)
+{
+  size_t srcSize = range.second - range.first;
+  if(ensureCapacity(used + srcSize, maxCapacity - protectedCapacity))
+  {
+    std::memcpy(buffer + used, range.first.current, srcSize);
+    used += srcSize;
+  }
+  else
+  {
+    const char* src = range.first.current;
+    copyMessages(srcSize, [&](void* dest, size_t size)
+    {
+      if(dest)
+        std::memcpy(dest, src, size);
+      src += size;
+    });
+  }
+  return *this;
+}
+
+void MessageQueue::clear()
+{
+  used = 0;
+  if(!ownBuffer)
+  {
+    capacity = 16384;
+    buffer = static_cast<char*>(malloc(capacity));
+    ownBuffer = true;
+  }
+}
+
+void MessageQueue::resize(size_t size)
+{
+  ASSERT(used >= size);
+  used = size;
+}
+
+void MessageQueue::reserve(size_t capacity, size_t protectedCapacity)
+{
+#ifdef TARGET_ROBOT
+  ASSERT(!buffer);
+  VERIFY(buffer = static_cast<char*>(malloc(capacity)));
+  this->capacity = capacity;
+#else
+  ASSERT(capacity >= used);
+  ASSERT(ownBuffer);
+  if(capacity < this->capacity)
+  {
+    VERIFY(buffer = static_cast<char*>(realloc(buffer, capacity)));
+    this->capacity = capacity;
+  }
+#endif
+  maxCapacity = capacity;
+  this->protectedCapacity = protectedCapacity;
+}
+
+void MessageQueue::setBuffer(const char* buffer, size_t size)
+{
+  if(ownBuffer)
+    free(this->buffer);
+  this->buffer = const_cast<char*>(buffer);
+  used = size;
+  capacity = 0;
+  ownBuffer = false;
 }
 
 void MessageQueue::append(Out& stream) const
 {
-  stream.write(queue.buf, queue.usedSize);
+  stream.write(buffer, used);
 }
 
-void MessageQueue::append(In& stream)
+void MessageQueue::filter(const std::function<bool(const_iterator)>& keep)
 {
-  size_t usedSize = 0;
-  unsigned numberOfMessages;
-  stream >> *reinterpret_cast<unsigned*>(&usedSize) >> numberOfMessages;
-  usedSize |= static_cast<size_t>(numberOfMessages & 0xf0000000) << 4;
-  numberOfMessages &= 0x0fffffff;
-  if(numberOfMessages == 0x0fffffff)
-    numberOfMessages = static_cast<unsigned>(-1);
-  // Trying a direct copy. This is hacked, but fast.
-  char* dest = numberOfMessages == static_cast<unsigned>(-1) ? nullptr : queue.reserve(usedSize - MessageQueueBase::headerSize);
-  if(dest)
+  auto begin = this->begin();
+  auto end = this->end();
+  bool hadOwnBuffer = ownBuffer;
+  clear();
+  for(auto i = begin; i != end;)
   {
-    stream.read(dest - MessageQueueBase::headerSize, usedSize);
-    queue.numberOfMessages += numberOfMessages;
-    queue.usedSize += usedSize;
-    queue.writePosition = 0;
-  }
-  else // Not all messages fit in there, so try step by step (some will be missing).
-    for(unsigned i = 0; numberOfMessages == static_cast<unsigned>(-1) ? !stream.eof() : i < numberOfMessages; ++i)
+    auto message = i++;
+    if(keep(message))
     {
-      unsigned char id = 0;
-      unsigned int size = 0;
-      stream >> id;
-
-      stream.read(&size, 3);
-
-      if(id >= numOfDataMessageIDs && numberOfMessages == static_cast<unsigned>(-1))
-      {
-        OUTPUT_WARNING("MessageQueue: Log file appears to be broken. Skipping rest of file. Read messages: " << queue.numberOfMessages << " read size: " << std::to_string(queue.usedSize));
-        break;
-      }
-
-      char* dest = numberOfMessages != static_cast<unsigned>(-1) || id < numOfDataMessageIDs ? queue.reserve(size) : nullptr;
-      if(dest)
-      {
-        stream.read(dest, size);
-        out.finishMessage(MessageID(id));
-      }
+      if(message - begin == used && hadOwnBuffer)
+        used += sizeof(MessageHeader) + (*message).size();
       else
-        stream.skip(size);
-    }
-}
-
-void MessageQueue::append(In& stream, size_t size)
-{
-  stream.skip(8);
-  size_t usedSize = size - 8;
-
-  // Trying a direct copy. This is hacked, but fast.
-  char* dest = queue.reserve(usedSize - MessageQueueBase::headerSize);
-  if(dest)
-  {
-    stream.read(dest - MessageQueueBase::headerSize, usedSize);
-    queue.usedSize += usedSize;
-    queue.writePosition = 0;
-
-    // Count new messages
-    for(char* p = dest - MessageQueueBase::headerSize, * pEnd = p + usedSize; p < pEnd;
-        p += 4 + (*reinterpret_cast<unsigned*>(p) >> 8))
-      ++queue.numberOfMessages;
-  }
-  else // Not all messages fit in there, so try step by step (some will be missing).
-  {
-    size_t readSize = 0;
-    while(readSize < usedSize)
-    {
-      unsigned char id = 0;
-      unsigned int size = 0;
-      stream >> id;
-
-      stream.read(&size, 3);
-
-      char* dest = queue.reserve(size);
-      if(dest)
-      {
-        stream.read(dest, size);
-        out.finishMessage(MessageID(id));
-      }
-      else
-        stream.skip(size);
-      readSize += 4 + size;
+        *this << *message;
     }
   }
-}
-
-Out& operator<<(Out& stream, const MessageQueue& messageQueue)
-{
-  messageQueue.write(stream);
-  return stream;
-}
-
-In& operator>>(In& stream, MessageQueue& messageQueue)
-{
-  messageQueue.append(stream);
-  return stream;
-}
-
-void operator>>(InMessage& message, MessageQueue& queue)
-{
-  queue.out.bin.write(message.getData(), message.getMessageSize());
-  queue.out.finishMessage(message.getMessageID());
 }

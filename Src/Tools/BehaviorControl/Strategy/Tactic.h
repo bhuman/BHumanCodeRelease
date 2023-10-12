@@ -19,9 +19,7 @@ STREAMABLE(Tactic,
   ENUM(Type,
   {,
     none,
-    t211,
-    t121,
-    t112,
+    t123,
     t222,
   });
 
@@ -35,9 +33,11 @@ STREAMABLE(Tactic,
       defenderL,
       defenderR,
       midfielder,
+      midfielderM,
       midfielderL,
       midfielderR,
       forward,
+      forwardM,
       forwardL,
       forwardR,
     });
@@ -67,7 +67,7 @@ STREAMABLE(Tactic,
 
   STREAMABLE(PriorityGroup,
   {,
-    (std::vector<Position::Type>) positions, /** The positions in this priority group. */
+    (std::vector<Position::Type>) positions, /**< The positions in this priority group. */
     (std::vector<unsigned int>) priorities, /**< The priorities in this priority group. */
   });
 

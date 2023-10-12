@@ -19,6 +19,7 @@ public:
     playBall,
     freeKickWall,
     closestToTeammatesBall,
+    startSetPlay, /**< This role is only assigned during READY/SET to the player who has the start position of the set play. */
   });
 
   static Role::Type toRole(Type type)

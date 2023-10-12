@@ -8,15 +8,16 @@
  */
 
 #include "HeadMotionEngine.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "Math/Geometry.h"
 #include "Math/Range.h"
+#include "Math/BHMath.h"
 #include "Tools/Motion/InverseKinematic.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(HeadMotionEngine, motionControl);
+MAKE_MODULE(HeadMotionEngine);
 
 HeadMotionEngine::HeadMotionEngine()
 {
@@ -28,9 +29,10 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
 {
   DECLARE_PLOT("module:HeadMotionEngine:speed");
 
-  updateHeadAngleRequest(theHeadAngleRequest);
+  updateHeadAngleRequest(theHeadAngleRequest, lastWasLower);
 
-  headMotionGenerator.calcJoints = [this](bool setJoints, JointRequest& jointRequest, HeadMotionInfo& headMotionInfo)
+  headMotionGenerator.calcJoints = [this](bool setJoints, JointRequest& jointRequest, HeadMotionInfo& headMotionInfo,
+                                          const MotionRequest& motionRequest, const OdometryData& odometry)
   {
     if(!setJoints)
     {
@@ -39,6 +41,9 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
       lastSpeed = Vector2f::Zero();
       return;
     }
+
+    if(theHeadAngleRequest.pan != JointAngles::off)
+      theHeadAngleRequest.pan += (odometry.inverse() * motionRequest.odometryData).rotation;
 
     // Set angles directly when calibration flag is set in HeadAngleRequest
     if(theHeadAngleRequest.disableClippingAndInterpolation)
@@ -114,7 +119,7 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
   };
 }
 
-void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest) const
+void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest, bool& lastWasLower) const
 {
   Vector2a panTiltUpperCam;
   Vector2a panTiltLowerCam;
@@ -186,20 +191,24 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
   {
     if(theHeadMotionRequest.mode != HeadMotionRequest::panTiltMode)
     {
-      const Angle oldTilt = theJointRequest.stiffnessData.stiffnesses[Joints::headPitch] == 0 ? theJointAngles.angles[Joints::headPitch] : theJointRequest.angles[Joints::headPitch];
-      lowerCam = false;
-      if((panTiltUpperCam.y() > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max && std::abs(panTiltUpperCam.y() - oldTilt) > cameraChoiceHysteresis) || (std::abs(panTiltLowerCam.y() - oldTilt) < cameraChoiceHysteresis && panTiltUpperCam.y() + cameraChoiceHysteresis > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max))
+      const Angle useLowerCamThreshold = !lastWasLower ? lowerCamThreshold.min : lowerCamThreshold.max;
+      const Angle lowerCamOffset = defaultTilt - theCameraIntrinsics.cameras[CameraInfo::lower].openingAngleHeight / 3.f + theCameraCalibration.bodyRotationCorrection.y() + theCameraCalibration.cameraRotationCorrections[CameraInfo::lower].y() + useLowerCamThreshold;
+      if(panTiltUpperCam.y() > tiltBoundUpperCam.max || panTiltLowerCam.y() > lowerCamOffset)
       {
         headAngleRequest.tilt = panTiltLowerCam.y();
         lowerCam = true;
       }
+      else
+        headAngleRequest.tilt = panTiltUpperCam.y();
     }
     else
     {
       headAngleRequest.tilt = panTiltUpperCam.y();
-      lowerCam = true;
+      lowerCam = false;
     }
   }
+
+  lastWasLower = lowerCam;
 
   if(lowerCam)
     tiltBoundLowerCam.clamp(headAngleRequest.tilt);

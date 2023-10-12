@@ -47,7 +47,7 @@ bool LeastSquares::CircleFitter::fit(Vector2f& center, float& radius) const
 
   const auto sum = this->sum.col(0);   // (sum(x), sum(y))
   const auto sum2 = this->sum.col(1);  // (sum(x^2), sum(y^2))
-  const auto sum3 = this->sum.col(2);  // (sum(x^3 + x + y^2), sum(y^3 + x^2 + y))
+  const auto sum3 = this->sum.col(2);  // (sum(x^3 + x * y^2), sum(y^3 + x^2 * y))
   const float sumXY = this->sum(0, 3); // sum(xy)
   const float nInv = 1.f / static_cast<float>(count);
 

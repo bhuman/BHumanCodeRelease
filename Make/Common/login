@@ -1,0 +1,18 @@
+#!/bin/bash
+cd "$(dirname "$(which "$0")")"
+
+if [ "$1" = "-b" ]; then
+  # called from deploy dialog
+  shift
+  clear
+else
+  echo "sc Remote $1" >../../Config/Scenes/Includes/connect.con
+fi
+
+source setupSSH
+ssh ${SSHOPTIONS} nao@$*
+
+if [ $? = 255 ]; then
+  echo "Error: Cannot connect to $1" >&2
+  exit 255
+fi

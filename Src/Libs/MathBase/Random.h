@@ -66,8 +66,8 @@ namespace Random
   public:
     using result_type = unsigned int;
 
-    static unsigned int min();
-    static unsigned int max();
+    static constexpr unsigned int min() { return 0; }
+    static constexpr unsigned int max() { return static_cast<unsigned int>(-1); }
 
     unsigned int operator()() const;
     void discard(unsigned long long z) const;

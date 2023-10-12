@@ -20,7 +20,10 @@ public:
   /**
    * @param fullName The path to this object in the scene graph
    */
-  DotViewObject(const QString& fullName) : fullName(fullName), icon(":/Icons/tag_green.png") {}
+  DotViewObject(const QString& fullName) : fullName(fullName), icon(":/Icons/icons8-parallel-workflow-50.png")
+  {
+    icon.setIsMask(true);
+  }
 
 protected:
   /**
@@ -37,7 +40,7 @@ protected:
 
 private:
   const QString fullName; /**< The path name to this object in the scene graph */
-  const QIcon icon; /**< The icon used to list this view in the scene graph */
+  QIcon icon; /**< The icon used to list this view in the scene graph */
 
   /**
    * The method returns a new instance of a widget for this view.
@@ -91,7 +94,7 @@ private:
 
   /**
    * Returns this widget casted to a QWidget
-   * @return Teh widget
+   * @return The widget
    */
   QWidget* getWidget() override { return this; }
 

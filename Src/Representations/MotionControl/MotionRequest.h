@@ -99,6 +99,7 @@ STREAMABLE(MotionRequest,
   (ObstacleAvoidance) obstacleAvoidance, /**< Information about which obstacles there are to avoid (only used if type is walkTo* or dribble). */
   (std::optional<Vector2f>) targetOfInterest, /**< If filled, the first entry is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. */
   (bool)(false) forceSideWalking, /**< If set, the robot is forced to side walk. */
+  (bool)(false) shouldInterceptBall, /**< If the ball should be intercepted. */
 
   (Angle)(0_deg) targetDirection, /**< The target direction of the ball (only used if type is walkToBallAndKick or dribble). */
   (Rangea) directionPrecision, /**< The min and max target direction difference of the ball (only used if type is walkToBallAndKick or dribble). */
@@ -107,6 +108,7 @@ STREAMABLE(MotionRequest,
   (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
   (bool)(true) preStepAllowed, /**< Is the InWalkKick allowed to have a preStep? */
   (bool)(true) turnKickAllowed, /**< Can the forward InWalkKick be executed with rotation? */
+  (bool)(false) shiftTurnKickPose, /**< Should the turn kick be shifted? */
 
   (Dive::Request)(Dive::prepare) diveRequest, /**< The specific requested diving motion (only used if type is dive). */
   (Special::Request)(Special::demoBannerWave) specialRequest, /**< The specific requested special motion (only used if type is special). */

@@ -5,7 +5,7 @@
 * a penalty mark and the line of the penalty area that is
 * closest to it (the line between penalty mark and the field's
 * center line) in the current field percepts. This is the combination
-* that this modul is looking for:
+* that this module is looking for:
 *
 *                  (goal)
 *-----------------------------------------
@@ -36,6 +36,7 @@ void PenaltyMarkWithPenaltyAreaLinePerceptor::update(PenaltyMarkWithPenaltyAreaL
   if(thePenaltyMarkPercept.wasSeen)
   {
     penaltyMarkPosition = thePenaltyMarkPercept.positionOnField;
+    penaltyMarkCovariance = thePenaltyMarkPercept.covarianceOnField;
     timeWhenPenaltyMarkLastSeen = theFrameInfo.time;
   }
   // If there is no new penalty mark, try to update the buffered one by odometry:
@@ -51,10 +52,7 @@ void PenaltyMarkWithPenaltyAreaLinePerceptor::update(PenaltyMarkWithPenaltyAreaL
   }
   // There seems to be a penalty mark available, so let's find the corresponding line:
   if(findMatchingLine())
-  {
-    computePose(penaltyMarkWithPenaltyAreaLine);
-    penaltyMarkWithPenaltyAreaLine.isValid = true;
-  }
+    computeFeature(penaltyMarkWithPenaltyAreaLine);
 }
 
 bool PenaltyMarkWithPenaltyAreaLinePerceptor::findMatchingLine()
@@ -76,20 +74,42 @@ bool PenaltyMarkWithPenaltyAreaLinePerceptor::findMatchingLine()
     {
       lineStart = line.first;
       lineEnd = line.last;
+      lineCov = line.cov;
       return true;
     }
   }
   return false;
 }
 
-void PenaltyMarkWithPenaltyAreaLinePerceptor::computePose(PenaltyMarkWithPenaltyAreaLine& penaltyMarkWithPenaltyAreaLine)
+void PenaltyMarkWithPenaltyAreaLinePerceptor::computeFeature(PenaltyMarkWithPenaltyAreaLine& penaltyMarkWithPenaltyAreaLine)
 {
+  // Determine the pose:
   Vector2f lineDirection = lineEnd - lineStart;
   lineDirection.normalize();
   const Vector2f projectedMark = Geometry::getOrthogonalProjectionOfPointOnLine(lineStart, lineDirection, penaltyMarkPosition);
   const Vector2f directionToMark = penaltyMarkPosition - projectedMark;
   Pose2f perceivedPose(directionToMark.angle(), projectedMark);
   penaltyMarkWithPenaltyAreaLine = perceivedPose;
+  // Compute covariance:
+  Pose2f computedRobotPose;
+  penaltyMarkWithPenaltyAreaLine.isValid = true;
+  if(penaltyMarkWithPenaltyAreaLine.pickMorePlausiblePose(theWorldModelPrediction.robotPose, computedRobotPose))
+  {
+    const float c = std::cos(computedRobotPose.rotation);
+    const float s = std::sin(computedRobotPose.rotation);
+    const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
+    const Matrix2f covXR = angleRotationMatrix * lineCov * angleRotationMatrix.transpose();
+    const Matrix2f covY = angleRotationMatrix * penaltyMarkCovariance * angleRotationMatrix.transpose();
+    const float xVariance = covXR(0, 0); // Depends on line
+    const float yVariance = covY(1, 1);  // Depends on penalty mark
+    const float sqrLineLength = (lineEnd - lineStart).squaredNorm();
+    const float angleVariance = sqr(std::atan(std::sqrt (4.f * xVariance / sqrLineLength)));
+    penaltyMarkWithPenaltyAreaLine.covOfAbsoluteRobotPose << xVariance, 0.f, 0.f, 0.f, yVariance, 0.f, 0.f, 0.f, angleVariance;
+  }
+  else
+  {
+    penaltyMarkWithPenaltyAreaLine.isValid = false;
+  }
 }
 
-MAKE_MODULE(PenaltyMarkWithPenaltyAreaLinePerceptor, perception);
+MAKE_MODULE(PenaltyMarkWithPenaltyAreaLinePerceptor);

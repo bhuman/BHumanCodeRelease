@@ -7,7 +7,6 @@
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 
@@ -15,7 +14,6 @@ SKILL_IMPLEMENTATION(PointAtImpl,
 {,
   IMPLEMENTS(PointAt),
   IMPLEMENTS(PointAtWithArm),
-  REQUIRES(LibCheck),
   MODIFIES(ArmMotionRequest),
 });
 

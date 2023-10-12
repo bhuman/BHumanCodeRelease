@@ -10,7 +10,7 @@
 #include "SimulatedNao/RobotConsole.h"
 #include "PropertyEditorFactory.h"
 #include <QMenu>
-#include <QtTreePropertyBrowser>
+#include <qttreepropertybrowser.h>
 
 class DataWidget : public QtTreePropertyBrowser, public SimRobot::Widget
 {
@@ -40,11 +40,14 @@ public:
    */
   void setRootProperty(QtProperty* pRootProperty);
 
-  void setUnchangedButtonEnabled(bool value);
+  /** Enables or disables the "Set" menu item. */
+  void setSetEnabled(bool value);
 
-  void setSetButtonEnabled(bool value);
+  /** Enables of disables the "Unchanged/Reset" menu item. */
+  void setUnchangedEnabled(bool value);
 
-  bool isSetButtonEnabled() const;
+  /** Returns, whether the "Unchanged/Reset" menu item is enabled. */
+  bool isUnchangedEnabled() const;
 
 protected:
   void itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* precedingItem) override;
@@ -68,4 +71,7 @@ private slots:
   void unchangedPressed();
 
   void valueChanged(QtProperty*, const QVariant&);
+
+  void collapsed(QtBrowserItem *item);
+  void expanded(QtBrowserItem *item);
 };

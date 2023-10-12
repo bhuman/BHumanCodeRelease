@@ -16,5 +16,6 @@
 
 STREAMABLE(KickGenerator,
 {
-  FUNCTION(std::unique_ptr<MotionPhase>(const KickRequest&, const MotionPhase&)) createPhase, /**< Creates a phase for the given motion request. */
+  FUNCTION(std::unique_ptr<MotionPhase>(const KickRequest&, const MotionPhase&)) createPhase; /**< Creates a phase for the given motion request. */
+  FUNCTION(bool(const MotionPhase&)) wasLeftPhase, /**< Returns whether the kick was a left kick. */
 });

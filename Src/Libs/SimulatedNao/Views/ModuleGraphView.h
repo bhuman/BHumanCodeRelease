@@ -8,8 +8,6 @@
 #pragma once
 
 #include "DotView.h"
-#include "Framework/Module.h"
-
 #include <string>
 
 class RobotConsole;
@@ -23,23 +21,14 @@ public:
   /**
    * @param fullName The path to this view in the scene graph
    * @param console The console object.
-   * @param category The category of the modules of this view. If numOfCategories, show all categories.
+   * @param threadName The thread of the modules shown in this view..
    */
-  ModuleGraphViewObject(const QString& fullName, RobotConsole& console,
-                        std::unordered_set<ModuleBase::Category> categories = {static_cast<ModuleBase::Category>(ModuleBase::numOfCategories)});
+  ModuleGraphViewObject(const QString& fullName, RobotConsole& console, const std::string& threadName);
 
 private:
   RobotConsole& console; /**< A reference to the console object. */
-  std::string threadIdentifier; /**< The name of the view. */
-  std::unordered_set<ModuleBase::Category> categories; /**< The category of the modules of this view. If numOfCategories, show all categories. */
+  std::string threadName; /**<The thread of the modules shown in this view. */
   unsigned lastModulInfoTimestamp = 0; /**< Module Info timestamp when the image was created. */
-
-  /**
-   * The method replaces all ' ' by '_'.
-   * @param s The input string.
-   * @return The string in which spaces were replaced.
-   */
-  std::string compress(const std::string& s) const;
 
   /**
    * Checks whether the content that will be returned from a \c generateDotFileContent call has changed

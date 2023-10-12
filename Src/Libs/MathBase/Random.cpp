@@ -13,9 +13,6 @@ std::mt19937& Random::getGenerator()
 #else
 #include <immintrin.h>
 
-unsigned int Random::HardwareGenerator::min() { return 0; }
-unsigned int Random::HardwareGenerator::max() { return static_cast<unsigned int>(-1); }
-
 unsigned int Random::HardwareGenerator::operator()() const
 {
   unsigned int value;

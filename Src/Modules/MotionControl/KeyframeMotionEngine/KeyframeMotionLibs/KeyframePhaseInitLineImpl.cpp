@@ -11,7 +11,7 @@
 
 void KeyframePhaseBase::selectMotionToBeExecuted()
 {
-  // Make sure both are resetted after a breakUp
+  // Make sure both are reset after a breakUp
   currentMotionBlock.clear();
   currentKeyframe = Keyframe();
   // Follow up motion

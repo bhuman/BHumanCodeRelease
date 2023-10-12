@@ -5,8 +5,23 @@
 
 #include "AnnotationInfo.h"
 #include "Platform/Time.h"
-#include "Streaming/InMessage.h"
 #include <algorithm>
+
+void AnnotationInfo::AnnotationData::read(MessageQueue::Message message)
+{
+  auto stream = message.bin();
+  stream >> annotationNumber;
+  if(!(annotationNumber & 0x80000000))
+    stream >> frame; // Compatibility with old annotations
+  const size_t size = stream.getSize() - stream.getPosition();
+  std::string text;
+  text.resize(size);
+  stream.read(text.data(), size);
+  InTextMemory textStream(text.data(), size);
+  textStream >> name;
+  annotation = textStream.readAll();
+  annotationNumber &= ~0x80000000;
+}
 
 void AnnotationInfo::clear()
 {
@@ -16,20 +31,14 @@ void AnnotationInfo::clear()
   newAnnotations.back().name = "CLEAR";
 }
 
-void AnnotationInfo::addMessage(InMessage& message, unsigned currentFrame)
+void AnnotationInfo::addMessage(MessageQueue::Message message, unsigned currentFrame)
 {
   SYNC;
   timeOfLastMessage = Time::getCurrentSystemTime();
   newAnnotations.emplace_back();
   AnnotationData& data = newAnnotations.back();
-
-  message.bin >> data.annotationNumber;
-  if(!(data.annotationNumber & 0x80000000))
-    message.bin >> data.frame; // Compatibility with old annotations
-  data.annotationNumber &= ~0x80000000;
+  data.read(message);
   data.frame = currentFrame;
-  message.text >> data.name;
-  data.annotation = message.text.readAll();
 
   for(auto* listener : listeners)
     listener->handleAnnotation(data);

@@ -22,13 +22,13 @@
     }
   }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>6CB6A083-C568-4490-A07A-8CA25CAABC35</string>
+	<string>B-Human_state</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Normal state in a Cabsl option.</string>
+	<string>B-Human: Normal state in a CABSL option.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Cabsl state</string>
+	<string>CABSL State</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

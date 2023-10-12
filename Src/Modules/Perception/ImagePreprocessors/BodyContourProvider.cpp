@@ -79,4 +79,4 @@ bool BodyContourProvider::calculatePointInImage(const Vector3f& pointInWorld, Ve
     return false;
 }
 
-MAKE_MODULE(BodyContourProvider, perception);
+MAKE_MODULE(BodyContourProvider);

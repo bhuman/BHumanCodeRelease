@@ -5,9 +5,7 @@
  */
 
 #include "PenaltyMarkPercept.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Debugging/DebugDrawings.h"
-#include "Framework/Blackboard.h"
 
 void PenaltyMarkPercept::draw() const
 {
@@ -18,5 +16,14 @@ void PenaltyMarkPercept::draw() const
   {
     CROSS("representation:PenaltyMarkPercept:image", positionInImage.x(), positionInImage.y(), 5, 5, Drawings::solidPen, ColorRGBA::blue);
     CROSS("representation:PenaltyMarkPercept:field", positionOnField.x(), positionOnField.y(), 40, 40, Drawings::solidPen, ColorRGBA::blue);
+  }
+}
+
+void PenaltyMarkPercept::verify() const
+{
+  if(wasSeen)
+  {
+    ASSERT(std::isfinite(positionOnField.x()));
+    ASSERT(std::isfinite(positionOnField.y()));
   }
 }

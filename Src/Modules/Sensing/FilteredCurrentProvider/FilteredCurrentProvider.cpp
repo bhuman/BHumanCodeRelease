@@ -5,18 +5,16 @@
  */
 
 #include "FilteredCurrentProvider.h"
+#include "Debugging/Plot.h"
 #include <cmath>
 
-MAKE_MODULE(FilteredCurrentProvider, sensing);
+MAKE_MODULE(FilteredCurrentProvider);
 
 FilteredCurrentProvider::FilteredCurrentProvider()
 {
   currents.resize(Joints::numOfJoints);
   flags.resize(Joints::numOfJoints);
   fill(flags.begin(), flags.end(), 0);
-  checkTimestamp = 0;
-  soundTimestamp = 0;
-  annotationTimestamp = 0;
 }
 
 void FilteredCurrentProvider::update(FilteredCurrent& theFilteredCurrent)
@@ -87,29 +85,56 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
       else
         flags[i] = std::max(flags[i] - 1, 0); // subtract by 1 is better than setting to 0, in case we did a check at a bad time, where the deactivated joint had a correct position
     }
-    for(size_t i = 0; i < flags.size(); i++)
+
+    // In a very rare case it can happen that the upper body has no stiffness and no sensor data.
+    // This part checks for this situations if it happens at the very beginning of the robot usage
+    if(theFrameInfo.getTimeSince(soundTimestamp) >= motorMalfunctionTime)
     {
-      // Are enough possible motor malfunction detected?
-      if(flags[i] >= flagsThreshold)
+      int sum = 0;
+      const Rangea zeroCheck(-zeroCheckRange, zeroCheckRange);
+      for(Joints::Joint joint : specialMotorCheck)
+        sum += flags[0] > flagsThreshold && zeroCheck.isInside(theJointSensorData.angles[joint]) ? 1 : 0;
+      if(sum > 1)
       {
-        if(theFrameInfo.getTimeSince(soundTimestamp) >= motorMalfunctionTime)
+        soundTimestamp = theFrameInfo.time;
+        SystemCall::playSound("sirene.wav", true);
+        SystemCall::say("Motor malfunction! Upper boddy!", true);
+        SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.color())) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
+        OUTPUT_TEXT("hee" << " " << theFrameInfo.time);
+      }
+    }
+
+    if(theFrameInfo.getTimeSince(soundTimestamp) >= motorMalfunctionTime)
+    {
+      bool playedSound = false;
+      for(size_t i = flags.size() - 1; i > 0; i--) // reverse, first check legs, then arms, then head
+      {
+        // Are enough possible motor malfunction detected?
+        if(flags[i] >= flagsThreshold)
         {
           flags[i] = 0;
-          soundTimestamp = theFrameInfo.time;
           bool isUninteresstingJoint = false;
-          //Ignore specific joints
+          // Ignore specific joints
           for(size_t j = 0; j < ignoreJoints.size(); j++)
             isUninteresstingJoint = isUninteresstingJoint || i == ignoreJoints[j];
           if(isUninteresstingJoint)
             continue;
-          //arms shall not play motorMalFunction
-          if(i >= Joints::firstArmJoint && i < Joints::firstLegJoint)
-            SystemCall::say(std::string("Arm damaged").c_str()); //probably only playing while doing get ups
+
+          soundTimestamp = theFrameInfo.time;
+          if(!playedSound && i >= Joints::firstArmJoint && i < Joints::firstLegJoint && (theMotionInfo.isMotion(MotionPhase::walk) || theMotionInfo.isMotion(MotionPhase::stand)))
+          {
+            SystemCall::say(std::string("Arms motor malfunction").c_str());
+            playedSound = true;
+          }
           else
           {
-            SystemCall::playSound("sirene.wav", true);
-            SystemCall::say("Motor malfunction!", true);
-            SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.ownTeam.color)) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
+            if(!playedSound)
+            {
+              SystemCall::playSound("sirene.wav", true);
+              SystemCall::say("Motor malfunction!", true);
+              SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.color())) + " " + std::to_string(theGameState.playerNumber) + " " + TypeRegistry::getEnumName(Joints::Joint(i))).c_str(), true);
+            }
+            playedSound = true;
             if(!theGyroOffset.bodyDisconnect)
               theFilteredCurrent.legMotorMalfunction = true;
           }
@@ -119,7 +144,7 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
             ANNOTATION("FilteredCurrentProvider", TypeRegistry::getEnumName((static_cast<Joints::Joint>(i))));
           }
         }
-        return;
+        continue;
       }
     }
   }

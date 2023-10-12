@@ -13,13 +13,14 @@
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
 #include "Debugging/Annotation.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugImages.h"
+#include "Debugging/Plot.h"
 #include "Math/BHMath.h"
 #include <algorithm>
 #include <limits>
 #include <type_traits>
 
-MAKE_MODULE(WhistleRecognizer, modeling);
+MAKE_MODULE(WhistleRecognizer);
 
 static DECLARE_SYNC;
 

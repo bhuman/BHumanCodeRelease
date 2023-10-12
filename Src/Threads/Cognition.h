@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include "Framework/FrameExecutionUnit.h"
+#include "Tools/Framework/BHExecutionUnit.h"
 
 /**
  * @class Cognition
  *
  * The execution unit for the cognition thread.
  */
-class Cognition : public FrameExecutionUnit
+class Cognition : public BHExecutionUnit
 {
 private:
   unsigned lastUpperFrameTime = 0; /**< The last timestamp received from the upper camera thread. */

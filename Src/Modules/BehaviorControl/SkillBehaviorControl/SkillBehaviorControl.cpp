@@ -10,11 +10,11 @@
 #include "Streaming/TypeRegistry.h"
 #include <string>
 
-MAKE_MODULE(SkillBehaviorControl, behaviorControl, SkillBehaviorControl::getExtModuleInfo);
+MAKE_MODULE(SkillBehaviorControl, SkillBehaviorControl::getExtModuleInfo);
 
 SkillBehaviorControl::SkillBehaviorControl() :
   Cabsl<SkillBehaviorControl>(const_cast<ActivationGraph*>(&theActivationGraph)),
-  theSkillRegistry("skills.cfg", const_cast<ActivationGraph&>(theActivationGraph), theArmMotionRequest, theBehaviorStatus, theCalibrationRequest, theHeadMotionRequest, theMotionRequest)
+  theSkillRegistry("skills.cfg", const_cast<ActivationGraph&>(theActivationGraph), theArmMotionRequest, theBehaviorStatus, theCalibrationRequest, theHeadMotionRequest, theMotionRequest, theOptionalImageRequest)
 {}
 
 std::vector<ModuleBase::Info> SkillBehaviorControl::getExtModuleInfo()
@@ -26,12 +26,14 @@ std::vector<ModuleBase::Info> SkillBehaviorControl::getExtModuleInfo()
 
 void SkillBehaviorControl::update(ActivationGraph&)
 {
-  theBehaviorStatus.activity = BehaviorStatus::unknown;
+  DECLARE_DEBUG_RESPONSE("option:HandleRefereeSignal:now");
+
+  theBehaviorStatus.calibrationFinished = false;
   theBehaviorStatus.passTarget = -1;
   theBehaviorStatus.passOrigin = -1;
   theBehaviorStatus.walkingTo = Vector2f::Zero();
   theBehaviorStatus.speed = 0.f;
-  theBehaviorStatus.shootingTo = Vector2f::Zero();
+  theBehaviorStatus.shootingTo.reset();
 
   theArmMotionRequest.armMotion[Arms::left] = ArmMotionRequest::none;
   theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::none;
@@ -43,10 +45,14 @@ void SkillBehaviorControl::update(ActivationGraph&)
   theHeadMotionRequest.speed = 150_deg;
   theHeadMotionRequest.stopAndGoMode = false;
 
+  theMotionRequest.shouldInterceptBall = false;
   theMotionRequest.odometryData = theOdometryData;
   theMotionRequest.ballEstimate = theBallModel.estimate;
   theMotionRequest.ballEstimateTimestamp = theFrameInfo.time;
   theMotionRequest.ballTimeWhenLastSeen = theBallModel.timeWhenLastSeen;
+  theMotionRequest.shouldInterceptBall = useNewHandleCatchBallBehavior && theFieldBall.interceptBall;
+
+  theOptionalImageRequest.sendImage = false;
 
   // On request, tell the user whether a USB drive is mounted.
   if(theEnhancedKeyStates.hitStreak[KeyStates::headMiddle] == 3)
@@ -60,16 +66,34 @@ void SkillBehaviorControl::update(ActivationGraph&)
   // On request, tell the user the temperature of the hottest joint.
   if((theEnhancedKeyStates.hitStreak[KeyStates::headRear] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > 0) ||
      (theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headRear] > 0))
-    SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.ownTeam.color)) + " " + std::to_string(theGameState.playerNumber) + " " +
+    SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.color())) + " " + std::to_string(theGameState.playerNumber) + " " +
                      std::regex_replace(TypeRegistry::getEnumName(theRobotHealth.jointWithMaxTemperature), std::regex("([A-Z])"), " $1") + " " +
                      std::to_string(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature])).c_str(), true);
+  else if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 3)
+  {
+    // On request, tell the user the deployed configuration of this robot.
+    std::string wavName = Global::getSettings().headName.c_str();
+    wavName.append(".wav");
+    SystemCall::playSound(wavName.c_str());
+    SystemCall::say(("is wearing a " +
+                     std::string(TypeRegistry::getEnumName(theGameState.color())) +
+                     " jersey with the number " +
+                     std::to_string(theGameState.playerNumber) +
+                     ". It is deployed in " +
+                     std::string(TypeRegistry::getEnumName(theRobotHealth.configuration)) +
+                     " for the " +
+                     theRobotHealth.scenario +
+                     " scenario at the " +
+                     theRobotHealth.location +
+                     " location.").c_str(), true, 0.9f);
+  }
 
   theSkillRegistry.modifyAllParameters();
 
   theSkillRegistry.preProcess(theFrameInfo.time);
   beginFrame(theFrameInfo.time);
 
-  select_option(options);
+  PlaySoccer();
 
   endFrame();
   theSkillRegistry.postProcess();
@@ -114,34 +138,37 @@ void SkillBehaviorControl::executeRequest()
         break;
       case SkillRequest::walk:
       {
-        const Pose2f targetPose = theRobotPose.inversePose * theSkillRequest.target;
-        if(theFieldBall.ballWasSeen(7000) || theTeammatesBallModel.isValid)
+        const Pose2f targetPose = theRobotPose.inverse() * theSkillRequest.target;
+        if((theFieldBall.ballWasSeen(7000) || theTeammatesBallModel.isValid) && theFieldBall.isBallPositionConsistentWithGameState())
         {
-          theWalkToPointObstacleSkill({ .target = theRobotPose.inversePose * theSkillRequest.target,
-                                        .rough = theGameState.isGoalkeeper(),
-                                        .disableObstacleAvoidance = theGameState.isGoalkeeper(),
-                                        .targetOfInterest = theFieldBall.recentBallPositionRelative() }); // TODO: set the right parameters and occasionally use WalkPotentialField
-          theLookAtBallAndTargetSkill({ .startTarget = true,
-                                        .walkingDirection = targetPose.translation,
-                                        .ballPositionAngle = theFieldBall.recentBallPositionRelative().angle() });
+          theWalkToPointObstacleSkill({.target = theRobotPose.inverse() * theSkillRequest.target,
+                                       .rough = theGameState.isGoalkeeper(),
+                                       .disableObstacleAvoidance = theGameState.isGoalkeeper(),
+                                       .targetOfInterest = theFieldBall.recentBallPositionRelative()}); // TODO: set the right parameters and occasionally use WalkPotentialField
+          if(theMotionInfo.isMotion(MotionPhase::stand))
+            theLookActiveSkill({.withBall = true});
+          else
+            theLookAtBallAndTargetSkill({.startTarget = false,
+                                         .walkingDirection = targetPose.translation,
+                                         .ballPositionAngle = theFieldBall.recentBallPositionRelative().angle()});
         }
         else
         {
-          theWalkToPointObstacleSkill({ .target = theRobotPose.inversePose * theSkillRequest.target,
-                                        .rough = theGameState.isGoalkeeper(),
-                                        .disableObstacleAvoidance = theGameState.isGoalkeeper() }); // TODO: set the right parameters and occasionally use WalkPotentialField
-          theLookActiveSkill({ .withBall = true });
+          theWalkToPointObstacleSkill({.target = theRobotPose.inverse() * theSkillRequest.target,
+                                       .rough = theGameState.isGoalkeeper(),
+                                       .disableObstacleAvoidance = theGameState.isGoalkeeper()}); // TODO: set the right parameters and occasionally use WalkPotentialField
+          theLookActiveSkill({.withBall = true});
         }
         break;
       }
       case SkillRequest::block:
-        theBlockSkill({.target = theRobotPose.inversePose * theSkillRequest.target.translation});
+        theBlockSkill({.target = theRobotPose.inverse() * theSkillRequest.target.translation});
         break;
       case SkillRequest::mark:
-        theMarkSkill({.target = theRobotPose.inversePose * theSkillRequest.target.translation});
+        theMarkSkill({.target = theRobotPose.inverse() * theSkillRequest.target.translation});
         break;
       case SkillRequest::observe:
-        theObservePointSkill({.target = theRobotPose.inversePose * theSkillRequest.target.translation});
+        theObservePointSkill({.target = theRobotPose.inverse() * theSkillRequest.target.translation});
         break;
       default:
         FAIL("Unknown skill request.");

@@ -3,11 +3,12 @@
  *
  * This file implements an implementation of the DemoWave skill.
  *
- * @author Arne Hasselbring
+ * @author Arne Hasselbring, Sina Schreiber
  */
 
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
 
 SKILL_IMPLEMENTATION(DemoWaveImpl,
@@ -15,8 +16,10 @@ SKILL_IMPLEMENTATION(DemoWaveImpl,
   IMPLEMENTS(DemoWave),
   CALLS(LookAtAngles),
   CALLS(LookForward),
-  CALLS(Special),
+  CALLS(KeyFrameSingleArm),
+  CALLS(KeyFrameArms),
   CALLS(Stand),
+  REQUIRES(ArmMotionInfo),
   REQUIRES(EnhancedKeyStates),
 });
 
@@ -31,7 +34,7 @@ class DemoWaveImpl : public DemoWaveImplBase
         if(theEnhancedKeyStates.hitStreak[KeyStates::headRear] == 1)
           goto setup;
         else if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 1 || state_time > 10000)
-          goto startWaving;
+          goto wavingRightArm;
       }
       action
       {
@@ -40,22 +43,54 @@ class DemoWaveImpl : public DemoWaveImplBase
         theStandSkill({.high = true});
       }
     }
-
-    state(startWaving)
+    state(wavingRightArm)
     {
       transition
       {
-        if(theSpecialSkill.isDone())
-          goto waving;
+        if(theArmMotionInfo.armMotion[Arms::left] == ArmMotionRequest::keyFrame
+           && theArmMotionInfo.armKeyFrameRequest.arms[Arms::left].motion == ArmKeyFrameRequest::ArmKeyFrameId::wavingInitial
+           && theArmMotionInfo.isFinished[Arms::left]
+           && theArmMotionInfo.armMotion[Arms::right] == ArmMotionRequest::keyFrame
+           && theArmMotionInfo.armKeyFrameRequest.arms[Arms::right].motion == ArmKeyFrameRequest::ArmKeyFrameId::waving1
+           && theArmMotionInfo.isFinished[Arms::right]
+          )
+        {
+          goto wavingLeftArm;
+        }
       }
       action
       {
         theLookForwardSkill();
-        theSpecialSkill({.request = MotionRequest::Special::demoBannerWave});
+        theStandSkill({.high = true });
+        theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::wavingInitial, .arm = Arms::left});
+        theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::waving1, .arm = Arms::right});
       }
     }
+    state(wavingLeftArm)
+    {
+      transition
+      {
+        if(theArmMotionInfo.armMotion[Arms::right] == ArmMotionRequest::keyFrame
+           && theArmMotionInfo.armKeyFrameRequest.arms[Arms::right].motion == ArmKeyFrameRequest::ArmKeyFrameId::wavingInitial
+           && theArmMotionInfo.isFinished[Arms::right]
+           && theArmMotionInfo.armMotion[Arms::left] == ArmMotionRequest::keyFrame
+           && theArmMotionInfo.armKeyFrameRequest.arms[Arms::left].motion == ArmKeyFrameRequest::ArmKeyFrameId::waving1
+           && theArmMotionInfo.isFinished[Arms::left]
+          )
+        {
+          goto waiting;
+        }
+      }
+        action
+      {
+        theLookForwardSkill();
+        theStandSkill({.high = true });
+        theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::wavingInitial, .arm = Arms::right});
+        theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::waving1, .arm = Arms::left});
+     }
+    }
 
-    state(waving)
+    state(initializeWaving)
     {
       transition
       {
@@ -74,13 +109,17 @@ class DemoWaveImpl : public DemoWaveImplBase
     {
       transition
       {
-        if(state_time > 21000)
+        if(state_time > 1000)
           goto initial;
         else if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 1)
-          goto startWaving;
+          goto wavingRightArm;
       }
       action
       {
+        if(state_time == 0)
+        {
+          theKeyFrameArmsSkill({.motion = ArmKeyFrameRequest::ArmKeyFrameId::useDefault});
+        }
         theLookAtAnglesSkill({.pan = 0.f,
                               .tilt = 0_deg});
         theStandSkill({.high = true});
@@ -92,12 +131,13 @@ class DemoWaveImpl : public DemoWaveImplBase
       transition
       {
         if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 1)
-          goto waving;
+          goto initializeWaving;
       }
       action
       {
         theLookForwardSkill();
-        theSpecialSkill({.request = MotionRequest::Special::demoBannerWaveInitial});
+        theStandSkill({.high = true });
+        theKeyFrameArmsSkill({.motion = ArmKeyFrameRequest::wavingInitial});
       }
     }
   }

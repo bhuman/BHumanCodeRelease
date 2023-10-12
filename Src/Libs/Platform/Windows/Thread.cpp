@@ -4,12 +4,12 @@
 
 thread_local Thread* Thread::instance = nullptr;
 
-void Thread::stop()
+void Thread::stop(unsigned timeout)
 {
   running = false;
   if(thread && thread->joinable())
   {
-    if(!terminated.wait(10000))
+    if(!terminated.wait(timeout))
       TerminateThread(thread->native_handle(), 0);
     thread->join();
     delete thread;

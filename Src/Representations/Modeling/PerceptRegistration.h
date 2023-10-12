@@ -23,6 +23,7 @@ STREAMABLE(RegisteredAbsolutePoseMeasurement,
 {,
   (Pose2f) perceivedRelativePose,  /**< The relative pose of the perceived landmark (relative to the robot) */
   (Pose2f) absolutePoseOnField,    /**< The compute absolute pose of the robot on the field (in global coordinates) */
+  (Matrix3f) covariance,           /**< The covariance of the pose measurement */
 });
 
 /**
@@ -58,15 +59,18 @@ STREAMABLE(RegisteredLine,
                  const Vector2f& modelStart, const Vector2f& modelEnd,
                  const Matrix2f& covariance, bool partOfCenterCircle = false),
 
-  (Vector2f)(Vector2f::Zero())  perceptStart,        /**< The position of the start of the perceived line (relative to the robot) */
-  (Vector2f)(Vector2f::Zero())  perceptEnd,          /**< The position of the end of the perceived line (relative to the robot) */
-  (Vector2f)(Vector2f::Zero())  perceptDirection,    /**< The direction vector of the line relative to the robot (= perceptEnd - perceptStart) */
-  (Vector2f)(Vector2f::Zero())  perceptCenter,       /**< The point in the middle between perceptStart and perceptEnd */
-  (Matrix2f)(Matrix2f::Identity()) covPerceptCenter, /**< The covariance of the line measurement, computed w.r.t. perceptCenter */
-  (Vector2f)(Vector2f::Zero())  modelStart,          /**< The position of the start of the original line (in global coordinates) */
-  (Vector2f)(Vector2f::Zero())  modelEnd,            /**< The position of the end of the original line (in global coordinates) */
-  (bool)(false) parallelToWorldModelXAxis,           /**< true, if the original line is parallel to the x-axis of the robot's global coordinate system */
-  (bool)(false) partOfCenterCircle,                  /**< true, if the original line is a segment of the center circle (used for drawing) */
+  (Vector2f)(Vector2f::Zero())     perceptStart,         /**< The position of the start of the perceived line (relative to the robot) */
+  (Vector2f)(Vector2f::Zero())     perceptEnd,           /**< The position of the end of the perceived line (relative to the robot) */
+  (Vector2f)(Vector2f::Zero())     perceptDirection,     /**< The direction vector of the line relative to the robot (= perceptEnd - perceptStart) */
+  (Vector2f)(Vector2f::Zero())     perceptCenter,        /**< The point in the middle between perceptStart and perceptEnd */
+  (Vector2f)(Vector2f::Zero())     orthogonalProjection, /**< Projection of own position on line, needed by UKF */
+  (Matrix2f)(Matrix2f::Identity()) covPerceptCenter,     /**< The covariance of the line measurement, computed w.r.t. perceptCenter */
+  (Vector2f)(Vector2f::Zero())     modelStart,           /**< The position of the start of the original line (in global coordinates) */
+  (Vector2f)(Vector2f::Zero())     modelEnd,             /**< The position of the end of the original line (in global coordinates) */
+  (float) measuredAngle,                                 /**< The measured angle of the line, used by UKF */
+  (float) measuredAngleAlternative,                      /**< The alternative angle (-180 deg) to measured angle, used by UKF */
+  (bool)(false) parallelToWorldModelXAxis,               /**< true, if the original line is parallel to the x-axis of the robot's global coordinate system */
+  (bool)(false) partOfCenterCircle,                      /**< true, if the original line is a segment of the center circle (used for drawing) */
 });
 
 /**

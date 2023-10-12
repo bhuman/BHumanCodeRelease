@@ -11,7 +11,7 @@
 #include "Platform/Thread.h"
 #include <type_traits>
 
-MAKE_MODULE(AudioProvider, infrastructure);
+MAKE_MODULE(AudioProvider);
 
 #ifdef TARGET_ROBOT
 
@@ -69,15 +69,28 @@ void AudioProvider::update(AudioData& audioData)
   }
 
   audioData.samples.resize(frames * channels);
-  int status = static_cast<int>(snd_pcm_readi(handle, audioData.samples.data(), frames));
-  if(status < 0)
+  unsigned captured = 0;
+  for(;;)
   {
-    OUTPUT_WARNING("Lost audio stream (" << status << "), recovering...");
-    snd_pcm_recover(handle, status, 1);
-    ASSERT(channels <= 4);
-    AudioData::Sample buf[4];
-    VERIFY(snd_pcm_readi(handle, buf, 1) >= 0);
-    audioData.samples.clear();
+    const unsigned available = std::min(static_cast<unsigned>(snd_pcm_avail(handle)), frames - captured);
+    if(available > 0)
+    {
+      const int status = static_cast<int>(snd_pcm_readi(handle, audioData.samples.data() + captured * channels, available));
+      if(status < 0)
+      {
+        OUTPUT_WARNING("Lost audio stream (" << status << "), recovering...");
+        snd_pcm_recover(handle, status, 1);
+        ASSERT(channels <= 4);
+        AudioData::Sample buf[4];
+        VERIFY(snd_pcm_readi(handle, buf, 1) >= 0);
+        audioData.samples.clear();
+        break;
+      }
+      captured += available;
+      if(captured == frames)
+        break;
+    }
+    Thread::sleep(1 + (frames - captured) * 1000 / sampleRate);
   }
 
   // Set timestamp after recording to keep semantics of previous approach.

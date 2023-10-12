@@ -15,21 +15,34 @@
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Math/Rotation.h"
-#include "Debugging/DebugDrawings.h"
-#include "Debugging/DebugDrawings3D.h"
 #include "Math/Range.h"
 #include "Streaming/AutoStreamable.h"
+#include "Tools/Motion/LowPassFilterPR.h"
 
 STREAMABLE(SoleRotationParameter,
 {,
   (Angle) minTorsoRotation, /**< The torso must have a minimum of this rotation in y axis, to allow the swing sole rotation compensation in y axis. */
-  (Angle) minSoleRotation, /**< The support sole rotation must have a minimum of this rotation in y axis, to allow the swing sole rotation compensation in y axis. */
-  (float) soleBackwardsCompensationTorsoFactor, /**< Factor for how much the torso rotation has an influence. */
-  (float) soleForwardCompensationReturnZeroRation, /**< At this % duration of the step, interpolate the forward compensation back to 0. */
-  (float) soleBackwardsCompensationReturnZeroRatio, /**< At this % duration of the step, interpolate the backward compensation back to 0. */
-  (float) soleCompensationReduction, /**< If the swing foot moves in direction X, if shall compensate less in the opposite direction. */
-  (float) soleCompensationIncreasement, /**< If the swing foot moves in direction X, if shall compensate more (up to 100%) in the same direction. */
-  (Angle) maxBackCompensation, /**< Clip the back compensation (which increased the pitch rotation). */
+  (Angle) maxTorsoRotation, /**< The torso must have a maximum of this rotation in y axis, to use the maximum compensation. */
+  (float) soleCompensationBackwardReduction, /**< Reduction factor for back tilt compensation. */
+  (Vector2a) soleCompensationSpeed, /**< Allowed speed for the compensation. */
+  (Angle) maxRollAdjustment, /**< Max allowed roll adjustment. */
+  (float) measuredErrorFactor, /**< Factor for usage of measured rotation error. */
+  (float) reductionTimeFactor, /**< At the end of a walking step, only this much of the adjustment is allowed. */
+  (Rangef) measuredErrorTimeScaling, /**< Scale swing sole rotation error over time. */
+  (Rangef) timeScaling, /**< Scale swing sole rotation over time. */
+  (Rangef) timeScalingRoll, /**< Scale swing sole rotation over time. */
+  (Rangef) sideSizeXRotationScaling,
+
+  (Rangea) tiltErrorDiffOffset,
+  (float) tiltErrorDiffScaling,
+  (Rangea) gyroScaling,
+  (Rangea) torsoRange,
+  (Rangef) deltaRange,
+  (Rangef) maxStepRatioToStart,
+  (Angle) minGyro,
+  (float) minSideStepSize,
+  (Rangea) gyroScalingSecondStep,
+  (Rangef) deltaRangeSecondStep,
 });
 
 STREAMABLE(WalkStepAdjustmentParams,
@@ -48,22 +61,26 @@ STREAMABLE(WalkStepAdjustmentParams,
 class WalkStepAdjustment
 {
 private:
-  Vector3f lastMeasuredComInFoot = Vector3f::Zero(); // last measured com, rotated with the last rotation matrix
-  Vector3f lastMeasuredCom = Vector3f::Zero(); // last measured com
-  std::vector<Vector3f> supportPolygon; // simple support polygon
-  Vector2f supportFootCenter; // center of the support polygon
-  RotationMatrix lastMeasuredRotationMatrix; // rotation matrix from previous motion frame
-  int updateSteps = 3; // predicted torso tilt 3 frames into the future
   float lowPassFilteredComX; // low pass filtered com in x axis
-  Pose3f lastLeft; // left foot pose from previous motion frame
-  Pose3f lastRight; // right foot pose from previous motion frame
   float swingFootXTranslationChange; // last swing x translation change. Used to scale the sole rotation compensation
   float backwardsWalkingRotationCompensationFactor; // current factor for the back rotation compensation
   float forwardsWalkingRotationCompensationFactor; // current factor for the forward rotation compensation
   bool allowTouchingTheBallForBalancing = false; // If the robot is tilting too much forward, allow walking into the ball to prevent falling
 
+  int adjustmentStopCounter = 0;
+  int adjustmentResumeCounter = 0;
+
+  bool kneeBalanceActive = false;
+
+  RingBuffer<Angle, 3> lastLeftPitchRequest;
+  RingBuffer<Angle, 3> lastLeftRollRequest;
+  RingBuffer<Angle, 3> lastRightPitchRequest;
+  RingBuffer<Angle, 3> lastRightRollRequest;
+
 public:
 
+  Pose3f lastLeft; // left foot pose from previous motion frame
+  Pose3f lastRight; // right foot pose from previous motion frame
   // Flags used by the walkPhase to determine the "special" gyro balancing in WalkPhaseBase::addGyroBalance()
   bool isForwardBalance = false;
   bool forwardBalanceWasActive = false;
@@ -83,45 +100,20 @@ public:
   float hipBalanceIsSafeBackward; // hip can be used for balancing backward
   float hipBalanceIsSafeForward; // hip can be used for balancing forward
 
-  float sideBalanceFactor = 0.f;
-
   float delta = 0.f;
+
+  float comPercentPosition[Legs::numOfLegs] = { 0.5f, 0.5f };
+  bool lastWasKneeBalance = false;
 
   unsigned lastLargeBackwardStep;
   unsigned lastNormalStep;
   int reduceWalkingSpeed;
 
+  LowPassFilterPR swingRotYFilter;
+  LowPassFilterPR swingRotXFilter;
+  LowPassFilterPR kneeBalanceFilter;
+
   WalkStepAdjustment();
-
-  /**
-   * LIPM model to predict the rotation matrix
-   * @param rotationMatrix current rotation matrix
-   * @param robotModel current robot model
-   * @param footOffset the calibrated foot offsets
-   * @param isLeftPhase is left foot the swing foot?
-   * @param prediction if false, only predict for one frame
-   *
-   * @return predicted rotation matrix for updateSteps motion frames into the future
-   */
-  RotationMatrix predictRotation(RotationMatrix rotationMatrix, const RobotModel& robotModel, const FootOffset& footOffset, const bool isLeftPhase, const bool prediction);
-
-  /**
-   * Calulate the intersection point of the CoM movement vector and the the support polygon edges
-   * @param currentCom current CoM
-   * @param lastCom previous CoM
-   * @param intersection3D the resulting intersection point
-   *
-   * @return whether the movement vector intersects the support polygon
-   */
-  [[nodiscard]] bool getTiltingPoint(const Vector3f& currentCom, const Vector3f& lastCom, Vector3f& intersection3D);
-
-  /**
-   * Calculate the support polygon
-   * @param robotModel the robot model
-   * @param footOffset the foot offsets
-   * @param isLeftPhase is the left foot the swing foot
-   */
-  void calcSupportPolygon(const RobotModel& robotModel, const FootOffset& footOffset, const bool isLeftPhase);
 
   /*
    * Adjust the position of the feet, to ensure that the robot does not fall.
@@ -132,7 +124,7 @@ public:
    * @param left The left foot request from the walkGenerator
    * @param right The right foot request from the walkGenerator
    * @param stepTime the current ratio, of how much the current step finished
-   * @param comX x- and y-axis of com in foot plane
+   * @param com x- and y-axis of com in foot plane
    * @param footOffset Defines the edges of the feet
    * @param clipForwardPosition max allowed forward position
    * @param isLeftPhase is left foot swing foot
@@ -144,7 +136,6 @@ public:
    * @param reduceWalkingSpeedStepAdjustmentSteps Number of walking steps to reduce the walking speed
    * @param ball The ball position relative to the swing foot zero position
    * @param clipAtBallDistanceX The step adjustment shall not move the feet to close to the ball. Adjustment is clipped below the ball x-translation.
-   * @param theJointPlayFactor factor how bad the joint state is
    * @param groundContact does the robot has ground contact?
    * @param walkStepParams the parameters for the walk step adjustment
    */
@@ -152,7 +143,7 @@ public:
                   const Rangef& clipForwardPosition, const bool isLeftPhase, const FootSupport& footSupport,
                   const FsrData& fsrData, const FrameInfo& frameInfo, const Angle hipRot, const bool isStepAdjustmentAllowed,
                   const int reduceWalkingSpeedStepAdjustmentSteps, const Vector2f& ball, const float clipAtBallDistanceX,
-                  const float& theJointPlayFactor, const bool groundContact, const WalkStepAdjustmentParams& walkStepParams);
+                  const bool groundContact, const WalkStepAdjustmentParams& walkStepParams);
 
   /**
    * Reset the WalkStepAdjustment based on the last one
@@ -165,21 +156,24 @@ public:
             const float unstableWalkThreshold);
 
   /**
-   * If the torso and the support foot sole are tilted too much forward, then compensate the swing foot sole forward rotation, to prevent it to move into the ground
-   * @param supportSole The support foot sole
-   * @param requestedSupportSole The requested support foot sole
-   * @param swingRotation The swing foot sole y rotation offset
-   * @param oldSwingRotation The old swing foot sole y rotation offset
-   * @param torsoRotation The inertialData y angle
-   * @param stepRatio Current ratio of the step (t / stepDuration)
-   * @param soleRotationOffsetSpeed Allowed speed to adjust the sole rotation
-   * @param useTorsoAngle Can we trust the torso rotation and use it for the rotation error?
-   * @param hipRotation current hip rotation to compensate for the arms
-   * @param soleRotParams the sole compensation parameters
-   * @param swingSole the full swing sole request
+   * If the torso is tilted too much forward or backward, then compensate the swing foot sole y rotation, to prevent it to move into the ground
+   * Also when tilted too much to the side, the x rotation is adjusted too (WIP)
+   * @param swingRotationY Current planned requested swing sole y rotation
+   * @param oldSwingRotationY Last planned requested swing sole y rotation
+   * @param swingRotationX Current planned requested swing sole x rotation
+   * @param oldSwingRotationX Last planned requested swing sole x rotation
+   * @param torsoRotationX Current torso x rotation
+   * @param torsoRotationY Current torso y rotation
+   * @param stepRatio Current % step ratio
+   * @param hipRotation Hip rotation to balance arm positions
+   * @param isLeftPhase Is left foot the swing one?
+   * @param soleRotParams Sole compensation parameters
+   * @param measuredSwingSole measured swing sole
    */
-  void modifySwingFootRotation(const Pose3f& supportSole, const Pose3f& requestedSupportSole, Angle& swingRotation, const Angle oldSwingRotation,
-                               const Angle torsoRotation, const float stepRatio, const Angle soleRotationOffsetSpeed,
-                               const bool useTorsoAngle, const Angle hipRotation,
-                               const SoleRotationParameter& soleRotParams, const Pose3f& swingSole);
+  void modifySwingFootRotation(Angle& swingRotationY, const Angle oldSwingRotationY,
+                               Angle& swingRotationX, const Angle oldSwingRotationX, const Angle torsoRotationX,
+                               const Angle torsoRotationY, const float stepRatio,
+                               const Angle hipRotation, const bool isLeftPhase,
+                               const SoleRotationParameter& soleRotParams, const Pose3f& measuredSwingSole,
+                               const float plannedSideStepChange, Angle& kneeBalance, const Angle oldKneeBalance, const Angle yGyro);
 };

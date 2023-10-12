@@ -55,7 +55,7 @@ SKILL_INTERFACE(WalkToPose, (const Pose2f&) target, (const Pose2f&)(Pose2f(1.f, 
  * @param turnKickAllowed Does the forward kick not need to align with the kick direction?
  * @param directionPrecision The allowed deviation of the direction in which the ball should go. If default, the WalkToBallAndKickEngine uses its own precision.
  */
-SKILL_INTERFACE(WalkToBallAndKick, (Angle) targetDirection, (KickInfo::KickType) kickType, (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, (float)(std::numeric_limits<float>::max()) kickLength, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (const MotionRequest::ObstacleAvoidance&)(MotionRequest::ObstacleAvoidance()) obstacleAvoidance, (bool)(true) preStepAllowed, (bool)(true) turnKickAllowed, (const Rangea&)(Rangea(0_deg, 0_deg)) directionPrecision);
+SKILL_INTERFACE(WalkToBallAndKick, (Angle) targetDirection, (KickInfo::KickType) kickType, (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, (float)(std::numeric_limits<float>::max()) kickLength, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (const MotionRequest::ObstacleAvoidance&)(MotionRequest::ObstacleAvoidance()) obstacleAvoidance, (bool)(true) preStepAllowed, (bool)(true) turnKickAllowed, (bool)(false) shiftTurnKickPose, (const Rangea&)(Rangea(0_deg, 0_deg)) directionPrecision);
 
 /**
  * This skill dribbles the ball.
@@ -187,7 +187,7 @@ SKILL_INTERFACE(LookLeftAndRight, (bool)(true) startLeft, (Angle)(50_deg) maxPan
  * @param tilt The constant tilt angle during the motion
  * @param maxPan The maximum pan angle
  */
-SKILL_INTERFACE(LookAtBallAndTarget, (bool)(true) startTarget, (Angle)(100_deg) speed, (Angle)(23_deg) tilt, (Angle)(10_deg) thresholdAngle, (Vector2f)(Vector2f::Zero()) walkingDirection, (Angle)(0_deg) ballPositionAngle);
+SKILL_INTERFACE(LookAtBallAndTarget, (bool)(false) startTarget, (Angle)(100_deg) speed, (Angle)(23_deg) tilt, (Angle)(10_deg) thresholdAngle, (Vector2f)(Vector2f::Zero()) walkingDirection, (Angle)(0_deg) ballPositionAngle);
 
 /**
  * This skill moves the head in steps between the maximum pan and tilt, relative to the current orientation.
@@ -209,10 +209,9 @@ SKILL_INTERFACE(PanAndTiltGrid, (const HeadOrientation&) original, (const HeadOr
 SKILL_INTERFACE(PassTarget, (int) passTarget, (const Vector2f&)(Vector2f::Zero()) ballTarget);
 
 /**
- * This skill sets the activity member of the BehaviorStatus.
- * @param activity The activity to set
+ * This skill sets the calibrationFinished member of the BehaviorStatus.
  */
-SKILL_INTERFACE(Activity, (BehaviorStatus::Activity) activity);
+SKILL_INTERFACE(CalibrationFinished);
 
 /**
  * This skill adds an annotation if it differs from the one that has been added in the last frame.
@@ -238,13 +237,16 @@ SKILL_INTERFACE(Say, (const std::string&) text, (bool)(false) force, (float)(1.f
 /** This skill makes the robot go to a ball and kick it for public demos. */
 SKILL_INTERFACE(DemoGoToBallAndKick);
 
+/** This skill makes the robot pose for public demos. */
+SKILL_INTERFACE(DemoPose);
+
 /** This skill makes the robot talk for public demos. */
 SKILL_INTERFACE(DemoTalk);
 
 /** This skill makes the robot wave for public demos. */
 SKILL_INTERFACE(DemoWave);
 
-/** This skill makes the robot seach for the ball for public demos. */
+/** This skill makes the robot search for the ball for public demos. */
 SKILL_INTERFACE(DemoSearchForBall);
 
 /** This skill controls the head for a keeper which guards its goal. */
@@ -276,7 +278,7 @@ SKILL_INTERFACE(ReplayWalk);
  * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
  * @param forceSideWalking If true, force sidewalking
  */
-SKILL_INTERFACE(WalkToPoint, (const Pose2f&) target, (float)(1.f) speed, (bool)(true) reduceWalkingSpeed,
+SKILL_INTERFACE(WalkToPoint, (const Pose2f&) target, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (bool)(true) reduceWalkingSpeed,
                 (bool)(false) rough, (bool)(false) disableObstacleAvoidance, (bool)(false) disableAligning,
                 (bool)(false) disableStanding, (bool)(false) disableAvoidFieldBorder, (const std::optional<Vector2f>&)(std::optional<Vector2f>()) targetOfInterest,
                 (bool)(false) forceSideWalking);
@@ -292,10 +294,17 @@ SKILL_INTERFACE(WalkToPoint, (const Pose2f&) target, (float)(1.f) speed, (bool)(
  * @param disableAvoidFieldBorder Do not avoid the field border when walking.
  * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
  */
-SKILL_INTERFACE(WalkToPointObstacle, (const Pose2f&)target, (float)(1.f) speed, (bool)(true) reduceWalkingSpeed,
+SKILL_INTERFACE(WalkToPointObstacle, (const Pose2f&) target, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (bool)(true) reduceWalkingSpeed,
                 (bool)(false) rough, (bool)(false) disableObstacleAvoidance, (bool)(false) disableAligning,
                 (bool)(false) disableStanding, (bool)(false) disableAvoidFieldBorder, (const std::optional<Vector2f>&)(std::optional<Vector2f>()) targetOfInterest,
                 (bool)(false) forceSideWalking);
+
+/**
+ * This skill walks to a kick-off or penalty kick pose (i.e. in the ready state).
+ * @param target The target pose in absolute field coordinates
+ * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
+ */
+SKILL_INTERFACE(WalkToPointReady, (const Pose2f&) target, (const std::optional<Vector2f>&)(std::optional<Vector2f>()) targetOfInterest);
 
 /**
  * This skill walks to a target that is modified by a potential field.
@@ -308,13 +317,6 @@ SKILL_INTERFACE(WalkToPointObstacle, (const Pose2f&)target, (float)(1.f) speed, 
  * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
  */
 SKILL_INTERFACE(WalkPotentialField, (const Vector2f&) target, (int) playerNumber, (bool)(false) straight, (float)(0.5f) ballFactor, (bool)(false) useRotation, (float)(0.f) rotation, (const std::optional<Vector2f>&)(std::optional<Vector2f>()) targetOfInterest);
-
-/**
- * This skill walks to a kick-off pose (i.e. in the ready state).
- * @param target The target pose in absolute field coordinates
- * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
- */
-SKILL_INTERFACE(WalkToKickoffPose, (const Pose2f&) target, (const std::optional<Vector2f>&)(std::optional<Vector2f>()) targetOfInterest);
 
 /**
  * This skill turns the robot on the spot by a specified angle.
@@ -359,7 +361,7 @@ SKILL_INTERFACE(DribbleToGoal);
  * @param speed The walking speed
  * @param directionPrecision The allowed deviation of the direction in which the ball should go. If default, the WalkToBallAndKickEngine uses its own precision.
  */
-SKILL_INTERFACE(GoToBallAndKick, (Angle) targetDirection, (KickInfo::KickType) kickType, (bool)(false) lookActiveWithBall, (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, (float)(std::numeric_limits<float>::max()) length, (bool)(true) preStepAllowed, (bool)(true) turnKickAllowed, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (const Rangea&)(Rangea(0_deg, 0_deg)) directionPrecision);
+SKILL_INTERFACE(GoToBallAndKick, (Angle) targetDirection, (KickInfo::KickType) kickType, (bool)(false) lookActiveWithBall, (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, (float)(std::numeric_limits<float>::max()) length, (bool)(true) preStepAllowed, (bool)(true) turnKickAllowed, (bool)(false) shiftTurnKickPose, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed, (const Rangea&)(Rangea(0_deg, 0_deg)) directionPrecision);
 
 /**
  * This skill walks very carefully to a kick pose and executes a kick there.
@@ -406,7 +408,7 @@ SKILL_INTERFACE(KickAtGoal);
 SKILL_INTERFACE(HandleBallAtOwnGoalPost);
 
 /**
- * This skill passes the ball to a teammate, only used by the 2021 behavior control.
+ * This skill passes the ball to a teammate.
  * @param playerNumber The player number of the pass target.
  */
 SKILL_INTERFACE(PassToTeammate, (int) playerNumber);
@@ -438,7 +440,7 @@ SKILL_INTERFACE(PlayBall);
  * @param target The target the robot is walking towards.
  * @param speed The desired relative speed.
  */
-SKILL_INTERFACE(PublishMotion, (const Vector2f) target, (float)(1.f) speed);
+SKILL_INTERFACE(PublishMotion, (const Vector2f) target, (const Pose2f&)(Pose2f(1.f, 1.f, 1.f)) speed);
 
 /**
  * This skill can be used to calibrate the robot.
@@ -449,11 +451,6 @@ SKILL_INTERFACE(CalibrateRobot, (const CalibrationRequest&) request);
  * Sets the motion request to calibration
  */
 SKILL_INTERFACE(CalibrateFootSole);
-
-/**
- * Lets the robot start the foot sole rotation calibration.
- */
-SKILL_INTERFACE(AutomaticFootSoleRotationCalibration);
 
 /**
  * Lets the robot start the IMU calibration.

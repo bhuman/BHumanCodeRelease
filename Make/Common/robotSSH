@@ -1,0 +1,6 @@
+#!/bin/bash
+# Run ssh command on robot
+
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
+source "${basePath}/setupSSH"
+ssh ${SSHOPTIONS} $*

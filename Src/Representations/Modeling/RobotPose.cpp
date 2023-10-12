@@ -17,36 +17,23 @@
 #include "Tools/Math/Projection.h"
 #include "Framework/Blackboard.h"
 
-void RobotPose::onRead()
-{
-  inversePose = *this;
-  inversePose.invert();
-}
-
 void RobotPose::operator>>(BHumanMessage& m) const
 {
-  Streaming::streamIt(*m.theBHumanStandardMessage.out, "theRobotPose", *this);
-
-  m.theBSPLStandardMessage.pose[0] = translation.x();
-  m.theBSPLStandardMessage.pose[1] = translation.y();
-  m.theBSPLStandardMessage.pose[2] = rotation;
+  RobotPoseCompact compact(*this);
+  Streaming::streamIt(*m.out, "theRobotPose", compact);
 }
 
 void RobotPose::operator<<(const BHumanMessage& m)
 {
-  Streaming::streamIt(*m.theBHumanStandardMessage.in, "theRobotPose", *this);
-
-  translation.x() = m.theBSPLStandardMessage.pose[0];
-  translation.y() = m.theBSPLStandardMessage.pose[1];
-  rotation = m.theBSPLStandardMessage.pose[2];
-
-  inversePose = static_cast<Pose2f>(*this).inverse();
+  RobotPoseCompact compact(*this);
+  Streaming::streamIt(*m.in, "theRobotPose", compact);
+  // inversePose is set by RobotPoseCompact::onRead.
 }
 
-Pose2f RobotPose::inverse() const
+void RobotPose::onRead()
 {
-  FAIL("Use RobotPose::inversePose instead.");
-  return inversePose;
+  inversePose = *this;
+  inversePose.invert();
 }
 
 void RobotPose::verify() const
@@ -87,7 +74,7 @@ void RobotPose::draw() const
     bodyPoints[i] = *this * bodyPoints[i];
   const Vector2f dirVec = *this * Vector2f(200, 0);
   const ColorRGBA ownTeamColorForDrawing = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
-                                                                                     static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.color :
+                                                                                     static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).color() :
                                                                                      GameState::Team::Color::black));
 
   DEBUG_DRAWING("representation:RobotPose", "drawingOnField")
@@ -116,15 +103,15 @@ void RobotPose::draw() const
   {
     if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo") && Blackboard::getInstance().exists("FieldDimensions"))
     {
-      const CameraMatrix& cameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
-      if(cameraMatrix.isValid)
+      const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
+      if(theCameraMatrix.isValid)
       {
-        const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
-        const FieldDimensions& fieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-        const RobotPose& robotPose = *this;
+        const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+        const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
+        const RobotPose& theRobotPose = *this;
         std::vector<Vector2f> p;
-        Projection::computeFieldOfViewInFieldCoordinates(robotPose, cameraMatrix, cameraInfo, fieldDimensions, p);
-        THREAD("representation:RobotPose:fieldOfView", cameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+        Projection::computeFieldOfViewInFieldCoordinates(theRobotPose, theCameraMatrix, theCameraInfo, theFieldDimensions, p);
+        THREAD("representation:RobotPose:fieldOfView", theCameraInfo.getThreadName());
         POLYGON("representation:RobotPose:fieldOfView", 4, p, 20, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, ColorRGBA(255, 255, 255, 25));
       }
     }
@@ -134,8 +121,8 @@ void RobotPose::draw() const
   {
     if(Blackboard::getInstance().exists("CameraInfo"))
     {
-      const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
-      THREAD("perception:RobotPose", cameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+      const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      THREAD("perception:RobotPose", theCameraInfo.getThreadName());
     }
     ORIGIN("perception:RobotPose", translation.x(), translation.y(), rotation);
   }
@@ -145,9 +132,21 @@ void RobotPose::draw() const
     ORIGIN("cognition:RobotPose", translation.x(), translation.y(), rotation);
   }
 
-  DEBUG_DRAWING("cognition:Reset", "drawingOnField") // Set the origin to the robot's current position
+  DEBUG_DRAWING("cognition:Reset", "drawingOnField") // Set the origin to the fields origin
   {
     ORIGIN("cognition:Reset", 0, 0, 0);
+  }
+
+  DEBUG_DRAWING("motion:RobotPose", "drawingOnField")  // Set the origin to the robot's current position
+  {
+    THREAD("motion:RobotPose", "Motion");
+    ORIGIN("motion:RobotPose", translation.x(), translation.y(), rotation);
+  }
+
+  DEBUG_DRAWING("motion:Reset", "drawingOnField") // Set the origin to the fields origin
+  {
+    THREAD("motion:RobotPose", "Motion");
+    ORIGIN("motion:Reset", 0, 0, 0);
   }
 
   DEBUG_DRAWING("representation:RobotPose:coverage", "drawingOnField")
@@ -223,4 +222,44 @@ void GroundTruthRobotPose::draw() const
   {
     ORIGIN("cognition:GroundTruthRobotPose", translation.x(), translation.y(), rotation);
   }
+}
+
+RobotPoseCompact::RobotPoseCompact(const RobotPose& robotPose)
+  : robotPose(const_cast<RobotPose&>(robotPose)),
+    rotation(robotPose.rotation),
+    translation(robotPose.translation),
+    quality(robotPose.quality),
+    timestampLastJump(robotPose.timestampLastJump)
+{
+  covariance(0, 0) = float2half(robotPose.covariance(0, 0));
+  covariance(0, 1) = float2half(robotPose.covariance(0, 1));
+  covariance(1, 0) = float2half(robotPose.covariance(1, 0));
+  covariance(1, 1) = float2half(robotPose.covariance(1, 1));
+}
+
+void RobotPoseCompact::onRead()
+{
+  robotPose.rotation = rotation;
+  robotPose.translation = translation;
+  robotPose.quality = quality;
+  robotPose.covariance(0, 0) = half2float(covariance(0, 0));
+  robotPose.covariance(0, 1) = half2float(covariance(0, 1));
+  robotPose.covariance(1, 0) = half2float(covariance(1, 0));
+  robotPose.covariance(1, 1) = half2float(covariance(1, 1));
+  robotPose.timestampLastJump = timestampLastJump;
+  robotPose.onRead();
+}
+
+float RobotPoseCompact::half2float(short halfValue)
+{
+  float floatValue = 0.f;
+  reinterpret_cast<short*>(&floatValue)[1] = halfValue;
+  return floatValue;
+}
+
+short RobotPoseCompact::float2half(float floatValue)
+{
+  if(floatValue == 0.f)
+    floatValue = 0.0000001f;
+  return reinterpret_cast<short*>(&floatValue)[1];
 }

@@ -54,7 +54,7 @@ File::~File()
 std::list<std::string> File::getFullNames(const std::string& name)
 {
   std::list<std::string> names;
-  if((name[0] != '.' || (name.size() >= 2 && name[1] == '.')) && !isAbsolute(name.c_str())) // given path is relative to getBHDir()
+  if((name[0] != '.' || (name.size() >= 2 && name[1] == '.')) && !isAbsolute(name)) // given path is relative to getBHDir()
   {
     std::list<std::string> dirs = getConfigDirs();
     for(std::string& dir : dirs)
@@ -91,6 +91,11 @@ void File::write(const void* p, size_t size)
     FAIL("File::write failed!");
   }
 #endif
+}
+
+void File::skip(size_t size)
+{
+  VERIFY(fseek(static_cast<FILE*>(stream), size, SEEK_CUR) == 0);
 }
 
 void File::printf(const char* format, ...)
@@ -245,9 +250,15 @@ const char* File::getBHDir()
   return dir;
 }
 
-bool File::isAbsolute(const char* path)
+bool File::isAbsolute(const std::string& path)
 {
-  return (path[0] && path[1] == ':') || path[0] == '/' || path[0] == '\\';
+  return (!path.empty() && (path[0] == '/' || path[0] == '\\'))
+         || (path.size() > 1 && path[1] == ':');
+}
+
+bool File::hasExtension(const std::string& path)
+{
+  return static_cast<int>(path.rfind('.')) > static_cast<int>(path.find_last_of("\\/"));
 }
 
 void File::setSearchPath(const std::list<std::string>& paths)

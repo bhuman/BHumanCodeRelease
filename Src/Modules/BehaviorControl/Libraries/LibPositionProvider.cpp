@@ -6,14 +6,11 @@
  */
 
 #include "LibPositionProvider.h"
-#include "Debugging/DebugDrawings.h"
 
-MAKE_MODULE(LibPositionProvider, behaviorControl);
+MAKE_MODULE(LibPositionProvider);
 
 void LibPositionProvider::update(LibPosition& libPosition)
 {
-  DECLARE_DEBUG_DRAWING("behavior:LibPositionProvider:obstacleAtMyPosition", "drawingOnField");
-
   libPosition.distanceToOwnGoalGreaterThan = [this](float distance) -> bool
   {
     return distanceToOwnGoalGreaterThan(distance);
@@ -45,10 +42,6 @@ void LibPositionProvider::update(LibPosition& libPosition)
   libPosition.isOutSideGoalFrame = [this](const Vector2f& position, const float offset) -> bool
   {
     return isOutSideGoalFrame(position, offset);
-  };
-  libPosition.getObstacleAtMyPositionCircle = [this](const Vector2f& pos) -> Geometry::Circle
-  {
-    return getObstacleAtMyPositionCircle(pos);
   };
 }
 
@@ -95,20 +88,4 @@ bool LibPositionProvider::isInOpponentPenaltyArea(const Vector2f& position) cons
 bool LibPositionProvider::isOutSideGoalFrame(const Vector2f& position, const float offset) const
 {
   return position.x() - theFieldDimensions.xPosOwnGroundLine > offset || std::abs(position.y()) - theFieldDimensions.yPosLeftGoal > offset;
-}
-
-Geometry::Circle LibPositionProvider::getObstacleAtMyPositionCircle(const Vector2f& position)
-{
-  CIRCLE("behavior:LibPositionProvider:obstacleAtMyPosition", lastCircle.center.x(), lastCircle.center.y(), lastCircle.radius, 20, Drawings::solidPen, ColorRGBA::red, Drawings::noPen, ColorRGBA::black);
-  const Vector2f posRel(theRobotPose.inversePose * position);
-  for(const Obstacle& obstacle : theObstacleModel.obstacles)
-    if((obstacle.center - posRel).squaredNorm() < sqr(positionOffsetIfOccupied))
-      return lastCircle = Geometry::Circle(theRobotPose * obstacle.center, positionOffsetIfOccupied);
-
-  if((lastCircle.center - position).squaredNorm() < sqr(lastCircle.radius) &&
-     std::abs((theRobotPose.inversePose * lastCircle.center).angle()) > deleteObstacleCircleRange)
-    return lastCircle;
-
-  lastCircle.radius = 0.f;
-  return lastCircle;
 }

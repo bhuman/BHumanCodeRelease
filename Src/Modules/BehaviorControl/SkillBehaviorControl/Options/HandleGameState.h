@@ -23,7 +23,7 @@ option(HandleGameState)
       theArmContactSkill();
       if(theStrategyStatus.role != PositionRole::toRole(PositionRole::goalkeeper))
         theArmObstacleAvoidanceSkill();
-      if(!select_option(playingOptions))
+      if(!select_option(playingOptions)) //@playingOptions
         executeRequest();
     }
   }
@@ -47,7 +47,7 @@ option(HandleGameState)
       if(theStrategyStatus.role != PositionRole::toRole(PositionRole::goalkeeper))
         theArmObstacleAvoidanceSkill();
       if(theSkillRequest.skill == SkillRequest::walk)
-        theWalkToKickoffPoseSkill({.target = theSkillRequest.target});
+        theWalkToPointReadySkill({.target = theSkillRequest.target});
       else
       {
         theLookActiveSkill({.ignoreBall = true});
@@ -67,7 +67,7 @@ option(HandleGameState)
                                                 theFieldDimensions.xPosOpponentPenaltyMark :
                                                 theFieldDimensions.xPosOwnPenaltyMark, 0.f) :
                                        Vector2f::Zero();
-        theLookAtPointSkill({.target = (Vector3f() << theRobotPose.inversePose * targetOnField, theBallSpecification.radius).finished()});
+        theLookAtPointSkill({.target = (Vector3f() << theRobotPose.inverse() * targetOnField, theBallSpecification.radius).finished()});
       }
       else
         theLookActiveSkill({.ignoreBall = true});

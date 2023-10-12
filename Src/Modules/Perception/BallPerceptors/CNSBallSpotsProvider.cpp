@@ -13,7 +13,7 @@
 #include "ImageProcessing/CNS/LutRasterizer.h"
 #include "Tools/Math/Transformation.h"
 
-MAKE_MODULE(CNSBallSpotsProvider, perception);
+MAKE_MODULE(CNSBallSpotsProvider);
 
 CNSBallSpotsProvider::CNSBallSpotsProvider()
 {

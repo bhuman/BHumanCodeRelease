@@ -12,6 +12,7 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FootOffset.h"
 #include "Representations/MotionControl/WalkGenerator.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/WalkToBallGenerator.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
@@ -23,12 +24,12 @@ MODULE(WalkToBallEngine,
   REQUIRES(FootOffset),
   REQUIRES(RobotModel),
   REQUIRES(WalkGenerator),
+  REQUIRES(WalkingEngineOutput),
   REQUIRES(WalkToPoseGenerator),
   PROVIDES(WalkToBallGenerator),
   DEFINES_PARAMETERS(
   {,
     (int)(1500) minTimeSinceBallSeen,
-    (Rangea)(-50_deg, 50_deg) maxTargetFocusAngle,
   }),
 });
 

@@ -13,7 +13,7 @@
 #include "Tools/Math/InImageSizeCalculations.h"
 #include "ImageProcessing/PixelTypes.h"
 
-MAKE_MODULE(PenaltyMarkRegionsProvider, perception);
+MAKE_MODULE(PenaltyMarkRegionsProvider);
 
 void PenaltyMarkRegionsProvider::update(PenaltyMarkRegions& thePenaltyMarkRegions)
 {
@@ -21,7 +21,6 @@ void PenaltyMarkRegionsProvider::update(PenaltyMarkRegions& thePenaltyMarkRegion
   DECLARE_DEBUG_DRAWING("module:PenaltyMarkRegionsProvider:mergedRegions", "drawingOnImage");
 
   thePenaltyMarkRegions.regions.clear();
-  cnsRegions.clear();
 
   if(theScanGrid.y.empty())
     return;
@@ -75,13 +74,13 @@ bool PenaltyMarkRegionsProvider::initRegions(unsigned short upperBound)
     bool first = true;
     for(auto& region : scanLine.regions)
     {
-      if(region.color != PixelTypes::Color::field && region.range.lower > upperBound)
+      if(region.color != ScanLineRegion::field && region.range.lower > upperBound)
       {
         if(regions.empty() || regions.back().left != scanLine.x || regions.back().upper != region.range.lower)
         {
           if(regions.size() == regions.capacity())
             return false;
-          regions.emplace_back(std::max(region.range.upper, upperBound), region.range.lower, scanLine.x, region.color == PixelTypes::Color::white);
+          regions.emplace_back(std::max(region.range.upper, upperBound), region.range.lower, scanLine.x, region.color == ScanLineRegion::white);
         }
         else
         {
@@ -89,7 +88,7 @@ bool PenaltyMarkRegionsProvider::initRegions(unsigned short upperBound)
           unsigned short upper = std::max(region.range.upper, upperBound);
           r.upper = upper;
           r.pixels += region.range.lower - upper;
-          if(region.color == PixelTypes::Color::white)
+          if(region.color == ScanLineRegion::white)
             r.whitePixels += region.range.lower - upper;
         }
         if(first || region.range.upper <= upperBound)
@@ -196,10 +195,6 @@ void PenaltyMarkRegionsProvider::analyseRegions(unsigned short upperBound, int x
   {
     const Candidate& candidate = candidates[i];
     searchRegions.emplace_back(candidate.region);
-    cnsRegions.emplace_back(Rangei(candidate.region.x.min - candidate.xExtent,
-                                   candidate.region.x.max + candidate.xExtent),
-                            Rangei(candidate.region.y.min - candidate.yExtent,
-                                   candidate.region.y.max + candidate.yExtent));
   }
 
   COMPLEX_DRAWING("module:PenaltyMarkRegionsProvider:mergedRegions")

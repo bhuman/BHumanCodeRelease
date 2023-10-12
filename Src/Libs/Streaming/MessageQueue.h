@@ -1,218 +1,382 @@
 /**
  * @file MessageQueue.h
- * Definition of class MessageQueue.
  *
- * Include this file if for declaring instances of MessageQueue.
+ * This file declares a class that represents a bag of streamed data. In the
+ * context of this class, each entry is called a message. A message has a type
+ * that is represented as a value of the enumeration type \c MessageID. It also
+ * has a size. Messages are stored sequentially in a single block of memory.
+ * They basically form a single linked list with their size information
+ * functioning as the links. Given this structure, the class provides two
+ * abstractions in its interface.
+ * One the one hand, it stores a block of memory, i.e. it works on bytes.
+ * \c reserve() allows to reserve a maximum size, \c size() returns the
+ * currently used size, and \c resize() allows the shrink the used size (all in
+ * bytes). Also, the iterator arithmetics \c += , \c -= , \c + , and \c - all
+ * work on bytes.
+ * On the other hand, the iterator operator \c ++ allows to walk through the
+ * memory block message-wise and its operator \c * returns an object that
+ * represents a single message that can be opened as a stream (using either
+ * \c bin() or \c text() ). The three functions \c bin() , \c text() , and
+ * \c textRaw() of the message queue itself allow to open a writable stream
+ * to append a single message. A message must be completely written before a
+ * stream for the next message is requested.
+ * If the message queue is already full, messages that should be appended are
+ * dropped. Since some messages are more relevant than others, the message
+ * queue also supports a protected capacity that is reserved for the more
+ * important messages. So some message types are dropped earlier than others.
+ * Usually, the memory block containing the messages is maintained by the
+ * message queue. However, it is also possible to set an external memory block
+ * to support the use of a memory-mapped file as (read-only) storage.
  *
- * @author Martin Lötzsch
+ * @author Thomas Röfer
  */
 
 #pragma once
 
-#include "MessageQueueBase.h"
-#include "InMessage.h"
-#include "OutMessage.h"
+#include "InStreams.h"
+#include "MessageIDs.h"
+#include "OutStreams.h"
+#include "Streamable.h"
+#include <functional>
+#include <utility>
 
-/**
- * @class MessageQueue
- * A class representing a queue of messages.
- * It can be used to collect different types of messages for exchange between different
- * threads or systems.
- *
- * Usage:
- * <pre>
- * MessageQueue myQueue;
- * myQueue.setSize(100000); // set the size of data that can be stored in the queue
- * CameraImage cameraImage1;
- * myQueue.out.bin << cameraImage1; // write the binary message
- * myQueue.out.finishMessage(idCameraImage); // finish the message, set the type id of the message
- * //
- * // ... copy the queue between threads, systems
- * //
- * if(myQueue.in.getMessageID() == idCameraImage) // check for the type of the next message
- * {
- *   CameraImage cameraImage2;
- *   myQueue.in.bin >> cameraImage2;  // read the image from the queue
- * }
- * </pre>
- */
-class MessageQueue
+class MessageQueue : public Streamable
 {
+  /**
+   * The physical stream for writing to the message queue. It will revert all write
+   * operations if the data does not fit into the queue. In that case, \c failed()
+   * will return \c true .
+   */
+  class OutQueue : public PhysicalOutStream
+  {
+    MessageQueue* queue = nullptr; /**< The message queue this stream is attached to. Is \c nullptr if writing is forbidden (e.g. because the queue is full). */
+    size_t originalSize; /**< The size of the queue before the first write operation. Is used to be able to revert write operations in case the queue is full. */
+    size_t maxCapacity; /**< The maximum capacity of the queue for the current message. It depends on the type of message that is written. */
+
+  protected:
+    /**
+     * Opens this stream for writing.
+     * @param id The type of this message.
+     * @param queue The message queue that is written to.
+     */
+    void open(MessageID id, MessageQueue& queue);
+
+    /**
+     * Writes data to the queue.
+     * @param p The address of the data to be written.
+     * @param size The number of bytes to be written.
+     */
+    void writeToStream(const void* p, size_t size) override;
+
+  public:
+    /**
+     * Did writing to the queue fail because there was not enough space?
+     * @return Did it fail?
+     */
+    bool failed() const {return queue == nullptr;}
+  };
+
+  size_t used = 0; /**< The used capacity of the queue in bytes. */
+  size_t capacity; /**< The currently allocated capacity in bytes. */
+  size_t maxCapacity; /**< The maximum capacity of the queue in bytes. \c capacity cannot grow more than this. */
+  size_t protectedCapacity = 0; /**< A part of the maximum capacity that is reserved for certain message types (in bytes). */
+  char* buffer = nullptr; /**< The memory block of size \c capacity containing the messages. */
+  bool ownBuffer = true; /**< Is the memory block maintained by this class? */
+
+  /**
+   * Determines the maximum capacity applicable for a specific message type.
+   * @param id The message type.
+   * @return The maximum capacity, including or excluding the protected capacity.
+   */
+  size_t calcMaxCapacity(MessageID id) const;
+
+  /**
+   * Ensures that a certain capacity is actually allocated.
+   * @param capacity The capacity that is required.
+   * @param maxCapacity The maximum capacity that is available for the current message type.
+   * @return Is the capacity actually available?
+   */
+  bool ensureCapacity(size_t capacity, size_t maxCapacity);
+
+  /**
+   * Copy messages from a source to the message queue.
+   * @param size The number of bytes the messages consist of.
+   * @param copy A function that actually copies a single message. The first parameter
+   *             is the target address the message should be copied to. If it is
+   *             \c nullptr , the message should be skipped. The second parameter
+   *             is the size of the message to be copied or skipped.
+   */
+  void copyMessages(size_t size, const std::function<void(void*, size_t)>& copy);
+
 protected:
-  MessageQueueBase queue; /**< The queue that actually manages the memory of the message queue. */
+  /**
+   * Reads a message queue from a stream and appends its messages to this one.
+   * Some messages might be dropped if they do not fit.
+   * @param stream The stream to read from.
+   */
+  void read(In& stream) override;
+
+  /**
+   * Writes this message queue to a stream.
+   * @param stream The stream to write to.
+   */
+  void write(Out& stream) const override;
 
 public:
-  InMessage in; /**< An interface for reading messages from the queue. */
-  OutMessage out; /**< An interface for writing messages to the queue. */
-
-  MessageQueue() : in(queue), out(queue) {}
-
-  /**
-   * The method sets the size of memory which is allocated for the queue.
-   * In the simulator, this is only the maximum size (dynamic allocation).
-   * @param size The maximum size of the queue in Bytes.
-   * @param reserveForInfrastructure Non-infrastructure messages will be rejected if
-   *                                 less than this number of bytes is free.
-   */
-  void setSize(size_t size, size_t reserveForInfrastructure = 0) {queue.setSize(size, reserveForInfrastructure);}
-
-  /**
-   * Returns the maximum size of the queue.
-   */
-  size_t getSize() const {return queue.getSize();}
-
-  /**
-   * The method returns the size of memory which is needed to write the queue to a stream.
-   * @return The number of bytes required.
-   */
-  size_t getStreamedSize() const {return MessageQueueBase::queueHeaderSize + queue.usedSize;}
-
-  /**
-   * The method calls a given message handler for all messages in the queue. Note that the messages
-   * still remain in the queue and have to be removed manually with clear().
-   * @param handler A reference to a message handler.
-   */
-  void handleAllMessages(MessageHandler& handler);
-
-  /**
-   * The method copies all messages from this queue to another queue.
-   * @param other The destination queue.
-   */
-  void copyAllMessages(MessageQueue& other);
-
-  /**
-   * The method moves all messages from this queue to another queue.
-   * @param other The destination queue.
-   */
-  void moveAllMessages(MessageQueue& other);
-
-  /**
-   * The method deletes older messages from the queue if newer messages of same type
-   * are already in the queue. However, some message types remain untouched.
-   * This method should not be called during message handling.
-   */
-  void removeRepetitions() {queue.removeRepetitions();}
-
-  /**
-   * The method removes all messages from the queue.
-   */
-  void clear() {queue.clear();}
-
-  /**
-   * The method returns whether the queue is empty.
-   * @return Aren't there any messages in the queue?
-   */
-  bool isEmpty() const {return queue.numberOfMessages == 0;}
-
-  /**
-   * The method returns the number of messages in the queue.
-   * @return The number of messages.
-   */
-  int getNumberOfMessages() const {return queue.numberOfMessages;}
-
-  /**
-   * The method removes a message from the queue.
-   * @param message The number of the message.
-   */
-  void removeMessage(int message) {queue.removeMessage(message);}
-
-  /**
-   * The method removes a message from the queue.
-   */
-  void removeLastMessage()
+  /** The header of a streamed queue. */
+  struct QueueHeader
   {
-    if(!isEmpty())
-      removeMessage(getNumberOfMessages() - 1);
-  }
+    size_t sizeLow : 32; /**< The lower 32 bits of the size of the queue. */
+    size_t messages : 28; /**< Unused. In previous implementations, this contained the number of messages in the queue. */
+    size_t sizeHigh : 4; /**< The bits 32..35 of the size of the queue. */
+  };
 
   /**
-   * Hacker interface for messages. Allows patching their data after they were added.
-   * @param message The number of the message to be patched.
-   * @param index The index of the value to be patched in the message.
-   * @param value The new value of the byte.
+   * The header of a single message in the queue.
+   * Microsoft's compilers only supports packed bit fields if all members have
+   * the same type. Therefore this rather strange construct is used, in which
+   * \c _ and \c id share the same address.
    */
-  void patchMessage(int message, int index, const std::string& value);
+  struct MessageHeader
+  {
+    union
+    {
+      struct
+      {
+        unsigned _ : 8; /**< A placeholder for the message type. */
+        unsigned size : 24; /**< The size of the message in bytes (not including this header). */
+      };
+      MessageID id;  /**< The message type. */
+    };
+  };
+
+  /** A message that can be read. */
+  class Message
+  {
+    const char* buffer; /**< The position of the message in the queue's buffer. */
+    friend class MessageQueue; /**< \c operator<< need access to \c buffer . */
+
+  public:
+    /**
+     * Constructor.
+     * @param The position of the message in the queue's buffer.
+     */
+    Message(const char* buffer) : buffer(buffer) {}
+
+    /**
+     * Returns the message id, i.e. a constant representing its type.
+     * @return The id.
+     */
+    MessageID id() const {return reinterpret_cast<const MessageHeader*>(buffer)->id;}
+
+    /**
+     * Returns the message's size in bytes.
+     * @return The size (without the \c MessageHeader ).
+     */
+    size_t size() const {return reinterpret_cast<const MessageHeader*>(buffer)->size;}
+
+    /**
+     * Returns a stream that allows reading the message in binary format.
+     * @return The binary stream.
+     */
+    InBinaryMemory bin() const {return InBinaryMemory(buffer + sizeof(MessageHeader), size());}
+
+    /**
+     * Returns a stream that allows reading the message in textual format.
+     * @return The textual stream.
+     */
+    InTextMemory text() const {return InTextMemory(buffer + sizeof(MessageHeader), size());};
+  };
+
+  /** Stream for adding a message in binary format. */
+  struct OutBinary : public OutStream<OutQueue, ::OutBinary>
+  {
+    OutBinary(MessageID id, MessageQueue& queue) {open(id, queue);}
+  };
+
+  /** Stream for adding a message in textual format. */
+  struct OutText : public OutStream<OutQueue, ::OutText>
+  {
+    OutText(MessageID id, MessageQueue& queue) {open(id, queue);}
+  };
+
+  /** Stream for adding a message in raw textual format. */
+  struct OutTextRaw : public OutStream<OutQueue, ::OutTextRaw>
+  {
+    OutTextRaw(MessageID id, MessageQueue& queue) {open(id, queue);}
+  };
 
   /**
-   * The method writes a header for an appendable message queue to a stream.
-   * @param stream The stream that is written to.
+   * A constant forward iterator to enumerate the messages of the queue. It
+   * overloads the usual operators with some specialties as described at the
+   * beginning of this file. However, the operator \c * returns an object by
+   * value, not a reference to an existing object, because there is no direct
+   * access to the messages in the queue, only the ability to get a stream to
+   * read from. Therefore, there also is no operator \c -> .
    */
-  void writeAppendableHeader(Out& stream) const;
+  class const_iterator
+  {
+  private:
+    const char* current; /**< The position of the message in the queue's buffer. */
+    friend class MessageQueue; /**< \c operator<< need access to \c current . */
+    friend class LogPlayer; /**< \c playBack need access to \c current . */
+
+  public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Message;
+    using difference_type = size_t;
+    using pointer = void;
+    using reference = void;
+
+    const_iterator(const char* current) : current(current) {}
+    const_iterator(const const_iterator& other) : const_iterator(other.current) {}
+    const_iterator& operator=(const const_iterator& other) {return *new(this) const_iterator(other.current);}
+    Message operator*() const {return Message(current);}
+    bool operator==(const const_iterator& other) const {return current == other.current;}
+    bool operator!=(const const_iterator& other) const {return current != other.current;}
+    const_iterator& operator++() {current += sizeof(MessageHeader) + reinterpret_cast<const MessageHeader*>(current)->size; return *this;}
+    const_iterator operator++(int) {const_iterator result(*this); current += sizeof(MessageHeader) + reinterpret_cast<const MessageHeader*>(current)->size; return result;}
+    const_iterator& operator+=(std::ptrdiff_t offset) {current += offset; return *this;}
+    const_iterator& operator-=(std::ptrdiff_t offset) {current -= offset; return *this;}
+    const_iterator operator+(std::ptrdiff_t offset) const {const_iterator result(*this); return result += offset;}
+    const_iterator operator-(std::ptrdiff_t offset) const {const_iterator result(*this); return result -= offset;}
+    size_t operator-(const const_iterator& other) const {return current - other.current;}
+  };
 
   /**
-   * The method appends the message queue to a stream.
-   * @param stream The stream that is appended to.
+   * Default constructor.
+   * On the desktop, this will already reserve a small capacity for the queue
+   * (16 kb).
+   * The maximum capacity is set to 64 mb. On the robot, \c reserve must be
+   * called before the queue can be used.
+   */
+  MessageQueue();
+
+  /** The destructor deallocates the queue. */
+  ~MessageQueue();
+
+  /**
+   * Copies another message queue to this one. Messages previously stored in
+   * this message queue are lost. After this operation, the capacity equals the
+   * size and the maximum capacity is the same as in the other queue.
+   * @param other The queue the messages are copied from.
+   * @return This queue.
+   */
+  MessageQueue& operator=(const MessageQueue& other);
+
+  /**
+   * Appends a range of messages to this queue. Messages might be dropped if
+   * they do not fit.
+   * @param range Iterators marking the first message (inclusive) and the last
+   *              message (exclusive) that are appended.
+   * @return This queue.
+   */
+  MessageQueue& operator<<(const std::pair<const_iterator, const_iterator>& range);
+
+  /**
+   * Appends the messages of another queue to this one. Messages might be
+   * dropped if they do not fit.
+   * @param other The other message queue.
+   * @return This queue.
+   */
+  MessageQueue& operator<<(const MessageQueue& other)
+    {return *this << std::pair<const_iterator, const_iterator>(other.begin(), other.end());}
+
+  /**
+   * Appends a single message to this queue. It might be dropped if it does not
+   * fit.
+   * @param message The message.
+   * @return This queue.
+   */
+  MessageQueue& operator<<(const Message& message)
+    {return *this << std::pair<const_iterator, const_iterator>(message.buffer, message.buffer + sizeof(MessageHeader) + message.size());}
+
+  /** Empties the queue. */
+  void clear();
+
+  /**
+   * Returns the used size of the queue.
+   * @return The size in bytes.
+   */
+  size_t size() const {return used;}
+
+  /**
+   * Changes the size of the queue.
+   * @param size The new size of the queue. Must smaller or equal to the
+   *             current size and must also be at the end of a message.
+   */
+  void resize(size_t size);
+
+  /**
+   * Is the queue empty?
+   * @return Is it?
+   */
+  bool empty() {return used == 0;}
+
+  /**
+   * Defines the maximum capacity of the queue. On the robot, this capacity is
+   * immediately allocated and this method must be called exactly once after
+   * the construction of this message queue.
+   * @param capacity The maximum capacity of the queue in bytes.
+   * @param protectedCapacity A part of the maximum capacity that is reserved
+   *                          for certain message types (in bytes).
+   */
+  void reserve(size_t capacity, size_t protectedCapacity = 0);
+
+  /**
+   * Sets an external (read-only) message buffer. Will free the previous buffer
+   * if it was managed by the queue.
+   * @param buffer The external buffer. The queue does not take ownership of
+   *               that buffer, i.e. it will not free it.
+   * @param size The size of the external buffer.
+   */
+  void setBuffer(const char* buffer, size_t size);
+
+  /**
+   * Appends the messages of the queue to a stream. In contrast to the
+   * operator \c << , no \c QueueHeader will be written.
+   * @param stream The stream that is appended.
    */
   void append(Out& stream) const;
 
   /**
-   * Write message ids to a stream as text.
-   * @param stream The stream to write to.
-   * @param numOfMessageIDs The number of message ids to write. They always start with the first one.
+   * Filters messages based on a used-defined criterion.
+   * @param keep A function that returns whether a message should be kept. The
+   *             parameter passed is the iterator to the message in question.
    */
-  void writeMessageIDs(Out& stream, MessageID numOfMessageIDs = ::numOfDataMessageIDs) const {queue.writeMessageIDs(stream, numOfMessageIDs);}
+  void filter(const std::function<bool(const_iterator)>& keep);
 
   /**
-   * Create a message id mapping from a stream. The stream contains the message ids as text.
-   * The mapping associates these string with the ids that currently use that name.
-   * @param stream The stream to read from.
+   * Returns an iterator to the first message in the queue.
+   * @return A constant iterator.
    */
-  void readMessageIDMapping(In& stream) {queue.readMessageIDMapping(stream);}
-
-protected:
-  /**
-   * The method copies a single message to another queue.
-   * @param message The number of the message.
-   * @param other The other queue.
-   */
-  void copyMessage(int message, MessageQueue& other);
+  const_iterator begin() const {return const_iterator(buffer);}
 
   /**
-   * The method write the message queue to a stream.
-   * @param stream The stream that is written to.
+   * Returns an iterator that points behind the last message in the queue.
+   * @return A constant iterator.
    */
-  void write(Out& stream) const;
+  const_iterator end() const {return const_iterator(buffer + used);}
 
   /**
-   * The method reads all messages from a stream and appends them to this message queue.
-   * The data in the stream has to start with a header.
-   * @param stream The stream that is read from.
+   * Returns a binary stream that allows to append a new message.
+   * @param id The type of the new message.
+   * @return A binary stream.
    */
-  void append(In& stream);
+  OutBinary bin(MessageID id) {return OutBinary(id, *this);}
 
   /**
-   * The method reads messages from a stream and appends them to this message queue.
-   * The size determines the amount of data to be read. It must contain complete messages, i.e.
-   * it is not allowed that the data read ends in the middle of a message.
-   * The data in the stream has to start with a header, which is skipped.
-   * @param stream The stream that is read from.
-   * @param size The number of bytes to be read.
+   * Returns a textual stream that allows to append a new message.
+   * @param id The type of the new message.
+   * @return A textual stream.
    */
-  void append(In& stream, size_t size);
+  OutText text(MessageID id) {return OutText(id, *this);}
 
-  friend In& operator>>(In& stream, MessageQueue& messageQueue); /**< Gives the streaming operator access to append(). */
-  friend Out& operator<<(Out& stream, const MessageQueue& messageQueue); /**< Gives the streaming operator access to write(). */
+  /**
+   * Returns a raw textual stream that allows to append a new message.
+   * @param id The type of the new message.
+   * @return A raw textual stream, i.e. a stream that does not add spaces
+   *         between different entries.
+   */
+  OutTextRaw textRaw(MessageID id) {return OutTextRaw(id, *this);}
 };
-
-/**
- * Streaming operator that reads a MessageQueue from a stream.
- * @param stream The stream from which is read.
- * @param messageQueue The MessageQueue object.
- * @return The stream.
- */
-In& operator>>(In& stream, MessageQueue& messageQueue);
-
-/**
- * Streaming operator that writes a MessageQueue to a stream.
- * @param stream The stream to write on.
- * @param messageQueue The MessageQueue object.
- * @return The stream.
- */
-Out& operator<<(Out& stream, const MessageQueue& messageQueue);
-
-/**
- * Streaming operator that writes a InMessage to another MessageQueue.
- * @param message The InMessage to write.
- * @param queue The MessageQueue object.
- */
-void operator>>(InMessage& message, MessageQueue& queue);

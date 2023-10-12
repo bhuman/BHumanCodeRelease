@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "Math/Boundary.h"
 #include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(Keypoints,
@@ -46,5 +47,6 @@ STREAMABLE(Keypoints,
   /** Draw the keypoints. */
   void draw() const,
 
-  (ENUM_INDEXED_ARRAY(Point, Keypoint)) points,
+  (ENUM_INDEXED_ARRAY(Point, Keypoint)) points, /**< The keypoints in image coordinates. */
+  (Boundaryi) patchBoundary, /**< The boundary of the patch that was searched for the keypoints. */
 });

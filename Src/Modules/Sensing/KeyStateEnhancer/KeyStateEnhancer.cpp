@@ -6,7 +6,7 @@
 
 #include "KeyStateEnhancer.h"
 
-MAKE_MODULE(KeyStateEnhancer, sensing);
+MAKE_MODULE(KeyStateEnhancer);
 
 void KeyStateEnhancer::update(EnhancedKeyStates& enhancedKeyStates)
 {

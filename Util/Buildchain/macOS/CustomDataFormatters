@@ -277,11 +277,6 @@
       </SummaryFormatter>
 
       <SummaryFormatter
-         formatString = "{::_fromQString($VAR)}:s"
-         type = "QString">
-      </SummaryFormatter>
-
-      <SummaryFormatter
          formatString = "{$VAR.value * 180 / 3.14159265f}&#xb0; / {$VAR.value}"
          type = "Angle">
       </SummaryFormatter>
@@ -557,11 +552,6 @@
       </SummaryFormatter>
 
       <SummaryFormatter
-         formatString = "{::_fromQString($VAR)}:s ({&amp;$VAR})"
-         type = "QString &amp;">
-      </SummaryFormatter>
-
-      <SummaryFormatter
          formatString = "{$VAR.value * 180 / 3.14159265f}&#xb0; / {$VAR.value} ({&amp;$VAR})"
          type = "Angle &amp;">
       </SummaryFormatter>
@@ -834,11 +824,6 @@
       <SummaryFormatter
          formatString = "[{$VAR->rotation.m_coeffs.m_storage.m_data.array[0]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[1]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[2]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[3]}][{$VAR->translation.m_storage.m_data.array[0]}, {$VAR->translation.m_storage.m_data.array[1]}, {$VAR->translation.m_storage.m_data.array[2]}] ({$VAR})"
          type = "Pose3f *">
-      </SummaryFormatter>
-
-      <SummaryFormatter
-         formatString = "{::_fromQString(*$VAR)}:s ({$VAR})"
-         type = "QString *">
       </SummaryFormatter>
 
       <SummaryFormatter

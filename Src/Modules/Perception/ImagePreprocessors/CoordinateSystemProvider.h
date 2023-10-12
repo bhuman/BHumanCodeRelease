@@ -37,7 +37,7 @@ MODULE(CoordinateSystemProvider,
   {
     using CameraTiming = CoordinateSystemProviderModule::CameraTiming,
 
-    (ENUM_INDEXED_ARRAY(CameraTiming, CameraInfo::Camera)) cameraTimings, /** The timings of both cameras. */
+    (ENUM_INDEXED_ARRAY(CameraTiming, CameraInfo::Camera)) cameraTimings, /**< The timings of both cameras. */
   }),
 });
 

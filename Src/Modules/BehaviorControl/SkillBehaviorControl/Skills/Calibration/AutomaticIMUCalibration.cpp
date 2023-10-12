@@ -14,7 +14,6 @@
 SKILL_IMPLEMENTATION(AutomaticIMUCalibrationImpl,
 {,
   IMPLEMENTS(AutomaticIMUCalibration),
-  CALLS(Activity),
   CALLS(CalibrateRobot),
   CALLS(LookAtAngles),
   CALLS(Say),
@@ -22,10 +21,6 @@ SKILL_IMPLEMENTATION(AutomaticIMUCalibrationImpl,
   USES(CalibrationRequest),
   REQUIRES(FrameInfo),
   USES(IMUCalibration),
-  DEFINES_PARAMETERS(
-  {,
-    (int)(3000) waitTime,
-  }),
 });
 
 class AutomaticIMUCalibrationImpl : public AutomaticIMUCalibrationImplBase
@@ -37,7 +32,6 @@ class AutomaticIMUCalibrationImpl : public AutomaticIMUCalibrationImplBase
 
   void execute(const AutomaticIMUCalibration&) override
   {
-    theActivitySkill({.activity = BehaviorStatus::unknown});
     theStandSkill();
     theLookAtAnglesSkill({.pan = 0_deg,
                           .tilt = 0_deg});

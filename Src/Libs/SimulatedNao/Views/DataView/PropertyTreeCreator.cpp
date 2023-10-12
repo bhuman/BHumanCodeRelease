@@ -44,9 +44,9 @@ void PropertyTreeCreator::outAngle(const Angle& value)
 {
   Entry& e = stack.back();
   ASSERT(!e.property);
-  e.property = view.getProperty(e.path, qMetaTypeId<AngleWithUnity>(), e.name.c_str(), e.parent);
-  AngleWithUnity angle = value;
-  angle.deg = e.property->value().value<AngleWithUnity>().deg;
+  e.property = view.getProperty(e.path, qMetaTypeId<AngleWithUnit>(), e.name.c_str(), e.parent);
+  AngleWithUnit angle = value;
+  angle.deg = !view.shouldUseRadians(e.property);
   e.property->setValue(QVariant::fromValue(angle));
 }
 
@@ -72,7 +72,6 @@ void PropertyTreeCreator::select(const char* name, int type, const char* enumTyp
 void PropertyTreeCreator::deselect()
 {
   QtVariantProperty* property = stack.back().property;
-  ASSERT(property);
   stack.pop_back();
   if(!stack.empty())
     stack.back().property->addSubProperty(property);

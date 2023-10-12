@@ -60,7 +60,7 @@
   } \
   while(false)
 
-MAKE_MODULE(PathPlannerProvider, behaviorControl);
+MAKE_MODULE(PathPlannerProvider);
 
 static const float epsilon = 0.1f; /**< Small offset in mm. */
 
@@ -101,7 +101,7 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
         for(edge = nodes[1].fromEdge[rotation]; edge->fromNode != &nodes[0]; edge = edge->fromNode->fromEdge[edge->fromRotation])
         {
           obstacleAvoidance.path.emplace_back();
-          obstacleAvoidance.path.back().obstacle = Geometry::Circle(theRobotPose.inversePose * edge->fromNode->center, edge->fromNode->radius + radiusControlOffset);
+          obstacleAvoidance.path.back().obstacle = Geometry::Circle(theRobotPose.inverse() * edge->fromNode->center, edge->fromNode->radius + radiusControlOffset);
           obstacleAvoidance.path.back().clockwise = edge->fromRotation == cw;
         }
         lastDir = edge->toRotation;
@@ -263,8 +263,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenal
 
   // Insert obstacles if they are on the field.
   for(const auto& obstacle : theObstacleModel.obstacles)
-    if(obstacle.type != Obstacle::goalpost)
-      addObstacle(theRobotPose * obstacle.center, getRadius(obstacle.type));
+    addObstacle(theRobotPose * obstacle.center, getRadius(obstacle.type));
 
   // Add ball in playing if it is not the target
   if(theGameState.isPlaying())
@@ -335,8 +334,6 @@ float PathPlannerProvider::getRadius(Obstacle::Type type) const
 {
   switch(type)
   {
-    case Obstacle::goalpost:
-      return goalPostRadius - radiusControlOffset;
     case Obstacle::fallenSomeRobot:
     case Obstacle::fallenOpponent:
     case Obstacle::fallenTeammate:
@@ -523,7 +520,7 @@ void PathPlannerProvider::createTangents(Node& node, Tangents& tangents)
           else
           {
             // Now we're just intersecting a line with a circle: v*n=c, n*n=1
-            const float h = std::sqrt(std::max(0.f, 1.f - c * c));
+            const float h = std::sqrt(1.f - c * c);
             FOREACH_ENUM(Rotation, j)
             {
               float sign2 = j ? -1.f : 1.f;
@@ -682,9 +679,14 @@ void PathPlannerProvider::addNeighborsFromTangents(Node& node, Tangents& tangent
               Geometry::Line line(fromPoint, tangent->toPoint - fromPoint);
               Vector2f p1;
               Vector2f p2;
-              if(Geometry::getIntersectionOfLineAndCircle(line, *s->toNode, p1, p2) &&
-                 line.direction.squaredNorm() >= (p1 - fromPoint).squaredNorm())
-                goto doNotAddTangent;
+              const int numOfIntersections = Geometry::getIntersectionOfLineAndCircle(line, *s->toNode, p1, p2);
+              if(numOfIntersections > 0)
+              {
+                const float distance = line.direction.squaredNorm();
+                if(distance >= (p1 - fromPoint).squaredNorm() ||
+                   (numOfIntersections == 2 && distance >= (p2 - fromPoint).squaredNorm()))
+                  goto doNotAddTangent;
+              }
             }
           }
         node.edges[rotation].emplace_back(*tangent);

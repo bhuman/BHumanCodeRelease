@@ -73,20 +73,20 @@ void main()
 const char* ldqFragmentShaderSource = R"glsl(
 #version 330 core
 in vec3 Color;
-out vec3 outFragColor;
+out vec4 outFragColor;
 void main()
 {
-  outFragColor = Color;
+  outFragColor = vec4(Color, 1.0);
 }
 )glsl";
 
 const char* secFragmentShaderSource = R"glsl(
 #version 330 core
 uniform uvec3 color;
-out vec3 outFragColor;
+out vec4 outFragColor;
 void main()
 {
-  outFragColor = vec3(color) / 255.0;
+  outFragColor = vec4(vec3(color) / 255.0, 1.0);
 }
 )glsl";
 
@@ -94,10 +94,10 @@ const char* imageFragmentShaderSource = R"glsl(
 #version 330 core
 uniform sampler2D tex;
 in vec2 TexCoords;
-out vec3 outFragColor;
+out vec4 outFragColor;
 void main()
 {
-  outFragColor = texture(tex, TexCoords).rgb;
+  outFragColor = vec4(texture(tex, TexCoords).rgb, 1.0);
 }
 )glsl";
 

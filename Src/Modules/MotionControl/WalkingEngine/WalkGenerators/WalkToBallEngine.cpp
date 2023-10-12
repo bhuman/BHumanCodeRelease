@@ -9,10 +9,10 @@
 
 #include "WalkToBallEngine.h"
 #include "Math/Geometry.h"
+#include "Tools/Motion/WalkUtilities.h"
 
-MAKE_MODULE(WalkToBallEngine, motionControl);
+MAKE_MODULE(WalkToBallEngine);
 
-// TODO disable side walking if ball was not seen for x seconds!
 void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
 {
   walkToBallGenerator.createPhase = [this](const Pose2f& targetInSCS, const Vector2f& ballInSCS,
@@ -20,11 +20,12 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
                                            const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                            const Pose2f& walkSpeed, const MotionPhase& lastPhase)
   {
-    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(false /* TODO */, lastPhase);
+    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, targetInSCS);
+    const bool fastWalk = timeSinceBallWasSeen < minTimeSinceBallSeen && distanceToBall < 400.f;
 
     if(!obstacleAvoidanceInSCS.path.empty())
       return theWalkToPoseGenerator.createPhaseToTarget(targetInSCS, obstacleAvoidanceInSCS, walkSpeed,
-                                                        isLeftPhase, lastPhase, false,
+                                                        isLeftPhase, lastPhase, fastWalk,
                                                         ballInSCS, timeSinceBallWasSeen < minTimeSinceBallSeen);
 
     const float ballCircleRadius = std::max((targetInSCS.translation - ballInSCS).norm(), theBallSpecification.radius + 110.f + 50.f); // 110 = length of the foot in direction of the ball. Not using theRobotDimensions.footLength because this should be calculated. 50 = safety zone
@@ -56,11 +57,11 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
 
     const Angle ballAngle = ballInSCS.angle();
     if((std::abs(Angle::normalize((ballInSCS - targetInSCS.translation).angle() - targetInSCS.translation.angle())) < 90_deg ||
-        abs(Angle::normalize(Angle::normalize(ballAngle - 180_deg) - (targetInSCS.translation - ballInSCS).angle())) < 45_deg) && intersections == 0)
+        std::abs(Angle::normalize(Angle::normalize(ballAngle - 180_deg) - (targetInSCS.translation - ballInSCS).angle())) < 45_deg) && intersections == 0)
     {
-      // case 1: no tangents necessary, walk directly to kick pose
+      // no tangents necessary, walk directly to kick pose
       return theWalkToPoseGenerator.createPhaseToTarget(targetInSCS, obstacleAvoidanceInSCS, walkSpeed, isLeftPhase,
-                                                        lastPhase, timeSinceBallWasSeen < minTimeSinceBallSeen,
+                                                        lastPhase, fastWalk,
                                                         ballInSCS, timeSinceBallWasSeen < minTimeSinceBallSeen);
     }
     else
@@ -79,7 +80,7 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
       }
       else
       {
-        // I think this is based on the Thales's theorem, to determin the tangent point. This only works for ballInSCS.norm() < ballCircleRadius
+        // I think this is based on the Thales's theorem, to determine the tangent point. This only works for ballInSCS.norm() < ballCircleRadius
         const float a = std::asin(ballCircleRadius / ballInSCS.norm());
 
         float t = ballAngle - a;
@@ -89,39 +90,28 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
         tangentPoint2 = ballInSCS + Vector2f(ballCircleRadius * -std::sin(t), ballCircleRadius * std::cos(t));
       }
 
-      modTargetInSCS.translation = (tangentPoint1 - targetInSCS.translation).squaredNorm() < (tangentPoint2 - targetInSCS.translation).squaredNorm() ? tangentPoint1 : tangentPoint2;
-      // find out which rotation for walking sideways makes the most sense and walk sideways, if the needed adjustment in the rotation is small enough (45deg)
-      Angle angleRefToSide = modTargetInSCS.translation.angle();
-      Angle orientationThreshold = 0_deg;
-      Angle ballInVisionCorrection = 0_deg;
-      if(timeSinceBallWasSeen < minTimeSinceBallSeen)
-      {
-        const Angle sideOne = Angle::normalize(90_deg - modTargetInSCS.translation.angle());
-        const Angle sideTwo = Angle::normalize(-90_deg - modTargetInSCS.translation.angle());
-        angleRefToSide = std::abs(sideOne) < std::abs(sideTwo) ? -sideOne : -sideTwo;
+      modTargetInSCS.translation = ((tangentPoint1 - targetInSCS.translation).norm() + tangentPoint1.norm()) < ((tangentPoint2 - targetInSCS.translation).norm() + tangentPoint2.norm()) ? tangentPoint1 : tangentPoint2;
 
-        ballInVisionCorrection = ballAngle - maxTargetFocusAngle.limit(ballAngle);
-        angleRefToSide += ballInVisionCorrection;
-        orientationThreshold = (90_deg - std::abs(ballInVisionCorrection)) * 0.5f;
-      }
-      if(modTargetInSCS.translation.squaredNorm() > sqr(300.f))
-      {
-        if(std::abs(angleRefToSide) < orientationThreshold && targetInSCS.translation.squaredNorm() < sqr(1000.f) && ballInSCS.rotated(-(angleRefToSide - ballInVisionCorrection)).x() > 0.f)  // only if the target is under 1 meter away
-          modTargetInSCS.rotation = angleRefToSide;
-        else
-          modTargetInSCS.rotation = modTargetInSCS.translation.angle();
-      }
+      const Angle tangentAngle = modTargetInSCS.translation.angle();
+      const Angle tangentAngle90 = tangentAngle - 90_deg;
+      Vector2f intersection;
+      VERIFY(Geometry::getIntersectionOfLines(
+               Geometry::Line(targetInSCS.translation, Vector2f::polar(1.f, tangentAngle90)),
+               Geometry::Line(modTargetInSCS.translation, Vector2f::polar(1.f, tangentAngle)), intersection));
+
+      if(targetInSCS.translation.squaredNorm() > sqr(1000.f) || timeSinceBallWasSeen > minTimeSinceBallSeen)
+        WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, ballInSCS,
+                                    isLeftPhase, fastWalk, lastPhase);
       else
       {
-        const Angle angleOffset = (targetInSCS.inverse() * ballInSCS).angle(); // The angle that the ball has relative to the robot at the kick pose.
-        if(std::abs(angleRefToSide) < orientationThreshold && ballInSCS.rotated(-angleRefToSide).x() > 0.f)
-        {
-          const float factor = Rangef::ZeroOneRange().limit(modTargetInSCS.translation.norm() / 100.f);
-          modTargetInSCS.rotation = (1.f - factor) * Angle::normalize((ballInSCS - modTargetInSCS.translation.normalized(std::min(100.f, targetInSCS.translation.norm()))).angle() - angleOffset)
-                                    + factor * angleRefToSide;
-        }
-        else
-          modTargetInSCS.rotation = Angle::normalize((ballInSCS - modTargetInSCS.translation.normalized(std::min(100.f, targetInSCS.translation.norm()))).angle() - angleOffset);
+        Pose2f modTargetInSCS2 = modTargetInSCS;
+        WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, ballInSCS,
+                                    isLeftPhase, fastWalk, lastPhase);
+        WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS2, ballInSCS,
+                                    isLeftPhase, fastWalk, lastPhase, true);
+        const float factor = Rangef::ZeroOneRange().limit((ballInSCS.norm() - 350.f) / 100.f);
+        if(std::abs(modTargetInSCS2.rotation * factor) <= std::abs(modTargetInSCS.rotation))
+          modTargetInSCS.rotation = modTargetInSCS2.rotation;
       }
 
       // In a rare case, the robot might switch the rotation direction with every step and therefore gets stuck.
@@ -138,7 +128,7 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
     {
       std::vector<Vector2f> translationPolygon;
       std::vector<Vector2f> translationPolygonNoCenter;
-      theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, translationPolygon, translationPolygonNoCenter, (timeSinceBallWasSeen < minTimeSinceBallSeen) && distanceToBall < 400.f);
+      theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, translationPolygon, translationPolygonNoCenter, fastWalk, false);
 
       if(Geometry::isPointInsideConvexPolygon(translationPolygon.data(), static_cast<int>(translationPolygon.size()), targetInSCS.translation))
         step.translation = targetInSCS.translation;
@@ -178,6 +168,6 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
         step.translation.y() = 0.f;
     }
 
-    return theWalkGenerator.createPhase(step, lastPhase);
+    return theWalkGenerator.createPhase(step, lastPhase, 0.f);
   };
 }

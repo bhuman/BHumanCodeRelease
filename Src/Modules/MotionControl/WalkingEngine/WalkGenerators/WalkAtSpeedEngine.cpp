@@ -9,7 +9,7 @@
 #include "WalkAtSpeedEngine.h"
 #include "Representations/MotionControl/MotionRequest.h"
 
-MAKE_MODULE(WalkAtSpeedEngine, motionControl);
+MAKE_MODULE(WalkAtSpeedEngine);
 
 void WalkAtSpeedEngine::update(WalkAtAbsoluteSpeedGenerator& walkAtAbsoluteSpeedGenerator)
 {
@@ -20,6 +20,15 @@ void WalkAtSpeedEngine::update(WalkAtAbsoluteSpeedGenerator& walkAtAbsoluteSpeed
                                theWalkingEngineOutput.maxSpeed.translation.y());
     const Pose2f speedScaling(std::abs(requestSpeed.rotation) / theWalkingEngineOutput.maxSpeed.rotation, motionRequest.walkSpeed.translation.array() / useMaxSpeed.array());
     return createPhase(motionRequest.walkSpeed, speedScaling, lastPhase);
+  };
+
+  walkAtAbsoluteSpeedGenerator.createPhaseToTarget = [this](const Pose2f& walkSpeed, const MotionPhase& lastPhase)
+  {
+    const Pose2f requestSpeed = walkSpeed;
+    const Vector2f useMaxSpeed(walkSpeed.translation.x() >= 0.f ? theWalkingEngineOutput.maxSpeed.translation.x() : std::abs(theWalkingEngineOutput.maxSpeedBackwards),
+                               theWalkingEngineOutput.maxSpeed.translation.y());
+    const Pose2f speedScaling(std::abs(requestSpeed.rotation) / theWalkingEngineOutput.maxSpeed.rotation, walkSpeed.translation.array() / useMaxSpeed.array());
+    return createPhase(walkSpeed, speedScaling, lastPhase);
   };
 }
 
@@ -42,13 +51,13 @@ std::unique_ptr<MotionPhase> WalkAtSpeedEngine::createPhase(const Pose2f& walkTa
   walkSpeedScaled.rotation /= factor;
   walkSpeedScaled.translation /= factor;
 
-  const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(walkTarget.translation.y() != 0.f ? (walkTarget.translation.y() > 0.f) : (walkTarget.rotation > 0.f), lastPhase);
+  const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, walkTarget);
   Pose2f stepTarget = walkTarget;
   stepTarget.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeedScaled).clamped(walkTarget.rotation * walkSpeedScaled.rotation);
 
   std::vector<Vector2f> translationPolygon;
   std::vector<Vector2f> translationPolygonNoCenter;
-  theWalkGenerator.getTranslationPolygon(isLeftPhase, stepTarget.rotation, lastPhase, walkSpeedScaled, translationPolygon, translationPolygonNoCenter, false);
+  theWalkGenerator.getTranslationPolygon(isLeftPhase, stepTarget.rotation, lastPhase, walkSpeedScaled, translationPolygon, translationPolygonNoCenter, false, false);
 
   Vector2f backRight(0.f, 0.f);
   Vector2f frontLeft(0.f, 0.f);
@@ -64,5 +73,5 @@ std::unique_ptr<MotionPhase> WalkAtSpeedEngine::createPhase(const Pose2f& walkTa
   stepTarget.translation.y() = walkSpeedScaled.translation.y() >= 0.f ? frontLeft.y() : backRight.y();
   if(isLeftPhase == (stepTarget.translation.y() < 0.f))
     stepTarget.translation.y() = 0.f;
-  return theWalkGenerator.createPhase(stepTarget, lastPhase);
+  return theWalkGenerator.createPhase(stepTarget, lastPhase, 0.f);
 }

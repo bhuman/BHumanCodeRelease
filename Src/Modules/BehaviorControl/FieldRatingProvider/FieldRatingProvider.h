@@ -18,6 +18,7 @@
 #include "Representations/Modeling/RobotPose.h"
 #include "Framework/Module.h"
 #include <vector>
+#include "Debugging/ColorRGBA.h"
 
 MODULE(FieldRatingProvider,
 {,
@@ -54,7 +55,7 @@ MODULE(FieldRatingProvider,
     // teammate
     (float)(0.6f) teammateValue, // max possible attract value for a teammate
     (float)(3000.f) teammateAttractRange, // max distance a teammate influences the potential field.
-    (float)(300.f) bestRelativePose, // best relativ pass pose relative from the teammate in direction of the goal
+    (float)(300.f) bestRelativePose, // best relative pass pose relative from the teammate in direction of the goal
     (float)(500.f) minTeammatePassDistance, // teammate must stand at least this distance far away from us
     (float)(2000.f) maxTeammatePassDistance, // if teammate stands this far away (or more) then the rating is not reduced
     (float)(1000.f) teammateMinDistanceToObstacle,
@@ -70,26 +71,27 @@ MODULE(FieldRatingProvider,
     (float)(0.5f) betterGoalAngleValue,
     (float) betterGoalAngleRange,
 
-    // robot direction
-    (Angle)(45_deg) maxFacingAngle,
-    (float)(3000.f) facingRange,
-    (float)(0.35f) facingValue,
-    (float)(100.f) facingBackShift,
-    (float)(1.f) lowPassFilterFactorPerSecond, // filter factor (per second)
-
     // ball distance
-    (float)(750.f) bestDistanceForBall,
+    (float)(1000.f) bestDistanceForBall,
     (float)(500.f) bestDistanceWidth, // bestDistanceForBall +- bestDistanceWidth shall produce the best rating
     (float)(500.f) ballRange,
     (float)(0.5f) ballRating,
     (Angle)(110_deg) ballGoalSectorWidth, // Only direction from the ball to the goal +- 110 degrees are allowed
+    (Angle)(10_deg) ballGoalSectorBorderWidth,
 
     // drawing
+    (ColorRGBA)(213, 17, 48, 125) badRatingColor,
+    (ColorRGBA)(0, 140, 0, 125) middleRatingColor,
+    (ColorRGBA)(0, 104, 180, 125) goodRatingColor,
+
     (float) drawMinX,
     (float) drawMaxX,
     (float) drawMinY,
     (float) drawMaxY,
     (Vector2f)(50.f, 50.f) drawGrid, // size of the draw grid
+    (Vector2f)(Vector2f(20.f, 20.f)) drawGridArrow, // size of the draw grid
+    (int)(20) arrowwidth,
+    (float)(0.5f) arrowlenght,
   }),
 });
 
@@ -115,8 +117,8 @@ private:
   bool goalAngleDrawing;
   bool opponentDrawing;
   bool teammateDrawing;
-  bool facingDrawing;
   bool ballNearDrawing;
+  bool passTargetDrawing;
 
   // TODO what does RTV mean? I wrote this code, but have no idea, lol
   float fieldBorderRTV;
@@ -124,11 +126,9 @@ private:
   float teammateRTV;
   float passRTV;
   float betterGoalAngleRTV;
-  float facingRTV;
   float ballRTV;
   float obstacleBackRTV;
   Rangef bestBallPositionRange;
-  float lowPassFilterFactor;
   float minXCoordinateForPass;
 
   std::vector<Angle> teammateAngleToGoal;
@@ -149,8 +149,6 @@ private:
   unsigned int lastTeammateUpdate;
   unsigned int lastObstacleOnFieldUpdate;
   unsigned int lastTeammateInFieldUpdate;
-
-  Vector2f robotRotation;
 
   Vector2f rightInnerGoalPost;
   Vector2f leftInnerGoalPost;
@@ -185,7 +183,9 @@ private:
 
   PotentialValue getTeammatesPotential(const float x, const float y, const bool calculateFieldDirection, const int passTarget);
 
-  PotentialValue getRobotFacingPotential(const float x, const float y, const bool calculateFieldDirection);
-
   PotentialValue getBallNearPotential(const float x, const float y, const bool calculateFieldDirection);
+
+  void updateTeammateData(const Vector2f& useBallPose);
+
+  std::vector<Vector2f> getPossiblePassTargets();
 };

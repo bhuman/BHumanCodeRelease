@@ -95,3 +95,12 @@ void CirclePercept::draw() const
     }
   }
 }
+
+void CirclePercept::verify() const
+{
+  if(wasSeen)
+  {
+    ASSERT(std::isfinite(pos.x()));
+    ASSERT(std::isfinite(pos.y()));
+  }
+}

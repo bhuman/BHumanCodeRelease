@@ -25,4 +25,9 @@ void Keypoints::draw() const
       }
     }
   }
+  DEBUG_DRAWING("representation:Keypoints:patch", "drawingOnImage")
+  {
+    RECTANGLE("representation:Keypoints:patch", patchBoundary.x.min, patchBoundary.y.min,
+              patchBoundary.x.max, patchBoundary.y.max, 1, Drawings::solidPen, ColorRGBA::red);
+  }
 }

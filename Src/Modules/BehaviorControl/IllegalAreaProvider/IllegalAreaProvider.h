@@ -4,6 +4,7 @@
  * This file declares a module that determines which field areas are illegal to enter.
  *
  * @author Arne Hasselbring
+ * @author Fynn Böse
  */
 
 #pragma once
@@ -12,17 +13,19 @@
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/Libraries/LibTeammates.h"
-#include "Representations/Configuration/BallSpecification.h"
+#include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 
 MODULE(IllegalAreaProvider,
 {,
-  REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(GameState),
   REQUIRES(LibTeammates),
+  REQUIRES(StrategyStatus),
+  REQUIRES(FrameInfo),
   PROVIDES(IllegalAreas),
   DEFINES_PARAMETERS(
   {,
@@ -69,5 +72,5 @@ class IllegalAreaProvider : public IllegalAreaProviderBase
    * Visualizes the most common illegal areas with debug drawings.
    * @param illegal A mask describing which areas are actually illegal.
    */
-  void draw(unsigned illegal) const;
+  void draw(unsigned illegal, unsigned anticipatedIllegal) const;
 };

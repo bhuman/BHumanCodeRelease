@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/Communication/BHumanMessageParticle.h"
 #include "Math/Pose2f.h"
 #include "Streaming/AutoStreamable.h"
 
@@ -16,7 +16,7 @@
  * @struct RobotPose
  * The pose of the robot with additional information
  */
-STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRobotPose>
+STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle
 {
   /** Different states of robot pose estimate quality */
   ENUM(LocalizationQuality,
@@ -43,8 +43,13 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRob
     return *this;
   }
 
+  const Pose2f& inverse() const
+  {
+    return inversePose;
+  }
+
   void onRead();
-  Pose2f inverse() const;
+
   /** Verifies that the robot pose contains valid values. */
   void verify() const;
   /** Draws the robot pose in the color of the team to the field view. */
@@ -83,7 +88,9 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRob
     return std::sqrt(covariance(1, 1));
   }
 
-  Pose2f inversePose,                             /**< The inverted robot pose. Precomputed as it is needed often. */
+private:
+  Pose2f inversePose;                             /**< The inverted robot pose. Precomputed as it is needed often. */
+public:,
   (LocalizationQuality)(superb) quality,          /**< Indicates how good the pose estimate seems to be (must not be true). */
   (Matrix3f)(Matrix3f::Identity()) covariance,    /**< The covariance matrix of the estimated robot pose. */
   (unsigned)(0) timestampLastJump,                /**< Timestamp of last "big change" (jump) notification */
@@ -100,4 +107,27 @@ STREAMABLE_WITH_BASE(GroundTruthRobotPose, RobotPose,
   void draw() const,
 
   (unsigned)(0) timestamp,
+});
+
+/**
+ * @struct RobotPoseCompact
+ * A wrapper to stream the RobotPose with a 2x2 covariance matrix
+ * and without the actual pose.
+ */
+STREAMABLE(RobotPoseCompact,
+{
+private:
+  RobotPose& robotPose;
+  static short float2half(float floatValue);
+  static float half2float(short halfValue);
+
+public:
+  RobotPoseCompact(const RobotPose& robotPose);
+  void onRead(),
+
+  (Angle) rotation,
+  (Vector2f) translation,
+  (RobotPose::LocalizationQuality) quality,
+  (Eigen::Matrix2<short>) covariance,
+  (unsigned) timestampLastJump,
 });

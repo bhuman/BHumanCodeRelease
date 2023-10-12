@@ -81,11 +81,10 @@ void ObstacleHypothesis::dynamic(const float odometryRotation, const Vector2f& o
   covariance = odometryJacobian * covariance * odometryJacobian.transpose();
   covariance(0, 0) += odometryNoiseX;
   covariance(1, 1) += odometryNoiseY;
-  Covariance::fixCovariance(covariance);
+  Covariance::fixCovariance<2>(covariance);
 }
 
-void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, const float weightedSum,
-                                     const float goalPostRadius)
+void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, const float weightedSum)
 {
   ASSERT(covariance(0, 1) == covariance(1, 0));
   Matrix2f newCov = measurement.covariance;
@@ -93,20 +92,15 @@ void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, cons
   const Matrix2f& K = covariance * newCov.inverse();
   center += K* (measurement.center - center);
   covariance -= K* covariance;
+  Covariance::fixCovariance<2>(covariance);
 
   // SetLeftRight
-  if(type == Obstacle::goalpost)
-    setLeftRight(goalPostRadius);
-  else
-  {
-    const float measurementWidth = (measurement.left - measurement.right).norm();
-    const float obstacleWidth = (left - right).norm();
-    float width = (obstacleWidth * (weightedSum - 1) + measurementWidth) / weightedSum;
-    if(width < 2.f * Obstacle::getRobotDepth())
-      width = 2.f * Obstacle::getRobotDepth();
-    setLeftRight(width * .5f); // Radius (that's why * .5f)
-  }
-  Covariance::fixCovariance(covariance);
+  const float measurementWidth = (measurement.left - measurement.right).norm();
+  const float obstacleWidth = (left - right).norm();
+  float width = (obstacleWidth * (weightedSum - 1) + measurementWidth) / weightedSum;
+  if(width < 2.f * Obstacle::getRobotDepth())
+    width = 2.f * Obstacle::getRobotDepth();
+  setLeftRight(width * .5f); // Radius (that's why * .5f)
 }
 
 void ObstacleHypothesis::considerType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold)
@@ -114,13 +108,11 @@ void ObstacleHypothesis::considerType(const ObstacleHypothesis& measurement, con
   team = std::min(sqr(teamThreshold), std::max(team + measurement.team, -sqr(teamThreshold)));
   upright = std::min(2 * uprightThreshold, std::max(upright + measurement.upright, -2 * uprightThreshold)); //'2' seems to be chosen wisely
 
-  if(type == measurement.type || measurement.type == Obstacle::unknown || type == Obstacle::goalpost)
+  if(type == measurement.type || measurement.type == Obstacle::unknown)
     return;
 
   if(type == Obstacle::unknown)
     type = measurement.type;
-  else if(measurement.type == Obstacle::goalpost)
-    type = Obstacle::goalpost;
   // the following code should perfectly consider whether a robot is fallen/upright and if it's an opponent or teammate
   else if(team <= -teamThreshold)
     type = upright <= -uprightThreshold ? Obstacle::fallenTeammate : Obstacle::teammate;
@@ -201,7 +193,7 @@ float ObstacleHypothesis::calculateStdDevOfMovingObstacleHypothesis(Vector2f& ve
     return std::numeric_limits<float>::max();
 
   velocityCovariance = ((A.transpose() * Sigma.inverse()) * A).inverse();
-  Covariance::fixCovariance(velocityCovariance);
+  Covariance::fixCovariance<2>(velocityCovariance);
   velocity = velocityCovariance * A.transpose() * Sigma.inverse() * z; // mm/s
 
   ASSERT(velocity.allFinite());

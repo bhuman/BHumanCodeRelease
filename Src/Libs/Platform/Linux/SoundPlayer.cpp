@@ -9,6 +9,8 @@
  * @author Lukas Plecher
  */
 
+#ifdef HAVE_ALSA
+
 #include "SoundPlayer.h"
 #include "Platform/File.h"
 #include "Platform/BHAssert.h"
@@ -29,109 +31,107 @@ extern "C" cst_voice* register_cmu_us_slt(const char*);
 
 SoundPlayer SoundPlayer::soundPlayer;
 
-Wave::Wave(File& file)
+WaveFile::WaveFile(File& file) :
+  buffer(file.getSize())
 {
-  if(file.exists())
-  {
-    const size_t size = file.getSize();
-
-    WaveFile waveFile(size);
-    file.read(waveFile.buffer.data(), size);
-
-    if(!parseWaveFile(waveFile))
-    {
-      PRINT_ERROR("Could not parse wave file");
-      return;
-    }
-
-    sampleRate = waveFile.format->sampleRate;
-    auto* sampleData = reinterpret_cast<short*>(&waveFile.data->chunkSize + 1);
-
-    auto numSamples = waveFile.data->chunkSize / sizeof(short);
-    numFrames = numSamples / std::max(static_cast<unsigned short>(1), waveFile.format->numChannels);
-    channels  = 2;
-    if(waveFile.format->numChannels == 1)
-    {
-      data.resize(numSamples * 2);
-      for(short* pSrc = sampleData, *pEnd = pSrc + numSamples, *pDst = data.data(); pSrc < pEnd; ++pSrc)
-      {
-        *pDst++ = *pSrc;
-        *pDst++ = *pSrc;
-      }
-    }
-    else
-    {
-      data.reserve(numSamples);
-      data = std::vector<short>(sampleData, sampleData + numSamples);
-    }
-  }
+  file.read(buffer.data(), buffer.size());
 }
 
-bool Wave::parseWaveFile(WaveFile& waveFile)
+bool WaveFile::parse()
 {
-  const char* waveFileId = "WAVE";
+  const char* ptr = buffer.data();
 
-  waveFile.master = reinterpret_cast<RiffChunk*>(waveFile.buffer.data());
-
-  if(0 != memcmp(waveFileId, waveFile.master->waveId, 4))
-  {
-    return -1;
-  }
-
-  char* ptr = waveFile.buffer.data();
-  for(size_t i = 12; i < (waveFile.buffer.size() - 8);)   // The first 12 bytes are occupied by the RiffChunk
-  {
-    size_t remainingBytes = waveFile.buffer.size() - i;
-
-    std::string chunkType(ptr + i, ptr + i + 4);
-
-    if(chunkType == "fmt " && remainingBytes > sizeof(FmtChunk))
-      waveFile.format = reinterpret_cast<FmtChunk*>(ptr + i);
-    else if(chunkType == "data" && remainingBytes > sizeof(DataChunk))
-      waveFile.data = reinterpret_cast<DataChunk*>(ptr + i);
-
-    auto* chunkSize = reinterpret_cast<uint32_t*>(ptr + i + 4);
-    size_t skip = 4 + 4 + *chunkSize;
-    i += skip;
-  }
-
-  if(!waveFile.format || !waveFile.data)
+  if(buffer.size() < sizeof(RiffChunk))
     return false;
 
-  unsigned long remainingDataBytes = waveFile.buffer.size() - (reinterpret_cast<char*>(&waveFile.data->chunkSize) - waveFile.buffer.data());
-  if(waveFile.data->chunkSize > remainingDataBytes)
+  master = reinterpret_cast<const RiffChunk*>(ptr);
+  if(0 != std::memcmp(master->waveId, "WAVE", 4))
+    return false;
+
+  for(ptr += sizeof(RiffChunk); ptr <= buffer.data() + buffer.size() - 8;)
   {
-    PRINT_ERROR("Wave file data chunk claims it is " << waveFile.data->chunkSize << " bytes big, but there are only " << remainingDataBytes << " bytes remaining.");
+    const size_t remainingBytes = buffer.data() + buffer.size() - ptr;
+
+    if(0 == std::memcmp(ptr, "fmt ", 4) && remainingBytes >= sizeof(FmtChunk))
+      format = reinterpret_cast<const FmtChunk*>(ptr);
+    else if(0 == std::memcmp(ptr, "data", 4) && remainingBytes >= sizeof(DataChunk))
+      data = reinterpret_cast<const DataChunk*>(ptr);
+
+    const auto chunkSize = *reinterpret_cast<const uint32_t*>(ptr + 4);
+    ptr += 4 + 4 + chunkSize;
+  }
+
+  if(!format || !data)
+    return false;
+
+  const unsigned long remainingDataBytes = buffer.size() - (reinterpret_cast<const char*>(&data->chunkSize) - buffer.data());
+  if(data->chunkSize > remainingDataBytes)
+  {
+    PRINT_ERROR("Wave file data chunk claims it is " << data->chunkSize << " bytes big, but there are only " << remainingDataBytes << " bytes remaining.");
     return false;
   }
 
   return true;
 }
 
-Wave::Wave(const cst_wave* wave)
+Wave::Wave(File& file)
 {
-  channels = static_cast<short>(wave->num_channels);
-  sampleRate = static_cast<unsigned>(wave->sample_rate);
-  numFrames = static_cast<unsigned>(wave->num_samples) / std::max(static_cast<short>(1), channels);
+  if(!file.exists())
+    return;
 
-  if(channels == 1)
+  WaveFile waveFile(file);
+
+  if(!waveFile.parse())
   {
-    data.resize(static_cast<unsigned>(wave->num_samples * 2));
-    for(short* pSrc = wave->samples, *pEnd = pSrc + wave->num_samples, *pDst = data.data(); pSrc < pEnd; ++pSrc)
+    PRINT_ERROR("Could not parse wave file");
+    return;
+  }
+
+  sampleRate = waveFile.format->sampleRate;
+  auto* sampleData = reinterpret_cast<const short*>(&waveFile.data->chunkSize + 1);
+
+  const auto numSamples = waveFile.data->chunkSize / sizeof(short);
+  numFrames = numSamples / std::max(static_cast<unsigned short>(1), waveFile.format->numChannels);
+  if(waveFile.format->numChannels == 1)
+  {
+    data.resize(numSamples * 2);
+    short* pDst = data.data();
+    for(const short* pSrc = sampleData, *pEnd = pSrc + numSamples; pSrc < pEnd; ++pSrc)
     {
       *pDst++ = *pSrc;
       *pDst++ = *pSrc;
     }
-    channels = 2;
   }
   else
   {
+    ASSERT(waveFile.format->numChannels == 2);
+    data = std::vector<short>(sampleData, sampleData + numSamples);
+  }
+}
+
+Wave::Wave(const cst_wave* wave)
+{
+  sampleRate = static_cast<unsigned>(wave->sample_rate);
+  numFrames = static_cast<unsigned>(wave->num_samples) / std::max(1, wave->num_channels);
+
+  if(wave->num_channels == 1)
+  {
+    data.resize(static_cast<unsigned>(wave->num_samples * 2));
+    short* pDst = data.data();
+    for(const short* pSrc = wave->samples, *pEnd = pSrc + wave->num_samples; pSrc < pEnd; ++pSrc)
+    {
+      *pDst++ = *pSrc;
+      *pDst++ = *pSrc;
+    }
+  }
+  else
+  {
+    ASSERT(wave->num_channels == 2);
     data = std::vector<short>(wave->samples, wave->samples + wave->num_samples);
   }
 }
 
-SoundPlayer::SoundPlayer() :
-  started(false), closing(false)
+SoundPlayer::SoundPlayer()
 {
   flite_init();
   voice = register_cmu_us_slt(nullptr);
@@ -144,7 +144,7 @@ SoundPlayer::~SoundPlayer()
 {
   if(started)
   {
-    closing = true;
+    closing.store(true, std::memory_order_relaxed);
     sem.post();
     stop();
   }
@@ -178,7 +178,7 @@ void SoundPlayer::main()
   VERIFY(!snd_pcm_hw_params_get_period_size(params, &periodSize, nullptr));
   snd_pcm_hw_params_free(params);
 
-  while(isRunning() && !closing)
+  while(isRunning() && !closing.load(std::memory_order_relaxed))
   {
     flush();
     VERIFY(sem.wait());
@@ -194,17 +194,21 @@ void SoundPlayer::playWave(const Wave& wave)
   VERIFY(!snd_pcm_prepare(soundPlayer.handle));
   while(frames > 0)
   {
-    snd_pcm_uframes_t periodFrames = std::min(frames, soundPlayer.periodSize);
-    int err = static_cast<int>(snd_pcm_writei(soundPlayer.handle, p, periodFrames));
-    if(err < 0)
+    const snd_pcm_uframes_t periodFrames = std::min(frames, soundPlayer.periodSize);
+    int ret = static_cast<int>(snd_pcm_writei(soundPlayer.handle, p, periodFrames));
+    if(ret < 0)
     {
-      err = snd_pcm_recover(soundPlayer.handle, err, 0);
-      snd_strerror(err);
+      ret = snd_pcm_recover(soundPlayer.handle, ret, 0);
+      BH_TRACE_MSG(snd_strerror(ret));
     }
-    p += periodFrames;
-    frames -= periodFrames;
+    else
+    {
+      ASSERT(static_cast<snd_pcm_uframes_t>(ret) <= periodFrames);
+      p += static_cast<snd_pcm_uframes_t>(ret);
+      frames -= static_cast<snd_pcm_uframes_t>(ret);
+    }
   }
-  VERIFY(!snd_pcm_drain(soundPlayer.handle));
+  snd_pcm_drain(soundPlayer.handle);
 }
 
 void SoundPlayer::flush()
@@ -220,7 +224,7 @@ void SoundPlayer::flush()
       queue.pop_front();
     }
 
-    playing = true;
+    playing.store(true, std::memory_order_relaxed);
     if(first.isTextToSpeech && !first.fileOrText.empty())
     {
       bool isStretched = first.ttsDurationStretchFactor != 1.f;
@@ -257,7 +261,7 @@ void SoundPlayer::flush()
         soundPlayer.playWave(wave);
       }
     }
-    playing = false;
+    playing.store(false, std::memory_order_relaxed);
   }
 }
 
@@ -287,11 +291,13 @@ int SoundPlayer::play(const std::string& name)
 
 int SoundPlayer::say(const std::string& text, float speed)
 {
-  float stretchFactor = speed > 0.f ? 1.f/speed : 0.f;
+  float stretchFactor = speed > 0.f ? 1.f / speed : 0.f;
   return enqueue(SoundRequest(text, stretchFactor));
 }
 
 bool SoundPlayer::isPlaying()
 {
-  return soundPlayer.playing;
+  return soundPlayer.playing.load(std::memory_order_relaxed);
 }
+
+#endif

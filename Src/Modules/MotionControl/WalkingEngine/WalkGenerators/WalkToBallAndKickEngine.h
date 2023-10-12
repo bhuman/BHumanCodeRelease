@@ -30,16 +30,13 @@ MODULE(WalkToBallAndKickEngine,
 {,
   REQUIRES(BallSpecification),
   REQUIRES(FrameInfo),
-  REQUIRES(GroundContactState),
-  REQUIRES(InertialData),
-  REQUIRES(JointAngles),
   REQUIRES(KickGenerator),
   REQUIRES(KickInfo),
-  REQUIRES(MassCalibration),
   USES(MotionInfo),
   REQUIRES(MotionRequest),
   REQUIRES(ObstacleModel),
   REQUIRES(OdometryDataPreview),
+  REQUIRES(OdometryTranslationRequest),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
@@ -50,20 +47,18 @@ MODULE(WalkToBallAndKickEngine,
   PROVIDES(WalkToBallAndKickGenerator),
   DEFINES_PARAMETERS(
   {,
-    (Rangef)(Rangef(35.f, 65.f)) forwardFastYThreshold, /**< Relativ y ball position to kick foot. */
-    (Rangef)(Rangef(100.f, 215.f)) forwardFastXThreshold, /**< Relativ x ball position to kick foot. */
-    (float)(240.f) forwardFastLongXMaxThreshold,  /**< Relativ max x ball position to kick foot. */
+    (Rangef)(Rangef(35.f, 65.f)) forwardFastYThreshold, /**< Relative y ball position to kick foot. */
+    (Rangef)(Rangef(100.f, 215.f)) forwardFastXThreshold, /**< Relative x ball position to kick foot. */
+    (float)(240.f) forwardFastLongXMaxThreshold,  /**< Relative max x ball position to kick foot. */
     (float)(50.f) maxBallVelocity,  /**< Max allowed ball velocity. TODO: or 150.f for some kicks? */
     (Pose2f)(Pose2f(20_deg, 35.f, 10.f)) forwardStealStepPlanningThreshold, /**< Max needed step size for reach position for forwardSteal, to start V-Shape position. */
-    (float)(100.f) kickPoseMaxYTranslation, /**< Kick pose y-Translation must be smaller than this threshold. */
-    (Angle)(40_deg) forwardStealVFeetAngle, /**< Requested V-Shape of the feet. */
+    (float)(50.f) kickPoseMaxYTranslation, /**< Kick pose y-Translation must be smaller than this threshold. */
     (Rangef)(Rangef(-80.f, -40.f)) forwardFastYClipRange, /**< For the dynamic points, clip the y position. */
-    (float)(0.8f) minBallDistanceForVelocity, /**< Subtract this much time to reach the ball, when propagating the ball position. */
-    (Pose2f)(Pose2f(4_deg, 10.f, 10.f)) kickPoseThresholds, /**< Thresholds to start the V-shape kickpose. */
+    (Pose2f)(Pose2f(7_deg, 30.f, 40.f)) robotStuckThresholds, /**< Thresholds to start the V-shape kickpose. */
     (float)(100.f) minBallPositionFuture, /**< Ball must land this far behind us if it is rolling towards us. */
-    (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relativ to the closest point it will have to us. */
+    (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relative to the closest point it will have to us. */
     (float)(50.f) minBallVelocityCloseRange, /**< Clip ball velocity to this value when close to the ball. */
-    (Rangef)(150.f, 500.f) ballVelocityInterpolationRange, /**< Based on the current ball distance interpolate the velocity. */
+    (Rangef)(150.f, 2000.f) ballVelocityInterpolationRange, /**< Based on the current ball distance interpolate the velocity. */
   }),
 });
 
@@ -72,7 +67,11 @@ class WalkToBallAndKickEngine : public WalkToBallAndKickEngineBase
   void update(WalkToBallAndKickGenerator& walkToBallAndKickGenerator) override;
   bool lastPhaseWasKick = false; /**< Was last motion phase a kick phase? */
   bool lastPhaseWasKickPossible = false; /**< Last phase the kick was possible. */
+  bool ignoreBallTimestamp = false;
   Vector2f lastStableBall = Vector2f(0.f, 0.f);
+
+  OdometryDataPreview lastOdometry;
+  OdometryTranslationRequest lastOdometryRequest;
 
   /**
    * Creates the kick phase for the given request.
@@ -81,7 +80,7 @@ class WalkToBallAndKickEngine : public WalkToBallAndKickEngineBase
    * @return
    */
   std::unique_ptr<MotionPhase> createKickPhase(const MotionRequest& motionRequest, const MotionPhase& lastPhase,
-                                               const WalkKickVariant& walkKickDirection, const float kickPoseShiftY);
+                                               const WalkKickVariant& walkKickDirection);
 
   /**
    * Shift the kick pose away from the obstacle for the forward and turn kicks

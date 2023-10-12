@@ -21,7 +21,7 @@
 #ifdef __clang__
 #pragma clang system_header
 #endif
-#if defined MACOS && defined __arm64__
+#if defined __arm64__ || defined __aarch64__
 #include <sse2neon.h>
 #else
 #include <x86intrin.h>

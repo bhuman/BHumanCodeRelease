@@ -10,7 +10,7 @@
 #include "ImageProcessing/ColorModelConversions.h"
 #include "Streaming/Global.h"
 
-#ifndef __arm64__
+#if !defined __arm64__ && !defined __aarch64__
 
 #include <asmjit/asmjit.h>
 
@@ -65,52 +65,6 @@ void yuvToBGRA(unsigned int size, const void* const src, void* const dest)
       _mmauto_storet_si_all<true>(pDest++, _mmauto_unpacklo_epi16(bg, ra));
       _mmauto_storet_si_all<true>(pDest++, _mmauto_unpackhi_epi16(bg, ra));
     }
-  }
-}
-
-template<bool avx> void ALWAYSINLINE storeColors(__m_auto_i* dest, const __m_auto_i p)
-{
-  alignas(avx ? 32 : 16)static __m_auto_i colors[PixelTypes::numOfColors] =
-  {
-    _mmauto_set1_epi32(0xff7f7f7f), //none
-    _mmauto_set1_epi32(0xffffffff), //white
-    _mmauto_set1_epi32(0xff000000), //black
-    _mmauto_set1_epi32(0xff00ff00) //green
-  };
-
-  __m_auto_i result = _mmauto_setzero_si_all();
-
-  FOREACH_ENUM(PixelTypes::Color, i)
-    result = _mmauto_or_si_all(result, _mmauto_and_si_all(_mmauto_cmpeq_epi32(p, _mmauto_set1_epi32(i)), colors[i]));
-
-  _mmauto_storet_si_all<true>(dest, result);
-}
-
-void coloredToBGRA(const unsigned int size, const void* const src, void* const dest)
-{
-  static constexpr bool avx = _supportsAVX2;
-  static const __m_auto_i c_0 = _mmauto_setzero_si_all();
-  const __m_auto_i* pSrc = reinterpret_cast<const __m_auto_i*>(src);
-  __m_auto_i* pDest = reinterpret_cast<__m_auto_i*>(dest);
-  for(unsigned int n = (size + (avx ? 31 : 15)) / (avx ? 32 : 16); n; --n)
-  {
-    const __m_auto_i p = _mmauto_loadt_si_all<true>(pSrc++);
-
-    __m_auto_i pLo = p;
-    __m_auto_i pHi = c_0;
-    _mmauto_unpacklohi_epi8(pLo, pHi);
-
-    __m_auto_i pLo2 = pLo;
-    __m_auto_i pHi2 = c_0;
-    _mmauto_unpacklohi_epi8(pLo2, pHi2);
-    storeColors<avx>(pDest++, pLo2);
-    storeColors<avx>(pDest++, pHi2);
-
-    pLo2 = pHi;
-    pHi2 = c_0;
-    _mmauto_unpacklohi_epi8(pLo2, pHi2);
-    storeColors<avx>(pDest++, pLo2);
-    storeColors<avx>(pDest++, pHi2);
   }
 }
 
@@ -410,7 +364,6 @@ DebugImageConverter::DebugImageConverter()
   converters[PixelTypes::BGRA] = nullptr;
   converters[PixelTypes::YUYV] = nullptr;
   converters[PixelTypes::YUV] = static_cast<ConversionFunction>(yuvToBGRA);
-  converters[PixelTypes::Colored] = static_cast<ConversionFunction>(coloredToBGRA);
   converters[PixelTypes::Grayscale] = static_cast<ConversionFunction>(grayscaledToBGRA);
   converters[PixelTypes::Hue] = reinterpret_cast<ConversionFunction>(hueToBGRA);
   converters[PixelTypes::Binary] = static_cast<ConversionFunction>(binaryToBGRA);
@@ -440,7 +393,6 @@ void DebugImageConverter::convertToBGRA(const DebugImage& src, void* dest)
         case PixelTypes::PixelType::RGB:
         case PixelTypes::PixelType::YUV:
         case PixelTypes::PixelType::YUYV:
-        case PixelTypes::PixelType::Colored:
         case PixelTypes::PixelType::Grayscale:
         case PixelTypes::PixelType::Edge2:
         case PixelTypes::PixelType::Binary:
@@ -477,9 +429,6 @@ void DebugImageConverter::convertToBGRA(const DebugImage& src, void* dest)
         case PixelTypes::PixelType::YUYV:
           yuyvToBGRA(a);
           break;
-        case PixelTypes::PixelType::Colored:
-          asmReturn(a);
-          break;
         case PixelTypes::PixelType::Grayscale:
           asmReturn(a);
           break;
@@ -499,7 +448,7 @@ void DebugImageConverter::convertToBGRA(const DebugImage& src, void* dest)
   }
 }
 
-#else // __arm64__
+#else // __arm64__ / __aarch64__
 
 template<bool avx> void rgbToBGRA(const __m_auto_i* const src, const __m_auto_i* const srcEnd, __m_auto_i* const dest)
 {

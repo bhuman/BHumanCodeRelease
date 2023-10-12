@@ -36,7 +36,8 @@ private:
   DebugHandler debugHandler;
 #endif
 
-  std::string threadIdentifier; /**< The thread the messages from the GUI are meant to be sent to. */
+  std::string threadName; /**< The thread the messages from the GUI are meant to be sent to. */
+  std::string currentThreadName; /**< The thread the next message is sent to. */
 
   // Lists, since Sender.receiver would become invalid when resizing a vector.
   std::list<DebugReceiver<MessageQueue>> receivers; /**< The list of all receivers of this thread. */
@@ -45,6 +46,14 @@ private:
 
   std::unique_ptr<ModuleGraphCreator> moduleGraphCreator; /**< Calculates the execution order of the modules of all threads and their data exchange. */
   Configuration config; /**< The initial configuration of all threads. */
+
+  /**
+   * Removes certain messages based on per-message-type criteria to reduce
+   * the size of the queue. Some message types are kept, for some only the latest
+   * messages per thread are kept, and for others only messages from the latest
+   * frame are kept.
+   */
+  void removeRepetitions();
 
 public:
   /**
@@ -84,8 +93,9 @@ protected:
    * @param message the message to handle
    * @return if the message was handled
    */
-  bool handleMessage(InMessage& message) override;
+  bool handleMessage(MessageQueue::Message message) override;
 
   friend class ModuleContainer; // To add receivers and senders
   friend class LocalConsole; // To add receiver and sender in simulation
+  friend class PythonConsole; // To add receiver and sender in Python controller
 };

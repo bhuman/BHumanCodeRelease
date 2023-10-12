@@ -23,7 +23,7 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
 
   robotPose = base + offset; // This does not touch robot pose attributes not inherited from Pose2f.
   robotPose.covariance = A * robotPose.covariance * A.transpose() + B * theOdometer.odometryOffsetCovariance * B.transpose();
-  Covariance::fixCovariance(robotPose.covariance);
+  Covariance::fixCovariance<3>(robotPose.covariance);
 
   MODIFY("module:OdometryOnlySelfLocator:basePose", base);
   DEBUG_RESPONSE_ONCE("module:OdometryOnlySelfLocator:resetReferenceOdometry")
@@ -34,4 +34,4 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
   }
 }
 
-MAKE_MODULE(OdometryOnlySelfLocator, modeling);
+MAKE_MODULE(OdometryOnlySelfLocator);

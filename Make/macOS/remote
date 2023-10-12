@@ -1,9 +1,0 @@
-#!/bin/sh
-# Start the version of SimRobot that was compiled most recently and
-# remotely connect to a NAO.
-# This script can be launched from the Finder.
-
-basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
-cd "$basePath"
-app=$(ls -1dt $(find ../../Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
-open "$app" --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"

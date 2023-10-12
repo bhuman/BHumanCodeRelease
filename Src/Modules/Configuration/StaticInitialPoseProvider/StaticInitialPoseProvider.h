@@ -15,7 +15,7 @@
 
 STREAMABLE(PoseVariation,
 {,
-  (std::vector<Pose2f>) poseVaria, /** < One pose variation > */
+  (std::vector<Pose2f>) poseVaria, /**< One pose variation > */
 });
 
 MODULE(StaticInitialPoseProvider,
@@ -24,9 +24,9 @@ MODULE(StaticInitialPoseProvider,
   PROVIDES(StaticInitialPose),
   LOADS_PARAMETERS(
   {,
-    (bool) isActive,     /** < Is this function activated > */
-    (int) loadVariation, /** < Which variation should be loaded - starts at 0 > */
-    (std::vector<PoseVariation>) poseVariations, /** < List of pose variations for testing > */
+    (bool) isActive,     /**< Is this function activated > */
+    (int) loadVariation, /**< Which variation should be loaded - starts at 0 > */
+    (std::vector<PoseVariation>) poseVariations, /**< List of pose variations for testing > */
   }),
 });
 

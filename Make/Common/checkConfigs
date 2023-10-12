@@ -1,0 +1,36 @@
+#!/bin/bash
+# Checks whether configuration files are actually used. The unused ones are listed.
+# Currently, Config/Behavior is ignored.
+
+cd "$(dirname "$(which "$0")")/../.."
+
+# Find references to configuration files:
+# - In LOADS_PARAMETERS (assuming the file matches configuration file name).
+# - Directly mention configuration files.
+# - Read by the ConfigurationDataProvider.
+# Separate them by '|'.
+USED="$(
+  (
+    grep -R "^ *LOADS_PARAMETERS" Src/* \
+    | sed -e 's%.*/%%' -e 's%\..*%%'
+    grep -R '\.cfg"' Src/* \
+    | tr '"' '\n' \
+    | grep '.\.cfg$' \
+    | grep -v ' ' \
+    | sed -e 's%.*/%%' -e 's%\.cfg$%%'
+    grep '^ *read(the' Src/Modules/Configuration/ConfigurationDataProvider/ConfigurationDataProvider.cpp \
+    | sed -e 's%.*(the%%' -e 's%).*%%'
+  ) \
+  | sort \
+  | uniq \
+  | tr '\n' '|' \
+  | sed 's%.$%%'
+)"
+
+# Find configuration file name stems, exclude all that are used.
+(
+  find Config -name "*.cfg" ! -path 'Config/Behavior/*' \
+  | sed -e 's%.*/%%' -e 's%\..*%%' \
+  | sort | uniq | sed 's%Impl$%%' \
+) \
+| grep -viE "^($USED)$" | sed 's%$%.cfg%'

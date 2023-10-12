@@ -136,14 +136,18 @@ QMenu* ConsoleWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Edit"));
 
-  QAction* action = menu->addAction(QIcon(":/Icons/arrow_undo.png"), tr("&Undo"));
+  QIcon icon(":/Icons/icons8-undo-50.png");
+  icon.setIsMask(true);
+  QAction* action = menu->addAction(icon, tr("&Undo"));
   action->setShortcut(QKeySequence(QKeySequence::Undo));
   action->setStatusTip(tr("Undo the last action"));
   action->setEnabled(canUndo);
   connect(action, &QAction::triggered, this, &QTextEdit::undo);
   connect(this, &QTextEdit::undoAvailable, action, &QAction::setEnabled);
 
-  action = menu->addAction(QIcon(":/Icons/arrow_redo.png"), tr("&Redo"));
+  icon = QIcon(":/Icons/icons8-redo-50.png");
+  icon.setIsMask(true);
+  action = menu->addAction(icon, tr("&Redo"));
   action->setShortcut(QKeySequence(QKeySequence::Redo));
   action->setStatusTip(tr("Redo the previously undone action"));
   action->setEnabled(canRedo);
@@ -152,21 +156,27 @@ QMenu* ConsoleWidget::createEditMenu() const
 
   menu->addSeparator();
 
-  action = menu->addAction(QIcon(":/Icons/cut.png"), tr("Cu&t"));
+  icon = QIcon(":/Icons/icons8-cut-50.png");
+  icon.setIsMask(true);
+  action = menu->addAction(icon, tr("Cu&t"));
   action->setShortcut(QKeySequence(QKeySequence::Cut));
   action->setStatusTip(tr("Cut the current selection's contents to the clipboard"));
   action->setEnabled(canCopy);
   connect(action, &QAction::triggered, this, &ConsoleWidget::cut);
   connect(this, &QTextEdit::copyAvailable, action, &QAction::setEnabled);
 
-  action = menu->addAction(QIcon(":/Icons/page_copy.png"), tr("&Copy"));
+  icon = QIcon(":/Icons/icons8-copy-to-clipboard-50.png");
+  icon.setIsMask(true);
+  action = menu->addAction(icon, tr("&Copy"));
   action->setShortcut(QKeySequence(QKeySequence::Copy));
   action->setStatusTip(tr("Copy the current selection's contents to the clipboard"));
   action->setEnabled(canCopy);
   connect(action, &QAction::triggered, this, &ConsoleWidget::copy);
   connect(this, &QTextEdit::copyAvailable, action, &QAction::setEnabled);
 
-  action = menu->addAction(QIcon(":/Icons/page_paste.png"), tr("&Paste"));
+  icon = QIcon(":/Icons/icons8-paste-50.png");
+  icon.setIsMask(true);
+  action = menu->addAction(icon, tr("&Paste"));
   action->setShortcut(QKeySequence(QKeySequence::Paste));
   action->setStatusTip(tr("Paste the clipboard's contents into the current selection"));
   action->setEnabled(canPaste());

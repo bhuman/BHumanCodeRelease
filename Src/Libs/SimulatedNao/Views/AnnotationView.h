@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "SimRobot.h"
+#include <SimRobot.h>
 #include "Platform/SystemCall.h"
 #include "SimulatedNao/Representations/AnnotationInfo.h"
 
@@ -29,7 +29,7 @@ public:
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
-  const QIcon icon; /**< The icon used for listing this view in the scene graph */
+  QIcon icon; /**< The icon used for listing this view in the scene graph */
   AnnotationInfo& info;
   RobotConsole& console;
   LogPlayer& logPlayer; /**< Used to jump to frames */
@@ -78,10 +78,5 @@ private:
 
   QString filter;
   void applyFilter();
-
-private slots:
-  void useRegExCheckBoxStateChanged(int state);
-  void stopCheckBoxStateChanged(int state);
-  void filterChanged(const QString& newFilter);
-  void jumpFrame(int row, int column);
+  void simStop();
 };

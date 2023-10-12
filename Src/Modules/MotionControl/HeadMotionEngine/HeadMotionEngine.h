@@ -12,7 +12,7 @@
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Configuration/CameraIntrinsics.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -28,6 +28,7 @@
 
 MODULE(HeadMotionEngine,
 {,
+  REQUIRES(CameraIntrinsics),
   REQUIRES(CameraCalibration),
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
@@ -41,12 +42,11 @@ MODULE(HeadMotionEngine,
   PROVIDES(HeadMotionGenerator),
   DEFINES_PARAMETERS(
   {,
-    (Angle)(0.18f) moveHeadThreshold,
     (Angle)(27_deg) defaultTilt,
-    (float)(10.f) maxAcceleration, /**< Maximum angle acceleration (rad/s^2). */
+    (float)(20.f) maxAcceleration, /**< Maximum angle acceleration (rad/s^2). */
     (float)(1.f) maxAccelerationNoGroundContact, /**< Maximum angle acceleration (rad/s^2) when not having ground contact. */
     (int)(800) stopAndGoModeFrequency, /**< Milliseconds between 2 stops in stopAndGoMode. */
-    (Angle)(2_deg) cameraChoiceHysteresis, /**< only change camera if target is at least this much out of range*/
+    (Rangea)(5_deg, -10_deg) lowerCamThreshold,
   }),
 });
 
@@ -67,7 +67,7 @@ public:
 private:
   void update(HeadMotionGenerator& headMotionGenerator) override;
 
-  void updateHeadAngleRequest(HeadAngleRequest& headAngleRequest) const;
+  void updateHeadAngleRequest(HeadAngleRequest& headAngleRequest, bool& lastWasLower) const;
 
   void calculatePanTiltAngles(const Vector3f& hip2Target, CameraInfo::Camera camera, Vector2a& panTilt) const;
 
@@ -76,4 +76,5 @@ private:
   Rangea panBounds;
   HeadAngleRequest theHeadAngleRequest;
   Vector2f lastSpeed = Vector2f::Zero();
+  bool lastWasLower = false;
 };

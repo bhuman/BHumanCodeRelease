@@ -17,6 +17,10 @@ while true; do
       shift
       FILELIST="$FILELIST$(cat "$1" | tr '\n' '|')"
       ;;
+    "-V")
+      libtool -V
+      exit 0
+      ;;
     *)
       ;;
   esac

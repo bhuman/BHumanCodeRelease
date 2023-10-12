@@ -15,11 +15,11 @@
   &lt;#instance variables#&gt;
 };</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>41F64F7F-EFC8-4CDE-B129-EBC903B10F3F</string>
+	<string>B-Human_structdef</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for describing a new structure type containing instance variables.</string>
+	<string>B-Human: Declare a new structure type.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Struct Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>

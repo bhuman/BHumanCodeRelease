@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "RobotParts/Joints.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include <cstring>
@@ -28,11 +27,8 @@ STREAMABLE(MotionRobotHealth,
  * @struct RobotHealth
  * Full information about the robot.
  */
-STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbitraryMessageParticle<idRobotHealth>
+STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
 {
-  /** BHumanMessageParticle functions */
-  void operator>>(BHumanMessage& m) const override;
-  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
   /**
    * Configurations that can be deployed-
    * Note that they must start with an uppercase letter.

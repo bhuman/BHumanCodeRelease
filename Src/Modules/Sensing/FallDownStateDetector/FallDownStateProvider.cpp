@@ -13,7 +13,7 @@
 #include "Math/Rotation.h"
 #include "RobotParts/FsrSensors.h"
 
-MAKE_MODULE(FallDownStateProvider, sensing);
+MAKE_MODULE(FallDownStateProvider);
 
 FallDownStateProvider::FallDownStateProvider() : lastTimeSoundPlayed(theFrameInfo.time)
 {

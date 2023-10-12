@@ -33,6 +33,7 @@ class WalkToBallAndKickImpl : public WalkToBallAndKickImplBase
     theMotionRequest.alignPrecisely = p.alignPrecisely;
     theMotionRequest.preStepAllowed = p.preStepAllowed;
     theMotionRequest.turnKickAllowed = p.turnKickAllowed;
+    theMotionRequest.shiftTurnKickPose = p.shiftTurnKickPose;
     theLibCheck.inc(LibCheck::motionRequest);
   }
 

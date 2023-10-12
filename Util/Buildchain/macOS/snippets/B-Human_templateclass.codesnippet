@@ -18,13 +18,13 @@ public:
   &lt;#member functions#&gt;
 };</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>8F270BF8-4707-48FC-B9D8-45E25E692DE1</string>
+	<string>B-Human_templateclass</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used to define a new class template.</string>
+	<string>B-Human: Define a new class template.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>C++ Class Template</string>
+	<string>Class Template</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

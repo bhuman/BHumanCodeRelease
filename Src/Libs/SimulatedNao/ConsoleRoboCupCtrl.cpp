@@ -43,25 +43,6 @@ ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application) :
   consoleView = new ConsoleView("Console", *this);
   addView(consoleView, nullptr, SimRobot::Flag::verticalTitleBar);
   addView(new ConsoleView("Console.Pad", *this, true), consoleView, SimRobot::Flag::verticalTitleBar);
-
-  // file names for representations
-  representationToFile["representation:BallSpecification"] = "ballSpecification.cfg";
-  representationToFile["representation:BehaviorParameters"] = "behaviorParameters.cfg";
-  representationToFile["representation:CameraCalibration"] = "cameraCalibration.cfg";
-  representationToFile["representation:CameraIntrinsics"] = "cameraIntrinsics.cfg";
-  representationToFile["representation:CameraSettings"] = "cameraSettings.cfg";
-  representationToFile["representation:FootOffset"] = "footOffset.cfg";
-  representationToFile["representation:FootSoleRotationCalibration"] = "footSoleRotationCalibration.cfg";
-  representationToFile["representation:HeadLimits"] = "headLimits.cfg";
-  representationToFile["representation:IMUCalibration"] = "imuCalibration.cfg";
-  representationToFile["representation:JointCalibration"] = "jointCalibration.cfg";
-  representationToFile["representation:JointLimits"] = "jointLimits.cfg";
-  representationToFile["representation:KeyframeMotionParameters"] = "keyframeMotionParameters.cfg";
-  representationToFile["representation:KeyframeMotionParametersExp"] = "keyframeMotionParametersExp.cfg";
-  representationToFile["representation:KickInfo"] = "kickInfo.cfg";
-  representationToFile["representation:MassCalibration"] = "massCalibration.cfg";
-  representationToFile["representation:RobotDimensions"] = "robotDimensions.cfg";
-  representationToFile["representation:StaticJointPoses"] = "staticJointPoses.cfg";
 }
 
 bool ConsoleRoboCupCtrl::compile()
@@ -119,15 +100,7 @@ ConsoleRoboCupCtrl::~ConsoleRoboCupCtrl()
     delete remoteRobot;
   }
 
-#ifdef MACOS
-  pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
-#endif
-
   stop();
-
-#ifdef MACOS
-  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-#endif
 
   mode = SystemCall::simulatedRobot;
   Global::theSettings = nullptr;
@@ -180,9 +153,9 @@ void ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string
         continue;
       }
 
-      if(static_cast<int>(name.rfind('.')) <= static_cast<int>(name.find_last_of("\\/")))
+      if(!File::hasExtension(name))
         name = name + ".con";
-      if(name[0] != '/' && name[0] != '\\' && (name.size() < 2 || name[1] != ':'))
+      if(!File::isAbsolute(name))
         name = std::string("Scenes/") + name;
       InBinaryFile stream(name);
       if(!stream.exists())
@@ -382,10 +355,14 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
       check(gameController.competitionPhasePlayoff());
     else if(buffer == "competitionPhaseRoundRobin")
       check(gameController.competitionPhaseRoundrobin());
-    else if(buffer == "competitionTypeNormal")
-      check(gameController.competitionTypeNormal());
-    else if(buffer == "competitionType7v7")
-      check(gameController.competitionType7v7());
+    else if(buffer == "competitionTypeChampionsCup")
+      check(gameController.competitionTypeChampionsCup());
+    else if(buffer == "competitionTypeChallengeShield")
+      check(gameController.competitionTypeChallengeShield());
+    else if(buffer == "globalGameStuckByFirstTeam")
+      check(gameController.globalGameStuck(0));
+    else if(buffer == "globalGameStuckBySecondTeam")
+      check(gameController.globalGameStuck(1));
     else if(buffer == "goalByFirstTeam")
       check(gameController.goal(0));
     else if(buffer == "goalBySecondTeam")
@@ -529,7 +506,7 @@ void ConsoleRoboCupCtrl::help(In& stream)
   stream >> pattern;
   list("Initialization commands:", pattern, true);
   list("  sc <name> [<a.b.c.d>] : Starts a TCP connection to a remote robot.", pattern, true);
-  list("  sl <name> [<file> [<scenario> [<location>]]]: Starts a robot reading its input from a log file.", pattern, true);
+  list("  sl <name> [<file> [<scenario> [<location>]]] : Starts a robot reading its input from a log file.", pattern, true);
   list("Global commands:", pattern, true);
   list("  ar {<feature>} off | on : Switches automatic referee on or off.", pattern, true);
   list("  call <file> [<file>] : Execute a script file. If the optional script file is present, execute it instead.", pattern, true);
@@ -538,7 +515,7 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  cls : Clear console window.", pattern, true);
   list("  dt off | on | <fps> : Delay time of a simulation step to real time or a certain number of frames per second.", pattern, true);
   list("  echo <text> : Print text into console window. Useful in console.con.", pattern, true);
-  list("  gc initial | ready | set | playing | finished | goalByFirstTeam | goalBySecondTeam | kickOffFirstTeam | kickOffSecondTeam | goalKickForFirstTeam | goalKickForSecondTeam | pushingFreeKickForFirstTeam | pushingFreeKickForSecondTeam | cornerKickForFirstTeam | cornerKickForSecondTeam | kickInForFirstTeam | kickInForSecondTeam | penaltyKickForFirstTeam | penaltyKickForSecondTeam | halfFirst | halfSecond | gameNormal | gamePenaltyShootout | competitionPhasePlayoff | competitionPhaseRoundRobin | competitionTypeNormal | competitionType7v7 : Set GameController state.", pattern, true);
+  list("  gc initial | ready | set | playing | finished | goalByFirstTeam | goalBySecondTeam | kickOffFirstTeam | kickOffSecondTeam | globalGameStuckByFirstTeam | globalGameStuckBySecondTeam | goalKickForFirstTeam | goalKickForSecondTeam | pushingFreeKickForFirstTeam | pushingFreeKickForSecondTeam | cornerKickForFirstTeam | cornerKickForSecondTeam | kickInForFirstTeam | kickInForSecondTeam | penaltyKickForFirstTeam | penaltyKickForSecondTeam | halfFirst | halfSecond | gameNormal | gamePenaltyShootout | competitionPhasePlayoff | competitionPhaseRoundRobin | competitionTypeChampionsCup | competitionTypeChallengeShield : Set GameController state.", pattern, true);
   list("  ( help | ? ) [<pattern>] : Display this text.", pattern, true);
   if(is2D)
     list("  mvo <name> <x> <y> [<rot>] : Move the object with the given name to the given position.", pattern, true);
@@ -550,46 +527,37 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("Robot commands:", pattern, true);
   list("  bc [<red%> [<green%> [<blue%>]]] : Set the background color of all 3-D views.", pattern, true);
   list("  dr ? [<pattern>] | off | <key> ( off | on ) : Send debug request.", pattern, true);
-  list("  get ? [<pattern>] | <key> [?]: Show debug data or show its specification.", pattern, true);
+  list("  for <thread> {<thread>} ( dr | get | mr | set | si | vf | vi | vp ) {<param>} : Runs command for a set of threads. See help for individual commands for their parameters.", pattern, true);
+  list("  get ? [<pattern>] | <key> [ ? | save [<file>]] : Show/save debug data or show its specification.", pattern, true);
   list("  jc hide | show | motion ( 1 | 2 ) <command> | ( press | release ) <button> <command> : Set joystick motion (use $1 .. $8) or button command.", pattern, true);
   list("  jm <axis> <button> <button> : Map two buttons on an axis.", pattern, true);
   list("  js <axis> <speed> <threshold> [<center>] : Set axis maximum speed and ignore threshold for \"jc motion\" commands.", pattern, true);
-  list("  log start | stop | clear | full | jpeg : Record log file and (de)activate image compression.", pattern, true);
-  list("  log save [split <parts>] [<file>] : Save log file with given name or modified current log file name. Split command saves in given number of parts", pattern, true);
+  list("  log start | stop | clear : Record log file.", pattern, true);
+  list("  log save [<file>] : Save log file with given name or modified current log file name.", pattern, true);
   list("  log saveAudio [<file>] : Save audio data from log.", pattern, true);
-  list("  log saveChoregrapheTimeline [<file>] : Save joint requests from log as Choregraphe timeline.", pattern, true);
   list("  log saveImages [raw] [onlyPlaying] [<takeEachNth>] [<dir>] : Save images from log.", pattern, true);
-  list("  log saveInertialSensorData [<file>] : Save the inertial sensor data from the log into a dataset. Require motion log.", pattern, true);
-  list("  log saveJointAngleData [<file>] : Save the joint angle data from the lot into a dataset. Require motion log.", pattern, true);
-  list("  log saveLabeledBallSpots [<file>] : Extracts labeled BallSpots.", pattern, true);
-  list("  log saveTiming [<file>] : Save timing data from log to csv.", pattern, true);
-  list("  log trim ( until <end frame> | from <start frame> | between <start frame> <end frame> ) : Keep only the given section of the log. WARNING: Overwrites the log file!", pattern, true);
+  list("  log trim ( until <end frame> | from <start frame> | between <start frame> <end frame> ) : Keep only the given section of the log. 'current' can be used as frame as well.", pattern, true);
   list("  log ? [<pattern>] : Display information about log file.", pattern, true);
   list("  log load <file> | clear : Load log-file or clear all frames.", pattern, true);
-  list("  log merge : Merge a cognition/motion-log with its counterpart.", pattern, true);
-  list("  log keep ( ballPercept [ seen | guessed ] | ballSpots | circlePercept | lower | option <option> [<state>] | penaltyMarkPercept | upper ): Remove the log's frames not matching specified criteria.", pattern, true);
   list("  log ( keep | remove ) <message> {<message>} : Filter specified messages of all frames.", pattern, true);
-  list("  log start | pause | stop | forward [image] | backward [image] | repeat | goto <number> | time <minutes> <seconds> | cycle | once | fastForward | fastBackward : Replay log file.", pattern, true);
-  list("  log mr [legacy] [list] : Generate module requests to replay log file.", pattern, true);
+  list("  log start | pause | stop | ( forward | backward ) [ fast | image ] | repeat | goto <number> | cycle | once : Replay log file.", pattern, true);
+  list("  log mr [list] : Generate module requests to replay log file.", pattern, true);
   list("  log analyzeRobotStatus : Find timestamps with joints that are defect or gyros not updating.", pattern, true);
+  list("  mr ? [<pattern>] | modules [<pattern>] | save | <representation> ( ? [<pattern>] | <module> | off | default ) : Send module request.", pattern, true);
   list("  msg off | on | log <file> | enable | disable : Switch output of text messages on or off. Log text messages to a file. Switch message handling on or off.", pattern, true);
-  list("  mr ? [<pattern>] | modules [<pattern>] | save | <representation> ( ? [<pattern>] | ( <module> | off ) [<thread>] | default ) : Send module request.", pattern, true);
   list("  mv <x> <y> <z> [<rotx> <roty> <rotz>] : Move the selected simulated robot to the given position.", pattern, true);
   list("  mvb <x> <y> <z> : Move the ball to the given position.", pattern, true);
   list("  poll : Poll for all available debug requests and drawings. ", pattern, true);
-  list("  pr none | illegalBallContact | playerPushing | illegalMotionInSet | inactivePlayer | illegalPosition | leavingTheField | requestForPickup | localGameStuck | illegalPositionInSet | substitute | manual : Set robot penalty.", pattern, true);
-  list("  save ? [<pattern>] | <key> [<path>] : Save debug data to a configuration file.", pattern, true);
+  list("  pr none | illegalBallContact | playerPushing | illegalMotionInSet | inactivePlayer | illegalPosition | leavingTheField | requestForPickup | localGameStuck | illegalPositionInSet | playerStance | substitute | manual : Set robot penalty.", pattern, true);
   list("  set ? [<pattern>] | <key> ( ? | unchanged | <data> ) : Change debug data or show its specification.", pattern, true);
   if(!is2D)
-    list("  si reset [<number>] | ( lower | upper ) [number] [grayscale] [<file>] : Save the lower/upper camera's image.", pattern, true);
-  list("  v3 ? [<pattern>] | <image> [jpeg] [<thread>] [<name>] : Add a set of 3-D views for a certain image.", pattern, true);
-  list("  vd <debug data> ( on | off ) : Show debug data in a window or switch sending it off.", pattern, true);
+    list("  si reset [<number>] | [number] [grayscale] [<file>] : Save camera image. Only \"reset\" works without \"for\".", pattern, true);
   list("  vf <name> : Add field view.", pattern, true);
   list("  vfd ? [<pattern>] | off | ( all | <name> ) ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in field view.", pattern, true);
-  list("  vi ? [<pattern>] | <image> [jpeg] [<thread>] [<name>] [gain <value>] [ddScale <value>] : Add image view.", pattern, true);
+  list("  vi ? [<pattern>] | ( <image> | none ) [<name>] [gain <value>] [ddScale <value>] : Add image view.", pattern, true);
   list("  vic ? [<pattern>] | ( all | <name> ) [alt | noalt] [ctrl | noctrl] [shift | noshift] <command> : Set image view button release command.", pattern, true);
   list("  vid ? [<pattern>] | off | ( all | <name> ) ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in image view.", pattern, true);
-  list("  vp <name> <numOfValues> <minValue> <maxValue> [<yUnit> [<xUnit> [<xScale>]]]: Add plot view.", pattern, true);
+  list("  vp <name> <numOfValues> <minValue> <maxValue> [<yUnit> [<xUnit> [<xScale>]]] : Add plot view.", pattern, true);
   list("  vpd ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( ? [<pattern>] | <color> [<description>] | off ) ) : Plot data in a certain color in plot view.", pattern, true);
 }
 
@@ -648,9 +616,9 @@ bool ConsoleRoboCupCtrl::startLogFile(In& stream)
     else
       fileName = logFile;
   }
-  if(int(fileName.rfind('.')) <= int(fileName.find_last_of("\\/")))
+  if(!File::hasExtension(fileName))
     fileName = fileName + ".log";
-  if(fileName[0] != '\\' && fileName[0] != '/' && (fileName.size() < 2 || fileName[1] != ':'))
+  if(!File::isAbsolute(fileName))
     fileName = std::string("Logs/") + fileName;
   {
     InBinaryFile test(fileName);
@@ -740,10 +708,12 @@ void ConsoleRoboCupCtrl::createCompletion()
     "gc set",
     "gc playing",
     "gc finished",
-    "gc competitionTypeNormal",
-    "gc competitionType7v7",
+    "gc competitionTypeChampionsCup",
+    "gc competitionTypeChallengeShield",
     "gc competitionPhasePlayoff",
     "gc competitionPhaseRoundRobin",
+    "gc globalGameStuckByFirstTeam",
+    "gc globalGameStuckBySecondTeam",
     "gc goalByFirstTeam",
     "gc goalBySecondTeam",
     "gc goalKickForFirstTeam",
@@ -772,42 +742,24 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log start",
     "log stop",
     "log clear",
-    "log save split",
-    "log full",
-    "log jpeg",
+    "log save",
     "log saveAudio",
-    "log saveChoregrapheTimeline",
     "log saveImages raw onlyPlaying",
-    "log saveInertialSensorData",
-    "log saveLabeledBallSpots gray",
-    "log saveJointAngleData",
-    "log saveTiming",
-    "log trim from",
-    "log trim until",
-    "log trim between",
+    "log trim from current",
+    "log trim until current",
+    "log trim between current",
     "log ?",
-    "log merge",
-    "log mr legacy list",
     "log mr list",
     "log load",
     "log cycle",
     "log once",
     "log pause",
+    "log forward fast",
     "log forward image",
+    "log backward fast",
     "log backward image",
     "log repeat",
     "log goto",
-    "log time",
-    "log fastForward",
-    "log fastBackward",
-    "log keep ballPercept seen",
-    "log keep ballPercept guessed",
-    "log keep ballSpots",
-    "log keep circlePercept",
-    "log keep lower",
-    "log keep upper",
-    "log keep penaltyMarkPercept",
-    "log keep option",
     "log analyzeRobotStatus",
     "mr modules",
     "mr save",
@@ -825,30 +777,14 @@ void ConsoleRoboCupCtrl::createCompletion()
     "sl",
     "st off",
     "st on",
-    "v3 image Upper",
-    "v3 image jpeg Upper",
-    "v3 image Lower",
-    "v3 image jpeg Lower",
     "vf",
-    "vi none",
-    "vi image jpeg",
-    "vi image",
-    "vi image Upper jpeg",
-    "vi image Upper",
-    "vi image Lower jpeg",
-    "vi image Lower"
+    "vp"
   };
 
   const char* commands3D[] =
   {
     "ci off",
     "ci on",
-    "si lower grayscale",
-    "si upper grayscale",
-    "si lower number grayscale",
-    "si upper number grayscale",
-    "si lower number",
-    "si upper number",
     "si reset"
   };
 
@@ -895,62 +831,65 @@ void ConsoleRoboCupCtrl::createCompletion()
     for(const auto& r : moduleInfo->representations)
     {
       completion.insert(std::string("mr ") + r + " default");
+      completion.insert(std::string("mr ") + r + " off ");
       for(const Configuration::Thread& thread : moduleInfo->config())
-        completion.insert(std::string("mr ") + r + " off " + thread.name);
+        completion.insert(std::string("for ") + thread.name + " mr " + r + " off ");
       for(const auto& m : moduleInfo->modules)
         if(std::find(m.representations.begin(), m.representations.end(), r) != m.representations.end())
         {
           for(const Configuration::Thread& thread : moduleInfo->config())
-            completion.insert(std::string("mr ") + r + " " + m.name + " " + thread.name);
+            completion.insert(std::string("for ") + thread.name + " mr " + r + " " + m.name);
         }
+      bool once = false;
+      for(const Configuration::Thread& thread : moduleInfo->config())
+      {
+        if(std::find_if(thread.representationProviders.begin(), thread.representationProviders.end(),
+                        [&r](const Configuration::RepresentationProvider& rp)
+                        { return rp.representation == r; }) != thread.representationProviders.end())
+        {
+          once ^= true;
+          if(!once)
+            break;
+        }
+      }
+      if(once)
+        for(const auto& m : moduleInfo->modules)
+          if(std::find(m.representations.begin(), m.representations.end(), r) != m.representations.end())
+            completion.insert(std::string("mr ") + r + " " + m.name);
     }
   }
 
-  if(debugRequestTable && moduleInfo)
+  if(debugRequestTable && threadData)
   {
-    for(const auto& i : debugRequestTable->slowIndex)
+    for(const auto& [name, _] : debugRequestTable->slowIndex)
     {
-      completion.insert(std::string("dr ") + translate(i.first) + " on");
-      completion.insert(std::string("dr ") + translate(i.first) + " off");
-      if(i.first.substr(0, 13) == "debug images:")
+      completion.insert(std::string("dr ") + translate(name) + " on");
+      completion.insert(std::string("dr ") + translate(name) + " off");
+      if(name.substr(0, 11) == "debug data:")
       {
-        const std::string cleanedSubst = translate(i.first.substr(13));
+        const std::string cleanedName = translate(name.substr(11));
 
-        for(const auto& config : moduleInfo->config())
-        {
-          completion.insert(std::string("v3 ") + cleanedSubst + " " + config.name);
-          completion.insert(std::string("v3 ") + cleanedSubst + " jpeg " + config.name);
-          completion.insert(std::string("vi ") + cleanedSubst + " " + config.name);
-          completion.insert(std::string("vi ") + cleanedSubst + " jpeg " + config.name);
-        }
+        completion.insert(std::string("get ") + cleanedName + " ?");
+        if(getThreadsFor(*threadData, translate(name)).size() == 1)
+          completion.insert(std::string("get ") + cleanedName + " save");
+        completion.insert(std::string("set ") + cleanedName + " ?");
+        completion.insert(std::string("set ") + cleanedName + " unchanged");
       }
-      else if(i.first.substr(0, 11) == "debug data:")
-      {
-        const std::string cleanedSubst = translate(i.first.substr(11));
-
-        completion.insert(std::string("vd ") + cleanedSubst + " off");
-        completion.insert(std::string("vd ") + cleanedSubst + " on");
-
-        completion.insert(std::string("get ") + cleanedSubst + " ?");
-        completion.insert(std::string("set ") + cleanedSubst + " ?");
-        completion.insert(std::string("set ") + cleanedSubst + " unchanged");
-
-        if(std::count(cleanedSubst.begin(), cleanedSubst.end(), ':') == 1 && cleanedSubst.substr(0, 11) == "parameters:")
-        {
-          std::string parametersName = cleanedSubst.substr(11);
-
-          completion.insert(std::string("save ") + cleanedSubst);
-          if(representationToFile.find(cleanedSubst) == representationToFile.end())
-          {
-            parametersName[0] = static_cast<char>(tolower(parametersName[0]));
-            if(parametersName.size() > 1 && isupper(parametersName[1]))
-              for(int i = 1; i + 1 < static_cast<int>(parametersName.size()) && isupper(parametersName[i + 1]); ++i)
-                parametersName[i] = static_cast<char>(tolower(parametersName[i]));
-            representationToFile[cleanedSubst] = parametersName + ".cfg";
-          }
-        }
-      }
+      else if(name.substr(0, 13) == "debug images:" && getThreadsFor(*threadData, translate(name)).size() == 1)
+        completion.insert("vi " + translate(name.substr(13)));
+      else if(name == "representation:CameraImage" && getThreadsFor(*threadData, name).size() == 1)
+        completion.insert("vi CameraImage");
+      else if(name == "representation:JPEGImage" && getThreadsFor(*threadData, name).size() == 1)
+        completion.insert("vi JPEGImage");
     }
+  }
+
+  if(!is2D && threadData &&
+     std::count_if(threadData->begin(), threadData->end(),
+                   [&](const auto& pair) {return pair.second.images.contains("CameraImage");}) == 1)
+  {
+    completion.insert("si grayscale");
+    completion.insert("si number grayscale");
   }
 
   if(imageViews)
@@ -960,9 +899,9 @@ void ConsoleRoboCupCtrl::createCompletion()
                         + ((i < 8 || i >= 14) ? (((i & 4) ? "no" : "") + std::string("alt ")) : "")
                         + (i < 12 ? (((i & 2) ? "no" : "") + std::string("ctrl ")) : "")
                         + ((i & 1) ? "no" : "") + "shift");
-    for(const auto& imageViewPair : *imageViews)
+    for(const auto& [name, _] : *imageViews)
       for(unsigned int i = 0; i < 18; ++i)
-        completion.insert(std::string("vic ") + imageViewPair.first + " "
+        completion.insert(std::string("vic ") + name + " "
                           + ((i < 8 || i >= 14) ? (((i & 4) ? "no" : "") + std::string("alt ")) : "")
                           + (i < 12 ? (((i & 2) ? "no" : "") + std::string("ctrl ")) : "")
                           + ((i & 1) ? "no" : "") + "shift");
@@ -970,49 +909,83 @@ void ConsoleRoboCupCtrl::createCompletion()
 
   if(threadData)
   {
+    for(const auto& [threadName, data] : *threadData)
+    {
+      completion.insert("for " + threadName + " dr ?");
+      completion.insert("for " + threadName + " dr off");
+      completion.insert("for " + threadName + " get ?");
+      completion.insert("for " + threadName + " set ?");
+      completion.insert("for " + threadName + " vf");
+      completion.insert("for " + threadName + " vp");
+
+      for(const auto& [requestName, _]  : data.debugRequestTable.slowIndex)
+      {
+        completion.insert("for " + threadName + " dr " + translate(requestName) + " on");
+        completion.insert("for " + threadName + " dr " + translate(requestName) + " off");
+        if(requestName.substr(0, 11) == "debug data:")
+        {
+          const std::string cleanedName = translate(requestName.substr(11));
+
+          completion.insert("for " + threadName + " get " + cleanedName + " ?");
+          completion.insert("for " + threadName + " get " + cleanedName + " save");
+          completion.insert("for " + threadName + " set " + cleanedName + " ?");
+          completion.insert("for " + threadName + " set " + cleanedName + " unchanged");
+        }
+        else if(requestName.substr(0, 13) == "debug images:")
+          completion.insert("for " + threadName + " vi " + translate(requestName.substr(13)));
+        else if(requestName == "representation:CameraImage")
+          completion.insert("for " + threadName + " vi CameraImage");
+        else if(requestName == "representation:JPEGImage")
+          completion.insert("for " + threadName + " vi JPEGImage");
+      }
+
+      if(!is2D && data.images.contains("CameraImage"))
+      {
+        completion.insert("for " + threadName + " si grayscale");
+        completion.insert("for " + threadName + " si number grayscale");
+      }
+    }
+
     completion.insert(std::string("vid off"));
     completion.insert(std::string("vfd off"));
     for(const auto& data : *threadData)
-      for(const auto& drawingsPair : data.second.drawingManager.drawings)
+      for(const auto& [drawingName, _] : data.second.drawingManager.drawings)
       {
-        if(!strcmp(data.second.drawingManager.getDrawingType(drawingsPair.first), "drawingOnImage") && imageViews)
+        if(!strcmp(data.second.drawingManager.getDrawingType(drawingName), "drawingOnImage") && imageViews)
         {
-          completion.insert(std::string("vid all ") + translate(drawingsPair.first) + " on");
-          completion.insert(std::string("vid all ") + translate(drawingsPair.first) + " off");
-          for(const auto& imageViewPair : *imageViews)
+          completion.insert(std::string("vid all ") + translate(drawingName) + " on");
+          completion.insert(std::string("vid all ") + translate(drawingName) + " off");
+          for(const auto& [viewName, _] : *imageViews)
           {
-            completion.insert(std::string("vid ") + imageViewPair.first + " " + translate(drawingsPair.first) + " on");
-            completion.insert(std::string("vid ") + imageViewPair.first + " " + translate(drawingsPair.first) + " off");
+            completion.insert(std::string("vid ") + viewName + " " + translate(drawingName) + " on");
+            completion.insert(std::string("vid ") + viewName + " " + translate(drawingName) + " off");
           }
         }
-        else if(!strcmp(data.second.drawingManager.getDrawingType(drawingsPair.first), "drawingOnField") && fieldViews)
+        else if(!strcmp(data.second.drawingManager.getDrawingType(drawingName), "drawingOnField") && fieldViews)
         {
-          completion.insert(std::string("vfd all ") + translate(drawingsPair.first) + " on");
-          completion.insert(std::string("vfd all ") + translate(drawingsPair.first) + " off");
-          for(const auto& fieldViewPair : *fieldViews)
+          completion.insert(std::string("vfd all ") + translate(drawingName) + " on");
+          completion.insert(std::string("vfd all ") + translate(drawingName) + " off");
+          for(const auto& [viewName, _] : *fieldViews)
           {
-            completion.insert(std::string("vfd ") + fieldViewPair.first + " " + translate(drawingsPair.first) + " on");
-            completion.insert(std::string("vfd ") + fieldViewPair.first + " " + translate(drawingsPair.first) + " off");
+            completion.insert(std::string("vfd ") + viewName + " " + translate(drawingName) + " on");
+            completion.insert(std::string("vfd ") + viewName + " " + translate(drawingName) + " off");
           }
         }
       }
   }
 
   if(plotViews && debugRequestTable)
-    for(const auto& plotPair : *plotViews)
-      for(const auto& i : debugRequestTable->slowIndex)
-        if(translate(i.first).substr(0, 5) == "plot:")
+    for(const auto& [viewName, _] : *plotViews)
+      for(const auto& [requestName, _] : debugRequestTable->slowIndex)
+        if(translate(requestName).substr(0, 5) == "plot:")
         {
           for(int color = 0; color < RobotConsole::numOfColors; ++color)
-            completion.insert(std::string("vpd ") + plotPair.first + " " +
-                              translate(i.first).substr(5) + " " +
+            completion.insert(std::string("vpd ") + viewName + " " +
+                              translate(requestName).substr(5) + " " +
                               TypeRegistry::getEnumName(static_cast<RobotConsole::Color>(color)));
-          completion.insert(std::string("vpd ") + plotPair.first + " " +
-                            translate(i.first).substr(5) + " off");
+          completion.insert(std::string("vpd ") + viewName + " " +
+                            translate(requestName).substr(5) + " off");
         }
-
-  for(const auto& repr : representationToFile)
-    completion.insert(std::string("save ") + repr.first);
 
   currentCompletionIndex = completion.end();
 }
@@ -1148,6 +1121,17 @@ std::string ConsoleRoboCupCtrl::translate(const std::string& text) const
     else if(i < s.size() - 1 && s[i] == ':' && s[i + 1] == ':')
       s = s.substr(0, i) + s.substr(i + 1);
   return s;
+}
+
+std::vector<std::string> ConsoleRoboCupCtrl::getThreadsFor(const std::unordered_map<std::string, RobotConsole::ThreadData>& threadData,
+                                                           const std::string& debugRequest) const
+{
+  std::vector<std::string> threadsFound;
+  for(const auto& [threadName, data] : threadData)
+    for(const auto& [requestName, _] : data.debugRequestTable.slowIndex)
+      if(translate(requestName) == debugRequest)
+        threadsFound.push_back(threadName);
+  return threadsFound;
 }
 
 void ConsoleRoboCupCtrl::showInputDialog(std::string& command)

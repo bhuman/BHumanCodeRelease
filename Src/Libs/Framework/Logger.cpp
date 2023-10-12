@@ -48,7 +48,6 @@ Logger::Logger(const Configuration& config) :
   typeInfo(200000),
   settings(200)
 {
-  TypeInfo::initCurrent();
   InMapFile stream("logger.cfg");
   ASSERT(stream.exists());
   stream >> *this;
@@ -91,13 +90,14 @@ Logger::Logger(const Configuration& config) :
 
   if(enabled)
   {
+    TypeInfo::initCurrent();
     typeInfo << *TypeInfo::current;
     LoggingTools::writeSettings(settings, Global::getSettings());
 
     buffers.resize(numOfBuffers);
     for(MessageQueue& buffer : buffers)
     {
-      buffer.setSize(sizeOfBuffer);
+      buffer.reserve(sizeOfBuffer);
       buffersAvailable.push(&buffer);
     }
 
@@ -106,11 +106,12 @@ Logger::Logger(const Configuration& config) :
   }
 }
 
-void Logger::update(bool shouldLog, const std::function<std::string()>& getDescription)
+void Logger::update(const LoggingController& controller)
 {
   if(!enabled)
     return;
 
+  const bool shouldLog = controller.shouldLog();
   if(shouldLog != logging.load(std::memory_order_relaxed))
   {
     if(shouldLog)
@@ -121,10 +122,9 @@ void Logger::update(bool shouldLog, const std::function<std::string()>& getDescr
       {
         MessageQueue* buffer = buffersAvailable.top();
         buffersAvailable.pop();
-        buffer->out.bin << (path + LoggingTools::createName("", Global::getSettings().headName, Global::getSettings().bodyName,
-                                                            Global::getSettings().scenario, Global::getSettings().location,
-                                                            getDescription(), Global::getSettings().playerNumber));
-        buffer->out.finishMessage(undefined);
+        buffer->bin(undefined) << (path + LoggingTools::createName(Global::getSettings().headName, Global::getSettings().bodyName,
+                                                                   Global::getSettings().scenario, Global::getSettings().location,
+                                                                   controller.getDescription(), Global::getSettings().playerNumber));
         buffersToWrite.push_back(buffer);
       }
       else
@@ -177,16 +177,16 @@ bool Logger::execute(const std::string& threadName)
 
       STOPWATCH("Logger")
       {
-        buffer->out.bin << threadName;
-        buffer->out.finishMessage(idFrameBegin);
+        buffer->bin(idFrameBegin) << threadName;
 
         for(const std::string& representation : rpt.representations)
 #ifndef NDEBUG
           if(Blackboard::getInstance().exists(representation.c_str()))
 #endif
           {
-            buffer->out.bin << Blackboard::getInstance()[representation.c_str()];
-            if(!buffer->out.finishMessage(static_cast<MessageID>(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + representation))))
+            MessageQueue::OutBinary stream = buffer->bin(static_cast<MessageID>(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + representation)));
+            stream << Blackboard::getInstance()[representation.c_str()];
+            if(stream.failed())
               OUTPUT_WARNING("Logger: Representation " << representation << " did not fit into buffer!");
           }
 #ifndef NDEBUG
@@ -194,11 +194,10 @@ bool Logger::execute(const std::string& threadName)
             OUTPUT_WARNING("Logger: Representation " << representation << " does not exist!");
 #endif
 
-        Global::getAnnotationManager().getOut().copyAllMessages(*buffer);
+        *buffer << Global::getAnnotationManager().getOut();
       }
-      Global::getTimingManager().getData().copyAllMessages(*buffer);
-      buffer->out.bin << threadName;
-      buffer->out.finishMessage(idFrameFinished);
+      *buffer << Global::getTimingManager().getData();
+      buffer->bin(idFrameFinished) << threadName;
       {
         SYNC;
         buffersToWrite.push_back(buffer);
@@ -223,28 +222,9 @@ void Logger::writer()
   Thread::nameCurrentThread("Logger");
   BH_TRACE_INIT("Logger");
 
-  class FilenameHandler : public MessageHandler
-  {
-  public:
-    FilenameHandler(std::string& filename) :
-      filename(filename)
-    {}
-
-  private:
-    bool handleMessage(InMessage& message) override
-    {
-      ASSERT(message.getMessageID() == undefined);
-      message.bin >> filename;
-      return true;
-    }
-
-    std::string& filename;
-  };
-
   OutBinaryFile* file = nullptr;
   MessageQueue* buffer = nullptr;
   std::string filename, completeFilename;
-  FilenameHandler filenameHandler(filename);
 
   while(true)
   {
@@ -274,12 +254,13 @@ void Logger::writer()
       file = nullptr;
       SystemCall::say("Log file written");
     }
-    else if(buffer->getNumberOfMessages() == 1)
+    else if(++buffer->begin() == buffer->end())
     {
       // All "real" buffers have at least two messages (idFrameBegin and idFrameFinished).
 
       // Read filename from message queue.
-      buffer->handleAllMessages(filenameHandler);
+
+      (*buffer->begin()).bin() >> filename;
       buffer->clear();
 
       // find next free log filename
@@ -301,12 +282,12 @@ void Logger::writer()
 
       *file << LoggingTools::logFileSettings;
       file->write(settings.data(), settings.size());
-      *file << LoggingTools::logFileMessageIDs;
-      buffer->writeMessageIDs(*file);
+      *file << LoggingTools::logFileMessageIDs << static_cast<unsigned char>(numOfMessageIDs);
+      FOREACH_ENUM(MessageID, i, numOfMessageIDs)
+        *file << TypeRegistry::getEnumName(i);
       *file << LoggingTools::logFileTypeInfo;
       file->write(typeInfo.data(), typeInfo.size());
-      *file << LoggingTools::logFileUncompressed;
-      buffer->writeAppendableHeader(*file);
+      *file << LoggingTools::logFileUncompressed << -1 << -1;
 
       // Turn off userspace buffering.
       std::setvbuf(static_cast<std::FILE*>(file->getFile()->getNativeFile()), nullptr, _IONBF, 0);

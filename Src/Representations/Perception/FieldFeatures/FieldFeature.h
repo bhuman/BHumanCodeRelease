@@ -1,6 +1,6 @@
 /**
  * @file FieldFeature.h
- * Declaration of a struct that represents a fieldFeature.
+ * Declaration of a struct that represents a field feature.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -54,12 +54,21 @@ STREAMABLE_WITH_BASE(FieldFeature, Pose2f,
   const RobotPoseToFF getGlobalRobotPosition() const;
 
   /**
+   * Given a robot pose, the better fitting pose computed by the field feature is returned in the pickedPose parameter.
+   * @param robotPose The currently assumed pose of the robot
+   * @param pickedPose A possible robot pose measurement based on the field feature
+   * @return true, if pickedPose has been filled. false, otherwise.
+   */
+  bool pickMorePlausiblePose(const Pose2f& robotPose, Pose2f& pickedPose) const;
+
+  /**
    * Returns 1 of the 2 global positions of this feature (in case of isValid == true).
    */
   virtual const Pose2f getGlobalFeaturePosition() const = 0;
   void draw() const,
 
-  (bool)(false) isValid, // <-- the percept pose is valid
+  (Matrix3f) covOfAbsoluteRobotPose, /**< The robot pose's overall covariance in field coordinates */
+  (bool)(false) isValid,             /**< Set to "true", if the representation contains valid data */
 });
 
 inline FieldFeature::RobotPoseToFF::RobotPoseToFF(const Pose2f& pose1, const Pose2f& pose2) : pos1(pose1), pos2(pose2) {}

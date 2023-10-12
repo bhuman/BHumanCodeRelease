@@ -7,12 +7,14 @@
 
 AnnotationManager::AnnotationManager()
 {
-  outData.setSize(100000);
+  outData.reserve(100000);
 }
 
-void AnnotationManager::addAnnotation()
+MessageQueue::OutBinary AnnotationManager::add()
 {
-  outData.out.bin << (0x80000000 | annotationCounter++);
+  MessageQueue::OutBinary stream = outData.bin(idAnnotation);
+  stream << (0x80000000 | annotationCounter++);
+  return stream;
 }
 
 MessageQueue& AnnotationManager::getOut()

@@ -11,8 +11,6 @@
 #include "Math/Covariance.h"
 #include "Math/Geometry.h"
 #include "Math/Probabilistics.h"
-#include "Tools/Math/Transformation.h"
-#include "Tools/Modeling/Measurements.h"
 
 using namespace std;
 
@@ -57,12 +55,6 @@ float UKFRobotPoseHypothesis::getCombinedVariance() const
   return std::max(cov(0, 0), cov(1, 1)) * cov(2, 2);
 }
 
-void UKFRobotPoseHypothesis::twist()
-{
-  mean.z() += pi;
-  mean.z() = Angle::normalize(mean.z());
-}
-
 void UKFRobotPoseHypothesis::updateByLandmark(const RegisteredLandmark& landmark)
 {
   landmarkSensorUpdate(landmark.model, landmark.percept, landmark.covPercept);
@@ -88,29 +80,25 @@ void UKFRobotPoseHypothesis::updateByLineOnCenterCircle(const RegisteredLine& li
   // create a fake measurement in coordinates relative to the robot.
   Vector2f fakeMeasurement;
   if(pointA.norm() < pointB.norm())
-    fakeMeasurement = Transformation::fieldToRobot(pose, pointA);
+    fakeMeasurement = pose.inverse() * pointA;
   else
-    fakeMeasurement = Transformation::fieldToRobot(pose, pointB);
+    fakeMeasurement = pose.inverse() * pointB;
   // Pretend to have measured the center circle:
-  landmarkSensorUpdate(Vector2f(0.f,0.f), fakeMeasurement, line.covPerceptCenter);
+  landmarkSensorUpdate(Vector2f(0.f, 0.f), fakeMeasurement, line.covPerceptCenter);
 }
 
 void UKFRobotPoseHypothesis::updateByLine(const RegisteredLine& line)
 {
   ASSERT(line.partOfCenterCircle == false);
-  Vector2f orthogonalProjectiona = Geometry::getOrthogonalProjectionOfPointOnLine(line.perceptStart, line.perceptDirection, Vector2f::Zero());
-  float measuredAngle = -atan2(orthogonalProjectiona.y(), orthogonalProjectiona.x());
-  measuredAngle = Angle::normalize(measuredAngle + (line.parallelToWorldModelXAxis ? pi_2 : 0));
-  float possibleAngle2 = Angle::normalize(measuredAngle - pi);
-  if(abs(Angle::normalize(possibleAngle2 - getPose().rotation)) < abs(Angle::normalize(measuredAngle - getPose().rotation)))
-    measuredAngle = possibleAngle2;
-  float c = cos(measuredAngle), s = sin(measuredAngle);
-  Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
-  Vector2f orthogonalProjection = angleRotationMatrix * Vector2f(orthogonalProjectiona.x(), orthogonalProjectiona.y());
+  const float measuredAngle = abs(Angle::normalize(line.measuredAngleAlternative - getPose().rotation)) < abs(Angle::normalize(line.measuredAngle - getPose().rotation)) ? line.measuredAngleAlternative : line.measuredAngle;
+  const float c = cos(measuredAngle);
+  const float s = sin(measuredAngle);
+  const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
+  const Vector2f orthogonalProjection = angleRotationMatrix * Vector2f(line.orthogonalProjection.x(), line.orthogonalProjection.y());
 
   Matrix2f cov = line.covPerceptCenter;
   cov = angleRotationMatrix * cov * angleRotationMatrix.transpose();
-  Covariance::fixCovariance(cov);
+  Covariance::fixCovariance<2>(cov);
   if(line.parallelToWorldModelXAxis)
   {
     const float measuredY = line.modelStart.y() - orthogonalProjection.y();
@@ -131,37 +119,10 @@ void UKFRobotPoseHypothesis::updateByLine(const RegisteredLine& line)
   }
 }
 
-void UKFRobotPoseHypothesis::updateByPose(const RegisteredAbsolutePoseMeasurement& pose, const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
-                                          const Vector2f& currentRotationDeviation, const FieldDimensions& theFieldDimensions)
+void UKFRobotPoseHypothesis::updateByPose(const RegisteredAbsolutePoseMeasurement& pose)
 {
-  Vector3f measurement;
-  measurement.x() = pose.absolutePoseOnField.translation.x();
-  measurement.y() = pose.absolutePoseOnField.translation.y();
-  measurement.z() = pose.absolutePoseOnField.rotation;
-
-  const Matrix2f perceivedCenterCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(pose.perceivedRelativePose.translation, 0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-  const float c = cos(pose.absolutePoseOnField.rotation);
-  const float s = sin(pose.absolutePoseOnField.rotation);
-  const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
-  const Matrix2f covXR = angleRotationMatrix * perceivedCenterCovariance * angleRotationMatrix.transpose();
-  const Matrix2f correctedCov = computeCorrectedPoseCovariance(pose.perceivedRelativePose.translation, theFieldDimensions.centerCircleRadius * 0.7834f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-  const Matrix2f covY = angleRotationMatrix * correctedCov * angleRotationMatrix.transpose();
-
-  const float xVariance = covXR(0, 0);
-  const float yVariance = covY(1, 1);
-  const float sqrLineLength = sqr(3 * theFieldDimensions.centerCircleRadius); // TODO: FIX ME
-  const float angleVariance = sqr(atan(sqrt(4.f * xVariance / sqrLineLength)));
-
-  Matrix3f cov;
-  cov << xVariance, 0.f, 0.f, 0.f, yVariance, 0.f, 0.f, 0.f, angleVariance;
-  poseSensorUpdate(measurement, cov);
-}
-
-Matrix2f UKFRobotPoseHypothesis::computeCorrectedPoseCovariance(const Vector2f& perceivedPosition, float minimumDistance,
-                                                                const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
-                                                                const Vector2f& currentRotationDeviation) const
-{
-  const float perceivedDistance = perceivedPosition.norm();
-  return Measurements::positionToCovarianceMatrixInRobotCoordinates(perceivedDistance < minimumDistance ? Vector2f(minimumDistance, 0.f) : perceivedPosition,
-                                                                    0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+  const Vector3f measurement(pose.absolutePoseOnField.translation.x(),
+                             pose.absolutePoseOnField.translation.y(),
+                             pose.absolutePoseOnField.rotation);
+  poseSensorUpdate(measurement, pose.covariance);
 }

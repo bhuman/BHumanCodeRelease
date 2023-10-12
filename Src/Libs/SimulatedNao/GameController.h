@@ -10,7 +10,7 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Tools/Communication/SPLStandardMessageBuffer.h"
+#include "Tools/Communication/TeamMessageBuffer.h"
 #include "Framework/Settings.h"
 #include "Math/Pose2f.h"
 #include "Streaming/Enum.h"
@@ -19,7 +19,7 @@
 #include <string>
 
 class SimulatedRobot;
-class SPLMessageHandler; // Importing the header would create Windows.h/WinSock2.h conflicts on Windows
+class TeamMessageChannel; // Importing the header would create Windows.h/WinSock2.h conflicts on Windows
 
 /**
  * The class simulates a console-based GameController.
@@ -42,6 +42,7 @@ public:
     penalizeIllegalPosition,
     penalizeIllegalPositionInSet,
     unpenalize,
+    kickOffDelay,
   });
 
   unsigned automatic = ~0u; /**< Which automatic features are active? */
@@ -58,10 +59,18 @@ public:
     requestForPickup,
     localGameStuck,
     illegalPositionInSet,
+    playerStance,
     substitute,
     manual,
   });
   static const int numOfPenalties = numOfPenaltys; /**< Correct typo. */
+
+  struct TeamInfo
+  {
+    uint8_t number = 0;
+    Settings::TeamColor fieldPlayerColor = static_cast<Settings::TeamColor>(-1);
+    Settings::TeamColor goalkeeperColor = static_cast<Settings::TeamColor>(-1);
+  };
 
 private:
   struct Robot
@@ -70,6 +79,7 @@ private:
     RoboCup::RobotInfo* info = nullptr;
     unsigned timeWhenPenalized = 0;
     unsigned timeWhenBallNotStuckBetweenLegs = 0;
+    float ownGoalAreaMargin = -1.f;
     float ownPenaltyAreaMargin = -1.f;
     float opponentPenaltyAreaMargin = -1.f;
     uint8_t lastPenalty = PENALTY_NONE;
@@ -80,7 +90,8 @@ private:
   {
     kickOffReasonHalf,
     kickOffReasonPenalty,
-    kickOffReasonGoal
+    kickOffReasonGoal,
+    kickOffReasonGlobalGameStuck
   };
 
   static const int numOfRobots = 2 * MAX_NUM_PLAYERS;
@@ -94,7 +105,6 @@ private:
   static const int delayedSwitchAfterGoal = 15;
   static const float footLength; /**< foot length for position check. */
   static const float dropHeight; /**< height at which robots are placed so the fall a little bit and recognize it. */
-  int robotsPlaying; /**< Number of robots playing at the same time per team. */
   Pose2f lastBallContactPose; /**< Position where the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degrees). */
   unsigned lastBallContactTime = 0;
   FieldDimensions fieldDimensions;
@@ -110,9 +120,9 @@ private:
   unsigned timeWhenSetPlayBegan = 0;
   Robot robots[numOfRobots];
 
-  SPLStandardMessageBuffer<9> inTeamMessages;
-  RoboCup::SPLStandardMessage outTeamMessage;
-  SPLMessageHandler* theSPLMessageHandler;
+  TeamMessageBuffer<9> inTeamMessages;
+  TeamMessageBuffer<9>::Container outTeamMessage;
+  TeamMessageChannel* theTeamMessageChannel;
 
   /** enum which declares the different types of balls leaving the field */
   enum BallOut
@@ -134,10 +144,9 @@ public:
 
   /**
    * Sets the team information that is not available at construction time.
-   * @param teamNumbers The team numbers of the playing teams.
-   * @param teamColors The jersey colors of the playing teams.
+   * @param teamInfos The settings of the playing teams.
    */
-  void setTeamInfos(const std::array<uint8_t, 2>& teamNumbers, const std::array<Settings::TeamColor, 2>& teamColors);
+  void setTeamInfos(const std::array<TeamInfo, 2>& teamInfos);
 
   /**
    * Each simulated robot must be registered.
@@ -153,8 +162,9 @@ public:
   bool finished();
   bool competitionPhasePlayoff();
   bool competitionPhaseRoundrobin();
-  bool competitionTypeNormal();
-  bool competitionType7v7();
+  bool competitionTypeChampionsCup();
+  bool competitionTypeChallengeShield();
+  bool globalGameStuck(int side);
   bool goal(int side);
   bool goalKick(int side);
   bool pushingFreeKick(int side);
@@ -217,9 +227,8 @@ private:
 
   /**
    * Initialize both teams.
-   * @param teamSize The maximum number of players per team including substitutes.
    * @param robotsPlaying The maximum number of players per team playing at the same time.
    * @param messageBudget The message budget per team for a whole game.
    */
-  void initTeams(const uint8_t teamSize, const int robotsPlaying, const uint16_t messageBudget);
+  void initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget);
 };

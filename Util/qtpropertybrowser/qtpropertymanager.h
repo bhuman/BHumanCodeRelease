@@ -115,7 +115,6 @@ Q_SIGNALS:
     void valueChanged(QtProperty *property, bool val);
 protected:
     QString valueText(const QtProperty *property) const;
-    QIcon valueIcon(const QtProperty *property) const;
     virtual void initializeProperty(QtProperty *property);
     virtual void uninitializeProperty(QtProperty *property);
 private:

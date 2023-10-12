@@ -9,11 +9,12 @@
 #include "Platform/SystemCall.h"
 #include "Debugging/Annotation.h"
 #include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "Math/Constants.h"
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(ArmContactModelProvider, sensing);
+MAKE_MODULE(ArmContactModelProvider);
 
 void ArmContactModelProvider::decideArmMovementDone(ArmContactModel& model)
 {

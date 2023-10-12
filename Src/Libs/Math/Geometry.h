@@ -164,6 +164,7 @@ namespace Geometry
   [[nodiscard]] bool isPointInsideConvexPolygon(const Vector2f polygon[], const int numberOfPoints, const Vector2f& point);
   [[nodiscard]] bool isPointInsidePolygon(const Vector2f& point, const std::vector<Vector2f>& V);
   [[nodiscard]] bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V);
+  [[nodiscard]] bool isPointInsideArc(const Vector2f& point, const Vector2f& center, const Rangea& angleRange, const float radius);
   bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2i& point);
   bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2f& point);
   bool clipPointToPolygonBorder(const std::vector<Vector2f>& polygon, Vector2f& point);
@@ -204,7 +205,7 @@ namespace Geometry
   Vector2f getOrthogonalProjectionOfPointOnLine(const Line& line, const Vector2f& point);
 
   /**
-   * Computes the projection of a point on an egde
+   * Computes the projection of a point on an edge
    * @param base The base point of the line
    * @param dir The direction vector of the line (must NOT be normalized)
    * @param point The point that is projected
@@ -213,7 +214,7 @@ namespace Geometry
   Vector2f getOrthogonalProjectionOfPointOnEdge(const Vector2f& base, const Vector2f& dir, const Vector2f& point);
 
   /**
-   * Computes the projection of a point on an egde
+   * Computes the projection of a point on an edge
    * @param line The line to project on
    * @param point The point that is projected
    * @return A point on the edge

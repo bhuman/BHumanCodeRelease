@@ -28,11 +28,13 @@ void PenaltyMarkWithPenaltyAreaLine::draw() const
   FieldFeature::draw();
   if(Blackboard::getInstance().exists("CameraInfo"))
   {
-    std::string thread = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::upper ? "Upper" : "Lower";
+    const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
     DEBUG_DRAWING("representation:PenaltyMarkWithPenaltyAreaLine:field", "drawingOnField")
-      THREAD("representation:PenaltyMarkWithPenaltyAreaLine:field", thread);
+      THREAD("representation:PenaltyMarkWithPenaltyAreaLine:field", theCameraInfo.getThreadName());
+
     if(!isValid)
       return;
+
     static const float size = 1000.f;
     COMPLEX_DRAWING("representation:PenaltyMarkWithPenaltyAreaLine:field")
     {

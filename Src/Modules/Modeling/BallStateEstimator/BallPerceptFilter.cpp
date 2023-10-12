@@ -20,9 +20,8 @@
 #include "BallPerceptFilter.h"
 #include "Debugging/Annotation.h"
 #include "Tools/Modeling/BallLocatorTools.h"
-#include "Tools/Modeling/Measurements.h"
 
-MAKE_MODULE(BallPerceptFilter, modeling);
+MAKE_MODULE(BallPerceptFilter);
 
 BallPerceptFilter::BallPerceptFilter() : timeBallWasBeenSeenInLowerCameraImage(0),
                                          timeWhenLastKickWasExecuted(0), timeOfLastFilteredPercept(0),
@@ -32,9 +31,6 @@ BallPerceptFilter::BallPerceptFilter() : timeBallWasBeenSeenInLowerCameraImage(0
 
 void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 {
-  // Do some test stuff:
-  // doSomeTestStuff();
-
   // Reset percept:
   filteredBallPercepts.percepts.clear();
 
@@ -77,12 +73,8 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 
   // If we have reached this part of the code, the ball percept contains information
   // that might be useful and that can be used for some computations.
-  const Matrix2f ballPerceptCov = Measurements::positionToCovarianceMatrixInRobotCoordinates(
-                                    theBallPercept.positionOnField, 0.f, theCameraMatrix,
-                                    theCameraMatrix.inverse(), robotRotationDeviation);
-
   const FilteredBallPercept fbp(theBallPercept.positionInImage, theBallPercept.positionOnField,
-                                ballPerceptCov, theBallPercept.radiusOnField, theFrameInfo.time);
+                                theBallPercept.covarianceOnField, theBallPercept.radiusOnField, theFrameInfo.time);
   bufferedBalls.push_front(fbp);
 
   // Analyze new percept
@@ -194,7 +186,7 @@ bool BallPerceptFilter::perceptIsInsideTeammateAndCanBeExcludedByTeamBall()
 bool BallPerceptFilter::perceptIsInOtherHalf()
 {
   const Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
-  // Check, if the x componentes of both field coordinates have the same sign:
+  // Check, if the x components of both field coordinates have the same sign:
   if(sgn(ballOnField.x()) == sgn(theWorldModelPrediction.robotPose.translation.x()))
     return false;
   // In case of different signs, it is sufficient, if robot or ball is close to the center line:
@@ -383,17 +375,4 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
 
   // Return error:
   return meanError * 1000.f; // in mm
-}
-
-void BallPerceptFilter::doSomeTestStuff()
-{
-  DECLARE_DEBUG_DRAWING("module:BallPerceptFilter:testStuff", "drawingOnField");
-  if(theCameraInfo.camera == CameraInfo::lower)
-    return;
-  Vector2f pointRelativeToRobot(2000.f, 0.f);
-  MODIFY("module:BallPerceptFilter:testPoint", pointRelativeToRobot);
-  const Matrix2f cov = Measurements::positionToCovarianceMatrixInRobotCoordinates(
-                                       pointRelativeToRobot, 0.f, theCameraMatrix,
-                                       theCameraMatrix.inverse(), robotRotationDeviation);
-  COVARIANCE_ELLIPSES_2D("module:BallPerceptFilter:testStuff", cov, pointRelativeToRobot);
 }

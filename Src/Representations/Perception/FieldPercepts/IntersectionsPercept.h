@@ -20,10 +20,11 @@ STREAMABLE(IntersectionsPercept,
     });
 
     Intersection() = default;
-    Intersection(const IntersectionType& t, const Vector2f& p, const Vector2f& d1, const Vector2f& d2, unsigned l1, unsigned l2)
+    Intersection(const IntersectionType& t, const Vector2f& p, const Matrix2f& c, const Vector2f& d1, const Vector2f& d2, unsigned l1, unsigned l2)
     {
       type = t;
       pos = p;
+      cov = c;
       dir1 = d1;
       dir2 = d2;
       line1Index = l1;
@@ -31,9 +32,10 @@ STREAMABLE(IntersectionsPercept,
     },
 
     (IntersectionType) type,
-    (Vector2f) pos, /**< The fieldcoordinates of the intersection */
-    (Vector2f) dir1, /**< The first direction of the lines intersected. (In field coordinates) */
-    (Vector2f) dir2, /**< The second direction of the lines intersected. (In field coordinates) */
+    (Vector2f) pos,        /**< The field coordinates of the intersection, relative to the robot */
+    (Matrix2f) cov,        /**< The covariance of pos */
+    (Vector2f) dir1,       /**< The first direction of the lines intersected (in field coordinates, relative to the robot) */
+    (Vector2f) dir2,       /**< The second direction of the lines intersected (in field coordinates, realative to the robot) */
     (unsigned) line1Index, /**< The first line of the intersection*/
     (unsigned) line2Index, /**< The second line of the intersection*/
   });
@@ -43,7 +45,7 @@ STREAMABLE(IntersectionsPercept,
    */
   void draw() const,
 
-  (std::vector<Intersection>) intersections,
+  (std::vector<Intersection>) intersections, /**< A list of all intersections that were found in the current image */
 });
 
 inline void IntersectionsPercept::draw() const

@@ -51,7 +51,7 @@ public:
 
   /**
    * Returns the state of a button.
-   * @param buttonId The id of the buttton which state should be returned.
+   * @param buttonId The id of the button which state should be returned.
    * @return Whether the button is currently pressed or not.
    */
   bool isButtonPressed(unsigned int buttonId) const;

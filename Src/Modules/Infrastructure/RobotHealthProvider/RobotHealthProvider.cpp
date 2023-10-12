@@ -131,4 +131,4 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   }
 }
 
-MAKE_MODULE(RobotHealthProvider, infrastructure);
+MAKE_MODULE(RobotHealthProvider);

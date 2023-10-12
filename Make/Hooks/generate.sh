@@ -22,7 +22,7 @@ then
     "msys") # Git for Windows
       if [ -f "${scriptPath}/../../Make/Windows/generate.cmd" ]; then
         pushd "${scriptPath}/../../Make/Windows" >/dev/null
-        wsl ./generate # wsl beacuse with bash an msys bash is used
+        wsl ./generate # wsl because with bash an msys bash is used
         popd >/dev/null
       fi
       ;;

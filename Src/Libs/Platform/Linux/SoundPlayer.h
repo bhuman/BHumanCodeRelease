@@ -6,11 +6,14 @@
 
 #pragma once
 
+#ifdef HAVE_ALSA
+
 #include "Platform/File.h"
 #include "Platform/Semaphore.h"
 #include "Platform/Thread.h"
 #include <alsa/asoundlib.h>
 #include <flite.h>
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <string>
@@ -26,7 +29,6 @@ struct RiffChunk
   char chunkId[4];       /**< Used to identify the file format. Contains "RIFF". */
   uint32_t chunkSize;    /**< The size of this chunk (and thus the whole RIFF file) in bytes.  */
   char waveId[4];        /**< Used to identify the file format. Contains "WAVE". */
-  uint32_t numChunks;    /**< The number of chunks in this file. */
 };
 
 enum WaveFormat : uint16_t
@@ -37,7 +39,7 @@ enum WaveFormat : uint16_t
 struct FmtChunk
 {
   char chunkId[4];          /**< Contains "fmt ". */
-  uint32_t chunkSize;           /**< The size of this chunk in bytes. */
+  uint32_t chunkSize;       /**< The size of this chunk in bytes. */
   WaveFormat format;        /**< Indicates the format of the samples. Only PCM is supported. */
   uint16_t numChannels;     /**< The number of interleaved channels. */
   uint32_t sampleRate;      /**< The number of samples per second. */
@@ -57,11 +59,13 @@ struct DataChunk
 struct WaveFile
 {
   std::vector<char> buffer;
-  RiffChunk* master = nullptr;
-  FmtChunk* format = nullptr;
-  DataChunk* data = nullptr;
+  const RiffChunk* master = nullptr;
+  const FmtChunk* format = nullptr;
+  const DataChunk* data = nullptr;
 
-  explicit WaveFile(const size_t size) : buffer(size) {}
+  explicit WaveFile(File& file);
+
+  bool parse();
 };
 
 struct Wave
@@ -69,13 +73,9 @@ struct Wave
   explicit Wave(File& file);
   explicit Wave(const cst_wave*);
 
-  short channels = 1;
   unsigned sampleRate = 0;
   unsigned long numFrames = 0;
   std::vector<short> data;
-
-private:
-  bool parseWaveFile(WaveFile& waveFile);
 };
 
 struct SoundRequest
@@ -84,11 +84,11 @@ struct SoundRequest
   float ttsDurationStretchFactor = 0.f;
   std::string fileOrText;
   SoundRequest() = default;
-  explicit SoundRequest(std::string fileName)
-  : fileOrText(std::move(fileName))
+  explicit SoundRequest(const std::string& fileName)
+  : fileOrText(fileName)
   {}
-  SoundRequest(std::string text, float stretchFactor)
-  : isTextToSpeech(true), ttsDurationStretchFactor(stretchFactor), fileOrText(std::move(text))
+  SoundRequest(const std::string& text, float stretchFactor)
+  : isTextToSpeech(true), ttsDurationStretchFactor(stretchFactor), fileOrText(text)
   {}
 };
 
@@ -99,10 +99,10 @@ private:
   DECLARE_SYNC;
   std::deque<SoundRequest> queue;
   std::string filePrefix;
-  bool started;
+  bool started = false;
   Semaphore sem;
-  volatile bool closing;
-  volatile bool playing;
+  std::atomic<bool> closing = false;
+  std::atomic<bool> playing = false;
 
   cst_voice *voice;
   std::unordered_map<std::string, Wave> synthesizedSounds;
@@ -113,14 +113,14 @@ private:
   unsigned retryDelay = 500;  /**< Delay before a retry to open device. */
   unsigned sampleRate = 16000; /**< Sample rate to playback. This variable will contain the frame rate the driver finally selected. */
   snd_pcm_uframes_t periodSize = 512; /**< Frames per period. */
-  const float textToSpeechVolumeFactor = 1.4f; /** Increase text to speech volume by this factor (1.5 seems to be too high, results in cracking noise)  */
+  const float textToSpeechVolumeFactor = 1.4f; /**< Increase text to speech volume by this factor (1.5 seems to be too high, results in cracking noise)  */
 
 public:
   /**
    * Put a filename into play sound queue.
    * If you want to play Config/Sounds/bla.wav use play("bla.wav");
    * @param name The filename of the sound file.
-   * @return The amound of elements in play sound queue.
+   * @return The amount of elements in play sound queue.
    */
   static int play(const std::string& name);
 
@@ -163,3 +163,15 @@ private:
    */
   void playWave(const Wave& wave);
 };
+
+#else
+
+class SoundPlayer
+{
+public:
+  static int play(const std::string&) { return 0; }
+  static int say(const std::string&, float = 1.f) { return 0; }
+  static bool isPlaying() { return false; }
+};
+
+#endif

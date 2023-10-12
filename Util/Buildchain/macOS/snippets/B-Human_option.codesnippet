@@ -14,13 +14,13 @@
   &lt;#states#&gt;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>EAE13838-39AE-49E3-9696-08D3DFB016CD</string>
+	<string>B-Human_option</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Defines an option in the behavior description language Cabsl.</string>
+	<string>B-Human: Define an option in the behavior description language CABSL.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Cabsl option</string>
+	<string>CABSL Option</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

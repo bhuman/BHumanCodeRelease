@@ -22,7 +22,6 @@ STREAMABLE(Strategy,
   ENUM(Type,
   {,
     none,
-    game,
     s7v7,
   });
 

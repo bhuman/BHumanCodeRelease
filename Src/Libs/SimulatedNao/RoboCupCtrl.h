@@ -15,6 +15,7 @@
 #include <SimRobotCore2D.h>
 
 #include <QBrush>
+#include <QIcon>
 #include <QList>
 #include <QString>
 #include <list>
@@ -27,6 +28,23 @@ class PaintMethods3DOpenGL;
  */
 class RoboCupCtrl : public SimRobot::Module, public SimRobotCore2::CollisionCallback, public SimRobotCore2D::CollisionCallback
 {
+  class Category : public SimRobot::Object
+  {
+    QString name;
+    QString fullName;
+    QIcon icon;
+
+  public:
+    Category(const QString& name, const QString& fullName, const char* icon) : name(name), fullName(fullName), icon(icon)
+    {
+      this->icon.setIsMask(true);
+    }
+
+  private:
+    const QString& getFullName() const override { return fullName; }
+    const QIcon* getIcon() const override { return &icon; }
+  };
+
 public:
   static RoboCupCtrl* controller; /**< A pointer to the SimRobot controller. */
   static SimRobot::Application* application; /**< The interface to the SimRobot GUI. */
@@ -98,13 +116,6 @@ public:
    * @return The category
    */
   SimRobot::Object* addCategory(const QString& name, const QString& parentName);
-
-  /**
-   * Removes a category that was previously added with addCategory(). Note that no parent object
-   * is required here, due to asymmetrical registerObject()/unregisterObject() definitions
-   * @param object Category to remove from scene graph
-   */
-  void removeCategory(SimRobot::Object* object);
 
 protected:
   /**

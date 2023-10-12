@@ -159,9 +159,11 @@ GTEST_TEST(ModuleGraphCreator, unevenDeathTest)
   OutBinaryMemory out2(100);
   out2 << createConfig({{{"A", "Ac"}}, {{"A", "Ac"}}});
   InBinaryMemory in2(out2.data());
+#ifndef NDEBUG
   ASSERT_DEATH(moduleGraphCreator.update(in2),
                "ASSERT\\(prevConfig\\(\\).empty\\(\\) \\|\\| config\\(\\).empty\\(\\) "
                         "\\|\\| prevConfig\\(\\).size\\(\\) == config\\(\\).size\\(\\)\\) failed");
+#endif
 }
 
 // Invalid default representations.

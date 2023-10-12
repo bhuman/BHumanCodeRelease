@@ -1,7 +1,7 @@
 /**
  * @file IntersectionsProvider.h
  *
- * This file declares a module that detects and classifies intersections of fieldlines.
+ * This file declares a module that detects and classifies intersections of field lines.
  *
  * @author Arne Böckmann
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
@@ -18,10 +18,10 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include <CompiledNN/CompiledNN.h>
@@ -32,19 +32,18 @@ MODULE(IntersectionsProvider,
   REQUIRES(BallSpecification),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(CirclePercept), // Just to make sure that lines on the circle are marked as such
   REQUIRES(ECImage),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(LinesPercept),
+  REQUIRES(MeasurementCovariance),
   REQUIRES(WorldModelPrediction),
   PROVIDES(IntersectionsPercept),
   LOADS_PARAMETERS(
   {,
     (float) maxAllowedIntersectionAngleDifference,  /**<The angle between two intersecting lines should not differ more from 90° than this number (in rad) */
     (float) maxLengthUnrecognizedProportionRelaxed,  /**< the length of the recognized line multiplied by this value could maximal imagine */
-    (float) maxIntersectionGapRelaxed,  /**< the maximum distance between the intersection and one end of the line (if the intersection is not on the line) */
     (float) maxOverheadToDecleareAsEndRelaxed,  /**< the max of pixel an end can be farther away to declear as end*/
     (float) minimumBallExclusionCheckDistance,  /**< When a ball is at least this far away, it is used to exclude intersections*/
     (float) ballRadiusInImageScale,  /**< Enlarge ball radius in image by this factor */
@@ -86,7 +85,7 @@ private:
    * @param line1 the first line of the intersection
    * @param line2 the second line of the intersection
    */
-  void addIntersection(IntersectionsPercept& intersectionsPercept, IntersectionsPercept::Intersection::IntersectionType type, const Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2, unsigned line1, unsigned line2);
+  void addIntersection(IntersectionsPercept& intersectionsPercept, IntersectionsPercept::Intersection::IntersectionType type, Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2, unsigned line1, unsigned line2);
 
   /**enforces that horizontal is +90° of vertical*/
   void enforceTIntersectionDirections(const Vector2f& vertical, Vector2f& horizontal) const;

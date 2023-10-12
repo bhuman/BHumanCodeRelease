@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Platform/Thread.h"
-#include "Streaming/InMessage.h"
+#include "Streaming/MessageQueue.h"
 #include <string>
 #include <vector>
 
@@ -19,6 +19,8 @@ public:
     unsigned frame;
     std::string name;
     std::string annotation;
+
+    void read(MessageQueue::Message message);
   };
 
   struct Listener
@@ -27,7 +29,7 @@ public:
   };
 
   void clear();
-  void addMessage(InMessage& message, unsigned currentFrame);
+  void addMessage(MessageQueue::Message message, unsigned currentFrame);
   void registerListener(Listener* listener);
   void unregisterListener(Listener* listener);
 

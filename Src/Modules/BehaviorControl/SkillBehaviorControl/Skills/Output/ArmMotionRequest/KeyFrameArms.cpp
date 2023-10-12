@@ -7,7 +7,6 @@
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
@@ -16,7 +15,6 @@ SKILL_IMPLEMENTATION(KeyFrameArmsImpl,
 {,
   IMPLEMENTS(KeyFrameArms),
   IMPLEMENTS(KeyFrameSingleArm),
-  REQUIRES(LibCheck),
   REQUIRES(ArmMotionInfo),
   MODIFIES(ArmMotionRequest),
 });

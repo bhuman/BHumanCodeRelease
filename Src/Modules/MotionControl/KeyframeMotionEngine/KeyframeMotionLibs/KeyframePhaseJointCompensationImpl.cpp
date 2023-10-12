@@ -7,6 +7,7 @@
 
 #include "KeyframePhaseBase.h"
 #include "Modules/MotionControl/KeyframeMotionEngine/KeyframeMotionEngine.h"
+#include "Debugging/Plot.h"
 
 void KeyframePhaseBase::calculateJointDifference()
 {
@@ -124,6 +125,8 @@ static float constexpr scaleWithRange(const Rangea& range, const Angle& val)
   else
     scaling = (val - range.min) / (range.max - range.min);
   return std::max(scaling, 0.f);
+  // TODO clip scaling to 1. Otherwise with a range for example of Rangea(4deg,8deg) does not scale linear for ratio > 1,
+  // but exponentially! This could result in overcompensation!
 }
 
 void KeyframePhaseBase::applyJointCompensation()

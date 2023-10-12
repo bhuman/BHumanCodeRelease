@@ -14,13 +14,13 @@
   &lt;#element#&gt;,
 });</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>A3647F67-48AC-48CA-B9B0-39B7573C4F78</string>
+	<string>B-Human_ENUM</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Declaration of an enumeration type and a function to deliver its elements as string.</string>
+	<string>B-Human: B-Human: Declare a new streamable enumerated type with named constant values.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>ENUM declaration</string>
+	<string>ENUM Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

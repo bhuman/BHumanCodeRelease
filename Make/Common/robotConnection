@@ -1,0 +1,30 @@
+#!/bin/bash
+# Start the version of SimRobot that was compiled most recently and
+# remotely connect to a NAO.
+# This script can either be launched without arguments, e.g. from
+# the Finder, or by passing the ip address of the NAO as its only
+# argument.
+
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
+cd "$basePath"
+
+if [ "$(uname)" == "Darwin" ]; then
+  app=$(ls -1dt $(find ../../Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
+elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+  app=$(ls -1dt ../../Build/Windows/SimRobot/*/SimRobot.exe | head -1)
+else
+  app=$(ls -1dt ../../Build/Linux/SimRobot/*/SimRobot | head -1)
+fi
+
+if [ ! -z "$app" ]; then
+  if [ ! -z "$1" ]; then
+    echo "sc Remote $1" >"../../Config/Scenes/Includes/connect.con"
+  fi
+  if [ "$(uname)" == "Darwin" ]; then
+    open "$app" --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"
+  elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    cmd.exe /c start "$app" "../../Config/Scenes/RemoteRobot.ros2"
+  else
+    "$app" "../../Config/Scenes/RemoteRobot.ros2" </dev/null >/dev/null 2>&1 &
+  fi
+fi

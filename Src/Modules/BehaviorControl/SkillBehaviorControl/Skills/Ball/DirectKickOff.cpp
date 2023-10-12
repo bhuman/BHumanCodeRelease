@@ -129,7 +129,9 @@ class DirectKickOffImpl : public DirectKickOffImplBase
     else
       kickType = KickInfo::walkForwardsLeftAlternative;
 
-    theGoToBallAndKickSkill(Angle::normalize(targetAngle - theRobotPose.rotation), kickType, true);
+    theGoToBallAndKickSkill({.targetDirection = Angle::normalize(targetAngle - theRobotPose.rotation),
+                             .kickType = kickType,
+                             .lookActiveWithBall = true});
     wasActive = true;
   }
 

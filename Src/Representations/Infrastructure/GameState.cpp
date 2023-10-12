@@ -106,9 +106,17 @@ GameState::GameState() :
   if(Global::settingsExist())
   {
     ownTeam.number = Global::getSettings().teamNumber;
-    ownTeam.color = Global::getSettings().teamColor;
+    ownTeam.fieldPlayerColor = Global::getSettings().fieldPlayerColor;
+    ownTeam.goalkeeperColor = Global::getSettings().goalkeeperColor;
   }
-  opponentTeam.color = static_cast<Team::Color>((static_cast<unsigned>(ownTeam.color) + 1) % Team::Color::numOfTeamColors);
+  opponentTeam.fieldPlayerColor = ownTeam.fieldPlayerColor;
+  opponentTeam.goalkeeperColor = ownTeam.goalkeeperColor;
+  do
+  {
+    opponentTeam.fieldPlayerColor = static_cast<Team::Color>((static_cast<unsigned>(opponentTeam.fieldPlayerColor) + 1) % Team::Color::numOfTeamColors);
+    opponentTeam.goalkeeperColor = static_cast<Team::Color>((static_cast<unsigned>(opponentTeam.goalkeeperColor) + 1) % Team::Color::numOfTeamColors);
+  }
+  while(opponentTeam.fieldPlayerColor == ownTeam.fieldPlayerColor || opponentTeam.fieldPlayerColor == ownTeam.goalkeeperColor || opponentTeam.goalkeeperColor == ownTeam.fieldPlayerColor);
 }
 
 void GameState::draw() const
@@ -176,9 +184,9 @@ void GameState::draw() const
     {
       const float x = ownTeam ? -1535.f : 1465.f;
       const int score = std::min(static_cast<int>(team.score), 99);
-      print(std::to_string(score / 10) + std::to_string(score % 10), Vector3f(x, yPosLeftSideline, 1000), 200, ColorRGBA::fromTeamColor(team.color));
+      print(std::to_string(score / 10) + std::to_string(score % 10), Vector3f(x, yPosLeftSideline, 1000), 200, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
       std::string budget = "   " + std::to_string(team.messageBudget);
-      print(budget.substr(budget.size() - 4), Vector3f(x - 135.f, yPosLeftSideline, 1300), 100, ColorRGBA::fromTeamColor(team.color));
+      print(budget.substr(budget.size() - 4), Vector3f(x - 135.f, yPosLeftSideline, 1300), 100, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
     };
 
     drawScore(ownTeam, true);
@@ -233,18 +241,6 @@ void GameState::draw() const
       xPosOwnFieldBorder = theFieldDimensions.xPosOwnFieldBorder;
       yPosRightFieldBorder = theFieldDimensions.yPosRightFieldBorder;
     }
-    DRAW_TEXT("representation:GameState:ownTeam", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName(ownTeam.color));
+    DRAW_TEXT("representation:GameState:ownTeam", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName(ownTeam.fieldPlayerColor) << "/" << TypeRegistry::getEnumName(ownTeam.goalkeeperColor));
   }
-}
-
-int GameState::Team::getSubstitutedPlayerNumber(int number) const
-{
-  if(number < 6)
-    return number;
-
-  for(unsigned int i = 0; i < 5; i++)
-    if(playerStates[i] == substitute)
-      return i + Settings::lowestValidPlayerNumber;
-
-  return number;
 }

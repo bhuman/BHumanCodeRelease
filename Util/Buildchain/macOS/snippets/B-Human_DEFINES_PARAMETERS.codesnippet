@@ -14,16 +14,16 @@
   (&lt;#type#&gt;)(&lt;#init#&gt;) &lt;#var#&gt;,
 }),</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>55D9B8CF-6A2B-4F12-A425-8F7DDE0A7F57</string>
+	<string>B-Human_DEFINES_PARAMETERS</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Definition of the parameters of a module.</string>
+	<string>B-Human: Define the parameters of a module.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Parameter Definition</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>
-	<integer>0</integer>
+	<integer>2</integer>
 </dict>
 </plist>

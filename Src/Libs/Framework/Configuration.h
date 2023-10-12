@@ -1,7 +1,7 @@
 /**
  * @file Configuration.h
  *
- * This file declares a list of threads with their parameters and moduls.
+ * This file declares a list of threads with their parameters and modules.
  *
  * @author Jan Fiedler
  */
@@ -12,7 +12,7 @@
 
 /**
  * The class is used for reading configurations.
- * It contains all threads with their parameters and moduls.
+ * It contains all threads with their parameters and modules.
  */
 STREAMABLE(Configuration,
 {
@@ -39,7 +39,7 @@ STREAMABLE(Configuration,
   STREAMABLE(Thread,
   {
     /**
-     * Comparison operator. Uses the namoe for comparison with strings.
+     * Comparison operator. Uses the name for comparison with strings.
      * @param other The name this one is compared to.
      * @return Is this thread name like the string.
      */

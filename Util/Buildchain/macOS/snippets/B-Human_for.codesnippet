@@ -14,11 +14,11 @@
   &lt;#statements#&gt;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>167AF381-F451-4535-900D-D2B65C99DB1F</string>
+	<string>B-Human_for</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for executing code for each value in a sequence of values.</string>
+	<string>B-Human: Execute code for each value in a sequence of values.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>For Statement</string>
 	<key>IDECodeSnippetUserSnippet</key>

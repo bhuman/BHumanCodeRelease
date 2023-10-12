@@ -19,11 +19,11 @@ public:
   &lt;#member functions#&gt;
 };</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>1EF0BE33-73EF-49AD-9628-B6EFD271EF6B</string>
+	<string>B-Human_classdef</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for describing a new class type containing instance variables, member functions, etc..</string>
+	<string>B-Human: Declare a new class type containing instance variables, member functions, etc..</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>C++ Class Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>

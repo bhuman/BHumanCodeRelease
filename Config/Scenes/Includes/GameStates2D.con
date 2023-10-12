@@ -1,5 +1,5 @@
 # Simulator provides GameController info
-mr GameControllerData LogDataProvider Cognition
+for Cognition mr GameControllerData LogDataProvider
 dr module:GameStateProvider:active
 
 # use keyboard to set different game states
@@ -12,4 +12,4 @@ jc press 2 gc kickOffFirstTeam # Shift+Ctrl+B
 jc press 25 gc kickOffSecondTeam # Shift+Ctrl+Y
 jc press 21 pr none # Shift+Ctrl+U (Unpenalized)
 jc press 13 pr manual # Shift+Ctrl+M (Manual penalty)
-jc press 7 pr playerPushing # Shift+Ctrl+G (pushinG, Gamecontroller penalty)
+jc press 7 pr playerPushing # Shift+Ctrl+G (pushinG, GameController penalty)

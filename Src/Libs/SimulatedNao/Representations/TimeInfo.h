@@ -9,11 +9,9 @@
 #pragma once
 
 #include "MathBase/RingBufferWithSum.h"
-
+#include "Streaming/MessageQueue.h"
 #include <string>
 #include <unordered_map>
-
-class InMessage;
 
 // Extended Ringbuffer with timestamp containing the last update of the timing info
 class InfoWithTimestamp : public RingBufferWithSum<float, 100>
@@ -56,7 +54,7 @@ public:
    * @param justReadNames Only read stopwatch names. Do not update statistics.
    * @return Was it a stop watch message?
    */
-  bool handleMessage(InMessage& message, bool justReadNames = false);
+  bool handleMessage(MessageQueue::Message message, bool justReadNames = false);
 
   /**
    * The function empties the time info object.

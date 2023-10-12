@@ -7,11 +7,11 @@
  */
 
 #include "FootBumperStateProvider.h"
-#include "Platform/SystemCall.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "Math/Geometry.h"
+#include "Platform/SystemCall.h"
 
-MAKE_MODULE(FootBumperStateProvider, sensing);
+MAKE_MODULE(FootBumperStateProvider);
 
 void FootBumperStateProvider::update(FootBumperState& footBumperState)
 {

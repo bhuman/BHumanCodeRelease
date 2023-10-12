@@ -22,13 +22,13 @@
     }
   }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>E5C1C135-684C-46A5-A1FD-B52B85376689</string>
+	<string>B-Human_initial_state</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Initial state of a Cabsl option.</string>
+	<string>B-Human: Initial state of a CABSL option.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Cabsl initial state</string>
+	<string>CABSL Initial State</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

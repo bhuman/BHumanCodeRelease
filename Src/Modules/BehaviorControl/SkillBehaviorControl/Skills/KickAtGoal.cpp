@@ -7,7 +7,6 @@
  */
 
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/DamageConfiguration.h"
@@ -35,7 +34,6 @@ SKILL_IMPLEMENTATION(KickAtGoalImpl,
   REQUIRES(FieldDimensions),
   REQUIRES(GameState),
   REQUIRES(KickInfo),
-  REQUIRES(LibDemo),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   REQUIRES(WalkingEngineOutput),
@@ -47,12 +45,6 @@ SKILL_IMPLEMENTATION(KickAtGoalImpl,
     (Angle) minOpeningAngle, /**< The minimum opening angle a sector must have to be considered. */
     (Angle) kickInaccuracy, /**< The search angle range is narrowed by this to both sides. */
     (float) hysteresisDecisionPenalty, /**< Changing the decision of the previous frame results in this penalty to the time. */
-    (float) dribbleLookahead,
-    (float) sideBorderMargin,
-    (float) fullObstacleWidthDistance,
-    (Angle) enforceOpeningAngle,
-    (float) goalPostShiftY,
-    (float) maxAdditionalBallGoalPostTangentOffset,
     (float) walkForwardLongMalus, /**< Malus for the range. */
     (std::vector<KickInfo::KickType>) allowedKicks,
     (std::vector<Rangef>) allowedKickRanges, /**< Kicking at the goal is only allowed from these distances. */
@@ -71,23 +63,20 @@ class KickAtGoalImpl : public KickAtGoalImplBase
 
   void execute(const KickAtGoal&) override
   {
-    if(theGameState.isKickOff())
-    {
-      theDirectKickOffSkill();
-      return;
-    }
-
     updateKickDirectionAndKick();
 
-    const bool allowDirectKick = !(theGameState.isKickOff() ||
-                                   theGameState.isKickIn() ||
-                                   theGameState.isFreeKick());
+    const bool allowDirectKick = !(theGameState.isFreeKick() &&
+                                   theGameState.isForOwnTeam());
     if(aimingAtGoal && allowDirectKick)
     {
       theGoToBallAndKickSkill({.targetDirection = kickDirectionRelative,
                                .kickType = kickType,
                                .alignPrecisely = theKickInfo[kickType].motion == MotionPhase::walk ? KickPrecision::notPrecise : KickPrecision::precise });
       state = notActive;
+    }
+    else if(theGameState.isKickOff())
+    {
+      theDirectKickOffSkill();
     }
     else
       theDribbleToGoalSkill();
@@ -122,20 +111,20 @@ class KickAtGoalImpl : public KickAtGoalImplBase
     if(kickHasBeenCalculated)
       return;
 
-    const Angle lastTargetAngleOnField = (goalLineIntersection - theFieldBall.endPositionOnField).angle();
+    const Angle lastTargetAngleOnField = (goalLineIntersection - theFieldBall.interceptedEndPositionOnField).angle();
     const KickInfo::KickType lastKickType = aimingAtGoal ? kickType : KickInfo::numOfKickTypes;
     const bool lastAimingAtGoal = aimingAtGoal;
     kickType = KickInfo::numOfKickTypes;
     aimingAtGoal = false;
 
     const float minBallGoalPostOffset = theFieldDimensions.goalPostRadius + theBallSpecification.radius;
-    const Angle leftAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (leftGoalPost - theFieldBall.endPositionOnField).norm()));
-    const Angle rightAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (rightGoalPost - theFieldBall.endPositionOnField).norm()));
-    const Angle angleToLeftPost = (leftGoalPost - theFieldBall.endPositionOnField).angle() - leftAngleOffset;
-    const Angle angleToRightPost = (rightGoalPost - theFieldBall.endPositionOnField).angle() + rightAngleOffset;
+    const Angle leftAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (leftGoalPost - theFieldBall.interceptedEndPositionOnField).norm()));
+    const Angle rightAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (rightGoalPost - theFieldBall.interceptedEndPositionOnField).norm()));
+    const Angle angleToLeftPost = (leftGoalPost - theFieldBall.interceptedEndPositionOnField).angle() - leftAngleOffset;
+    const Angle angleToRightPost = (rightGoalPost - theFieldBall.interceptedEndPositionOnField).angle() + rightAngleOffset;
 
-    RAY("skill:KickAtGoal:goalSector", theFieldBall.endPositionOnField, angleToLeftPost, 10, Drawings::solidPen, ColorRGBA::blue);
-    RAY("skill:KickAtGoal:goalSector", theFieldBall.endPositionOnField, angleToRightPost, 10, Drawings::solidPen, ColorRGBA::red);
+    RAY("skill:KickAtGoal:goalSector", theFieldBall.interceptedEndPositionOnField, angleToLeftPost, 10, Drawings::solidPen, ColorRGBA::blue);
+    RAY("skill:KickAtGoal:goalSector", theFieldBall.interceptedEndPositionOnField, angleToRightPost, 10, Drawings::solidPen, ColorRGBA::red);
 
     auto kicks = calcAvailableKicks(lastKickType);
     if(kicks.empty())
@@ -144,8 +133,8 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       return;
     }
 
-    if(theFieldBall.endPositionOnField.x() > theFieldDimensions.xPosOpponentGoalPost - minBallGoalPostOffset - (lastAimingAtGoal ? hysteresisNumber : 0.f) &&
-       std::abs(theFieldBall.endPositionOnField.y()) < theFieldDimensions.yPosLeftGoal - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber))
+    if(theFieldBall.interceptedEndPositionOnField.x() > theFieldDimensions.xPosOpponentGoalPost - minBallGoalPostOffset - (lastAimingAtGoal ? hysteresisNumber : 0.f) &&
+       std::abs(theFieldBall.interceptedEndPositionOnField.y()) < theFieldDimensions.yPosLeftGoal - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber))
     {
       KickInfo::KickType bestKickType = KickInfo::numOfKickTypes;
       Pose2f bestKickPoseRelative;
@@ -158,8 +147,8 @@ class KickAtGoalImpl : public KickAtGoalImplBase
 
       for(KickInfo::KickType kick : kicks)
       {
-        const Pose2f kickPose = theRobotPose.inversePose * KickSelection::calcOptimalKickPoseForTargetAngleRange(searchRange, theRobotPose, theFieldBall.endPositionOnField, theKickInfo[kick].ballOffset, theKickInfo[kick].rotationOffset);
-        const float ttrp = KickSelection::calcTTRP(kickPose, theFieldBall.endPositionRelative, theWalkingEngineOutput.maxSpeed) + theKickInfo[kick].executionTime + (kick == lastKickType ? 0.f : hysteresisDecisionPenalty);
+        const Pose2f kickPose = theRobotPose.inverse() * KickSelection::calcOptimalKickPoseForTargetAngleRange(searchRange, theRobotPose, theFieldBall.interceptedEndPositionOnField, theKickInfo[kick].ballOffset, theKickInfo[kick].rotationOffset);
+        const float ttrp = KickSelection::calcTTRP(kickPose, theWalkingEngineOutput.maxSpeed) + theKickInfo[kick].executionTime + (kick == lastKickType ? 0.f : hysteresisDecisionPenalty);
 
         if(ttrp < timeToReachBestKickPose)
         {
@@ -173,13 +162,13 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       kickType = bestKickType;
       VERIFY(Geometry::getIntersectionOfLines(goalLine,
                                               Geometry::Line(Pose2f(Angle::normalize(theRobotPose.rotation + kickDirectionRelative),
-                                                             theFieldBall.endPositionOnField)), goalLineIntersection));
+                                                             theFieldBall.interceptedEndPositionOnField)), goalLineIntersection));
       CROSS("skill:KickAtGoal:goalLineIntersection", goalLineIntersection.x(), goalLineIntersection.y(), 100, 20, Drawings::solidPen, ColorRGBA::white);
       aimingAtGoal = true;
     }
     else if(angleToLeftPost < angleToRightPost ||
-            (theFieldBall.endPositionOnField.x() >= theFieldDimensions.xPosOpponentGoalPost - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber) &&
-             std::abs(theFieldBall.endPositionOnField.y()) >= theFieldDimensions.yPosLeftGoal - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber)))
+            (theFieldBall.interceptedEndPositionOnField.x() >= theFieldDimensions.xPosOpponentGoalPost - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber) &&
+             std::abs(theFieldBall.interceptedEndPositionOnField.y()) >= theFieldDimensions.yPosLeftGoal - minBallGoalPostOffset - (lastAimingAtGoal ? 0.f : hysteresisNumber)))
     {
       aimingAtGoal = false;
     }
@@ -192,20 +181,17 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       std::vector<ObstacleSector> obstacleSectors;
       for(const Obstacle& obstacle : theObstacleModel.obstacles)
       {
-        if(obstacle.type == Obstacle::goalpost)
-          continue;
-
         const Vector2f obstacleOnField = theRobotPose * obstacle.center;
         if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGroundLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
           continue;
 
         const float width = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
-        const float distance = std::sqrt(std::max((obstacleOnField - theFieldBall.endPositionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
+        const float distance = std::sqrt(std::max((obstacleOnField - theFieldBall.interceptedEndPositionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
         if(distance < theBallSpecification.radius)
           continue;
 
         const float radius = std::atan(width / (2.f * distance));
-        const Angle direction = (obstacleOnField - theFieldBall.endPositionOnField).angle();
+        const Angle direction = (obstacleOnField - theFieldBall.interceptedEndPositionOnField).angle();
         // Cull obstacles that are not between ball and goal anyway.
         // This works unnormalized because |angleToLeftPost| and |angleToRightPost| are <= pi_2 and radius <= pi_2
         if(direction - radius > angleToLeftPost || direction + radius < angleToRightPost)
@@ -223,7 +209,7 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       std::sort(obstacleSectors.begin(), obstacleSectors.end(), [](const ObstacleSector& s1, const ObstacleSector& s2) { return s1.x < s2.x; });
 
       // Determine the x coordinate up to which obstacles may be culled.
-      const float cullFactor = std::max(0.f, std::min(theFieldBall.endPositionOnField.x() / theFieldDimensions.xPosOpponentPenaltyMark, 1.f));
+      const float cullFactor = std::max(0.f, std::min(theFieldBall.interceptedEndPositionOnField.x() / theFieldDimensions.xPosOpponentPenaltyMark, 1.f));
       const float cullBeyondX = cullFactor * theFieldDimensions.xPosOpponentGroundLine +
                                 (1.f - cullFactor) * theFieldDimensions.xPosOpponentPenaltyMark;
       LINE("skill:KickAtGoal:cullLine", cullBeyondX, theFieldDimensions.yPosLeftSideline, cullBeyondX, theFieldDimensions.yPosRightSideline, 10, Drawings::solidPen, ColorRGBA::black);
@@ -233,7 +219,7 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       bool isLargeEnough = false;
       do
       {
-        wheel.begin(theFieldBall.endPositionOnField);
+        wheel.begin(theFieldBall.interceptedEndPositionOnField);
         wheel.addSector(Rangea(angleToRightPost, angleToLeftPost), std::numeric_limits<float>::max(), SectorWheel::Sector::goal);
         for(const ObstacleSector& obstacleSector : obstacleSectors)
           wheel.addSector(obstacleSector.sector, obstacleSector.distance, SectorWheel::Sector::obstacle);
@@ -249,7 +235,7 @@ class KickAtGoalImpl : public KickAtGoalImplBase
       }
       while(!isLargeEnough && !obstacleSectors.empty() && obstacleSectors.back().x > cullBeyondX && (obstacleSectors.pop_back(), true));
 
-      DRAW_SECTOR_WHEEL("skill:KickAtGoal:wheel", sectors, theFieldBall.endPositionOnField);
+      DRAW_SECTOR_WHEEL("skill:KickAtGoal:wheel", sectors, theFieldBall.interceptedEndPositionOnField);
 
       sectors.erase(std::remove_if(sectors.begin(), sectors.end(), [](const SectorWheel::Sector& sector) { return sector.type != SectorWheel::Sector::goal; }), sectors.end());
       // We can be sure that the goal angles are normalized and between -pi/2 and pi/2. Therefore, the angles do not need special handling.
@@ -274,10 +260,10 @@ class KickAtGoalImpl : public KickAtGoalImplBase
         {
           float usedRange = theKickInfo[kick].range.max + ((kick == lastKickType) ? hysteresisKickRangeExtension : 0.f);
           usedRange += theKickInfo[kick].walkKickType == WalkKicks::forwardLong ? walkForwardLongMalus : 0.f;
-          if(usedRange < (goalLine.base.x() - theFieldBall.endPositionOnField.x()))
+          if(usedRange < (goalLine.base.x() - theFieldBall.interceptedEndPositionOnField.x()))
             continue;
 
-          const Angle absAngle = std::acos((goalLine.base.x() - theFieldBall.endPositionOnField.x()) / usedRange);
+          const Angle absAngle = std::acos((goalLine.base.x() - theFieldBall.interceptedEndPositionOnField.x()) / usedRange);
           ASSERT(!std::isnan(float(absAngle)));
           ASSERT(absAngle <= pi_2);
           if(sector.angleRange.max < -absAngle || sector.angleRange.min > absAngle)
@@ -292,8 +278,8 @@ class KickAtGoalImpl : public KickAtGoalImplBase
           const Rangea searchRange = clampedRange.getSize() > 2.f * kickInaccuracy ?
                                      Rangea(clampedRange.min + kickInaccuracy, clampedRange.max - kickInaccuracy) :
                                      Rangea(clampedRange.getCenter());
-          const Pose2f kickPose = theRobotPose.inversePose * KickSelection::calcOptimalKickPoseForTargetAngleRange(searchRange, theRobotPose, theFieldBall.endPositionOnField, theKickInfo[kick].ballOffset, theKickInfo[kick].rotationOffset);
-          const float ttrp = KickSelection::calcTTRP(kickPose, theFieldBall.endPositionRelative, theWalkingEngineOutput.maxSpeed) + theKickInfo[kick].executionTime + (kick == lastKickType ? 0.f : hysteresisDecisionPenalty);
+          const Pose2f kickPose = theRobotPose.inverse() * KickSelection::calcOptimalKickPoseForTargetAngleRange(searchRange, theRobotPose, theFieldBall.interceptedEndPositionOnField, theKickInfo[kick].ballOffset, theKickInfo[kick].rotationOffset);
+          const float ttrp = KickSelection::calcTTRP(kickPose, theWalkingEngineOutput.maxSpeed) + theKickInfo[kick].executionTime + (kick == lastKickType ? 0.f : hysteresisDecisionPenalty);
 
           if(ttrp < timeToReachBestKickPose)
           {
@@ -309,7 +295,7 @@ class KickAtGoalImpl : public KickAtGoalImplBase
           kickType = bestKickType;
           VERIFY(Geometry::getIntersectionOfLines(goalLine,
                                                   Geometry::Line(Pose2f(Angle::normalize(theRobotPose.rotation + kickDirectionRelative),
-                                                                 theFieldBall.endPositionOnField)), goalLineIntersection));
+                                                                 theFieldBall.interceptedEndPositionOnField)), goalLineIntersection));
           CROSS("skill:KickAtGoal:goalLineIntersection", goalLineIntersection.x(), goalLineIntersection.y(), 100, 20, Drawings::solidPen, ColorRGBA::white);
           aimingAtGoal = true;
           break;

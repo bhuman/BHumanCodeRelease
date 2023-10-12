@@ -7,7 +7,7 @@
 #include "Platform/SystemCall.h"
 #include "LibDemoProvider.h"
 
-MAKE_MODULE(LibDemoProvider, behaviorControl);
+MAKE_MODULE(LibDemoProvider);
 
 void LibDemoProvider::update(LibDemo& libDemo)
 {
@@ -28,8 +28,11 @@ void LibDemoProvider::update(LibDemo& libDemo)
         case LibDemo::DemoGameState::talking:
           SystemCall::say("Talking");
           break;
-        case LibDemo::DemoGameState::normal:
+        case LibDemo::DemoGameState::soccer:
           SystemCall::say("Soccer");
+          break;
+        case LibDemo::DemoGameState::posing:
+          SystemCall::say("Posing");
           break;
       }
       lastSwitch = theFrameInfo.time;

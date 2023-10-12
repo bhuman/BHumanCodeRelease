@@ -5,9 +5,22 @@
   <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.01666666s" background="Textures/field.svg">
     <Compound ref="field"/>
 
+    <Compound name="teams">
+      <Compound name="B-Human">
+        <Compound name="5"/>
+        <Compound name="black"/>
+        <Compound name="purple"/>
+      </Compound>
+      <Compound name="B-Team">
+        <Compound name="70"/>
+        <Compound name="red"/>
+        <Compound name="blue"/>
+      </Compound>
+    </Compound>
+
     <Compound name="robots">
       <Body ref="player" name="robot1">
-        <Set name="playerColor" value="rgb(0,0,0)"/>
+        <Set name="playerColor" value="rgb(221,133,219)"/>
         <Translation x="4" y="-3"/>
         <Rotation angle="-90degree"/>
       </Body>
@@ -31,28 +44,38 @@
         <Translation x="0" y="-3"/>
         <Rotation angle="-90degree"/>
       </Body>
+      <Body ref="player" name="robot6">
+        <Set name="playerColor" value="rgb(0,0,0)"/>
+        <Translation x="3" y="-2"/>
+        <Rotation angle="-90degree"/>
+      </Body>
+      <Body ref="player" name="robot7">
+        <Set name="playerColor" value="rgb(0,0,0)"/>
+        <Translation x="2" y="-2"/>
+        <Rotation angle="-90degree"/>
+      </Body>
     </Compound>
 
     <Compound name="extras">
-      <Body ref="player" name="robot8">
-        <Set name="playerColor" value="rgb(0,0,255)"/>
-        <Translation x="-2" y="0.4"/>
+      <Body ref="player" name="robot21">
+        <Set name="playerColor" value="rgb(0,160,210)"/>
+        <Translation x="-4.5"/>
       </Body>
-      <Body ref="player" name="robot9">
-        <Set name="playerColor" value="rgb(0,0,255)"/>
+      <Body ref="player" name="robot22">
+        <Set name="playerColor" value="rgb(255,0,0)"/>
         <Translation x="-1.5" y="-0.9"/>
       </Body>
-      <Body ref="player" name="robot10">
-        <Set name="playerColor" value="rgb(0,0,255)"/>
+      <Body ref="player" name="robot23">
+        <Set name="playerColor" value="rgb(255,0,0)"/>
         <Translation x="-1.1" y="1.3"/>
       </Body>
-      <Body ref="player" name="robot11">
-        <Set name="playerColor" value="rgb(0,0,255)"/>
+      <Body ref="player" name="robot24">
+        <Set name="playerColor" value="rgb(255,0,0)"/>
         <Translation x="-0.9"/>
       </Body>
-      <Body ref="player" name="robot12">
-        <Set name="playerColor" value="rgb(0,0,255)"/>
-        <Translation x="-4.5"/>
+      <Body ref="player" name="robot25">
+        <Set name="playerColor" value="rgb(255,0,0)"/>
+        <Translation x="-2" y="0.4"/>
       </Body>
     </Compound>
 

@@ -18,7 +18,6 @@
 #include "Framework/Settings.h"
 
 #include <QApplication>
-#include <QIcon>
 
 #ifdef MACOS
 #include "AppleHelper/Helper.h"
@@ -67,25 +66,42 @@ bool RoboCupCtrl::compile()
   delayTime = simStepLength;
 
   // Get colors of first and second team
-  // If there is no team colors compound, fall back to default (black, blue)
-  std::array<uint8_t, 2> teamNumbers = {89, 90};
-  std::array<Settings::TeamColor, 2> teamColors = {static_cast<Settings::TeamColor>(-1), static_cast<Settings::TeamColor>(-1)};
-  SimRobot::Object* teamColorsObject = application->resolveObject("RoboCup.teamColors", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
-  if(teamColorsObject)
+  std::array<GameController::TeamInfo, 2> teamInfos{{{5, Settings::TeamColor::black, Settings::TeamColor::purple}, {70, Settings::TeamColor::red, Settings::TeamColor::blue}}};
+  SimRobot::Object* teamInfosObject = application->resolveObject("RoboCup.teams", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
+  if(teamInfosObject)
   {
-    ASSERT(application->getObjectChildCount(*teamColorsObject) == 2);
+    ASSERT(application->getObjectChildCount(*teamInfosObject) == 2);
     for(unsigned i = 0; i < 2; ++i)
     {
-      const QString& fullNameTeamColor = application->getObjectChild(*teamColorsObject, i)->getFullName();
-      const std::string baseNameTeamColor = fullNameTeamColor.mid(fullNameTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
-      teamColors[i] = static_cast<Settings::TeamColor>(TypeRegistry::getEnumValue(typeid(Settings::TeamColor).name(), baseNameTeamColor));
+      SimRobot::Object* teamObject = application->getObjectChild(*teamInfosObject, i);
+      ASSERT(application->getObjectChildCount(*teamObject) == 3);
+
+      const auto getChildName = [teamObject](int i)
+      {
+        const QString& fullName = application->getObjectChild(*teamObject, i)->getFullName();
+        return fullName.mid(fullName.lastIndexOf('.') + 1).toStdString();
+      };
+
+      const auto parseTeamNumber = [](const std::string& name)
+      {
+        const unsigned long number = std::strtoul(name.c_str(), nullptr, 10);
+        ASSERT(number >= 0 && number < 256);
+        return static_cast<uint8_t>(number);
+      };
+
+      const auto parseTeamColor = [](const std::string& name)
+      {
+        const int color = TypeRegistry::getEnumValue(typeid(Settings::TeamColor).name(), name);
+        ASSERT(color != -1);
+        return static_cast<Settings::TeamColor>(color);
+      };
+
+      teamInfos[i].number = parseTeamNumber(getChildName(0));
+      teamInfos[i].fieldPlayerColor = parseTeamColor(getChildName(1));
+      teamInfos[i].goalkeeperColor = parseTeamColor(getChildName(2));
     }
   }
-  if(teamColors[0] == static_cast<Settings::TeamColor>(-1))
-    teamColors[0] = Settings::TeamColor::black;
-  if(teamColors[1] == static_cast<Settings::TeamColor>(-1))
-    teamColors[1] = Settings::TeamColor::blue;
-  gameController.setTeamInfos(teamNumbers, teamColors);
+  gameController.setTeamInfos(teamInfos);
 
   std::string location = "Default";
   SimRobot::Object* locationObject = application->resolveObject("RoboCup.location", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
@@ -131,8 +147,9 @@ bool RoboCupCtrl::compile()
     const QString& fullName = robot->getFullName();
     const bool firstTeam = SimulatedRobot::isFirstTeam(robot);
     robots.push_back(new ControllerRobot(Settings("Nao", "Nao",
-                                                  teamNumbers[firstTeam ? 0 : 1],
-                                                  teamColors[firstTeam ? 0 : 1],
+                                                  teamInfos[firstTeam ? 0 : 1].number,
+                                                  teamInfos[firstTeam ? 0 : 1].fieldPlayerColor,
+                                                  teamInfos[firstTeam ? 0 : 1].goalkeeperColor,
                                                   SimulatedRobot::getNumber(robot) - (firstTeam ? 0 : SimulatedRobot::robotsPerTeam),
                                                   location, scenarios[firstTeam ? 0 : 1],
                                                   0),
@@ -190,10 +207,8 @@ void RoboCupCtrl::addView(SimRobot::Object* object, const QString& categoryName,
   SimRobot::Object* category = application->resolveObject(categoryName);
   if(!category)
   {
-    const auto lio = categoryName.lastIndexOf('.');
-    QString subParentName = categoryName.mid(0, lio);
-    QString name = categoryName.mid(lio + 1);
-    category = addCategory(name, subParentName);
+    qsizetype p = categoryName.lastIndexOf('.');
+    category = addCategory(categoryName.mid(p + 1), categoryName.left(p));
   }
   addView(object, category, flags);
 }
@@ -201,32 +216,39 @@ void RoboCupCtrl::addView(SimRobot::Object* object, const QString& categoryName,
 void RoboCupCtrl::removeView(SimRobot::Object* object)
 {
   views.removeOne(object);
-  application->unregisterObject(*object);
-}
 
-void RoboCupCtrl::removeCategory(SimRobot::Object* object)
-{
-  views.removeOne(object);
+  // Determine parent category
+  const QString fullName = object->getFullName();
+  const auto lio = fullName.lastIndexOf('.');
+  const QString parentName = fullName.left(lio);
+  SimRobot::Object* parent = nullptr;
+  for(SimRobot::Object* object : views)
+    if(object->getFullName() == parentName && dynamic_cast<Category*>(object))
+      parent = object;
+
+  // Has parent category still children?
+  if(parent)
+  {
+    const QString siblingStart = parentName + ".";
+    for(SimRobot::Object* object : views)
+      if(object->getFullName().startsWith(siblingStart))
+      {
+        parent = nullptr;
+        break;
+      }
+  }
+
   application->unregisterObject(*object);
+  delete object;
+
+  // If parent category does not have children anymore, it is removed as well.
+  if(parent)
+    removeView(parent);
 }
 
 SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const SimRobot::Object* parent, const char* icon)
 {
-  class Category : public SimRobot::Object
-  {
-    QString name;
-    QString fullName;
-    QIcon icon;
-
-  public:
-    Category(const QString& name, const QString& fullName, const char* icon) : name(name), fullName(fullName), icon(icon) {}
-
-  private:
-    const QString& getFullName() const override { return fullName; }
-    const QIcon* getIcon() const override { return &icon; }
-  };
-
-  SimRobot::Object* category = new Category(name, parent ? parent->getFullName() + "." + name : name, icon ? icon : ":/Icons/folder.png");
+  SimRobot::Object* category = new Category(name, parent ? parent->getFullName() + "." + name : name, icon ? icon : ":/Icons/icons8-folder-50.png");
   views.append(category);
   application->registerObject(*this, *category, parent, SimRobot::Flag::windowless | SimRobot::Flag::hidden);
   return category;
@@ -238,7 +260,7 @@ SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const QString& p
   if(!parent)
   {
     const auto lio = parentName.lastIndexOf('.');
-    QString subParentName = parentName.mid(0, lio);
+    QString subParentName = parentName.left(lio);
     QString name = parentName.mid(lio + 1);
     parent = addCategory(name, subParentName);
   }

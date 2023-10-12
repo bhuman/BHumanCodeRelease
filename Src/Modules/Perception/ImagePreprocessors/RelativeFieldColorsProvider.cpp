@@ -11,15 +11,11 @@
 
 #include <list>
 
-MAKE_MODULE(RelativeFieldColorsProvider, perception);
+MAKE_MODULE(RelativeFieldColorsProvider);
 
 void RelativeFieldColorsProvider::update(RelativeFieldColors& theRelativeFieldColors)
 {
-  if(!rfcParametersSet)
-  {
-    theRelativeFieldColors.rfcParameters = theRelativeFieldColorsParameters;
-    rfcParametersSet = true;
-  }
+  theRelativeFieldColors.rfcParameters = theRelativeFieldColorsParameters;
   theRelativeFieldColors.averageLuminanceF = approximateAverage(theECImage.grayscaled);
   theRelativeFieldColors.averageSaturationF = approximateAverage(theECImage.saturated);
   theRelativeFieldColors.averageLuminance = static_cast<PixelTypes::GrayscaledPixel>(theRelativeFieldColors.averageLuminanceF);

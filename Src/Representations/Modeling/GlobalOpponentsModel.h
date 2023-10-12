@@ -14,6 +14,7 @@
 #include <vector>
 #include "Math/Eigen.h"
 #include "Streaming/AutoStreamable.h"
+#include "Tools/Modeling/Obstacle.h"
 
 /**
  * @struct GlobalOpponentsModel
@@ -28,7 +29,9 @@ STREAMABLE(GlobalOpponentsModel,
    */
    STREAMABLE(OpponentEstimate,
    {,
-     (Vector2f) position,        /**< The estimated position of an opponent robot in global field coordinates */
+     (Vector2f) position,        /**< The estimated position of an opponent robot in absolute field coordinates  */
+     (Vector2f) left,            /**< Left point of an opponent (in absolute field coordinates) */
+     (Vector2f) right,           /**< Right point of an opponent (in absolute field coordinates) */
    });
 
    /** Draw the content of this representation */

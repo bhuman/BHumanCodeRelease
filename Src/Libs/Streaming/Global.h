@@ -9,7 +9,7 @@
 // Only declare prototypes. Don't include anything here, because this
 // file is included in many other files.
 class AnnotationManager;
-class OutMessage;
+class MessageQueue;
 struct Settings;
 class DebugRequestTable;
 class DebugDataTable;
@@ -19,7 +19,7 @@ class ReleaseOptions;
 class TimingManager;
 namespace asmjit
 {
-  inline namespace _abi_1_8
+  inline namespace _abi_1_9
   {
     class JitRuntime;
   }
@@ -33,7 +33,7 @@ class Global
 {
 private:
   static thread_local AnnotationManager* theAnnotationManager;
-  static thread_local OutMessage* theDebugOut;
+  static thread_local MessageQueue* theDebugOut;
   static thread_local Settings* theSettings;
   static thread_local DebugRequestTable* theDebugRequestTable;
   static thread_local DebugDataTable* theDebugDataTable;
@@ -53,7 +53,7 @@ public:
    * The method returns a reference to the thread wide instance.
    * @return The instance of the outgoing debug message queue in this thread.
    */
-  static OutMessage& getDebugOut() {return *theDebugOut;}
+  static MessageQueue& getDebugOut() {return *theDebugOut;}
 
   /**
    * The method returns whether the outgoing message queue was already instantiated.

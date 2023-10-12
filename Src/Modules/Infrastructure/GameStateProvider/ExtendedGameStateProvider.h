@@ -11,12 +11,10 @@
 
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Sensing/FallDownState.h"
 #include "Framework/Module.h"
 
 MODULE(ExtendedGameStateProvider,
 {,
-  REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   PROVIDES(ExtendedGameState),

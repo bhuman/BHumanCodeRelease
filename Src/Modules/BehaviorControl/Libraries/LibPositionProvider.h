@@ -11,20 +11,13 @@
 #include "Framework/Module.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 
 MODULE(LibPositionProvider,
 {,
   REQUIRES(FieldDimensions),
-  REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   PROVIDES(LibPosition),
-  LOADS_PARAMETERS(
-  {,
-    (float) positionOffsetIfOccupied, /**< The radius around an obstacle that occupies my target position. */
-    (Angle) deleteObstacleCircleRange, /**< A previous obstacle is only deleted if it is outside +- this angle. */
-  }),
 });
 
 class LibPositionProvider : public LibPositionProviderBase
@@ -104,13 +97,4 @@ private:
    * @return Whether the position far enough in the field
    */
   bool isOutSideGoalFrame(const Vector2f& position, const float offset) const;
-
-  /**
-   * Calculates the circle around an obstacle which occupies my target position.
-   * @param position The potential target position on the field
-   * @return The circle with the obstacle as center or radius 0 if none
-   */
-  Geometry::Circle getObstacleAtMyPositionCircle(const Vector2f& position);
-
-  Geometry::Circle lastCircle;
 };

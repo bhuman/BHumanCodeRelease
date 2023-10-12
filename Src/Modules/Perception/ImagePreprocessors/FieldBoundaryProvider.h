@@ -146,7 +146,7 @@ private:
 
   void fitBoundaryNotRansac(const std::vector<Spot>& spots, FieldBoundary& fieldBoundary);
 
-  std::unique_ptr<NeuralNetwork::Model> model; /** The model of the neural network. */
+  std::unique_ptr<NeuralNetwork::Model> model; /**< The model of the neural network. */
   NeuralNetwork::CompiledNN network; /**< The compiled neural network. */
   Vector2i patchSize;  /**< The width and height of the neural network input image. */
 };

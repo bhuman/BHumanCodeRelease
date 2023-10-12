@@ -101,18 +101,18 @@ namespace Type //The namespace is here to fix a VC-compiler bug
   public:
     int getSupportedTypeId() override
     {
-      return qMetaTypeId<AngleWithUnity>();
+      return qMetaTypeId<AngleWithUnit>();
     }
 
     QString toString(const QVariant& var) const override
     {
-      AngleWithUnity value = var.value<AngleWithUnity>();
-      return value == SensorData::off ? "off" : QString::number(value.deg ? value.toDegrees() : value) + " " + (value.deg ? "deg" : "rad");
+      AngleWithUnit value = var.value<AngleWithUnit>();
+      return value == SensorData::off ? "off" : QString::number(value.deg ? value.toDegrees() : value) + (value.deg ? "°" : "");
     }
 
     QVariant createDefault() override
     {
-      return QVariant::fromValue<AngleWithUnity>(AngleWithUnity());
+      return QVariant::fromValue<AngleWithUnit>(AngleWithUnit());
     }
   };
 }

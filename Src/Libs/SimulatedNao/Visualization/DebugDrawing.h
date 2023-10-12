@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Debugging/DebugDrawings.h"
-#include "Streaming/InMessage.h"
 #include "Math/Pose2f.h"
 
 /**
@@ -162,7 +161,7 @@ public:
   };
 
   unsigned timestamp; /**< The time when this drawing was created. */
-  std::string threadIdentifier; /**< The thread this drawing belongs to. */
+  std::string threadName; /**< The thread this drawing belongs to. */
 
   DebugDrawing();
   DebugDrawing(const DebugDrawing& other);
@@ -308,7 +307,7 @@ public:
   void gridRGBA(int x, int y, int cellSize, int cellsX, int cellsY, ColorRGBA* cells);
   void gridRectangleRGBA(int x, int y, int width, int height, int cellsX, int cellsY, ColorRGBA* cells);
 
-  bool addShapeFromQueue(InMessage& message, Drawings::ShapeType shapeType);
+  bool addShapeFromQueue(In& stream, Drawings::ShapeType shapeType);
   /**
    * The function returns a pointer to the first drawing element.
    * @return A pointer to the first drawing element or 0 if the drawing is empty.
@@ -330,7 +329,7 @@ private:
   int reservedSize; /**< The reserved size of the element buffer. */
   char* elements; /**< Contains all elements of this debug drawing */
   int firstTip = -1; /**< The index of the first tip. */
-  int lastOrigin = -1; /** The index of the last origin. */
+  int lastOrigin = -1; /**< The index of the last origin. */
   int firstSpot = -1; /**< The index of the first spot. */
 
   /**

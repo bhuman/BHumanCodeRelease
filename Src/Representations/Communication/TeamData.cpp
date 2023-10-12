@@ -32,7 +32,7 @@ void TeamData::draw() const
   for(auto const& teammate : teammates)
   {
     ColorRGBA posCol;
-    if(teammate.isUpright)
+    if(teammate.theRobotStatus.isUpright)
       posCol = ColorRGBA::green;
     else
       posCol = ColorRGBA::yellow;

@@ -45,7 +45,7 @@ public:
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
-  const QIcon icon; /**< The icon used for listing this view in the scene graph */
+  QIcon icon; /**< The icon used for listing this view in the scene graph */
   RobotConsole& console; /**< A reference to the console object. */
   const TimeInfo& info; /**< The Time info structure. */
 

@@ -32,7 +32,7 @@ STREAMABLE(FsrData,
   (ENUM_INDEXED_ARRAY(SolePressureInfo, Legs::Leg)) legInfo,
   (float)(0.f) minPressure, /**< % min pressure, to assume ground contact. */
   (bool)(false) isCalibrated,
-  (unsigned int)(0) lastUpdateTimestamp, /** Time stamp when FsrData was last updated. */
+  (unsigned int)(0) lastUpdateTimestamp, /**< Time stamp when FsrData was last updated. */
 });
 
 inline FsrData::FsrData()

@@ -8,9 +8,9 @@
 #include "Streaming/Global.h"
 #include <asmjit/asmjit.h>
 
-MAKE_MODULE(ECImageProvider, perception);
+MAKE_MODULE(ECImageProvider);
 
-#ifndef __arm64__
+#if !defined __arm64__ && !defined __aarch64__
 
 void ECImageProvider::update(ECImage& ecImage)
 {

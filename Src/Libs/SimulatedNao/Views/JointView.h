@@ -26,7 +26,7 @@ class JointView : public SimRobot::Object
 {
 private:
   const QString fullName; /**< The path to this view in the scene graph */
-  const QIcon icon; /**< The icon used for listing this view in the scene graph */
+  QIcon icon; /**< The icon used for listing this view in the scene graph */
   RobotConsole& console; /**< A reference to the console object. */
   const JointSensorData& jointSensorData; /**< A reference to the jointSensorData representation of the robot console. */
   const JointRequest& jointRequest; /**< A reference to the jointRequest representation of the robot console. */

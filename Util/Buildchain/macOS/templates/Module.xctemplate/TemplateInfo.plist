@@ -36,30 +36,6 @@
 		</dict>
 		<dict>
 			<key>Identifier</key>
-			<string>category</string>
-			<key>Required</key>
-			<true/>
-			<key>Name</key>
-			<string>Category:</string>
-			<key>Description</key>
-			<string>The category of the module to create</string>
-			<key>Type</key>
-			<string>popup</string>
-			<key>NotPersisted</key>
-			<true/>
-			<key>Values</key>
-			<array>
-				<string>infrastructure</string>
-				<string>perception</string>
-				<string>communication</string>
-				<string>modeling</string>
-				<string>behaviorControl</string>
-				<string>sensing</string>
-				<string>motionControl</string>
-			</array>
-		</dict>
-		<dict>
-			<key>Identifier</key>
 			<string>representation</string>
 			<key>Required</key>
 			<true/>

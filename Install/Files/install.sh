@@ -37,8 +37,8 @@ stty -cread # disable terminal receiver.
 #  - 220: if get_device get an invalid argument
 #  - 221: if the first argument of get_device is not of type "mmcblk[0-9]+" or "sd[a-z]"
 #  - 251: if this script is not launch by PID 1
-#  - 254: if DFU_VERSION is not setted
-#  - 255: if DFU_INIT is not setted
+#  - 254: if DFU_VERSION is not set
+#  - 255: if DFU_INIT is not set
 
 # any size or partition offset is given as multiple of SIZE_BASE, ie. in KByte
 SIZE_BASE="1024"
@@ -554,7 +554,7 @@ add_partition() {
   elog "ksize         : ${ksize}"
   cmd="addpart ${device} ${part_num} ${kstart} ${ksize} &>/dev/null ||"
   cmd="${cmd} partx -a --nr ${part_num} ${device} ;"
-  # don't fail here, the detection will take care of this if fails, just avoid to be stucked here
+  # don't fail here, the detection will take care of this if fails, just avoid to be stuck here
   cmd="${cmd} sleep 1 ; while [ ! -b ${newnode} ] ; do sleep 1 ; done"
   elog "cmd: ${cmd}"
   watchdog $((5*60)) true "${cmd}"
@@ -694,7 +694,7 @@ check_partition() {
   # logic error. In that case, bail out.
   if [ ${part_cnt} -ne $(( ${part_num} - 1 )) ] &&
      [ ${part_cnt} -ne ${part_num} ]; then
-    einfo "error: unconsistent partition layout"
+    einfo "error: inconsistent partition layout"
     return 146
   fi
   echo "adding a new partition to the table ..."

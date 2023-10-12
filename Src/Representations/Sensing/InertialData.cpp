@@ -1,6 +1,6 @@
 #include "InertialData.h"
-#include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Math/Rotation.h"
 
 void InertialData::draw()
@@ -22,6 +22,10 @@ void InertialData::draw()
   PLOT("representation:InertialData:orientation3D:x", orientation3DVec.x().toDegrees());
   PLOT("representation:InertialData:orientation3D:y", orientation3DVec.y().toDegrees());
   PLOT("representation:InertialData:orientation3D:z", orientation3DVec.z().toDegrees());
+
+  PLOT("representation:InertialData:cov:x", orientation3DCov(0, 0));
+  PLOT("representation:InertialData:cov:y", orientation3DCov(1, 1));
+  PLOT("representation:InertialData:cov:z", orientation3DCov(2, 2));
 
   DEBUG_DRAWING3D("representation:InertialData:down", "robot")
   {

@@ -13,6 +13,6 @@
 
 STREAMABLE(BallInGoal,
 {,
-  (int)(0) timeSinceLastInGoal,
+  (unsigned)(0) lastTimeInGoal,
   (bool)(false) inOwnGoal,
 });

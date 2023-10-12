@@ -5,7 +5,7 @@
  * see http://doc.qt.nokia.com/qq/qq14-metatypes.html for details
  *
  * Note:
- * If you forget to add a type SimRobot will crash uppon displaying
+ * If you forget to add a type SimRobot will crash upon displaying
  * data that contains the missing type.
  * It will segfault in QtVariantProperty::setValue.
  *
@@ -16,16 +16,25 @@
 #pragma once
 
 #include <QMetaType>
-#include <string>
 #include "Math/Angle.h"
 
-struct AngleWithUnity : public Angle
+struct AngleWithUnit : public Angle
 {
   bool deg = true;
 
-  AngleWithUnity() = default;
-  AngleWithUnity(const Angle& angle) : Angle(angle) {}
+  AngleWithUnit() = default;
+  AngleWithUnit(const Angle& angle) : Angle(angle) {}
+
+  bool operator==(const AngleWithUnit& other) const
+  {
+    return static_cast<float>(*this) == static_cast<float>(other) && deg == other.deg;
+  }
+
+  bool operator!=(const AngleWithUnit& other) const {return !(*this == other);}
 };
 
-Q_DECLARE_METATYPE(std::string);
-Q_DECLARE_METATYPE(AngleWithUnity);
+//Q_DECLARE_METATYPE(AngleWithUnit);
+
+// Hardcode meta type id, because dynamic method does not support
+// unloading and reloading shared libraries on Windows.
+template<> constexpr int qMetaTypeId<AngleWithUnit>() {return QMetaType::User;}

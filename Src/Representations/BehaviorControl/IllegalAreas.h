@@ -4,6 +4,7 @@
  * This file declares a representation that describes which field areas are illegal to enter.
  *
  * @author Arne Hasselbring
+ * @author Fynn Böse
  */
 
 #pragma once
@@ -17,6 +18,7 @@ STREAMABLE(IllegalAreas,
 {
   ENUM(FieldArea,
   {,
+    ownGoalArea, /**< The own goal area (including its bounding lines). */
     ownPenaltyArea, /**< The own penalty area (including its bounding lines). */
     opponentPenaltyArea, /**< The opponent penalty area (including its bounding lines). */
     borderStrip, /**< The border strip (excluding the border lines). */
@@ -50,6 +52,15 @@ STREAMABLE(IllegalAreas,
    * @return Whether the position will be illegal.
    */
   FUNCTION(bool(const Vector2f& positionOnField, float margin)) willPositionBeIllegal;
+
+  /**
+   * Checks whether a given position will be illegal in the given periode of time.
+   * @param positionOnField A position to check (assumed to be a point with no spatial extent).
+   * @param margin A positive number extends the illegal areas.
+   * @param duration A periode of time to check if the current position will be illegal in that time.
+   * @return Whether the position will be illegal in the given periode of time.
+   */
+  FUNCTION(bool(const Vector2f& positionOnField, float margin, float duration)) willPositionBeIllegalIn;
 
   /**
    * Checks whether two given positions on the field are within the same illegal area.

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "Tools/Communication/SPLMessageHandler.h" // include this first to prevent WinSock2.h/Windows.h conflicts
+#include "Tools/Communication/TeamMessageChannel.h" // include this first to prevent WinSock2.h/Windows.h conflicts
 #include "Representations/Communication/BHumanMessageOutputGenerator.h"
 #include "Representations/Communication/GameControllerData.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
@@ -21,11 +21,9 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
@@ -40,7 +38,6 @@ MODULE(TeamMessageHandler,
   REQUIRES(GameControllerData),
   REQUIRES(MotionInfo),
   USES(GameState),
-  USES(ExtendedGameState),
   USES(MotionRequest),
   USES(TeamData),
   USES(TeammatesBallModel),
@@ -48,13 +45,11 @@ MODULE(TeamMessageHandler,
   // extract data to send
   REQUIRES(FallDownState),
   REQUIRES(GroundContactState),
+  USES(RobotHealth),
 
   // send directly
   USES(BallModel),
   USES(BehaviorStatus),
-  REQUIRES(FieldFeatureOverview),
-  USES(ObstacleModel),
-  USES(RobotHealth),
   USES(RobotPose),
   USES(StrategyStatus),
   USES(Whistle),
@@ -145,8 +140,8 @@ private:
       PUBLISH(reg);
       std::vector<Counter> counters;
       counters.reserve(this->counters.size());
-      for(auto& counter : this->counters)
-        counters.emplace_back(counter.first, counter.second);
+      for(const auto& [name, changes] : this->counters)
+        counters.emplace_back(name, changes);
       STREAM(counters);
     }
 
@@ -160,9 +155,9 @@ private:
     std::map<std::string, unsigned> counters; /**< The counters. */
   };
 
-  SPLMessageHandler::Buffer inTeamMessages;
-  RoboCup::SPLStandardMessage outTeamMessage;
-  SPLMessageHandler theSPLMessageHandler;
+  TeamMessageChannel::Buffer inTeamMessages;
+  TeamMessageChannel::Buffer::Container outTeamMessage;
+  TeamMessageChannel theTeamMessageChannel;
 
   mutable Statistics statistics; /**< The change statistics. */
   SentTeamMessage lastSent; /**< Last team message that was sent. */
@@ -177,21 +172,11 @@ private:
   mutable unsigned timeWhenLastSent = 0;
 
   void update(BHumanMessageOutputGenerator& outputGenerator) override;
-  void generateMessage(BHumanMessageOutputGenerator& outputGenerator) const;
-  void writeMessage(BHumanMessageOutputGenerator& outputGenerator, RoboCup::SPLStandardMessage* const m);
+  bool writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Buffer::Container* const m);
 
   // input stuff
   struct ReceivedBHumanMessage : public BHumanMessage
   {
-    const SynchronizationMeasurementsBuffer* bSMB = nullptr;
-    unsigned toLocalTimestamp(unsigned remoteTimestamp) const override
-    {
-      if(bSMB)
-        return bSMB->getRemoteTimeInLocalTime(remoteTimestamp);
-      else
-        return 0u;
-    };
-
     enum ErrorCode
     {
       //add more parsing errors if there is a need of distinguishing
@@ -207,11 +192,15 @@ private:
   void update(SentTeamMessage& theSentTeamMessage) override {theSentTeamMessage = lastSent;}
 
   unsigned timeWhenLastMimimi = 0;
-  bool readSPLStandardMessage(const RoboCup::SPLStandardMessage* const m);
+  bool readTeamMessage(const TeamMessageChannel::Buffer::Container* const m);
   void parseMessage(ReceivedTeamMessage& bMate);
 
-  /** Make a backup of the representations that are sent. */
-  void backup();
+  /**
+   * Make a backup of the representations that are sent.
+   * @param outputGenerator The generator that contains the message that will
+   *                        be sent.
+   */
+  void backup(const BHumanMessageOutputGenerator& outputGenerator);
 
   /**
    * Checks whether the global coordinates of a relative position have changed.
@@ -220,13 +209,24 @@ private:
    * @param offset The current relative position.
    * @param oldOrigin The previous pose of the robot.
    * @param oldOffset The previous relative position.
-   * @param checkZero Check for offsets being zero, which means that they are invalid.
+   * @return Was there sufficient change between the previous and the current
+   *         global position?
+   */
+  bool globalBearingsChanged(const RobotPose& origin, const std::optional<Vector2f>& offset,
+                             const RobotPose& oldOrigin, const std::optional<Vector2f>& oldOffset) const;
+
+  /**
+   * Checks whether the global coordinates of a relative position have changed.
+   * What means "changed" is weighted by the bearings to the relative position.
+   * @param origin The current pose of the robot.
+   * @param offset The current relative position.
+   * @param oldOrigin The previous pose of the robot.
+   * @param oldOffset The previous relative position.
    * @return Was there sufficient change between the previous and the current
    *         global position?
    */
   bool globalBearingsChanged(const RobotPose& origin, const Vector2f& offset,
-                             const RobotPose& oldOrigin, const Vector2f& oldOffset,
-                             bool checkZero = false) const;
+                             const RobotPose& oldOrigin, const Vector2f& oldOffset) const;
 
   /**
    * Has a position changed significantly seen from the perspective of a teammate?

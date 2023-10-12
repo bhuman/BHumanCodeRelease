@@ -2,7 +2,7 @@
  * @file WorldModelPrediction.cpp
  *
  * This file implements a class that represents data computed by modeling modules in the previous frame and
- * that is required before the excution of these modules in the current frame.
+ * that is required before the execution of these modules in the current frame.
  * All positions have received odometry updates. If the ball was rolling, a dynamic update has been performed, too.
  *
  * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>

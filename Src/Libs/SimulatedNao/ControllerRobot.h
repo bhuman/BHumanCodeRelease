@@ -10,7 +10,7 @@
 
 #include "SimulatedNao/LocalConsole.h"
 #include "Framework/Debug.h"
-#include "Tools/Framework/Robot.h"
+#include "Framework/Robot.h"
 #include <string>
 
 class ConsoleRoboCupCtrl;

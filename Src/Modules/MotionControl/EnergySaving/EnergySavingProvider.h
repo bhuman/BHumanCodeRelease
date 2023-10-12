@@ -43,7 +43,7 @@ MODULE(EnergySavingProvider,
     (Angle) maxGearStepLegs, /**< If we can adjust in a bigger chunks for the legs .*/
     (Angle) maxAngleMultipleJoints, /**< The maximal adjustment for the joints when the robot is standing, to insure that the robot will not fall after some time. */
     (Angle) maxAngleOneJoint, /**< The maximal adjustment for one joint when the robot is standing. If this threshold is exceeded, the adjustments are reset for all leg joints. */
-    (int) minNumberForHeatAdjustmentReset, /** Min number of joints that must have an adjustment equal to maxJointHeatAdjustment to reset all adjustments .*/
+    (int) minNumberForHeatAdjustmentReset, /**< Min number of joints that must have an adjustment equal to maxJointHeatAdjustment to reset all adjustments .*/
     (float) resetTimeNormal, /**< Time to reduce the offsets back to 0. */
     (float) resetTimeSlow, /**< Time to reduce the offsets back to 0. */
     (int) stepsBeforeEmergencyStep, /**< After so many steps, where the current is still too high, we want to adjust by a large amount, to make sure the current get reduced after sometime.
@@ -87,7 +87,8 @@ private:
 
   void applyJointEnergySaving(const std::size_t& joint,
                               EnergySaving& energySaving, JointRequest& request,
-                              const bool adjustLegs, const bool adjustLeftArm, const bool adjustRightArm,
+                              const bool adjustLeftLeg, const bool adjustRightLeg,
+                              const bool adjustLeftArm, const bool adjustRightArm,
                               const bool standHigh, std::vector<Angle>& jointDiffs);
 
   bool isComStable(const bool& isStandHigh);

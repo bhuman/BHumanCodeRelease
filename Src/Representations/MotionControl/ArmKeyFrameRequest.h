@@ -21,6 +21,10 @@ STREAMABLE(ArmKeyFrameRequest,
     back,
     raiseArm,    /**< Raise the arm. */
     keeperStand, /**< Arm position for the keeper when guarding the goal */
+    waving1,
+    waving2,
+    waving,      /**< Arm position for anyPlaceDemo */
+    wavingInitial, /**< initial Arm Position for waving in anyPlaceDemo*/
     arm45degreeUpSideways, /**< Move the Arm in a position 45 Degrees up sideways to the body of the robot*/
     arm45degreeDownSideways, /**< Move the Arm in a position 45 Degrees down sideways to the body of the robot*/
     armHorizontalSideways, /**< Move the Arm in a position horizontal sideways to the body of the robot*/

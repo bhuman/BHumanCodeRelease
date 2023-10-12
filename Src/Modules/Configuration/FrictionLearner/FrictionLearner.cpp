@@ -9,7 +9,7 @@
 
 #include "FrictionLearner.h"
 
-MAKE_MODULE(FrictionLearner, infrastructure);
+MAKE_MODULE(FrictionLearner);
 
 void FrictionLearner::update(DummyRepresentation&)
 {

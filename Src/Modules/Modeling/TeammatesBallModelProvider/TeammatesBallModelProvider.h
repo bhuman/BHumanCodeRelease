@@ -32,6 +32,8 @@ MODULE(TeammatesBallModelProvider,
   {,
     (int) inactivityInvalidationTimeSpan,     /**< Minimum time to go back in ball buffer (in case of a problem) */
     (int) ballLastSeenTimeout,                /**< After this amount of time (in ms), a ball is not considered anymore */
+    (int) ballDisappearedTimeout,             /**< After this amount of time (in ms), a disappeared ball is not valid anymore */
+    (int) timestampTolerance,                 /**< Maximum difference (in ms) between two timestamps to still considered to be the same*/
   }),
 });
 
@@ -68,8 +70,10 @@ private:
   std::vector<BufferedBall> balls;                         /**< A buffer for all observations made by my teammates */
   std::vector<ActiveBall> ballsAvailableForTeamBall;       /**< List of all balls that are suitable for computing a team ball */
 
-  /** Main method that triggers the model computation */
-  void update(TeammatesBallModel& TeammatesBallModel) override;
+  /** Main method that triggers the model computation
+   * @param teammatesBallModel A reference to the representation that is filled
+   */
+  void update(TeammatesBallModel& teammatesBallModel) override;
 
   /** Adds new information to the ball buffers */
   void updateInternalBallBuffers();
@@ -81,9 +85,9 @@ private:
   void clusterBalls();
 
   /** Uses the list of available balls to determine the current team ball
-   * @param TeammatesBallModel A reference to the representation that is filled
+   * @param teammatesBallModel A reference to the representation that is filled
    */
-  void computeModel(TeammatesBallModel& TeammatesBallModel);
+  void computeModel(TeammatesBallModel& teammatesBallModel);
 
   /** Maps current localization quality to a floating point number.
    *  This function determines, how strong the self-localization should influence a ball weighting.

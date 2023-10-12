@@ -15,6 +15,7 @@
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Sensing/FilteredCurrent.h"
 #include "Representations/Sensing/GroundContactState.h"
+#include "Representations/MotionControl/MotionInfo.h"
 #include "Debugging/Annotation.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
@@ -28,6 +29,7 @@ MODULE(FilteredCurrentProvider,
   REQUIRES(GroundContactState),
   REQUIRES(GyroOffset),
   USES(JointRequest),
+  USES(MotionInfo),
   REQUIRES(JointSensorData),
   PROVIDES(FilteredCurrent),
   DEFINES_PARAMETERS(
@@ -43,6 +45,8 @@ MODULE(FilteredCurrentProvider,
     (Angle)(10_deg) minJointDiffAnkleRoll, /**< Min difference in jointRequest and jointAngles for the ankleRolls, to detect a motor malfunction. This value must be high, because the current can be 0 at high differences. */
     (Angle)(6_deg) minJointDiffArms, /**< Min difference in jointRequest and jointAngles for the arms, to detect a motor malfunction. */
     (std::vector<Joints::Joint>)({Joints::headYaw, Joints::headPitch, Joints::lWristYaw, Joints::rWristYaw, Joints::lHand, Joints::rHand}) ignoreJoints, /**< Joints which are not checks for a motor malfunction. */
+    (std::vector<Joints::Joint>)({Joints::headYaw, Joints::headPitch, Joints::lShoulderPitch, Joints::rShoulderPitch}) specialMotorCheck,
+    (Angle)(0.01_deg) zeroCheckRange,
   }),
 });
 
@@ -53,9 +57,9 @@ public:
 private:
 
   std::vector<RingBufferWithSum<int, 20>> currents; /**< Ring buffer for the currents for every joint. */
-  unsigned int checkTimestamp; /**< Last time a motor malfunction was checked. */
-  unsigned int soundTimestamp; /**< Last time a sound was played for a motor malfunction. */
-  unsigned int annotationTimestamp; /**< Last time a annotation was made for a motor malfunction. */
+  unsigned int checkTimestamp = 0; /**< Last time a motor malfunction was checked. */
+  unsigned int soundTimestamp = 0; /**< Last time a sound was played for a motor malfunction. */
+  unsigned int annotationTimestamp = 0; /**< Last time a annotation was made for a motor malfunction. */
   std::vector<int> flags; /**< Checks how often a possible motor malfunction was detected. */
 
   void update(FilteredCurrent& theFilteredCurrent) override;

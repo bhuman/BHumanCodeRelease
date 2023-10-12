@@ -43,7 +43,7 @@ class MarkImpl : public MarkImplBase
     const Vector2f gloObstacleToBlock = theRobotPose * target;
 
     Vector2f positionOnField = gloObstacleToBlock + (Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f) - gloObstacleToBlock).normalized(distToMarkedRobot);
-    return theRobotPose.inversePose * Pose2f(((ballPositionField - positionOnField).normalized() + (gloObstacleToBlock - positionOnField).normalized()).angle(), positionOnField);
+    return theRobotPose.inverse() * Pose2f(((ballPositionField - positionOnField).normalized() + (gloObstacleToBlock - positionOnField).normalized()).angle(), positionOnField);
   }
 
   void preProcess(const Mark&) override

@@ -12,9 +12,9 @@ void FieldFeature::draw() const
 {
   if(Blackboard::getInstance().exists("CameraInfo"))
   {
-    std::string thread = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::upper ? "Upper" : "Lower";
+    const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
     DEBUG_DRAWING("representation:FieldFeature:field", "drawingOnField")
-      THREAD("representation:FieldFeature:field", thread);
+      THREAD("representation:FieldFeature:field", theCameraInfo.getThreadName());
 
     if(!isValid)
       return;
@@ -40,4 +40,29 @@ void FieldFeature::draw() const
 const FieldFeature::RobotPoseToFF FieldFeature::getGlobalRobotPosition() const
 {
   return FieldFeature::RobotPoseToFF(getGlobalFeaturePosition() * this->inverse());
+}
+
+bool FieldFeature::pickMorePlausiblePose(const Pose2f& robotPose, Pose2f& pickedPose) const
+{
+  if(!isValid)
+    return false;
+  const Pose2f& p1 = getGlobalRobotPosition().pos1;
+  const Pose2f& p2 = getGlobalRobotPosition().pos2;
+  const float sqrDst1 = (robotPose.translation - p1.translation).squaredNorm();
+  const float sqrDst2 = (robotPose.translation - p2.translation).squaredNorm();
+  float angle1 = robotPose.rotation - p1.rotation;
+  float angle2 = robotPose.rotation - p2.rotation;
+  angle1 = std::abs(Angle::normalize(angle1));
+  angle2 = std::abs(Angle::normalize(angle2));
+  if(angle1 < angle2 && sqrDst1 < sqrDst2)
+  {
+    pickedPose = p1;
+    return true;
+  }
+  else if(angle2 < angle1 && sqrDst2 < sqrDst1)
+  {
+    pickedPose = p2;
+    return true;
+  }
+  return false;
 }

@@ -12,7 +12,7 @@
 #include <cmath>
 #include <filesystem>
 
-MAKE_MODULE(IMUCalibrationProvider, sensing);
+MAKE_MODULE(IMUCalibrationProvider);
 
 IMUCalibrationProvider::IMUCalibrationProvider()
 {

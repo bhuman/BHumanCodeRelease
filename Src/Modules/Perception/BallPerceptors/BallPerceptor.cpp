@@ -17,7 +17,7 @@
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 
-MAKE_MODULE(BallPerceptor, perception);
+MAKE_MODULE(BallPerceptor);
 
 BallPerceptor::BallPerceptor() :
   encoder(&Global::getAsmjitRuntime()),
@@ -71,7 +71,10 @@ void BallPerceptor::update(BallPercept& theBallPercept)
   {
     theBallPercept.positionInImage = bestBallPosition;
     theBallPercept.radiusInImage = bestRadius;
-    if(Transformation::imageToRobotHorizontalPlane(theImageCoordinateSystem.toCorrected(bestBallPosition), theBallSpecification.radius, theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
+
+    // TL: Function is called with hardcoded numbers here, as this parameter is only for backward compatibility to previous approach and should vanish hopefully soon.
+    if(theMeasurementCovariance.transformWithCovLegacy(theBallPercept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
+                                                       theBallPercept.positionOnField, theBallPercept.covarianceOnField))
     {
       theBallPercept.status = bestProb >= acceptThreshold ? BallPercept::seen : BallPercept::guessed;
       return;
@@ -84,8 +87,8 @@ void BallPerceptor::update(BallPercept& theBallPercept)
   {
     Vector2f inImageLowPoint;
     Vector2f inImageUpPoint;
-    if(Transformation::robotToImage(theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalArea + 350.f, 0.f), theCameraMatrix, theCameraInfo, inImageLowPoint)
-       && Transformation::robotToImage(theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f), theCameraMatrix, theCameraInfo, inImageUpPoint))
+    if(Transformation::robotToImage(theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGoalArea + 350.f, 0.f), theCameraMatrix, theCameraInfo, inImageLowPoint)
+       && Transformation::robotToImage(theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f), theCameraMatrix, theCameraInfo, inImageUpPoint))
     {
       const int lowerY = std::min(static_cast<int>(inImageLowPoint.y()), theCameraInfo.height);
       const int upperY = std::max(static_cast<int>(inImageUpPoint.y()), 0);
@@ -97,8 +100,12 @@ void BallPerceptor::update(BallPercept& theBallPercept)
         if(spot.y() < lowerY && spot.y() > upperY)
         {
           theBallPercept.positionInImage = spot.cast<float>();
-          if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(theBallPercept.positionInImage), theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
+          // TL: Function is called with hardcoded numbers here, as this parameter is only for backward compatibility to previous approach and should vanish hopefully soon.
+          if(theMeasurementCovariance.transformWithCovLegacy(theBallPercept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
+                                                             theBallPercept.positionOnField, theBallPercept.covarianceOnField))
+          {
             theBallPercept.status = BallPercept::seen;
+          }
 
           theBallPercept.radiusInImage = 30.f;
         }

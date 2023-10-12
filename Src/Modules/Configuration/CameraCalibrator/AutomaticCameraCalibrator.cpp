@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(AutomaticCameraCalibrator, infrastructure);
+MAKE_MODULE(AutomaticCameraCalibrator);
 
 AutomaticCameraCalibrator::AutomaticCameraCalibrator() :
   state(CameraCalibrationStatus::State::idle),
@@ -59,9 +59,9 @@ float AutomaticCameraCalibrator::calculateAngle(const Vector2f& lineAFirst, cons
 void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
 {
   DEBUG_DRAWING("module:AutomaticCameraCalibrator:fieldLines", "drawingOnImage")
-    THREAD("module:AutomaticCameraCalibrator:fieldLines", theCameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+    THREAD("module:AutomaticCameraCalibrator:fieldLines", theCameraInfo.getThreadName());
   DEBUG_DRAWING("module:AutomaticCameraCalibrator:correctedLines", "drawingOnImage")
-    THREAD("module:AutomaticCameraCalibrator:correctedLines", theCameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+    THREAD("module:AutomaticCameraCalibrator:correctedLines", theCameraInfo.getThreadName());
 
   nextCameraCalibration = theCameraCalibration;
   updateSampleConfiguration();
@@ -315,7 +315,7 @@ void AutomaticCameraCalibrator::determineLocalMaxima(const std::vector<std::vect
 #define ADD_SAMPLE(sampleType, SampleName, first, second) \
   if(currentSampleConfiguration->needToRecord(samples, sampleType)) \
   { \
-    auto s = std::make_unique<SampleName>(*this, theTorsoMatrix, theJointAngles.angles[Joints::headYaw], theJointAngles.angles[Joints::headPitch], theCameraInfo, theImageCoordinateSystem, first, second); \
+    auto s = std::make_unique<SampleName>(*this, theTorsoMatrix, theRobotModel, theCameraInfo, theImageCoordinateSystem, first, second); \
     currentSampleConfiguration->record(samples, sampleType, std::move(s)); \
   }
 
@@ -658,7 +658,7 @@ void AutomaticCameraCalibrator::updateSampleConfiguration()
 
 float AutomaticCameraCalibrator::Sample::computeError(const CameraCalibration& cameraCalibration) const
 {
-  const RobotCameraMatrix robotCameraMatrix(calibrator.theRobotDimensions, headYaw, headPitch, cameraCalibration, cameraInfo.camera);
+  const RobotCameraMatrix robotCameraMatrix(calibrator.theRobotDimensions, robotModel.limbs[Limbs::head], cameraCalibration, cameraInfo.camera);
   const CameraMatrix cameraMatrix(torsoMatrix, robotCameraMatrix, cameraCalibration);
   return computeError(cameraMatrix);
 }

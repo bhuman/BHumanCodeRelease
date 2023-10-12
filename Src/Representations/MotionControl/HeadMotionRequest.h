@@ -24,7 +24,7 @@ STREAMABLE(HeadMotionRequest,
     panTiltMode,        /**< Use \c pan, \c tilt and \c speed. */
     targetMode,         /**< (A target relative to the center of hip.) Use \c target and \c speed. */
     targetOnGroundMode, /**< Use \c target and \c speed. */
-    calibrationMode,    /** Use \c pan, \c tilt and disable clipping to HeadLimits. */
+    calibrationMode,    /**< Use \c pan, \c tilt and disable clipping to HeadLimits. */
   });
 
   ENUM(CameraControlMode,

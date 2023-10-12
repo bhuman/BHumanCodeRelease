@@ -22,13 +22,13 @@
     }
   }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>0E4CC85A-1119-4339-807E-F836ED6E752E</string>
+	<string>B-Human_aborted_state</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Aborted state of a Cabsl option.</string>
+	<string>B-Human: Define aborted state of a CABSL option.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Cabsl aborted state</string>
+	<string>CABSL Aborted State</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

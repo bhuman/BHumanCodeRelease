@@ -10,7 +10,7 @@
 
 #include "Framework/Configuration.h"
 #include "Framework/Module.h"
-#include "Streaming/InMessage.h"
+#include "Streaming/MessageQueue.h"
 #include <list>
 #include <set>
 #include <string>
@@ -29,7 +29,6 @@ public:
   struct Module
   {
     std::string name; /**< The name of the module. */
-    ModuleBase::Category category; /**< The category of the module. */
     std::vector<std::string> requirements; /**< The requirements of this module. */
     std::vector<std::string> representations; /**< The representations provided by this module. */
 
@@ -41,13 +40,13 @@ public:
     bool operator==(const std::string& other) const { return name == other; }
 
     /**
-     * Comparison operator. Uses the category and the module name for comparison.
+     * Comparison operator. Uses the module name for comparison.
      * @param other The module this one is compared to.
      * @return Is this module "smaller" that the other?
      */
     bool operator<(const Module& other) const
     {
-      return category != other.category ? category < other.category : name < other.name;
+      return name < other.name;
     }
   };
 
@@ -66,7 +65,7 @@ public:
    * @param message The message.
    * @return Was it a module table message?
    */
-  bool handleMessage(InMessage& message);
+  bool handleMessage(MessageQueue::Message message);
 
   /**
    * The method writes a module request to a stream.

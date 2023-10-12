@@ -9,7 +9,7 @@
 
 #include "TeamDataProvider.h"
 
-MAKE_MODULE(TeamDataProvider, communication);
+MAKE_MODULE(TeamDataProvider);
 
 void TeamDataProvider::update(TeamData& teamData)
 {
@@ -42,16 +42,10 @@ Teammate& TeamDataProvider::getTeammate(TeamData& teamData, int number) const
 void TeamDataProvider::handleMessage(Teammate& teammate, const ReceivedTeamMessage& teamMessage) const
 {
   teammate.number = teamMessage.number;
-  teammate.isUpright = teamMessage.isUpright;
-  teammate.timeWhenLastUpright = teamMessage.timeWhenLastUpright;
-
-  teammate.sequenceNumber = teamMessage.sequenceNumber;
-  teammate.returnSequenceNumber = teamMessage.returnSequenceNumber;
-
+  teammate.theRobotStatus = teamMessage.theRobotStatus;
   teammate.theRobotPose = teamMessage.theRobotPose;
   teammate.theBallModel = teamMessage.theBallModel;
   teammate.theFrameInfo = teamMessage.theFrameInfo;
-  teammate.theObstacleModel = teamMessage.theObstacleModel;
   teammate.theBehaviorStatus = teamMessage.theBehaviorStatus;
   teammate.theWhistle = teamMessage.theWhistle;
   teammate.theStrategyStatus = teamMessage.theStrategyStatus;

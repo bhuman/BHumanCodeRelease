@@ -56,8 +56,8 @@ class WhistleRecognizer : public WhistleRecognizerBase
   std::vector<RingBuffer<AudioData::Sample>> buffers; /**< Sample buffers for all channels. */
   bool soundWasPlaying = false; /**< Was sound played back recently? */
   bool hasRecorded = false; /**< Was audio recorded in the previous cycle? */
-  int samplesRequired = 0; /** The number of new samples required. */
-  size_t sampleIndex = 0; /** Index of next sample to process for subsampling. */
+  int samplesRequired = 0; /**< The number of new samples required. */
+  size_t sampleIndex = 0; /**< Index of next sample to process for subsampling. */
   double* samples; /**< The samples after normalization. */
   fftw_complex* spectrum; /**< The spectrum of the samples. */
   double* correlation; /**< The correlation with the signature. */

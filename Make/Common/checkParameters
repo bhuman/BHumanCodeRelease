@@ -1,0 +1,45 @@
+#!/bin/bash
+# Checks whether modules and skills actually use their parameters.
+# It lists the requirements that are not used. Unused parameters
+# might be overlooked if other variables of the same are declared.
+
+cd "$(dirname "$(which "$0")")/../../Src/Modules"
+
+WORDSTART="\\<"
+if [ "`uname`" = "Darwin" ]; then
+  WORDSTART="[[:<:]]"
+fi
+
+grep -ER "^(MAKE_MODULE|SKILL_IMPLEMENTATION)\(" \
+| sed 's%:.*%%' \
+| sort \
+| while read CPP; do
+  H="${CPP%.*}.h"
+  if [ ! -f "$H" ]; then
+    H="$CPP"
+    CPP=
+  fi
+  PARAMETERS="$(grep -E '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' "$H" | sed -e 's%^ *([^/]*) *\([A-Za-z_][A-Za-z0-9_]*\),.*%\1%' | sort | uniq)"
+  MATCH="$(tr <<<"$PARAMETERS" '\n' '|' | sed 's%|$%%')"
+  OTHER=
+  if [ ! -z "$(grep 'SkillBehaviorControl\.cpp' <<<"$CPP")" ]; then
+    OTHER="$(find "$(dirname "$CPP")/Options" -name "*.h")"
+  elif [ ! -z "$(grep 'FallDownStateProvider\.cpp' <<<"$CPP")" ]; then
+    OTHER="$(dirname "$CPP")/Options.h"
+  elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
+    OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
+  elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
+    OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
+  fi
+  USED="$(cat $H $CPP $OTHER \
+  | grep -vE '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' \
+  | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
+  | tr '|' '\n' \
+  | grep -E "^($MATCH)$" \
+  | sort \
+  | uniq)"
+  DIFF="$(diff --side-by-side --suppress-common-lines <(echo "$PARAMETERS") <(echo "$USED"))"
+  if [ ! -z "$DIFF" ]; then
+    echo "$H: $(sed <<<"$DIFF" 's%	.*%%' | tr '\n' ',' | sed 's%,$%%')"
+  fi
+done

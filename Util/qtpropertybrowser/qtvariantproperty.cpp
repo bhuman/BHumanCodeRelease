@@ -68,9 +68,17 @@ class QtGroupPropertyType
 
 QT_END_NAMESPACE
 
-Q_DECLARE_METATYPE(QtEnumPropertyType)
-Q_DECLARE_METATYPE(QtFlagPropertyType)
-Q_DECLARE_METATYPE(QtGroupPropertyType)
+//Q_DECLARE_METATYPE(QtEnumPropertyType)
+//Q_DECLARE_METATYPE(QtFlagPropertyType)
+//Q_DECLARE_METATYPE(QtGroupPropertyType)
+
+// Hardcode meta type ids, because dynamic method does not support
+// unloading and reloading shared libraries on Windows.
+template<> constexpr int qMetaTypeId<QtEnumPropertyType>() {return QMetaType::User + 1;}
+
+template<> constexpr int qMetaTypeId<QtFlagPropertyType>() {return QMetaType::User + 2;}
+
+template<> constexpr int qMetaTypeId<QtGroupPropertyType>() {return QMetaType::User + 3;}
 
 QT_BEGIN_NAMESPACE
 

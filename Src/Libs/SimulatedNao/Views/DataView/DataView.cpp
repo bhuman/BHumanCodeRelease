@@ -10,61 +10,42 @@
 #include "PropertyTreeWriter.h"
 #include "Platform/Time.h"
 #include "Debugging/DebugDataStreamer.h"
-#include "Streaming/InMessage.h"
+#include "Streaming/MessageQueue.h"
 
 #include <QEvent>
 
-DataView::DataView(const QString& fullName, const std::string& repName,
+DataView::DataView(const QString& fullName, const std::string& repName, const std::string& threadName,
                    RobotConsole& console, const TypeInfo& typeInfo) :
-  theFullName(fullName), theIcon(":/Icons/tag_green.png"),
-  theConsole(console), theName(repName), typeInfo(typeInfo)
-{}
-
-bool DataView::handleMessage(InMessage& msg, const std::string& type, const std::string&)
+  theFullName(fullName), theIcon(":/Icons/icons8-view-50.png"),
+  theConsole(console), theName(repName), theThread(threadName), typeInfo(typeInfo)
 {
-  SYNC;
-
-  if(nullptr != pTheWidget && //do nothing if no widget is associated with this view.
-     !theIgnoreUpdatesFlag && //Or updates should be ignored.
-     Time::getRealTimeSince(lastUpdated) > theUpdateTime)
-  {
-    lastUpdated = Time::getRealSystemTime();
-    PropertyTreeCreator creator(*this);
-    DebugDataStreamer streamer(typeInfo, msg.bin, type, "value");
-    creator << streamer;
-    pTheCurrentRootNode = creator.root;
-    this->type = type;
-
-    //Tell the widget to display the root property
-    pTheWidget->setRootProperty(pTheCurrentRootNode);
-    return true;
-  }
-  else
-    return false; //this is not an error.
+  theIcon.setIsMask(true);
 }
 
 SimRobot::Widget* DataView::createWidget()
 {
-  theIgnoreUpdatesFlag = false;
+  ignoreUpdates = 0;
   pTheWidget = new DataWidget(*this, theVariantManager);
+  theConsole.requestDebugData(theThread, theName);
   return pTheWidget;
 }
 
 QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyType, const QString& name, QtProperty* pParent)
 {
   QtVariantProperty* pProp = nullptr;
-  PropertiesMapType::iterator propIt = theProperties.find(fqn);
+  auto propIt = pathsToProperties.find(fqn);
 
-  if(propIt == theProperties.end())
+  if(propIt == pathsToProperties.end())
   {
     //This is a new property.
     pProp = theVariantManager.addProperty(propertyType, name);
-    theProperties[fqn] = pProp;
+    pathsToProperties[fqn] = pProp;
+    propertiesToPaths[pProp] = fqn;
   }
   else
   {
     //property already exists, load it.
-    pProp = theProperties[fqn];
+    pProp = pathsToProperties[fqn];
   }
 
   //add to parent if there is one.
@@ -76,95 +57,188 @@ QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyTyp
 
 void DataView::removeWidget()
 {
-  SYNC;
   pTheWidget = nullptr;
-  theProperties.clear();
+  pathsToProperties.clear();
+  propertiesToPaths.clear();
+  forceUpdate = true;
 }
 
-void DataView::setIgnoreUpdates(bool value)
+void DataView::setMessageReceived(MessageQueue* data)
 {
-  theConsole.requestDebugData(theName, !value);
-  SYNC;
-  theIgnoreUpdatesFlag = value;
+  // This is SYNC_WITH(theConsole)
+  this->data = data;
+}
+
+void DataView::updateTree()
+{
+  if(!shouldIgnoreUpdates())
+  {
+    SYNC_WITH(theConsole);
+    if(data)
+    {
+      auto stream = (*data->begin()).bin();
+      std::string type;
+      std::string representation;
+      stream >> representation >> this->type;
+      PropertyTreeCreator creator(*this);
+      DebugDataStreamer streamer(typeInfo, stream, this->type , "value");
+      creator << streamer;
+      pTheCurrentRootNode = creator.root;
+      pTheWidget->setRootProperty(pTheCurrentRootNode);
+      data = nullptr;
+      forceUpdate = false;
+    }
+  }
+}
+
+void DataView::updateIgnoreUpdates(int change)
+{
+  ignoreUpdates += change;
+  if(!shouldIgnoreUpdates())
+    theConsole.requestDebugData(theThread, theName);
+}
+
+bool DataView::shouldIgnoreUpdates() const
+{
+  return !pTheWidget || (!forceUpdate && (setWasCalled || pTheWidget->isUnchangedEnabled() || ignoreUpdates));
 }
 
 void DataView::repoll()
 {
-  setIgnoreUpdates(theIgnoreUpdatesFlag);
+  if(!shouldIgnoreUpdates())
+    theConsole.requestDebugData(theThread, theName);
 }
 
 void DataView::setUnchanged()
 {
-  MessageQueue tempQ; //temp queue used to build the message
-  std::string debugRequest = theConsole.getDebugRequest(theName);
-  tempQ.out.bin << debugRequest << char(0); //0 means unchanged
-  tempQ.out.finishMessage(idDebugDataChangeRequest);
+  if(setWasCalled)
+  {
+    theConsole.sendDebugData(theThread, theName);
+    setWasCalled = false;
+  }
 
-  theConsole.sendDebugMessage(tempQ.in);
+  pTheWidget->setSetEnabled(true);
+  setUnchangedEnabled(false);
+  updateIgnoreUpdates(0);
+  updateWindowTitle();
+}
 
-  pTheWidget->setUnchangedButtonEnabled(false);
-  setIgnoreUpdates(false);
+void DataView::notifyAboutSetStatus(bool set)
+{
+  setWasCalled = set;
+
+  // Force one last update of the view
+  if(set)
+    forceUpdate = true;
+
+  if(pTheWidget)
+  {
+    pTheWidget->setSetEnabled(!set);
+    setUnchangedEnabled(set);
+    updateIgnoreUpdates(0);
+    updateWindowTitle();
+  }
+}
+
+void DataView::setUnchangedEnabled(bool value)
+{
+  pTheWidget->setUnchangedEnabled(value);
 }
 
 void DataView::set()
 {
-  std::string debugRequest = theConsole.getDebugRequest(theName);
-  MessageQueue tempQ; //temp queue used to build the message
+  if(pTheCurrentRootNode)
   {
-    SYNC;
-    if(nullptr != pTheCurrentRootNode)
-    {
-      tempQ.out.bin << debugRequest << char(1);
-
-      PropertyTreeWriter writer(theVariantManager, pTheCurrentRootNode);
-      DebugDataStreamer streamer(typeInfo, tempQ.out.bin, type);
-      writer >> streamer;
-      tempQ.out.finishMessage(idDebugDataChangeRequest);
-    }
+    PropertyTreeWriter writer(theVariantManager, pTheCurrentRootNode);
+    OutBinaryMemory stream;
+    DebugDataStreamer streamer(typeInfo, stream, type);
+    writer >> streamer;
+    theConsole.sendDebugData(theThread, theName, &stream);
   }
-  if(tempQ.getNumberOfMessages() > 0)
-    theConsole.sendDebugMessage(tempQ.in);
 
-  pTheWidget->setSetButtonEnabled(false);
-  pTheWidget->setUnchangedButtonEnabled(true);
-  setIgnoreUpdates(false);
+  setWasCalled = true;
+  pTheWidget->setSetEnabled(false);
+  setUnchangedEnabled(true);
+  updateIgnoreUpdates(0);
+  updateWindowTitle();
 }
 
 void DataView::setAutoSet(bool value)
 {
-  SYNC;
   theAutoSetModeIsEnabled = value;
-}
 
-bool DataView::handlePropertyEditorEvent(QWidget*, QtProperty*, QEvent* pEvent)
-{
-  /*
-   * FocusIn/Out is used to detect whether the user is currently editing a value.
-   * However, checkboxes do not send these events. They send Paint when the user selects them
-   * and LayoutRequest when the user changed a value.
-   * Property updating is interrupted until the user presses set (or until the user finishes his input in case of auto-set)
-   */
-  if(pEvent->type() == QEvent::FocusIn || pEvent->type() == QEvent::Paint)
-    setIgnoreUpdates(true);
-  else if(!pTheWidget->isSetButtonEnabled() && (pEvent->type() == QEvent::FocusOut || pEvent->type() == QEvent::LayoutRequest))
-  {
-    valueChanged();
-    setIgnoreUpdates(false);
-  }
-
-  return false; //others might want to handle this event as well.
+  // If auto-set is enabled and there are unset changes, set them
+  if(value && shouldIgnoreUpdates())
+    set();
+  else
+    setUnchangedEnabled(pTheWidget->isUnchangedEnabled());
 }
 
 void DataView::valueChanged()
 {
-  if(theIgnoreUpdatesFlag)
+  if(ignoreUpdates)
   {
     if(theAutoSetModeIsEnabled)
-      set();//set current values
+      set(); //set current values
     else
     {
-      //enable the set button
-      pTheWidget->setSetButtonEnabled(true);
+      pTheWidget->setSetEnabled(true); //enable "Set" menu item
+      pTheWidget->setUnchangedEnabled(true); // enable "Reset" menu item
+      updateIgnoreUpdates(0);
+      updateWindowTitle();
     }
   }
+}
+
+bool DataView::shouldExpand(QtProperty* property) const
+{
+  const auto i = propertiesToPaths.find(property);
+  ASSERT(i != propertiesToPaths.cend());
+  const bool rootLevel = QString(i->second.c_str()).count('.') < 2;
+  const bool contained = expandedPaths.find(i->second.c_str()) != expandedPaths.cend();
+  return rootLevel != contained;
+}
+
+void DataView::updateExpansion(QtProperty* property, bool expanded)
+{
+  if(updateExpandedPaths)
+  {
+    const auto i = propertiesToPaths.find(property);
+    ASSERT(i != propertiesToPaths.cend());
+    const bool rootLevel = QString(i->second.c_str()).count('.') < 2;
+    if(rootLevel != expanded)
+      expandedPaths.insert(i->second);
+    else
+      expandedPaths.erase(i->second);
+  }
+}
+
+bool DataView::shouldUseRadians(QtProperty* property) const
+{
+  const auto i = propertiesToPaths.find(property);
+  ASSERT(i != propertiesToPaths.cend());
+  return radiansPaths.find(i->second.c_str()) != radiansPaths.cend();
+}
+
+void DataView::updateUseRadians(QtProperty* property, bool radians)
+{
+  const auto i = propertiesToPaths.find(property);
+  ASSERT(i != propertiesToPaths.cend());
+  if(radians)
+    radiansPaths.insert(i->second);
+  else
+    radiansPaths.erase(i->second);
+}
+
+void DataView::updateWindowTitle()
+{
+  QWidget* dockWidget = qobject_cast<QWidget*>(pTheWidget->parent());
+  QString windowTitle = dockWidget->windowTitle();
+  if(windowTitle.endsWith("*") || windowTitle.endsWith("↑"))
+    windowTitle = windowTitle.left(windowTitle.size() - 1);
+  if(setWasCalled)
+    windowTitle += "↑";
+  else if(pTheWidget->isUnchangedEnabled())
+    windowTitle += "*";
+  dockWidget->setWindowTitle(windowTitle);
 }

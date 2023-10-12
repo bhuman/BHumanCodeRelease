@@ -6,7 +6,7 @@
 
 #include "TorsoMatrixProvider.h"
 
-MAKE_MODULE(TorsoMatrixProvider, sensing);
+MAKE_MODULE(TorsoMatrixProvider);
 
 void TorsoMatrixProvider::update(TorsoMatrix& torsoMatrix)
 {

@@ -21,14 +21,16 @@ private:
   const QString fullName; /**< The path to this view in the scene graph */
   LogPlayer& logPlayer;
   RobotConsole& console;
-  const QIcon icon; /**< The icon used to list this view in the scene graph */
+  QIcon icon; /**< The icon used to list this view in the scene graph */
 
   friend class LogPlayerControlWidget;
 
 public:
   LogPlayerControlView(const QString& fullName, LogPlayer& logPlayer, RobotConsole& console) :
-    fullName(fullName), logPlayer(logPlayer), console(console), icon(":/Icons/tag_green.png")
-  {}
+    fullName(fullName), logPlayer(logPlayer), console(console), icon(":/Icons/icons8-start-50.png")
+  {
+    icon.setIsMask(true);
+  }
 
   /**
    * The method returns a new instance of a widget for this view.
@@ -87,7 +89,8 @@ private:
 
   bool sliderPressed = false;
   bool wasPlaying = false;
-  LogPlayer::LogPlayerState lastState;
+  LogPlayer::State lastState;
+  QList<QPushButton*> buttons;
 
 public:
   LogPlayerControlWidget(LogPlayerControlView& logPlayerControlView);
@@ -95,12 +98,11 @@ public:
   QWidget* getWidget() override { return this; }
   void update() override;
 
+protected:
+  void changeEvent(QEvent* event) override;
+
 private:
   void updatePlayPauseButton();
   void updateLoopButton();
-  QIcon loadIcon(const QString& name);
-
-private slots:
-  void changeFrame(int newFrame);
-  void togglePlayPause();
+  void styleButtons();
 };

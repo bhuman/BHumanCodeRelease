@@ -12,7 +12,7 @@
 #include "Tools/Modeling/BallPhysics.h"
 #include "Framework/Settings.h"
 
-MAKE_MODULE(TeammatesBallModelProvider, modeling);
+MAKE_MODULE(TeammatesBallModelProvider);
 
 
 void TeammatesBallModelProvider::update(TeammatesBallModel& teammatesBallModel)
@@ -112,11 +112,10 @@ void TeammatesBallModelProvider::updateInternalBallBuffers()
     ASSERT(teammate.number >= Settings::lowestValidPlayerNumber);
     ASSERT(teammate.number <= Settings::highestValidPlayerNumber);
     const unsigned n = teammate.number - Settings::lowestValidPlayerNumber;
-    if(teammate.isUpright &&
-       (balls[n].time != teammate.theBallModel.timeWhenLastSeen ||
+    if(teammate.theRobotStatus.isUpright &&
+       (std::abs(static_cast<int>(teammate.theBallModel.timeWhenLastSeen - balls[n].time)) > timestampTolerance ||
         balls[n].vel.norm() < teammate.theBallModel.estimate.velocity.norm()) &&
-       teammate.theBallModel.lastPerception != Vector2f::Zero() &&
-       teammate.theBallModel.estimate.position != Vector2f::Zero())
+       teammate.theBallModel.timeWhenLastSeen)
     {
       BufferedBall newBall;
       newBall.robotPose              = teammate.theRobotPose;
@@ -139,9 +138,9 @@ void TeammatesBallModelProvider::updateInternalBallBuffers()
     if(!GameState::isPenalized(theGameState.ownTeam.playerStates[index]))
     {
       for(auto const& teammate : theTeamData.teammates)
-        if(teammate.number == static_cast<int>(robot) && teammate.isUpright)
+        if(teammate.number == static_cast<int>(robot) && teammate.theRobotStatus.isUpright)
         {
-          if(teammate.theBallModel.timeWhenDisappeared != teammate.theFrameInfo.time)
+          if(teammate.theFrameInfo.getTimeSince(teammate.theBallModel.timeWhenDisappeared) > ballDisappearedTimeout)
             balls[index].valid = false;
           goto teammateValid;
         }

@@ -37,7 +37,7 @@ public:
    * Put a filename into play sound queue.
    * If you want to play Config/Sounds/bla.wav use play("bla.wav");
    * @param name The filename of the sound file.
-   * @return The amound of elements in play sound queue.
+   * @return The amount of elements in play sound queue.
    */
   static int play(const std::string& name);
 

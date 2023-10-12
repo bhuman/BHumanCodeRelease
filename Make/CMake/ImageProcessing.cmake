@@ -25,6 +25,8 @@ set(IMAGEPROCESSING_SOURCES
     "${IMAGEPROCESSING_ROOT_DIR}/ColorModelConversions.h"
     "${IMAGEPROCESSING_ROOT_DIR}/Image.h"
     "${IMAGEPROCESSING_ROOT_DIR}/ImageTransform.h"
+    "${IMAGEPROCESSING_ROOT_DIR}/LabelImage.cpp"
+    "${IMAGEPROCESSING_ROOT_DIR}/LabelImage.h"
     "${IMAGEPROCESSING_ROOT_DIR}/PatchUtilities.cpp"
     "${IMAGEPROCESSING_ROOT_DIR}/PatchUtilities.h"
     "${IMAGEPROCESSING_ROOT_DIR}/PixelTypes.h"
@@ -40,7 +42,7 @@ target_sources(ImageProcessing${TARGET_SUFFIX} INTERFACE $<TARGET_OBJECTS:Math${
 set_property(TARGET ImageProcessing${TARGET_SUFFIX} PROPERTY FOLDER "Libs/${TARGET_SUFFIX}")
 if(BUILD_DESKTOP)
   set_property(TARGET ImageProcessing${TARGET_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE ON)
-  if(${PLATFORM} STREQUAL macOSarm64)
+  if(ARM)
     target_include_directories(ImageProcessing${TARGET_SUFFIX} SYSTEM PUBLIC "${BHUMAN_PREFIX}/Util/sse2neon/include")
   endif()
 else()

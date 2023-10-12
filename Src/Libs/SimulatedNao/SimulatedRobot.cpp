@@ -85,12 +85,30 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
       gtBall.position.head<2>() *= -1.f;
     const unsigned currentTime = Time::getCurrentSystemTime();
     if(lastBallTime && lastBallTime != currentTime)
+    {
       gtBall.velocity = 1000.f * (gtBall.position - lastBallPosition) / static_cast<float>(currentTime - lastBallTime);
+
+      if(!RoboCupCtrl::controller->is2D)
+      {
+        const float* velP = static_cast<const SimRobotCore2::Body*>(ball)->getVelocity();
+        Vector3f velo(velP[0], velP[1], velP[2]);
+        if(!hadVelocity && gtBall.velocity.head<2>() != Vector2f::Zero())
+          curveVel = Random::normal(0.015f * static_cast<float>(currentTime - lastBallTime) / 1000.f);
+        if(gtBall.velocity.head<2>() == Vector2f::Zero())
+          curveVel = 0_deg;
+        Vector2f direct = velo.head<2>();
+        direct.rotate(curveVel);
+        velo.x() = direct.x();
+        velo.y() = direct.y();
+        static_cast<SimRobotCore2::Body*>(ball)->setVelocity(velo.data());
+      }
+    }
     else
       gtBall.velocity = Vector3f::Zero();
     lastBallPosition = gtBall.position;
     lastBallTime = currentTime;
     worldState.balls.push_back(gtBall);
+    hadVelocity = gtBall.velocity.head<2>() != Vector2f::Zero();
   }
 
   // Determine the robot's own pose and number

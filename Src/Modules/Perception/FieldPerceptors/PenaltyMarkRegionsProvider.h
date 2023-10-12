@@ -27,9 +27,7 @@ MODULE(PenaltyMarkRegionsProvider,
   REQUIRES(ColorScanLineRegionsVerticalClipped),
   REQUIRES(FieldDimensions),
   REQUIRES(ScanGrid),
-  REQUIRES(PenaltyMarkRegions),
   PROVIDES(PenaltyMarkRegions),
-  PROVIDES(CNSPenaltyMarkRegions),
   DEFINES_PARAMETERS(
   {,
     (float)(3000.f) maxDistanceOnField, /**< The maximum distance in which penalty marks are detected. */
@@ -89,10 +87,8 @@ class PenaltyMarkRegionsProvider : public PenaltyMarkRegionsProviderBase
 
   std::vector<Region> regions; /**< The regions of non-green pixels (left to right, bottom to bottom). */
   std::vector<unsigned short> extendedLower; /**< A table that maps y coordinates to y coordinates with region extension. */
-  std::vector<Boundaryi> cnsRegions; /**< The CNS regions that will be provided. */
 
   void update(PenaltyMarkRegions& thePenaltyMarkRegions) override;
-  void update(CNSPenaltyMarkRegions& theCNSPenaltyMarkRegions) override {theCNSPenaltyMarkRegions.regions = cnsRegions;}
 
   /**
    * Initializes the extendedLower table.

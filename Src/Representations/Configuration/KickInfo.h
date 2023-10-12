@@ -39,10 +39,14 @@ STREAMABLE(KickInfo,
     walkSidewardsLeftFootToLeft,
     walkTurnRightFootToLeft,
     walkTurnLeftFootToRight,
+    walkTurnRightFootToLeftShifted,
+    walkTurnLeftFootToRightShifted,
     walkForwardStealBallLeft,
     walkForwardStealBallRight,
     walkForwardsRightAlternative,
     walkForwardsLeftAlternative,
+    walkForwardsRightVeryLong,
+    walkForwardsLeftVeryLong,
 
     // kicks up to here are used by the KickView
     newKick,
@@ -64,6 +68,62 @@ STREAMABLE(KickInfo,
     (Legs::Leg) kickLeg,
     (bool) mirror,
   });
+
+  inline KickInfo::KickType mirror(const KickInfo::KickType kick) const
+  {
+    switch(kick)
+    {
+      case KickInfo::forwardFastRight:
+        return KickInfo::forwardFastLeft;
+      case KickInfo::forwardFastLeft:
+        return KickInfo::forwardFastRight;
+      case KickInfo::forwardFastRightPass:
+        return KickInfo::forwardFastLeftPass;
+      case KickInfo::forwardFastLeftPass:
+        return KickInfo::forwardFastRightPass;
+      case KickInfo::forwardFastRightLong:
+        return KickInfo::forwardFastLeftLong;
+      case KickInfo::forwardFastLeftLong:
+        return KickInfo::forwardFastRightLong;
+      case KickInfo::walkForwardsRight:
+        return KickInfo::walkForwardsLeft;
+      case KickInfo::walkForwardsLeft:
+        return KickInfo::walkForwardsRight;
+      case KickInfo::walkForwardsRightLong:
+        return KickInfo::walkForwardsLeftLong;
+      case KickInfo::walkForwardsLeftLong:
+        return KickInfo::walkForwardsRightLong;
+      case KickInfo::walkSidewardsRightFootToRight:
+        return KickInfo::walkSidewardsLeftFootToLeft;
+      case KickInfo::walkSidewardsLeftFootToLeft:
+        return KickInfo::walkSidewardsRightFootToRight;
+      case KickInfo::walkTurnRightFootToLeft:
+        return KickInfo::walkTurnLeftFootToRight;
+      case KickInfo::walkTurnLeftFootToRight:
+        return KickInfo::walkTurnRightFootToLeft;
+      case KickInfo::walkTurnRightFootToLeftShifted:
+        return KickInfo::walkTurnLeftFootToRightShifted;
+      case KickInfo::walkTurnLeftFootToRightShifted:
+        return KickInfo::walkTurnRightFootToLeftShifted;
+      case KickInfo::walkForwardStealBallLeft:
+        return KickInfo::walkForwardStealBallRight;
+      case KickInfo::walkForwardStealBallRight:
+        return KickInfo::walkForwardStealBallLeft;
+      case KickInfo::walkForwardsRightAlternative:
+        return KickInfo::walkForwardsLeftAlternative;
+      case KickInfo::walkForwardsLeftAlternative:
+        return KickInfo::walkForwardsRightAlternative;
+      case KickInfo::walkForwardsLeftVeryLong:
+        return KickInfo::walkForwardsRightVeryLong;
+      case KickInfo::walkForwardsRightVeryLong:
+        return KickInfo::walkForwardsLeftVeryLong;
+      default:
+      {
+        FAIL("Unknown kick type.");
+        return KickInfo::walkForwardsLeft;
+      }
+    }
+  };
 
   const KickInfo::Kick& operator[](const KickInfo::KickType kickType) const { return kicks[kickType]; },
 

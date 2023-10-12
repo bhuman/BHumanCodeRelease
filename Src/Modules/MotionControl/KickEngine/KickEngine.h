@@ -16,7 +16,7 @@
 #include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Representations/Sensing/TorsoMatrix.h"
+#include "Representations/Sensing/RobotStableState.h"
 #include "Framework/Module.h"
 #include "Tools/Motion/MotionUtilities.h"
 #include "Streaming/InStreams.h"
@@ -34,7 +34,7 @@ MODULE(KickEngine,
   REQUIRES(MassCalibration),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(TorsoMatrix),
+  REQUIRES(RobotStableState),
   PROVIDES(KickGenerator),
   DEFINES_PARAMETERS(
   {,
@@ -57,18 +57,20 @@ struct KickPhase : MotionPhase
 {
   explicit KickPhase(KickEngine& engine, const KickRequest& kickRequest, const MotionPhase& lastPhase, const JointRequest& jointRequest);
 
+  KickRequest currentKickRequest;
 private:
 
+  Pose3f leftStartSole;
+  Pose3f rightStartSole;
+  KickEngineData data;
   KickEngine& engine;
 
-  KickEngineData data;
   bool compensate = false;
   bool compensated = false;
   bool isInterpolating = true;
   bool adjustStartArmPosition = true; // if the arms are on the back, move them to the side
   unsigned startTime = 0;
   unsigned bothFeetGroundContactTimestamp = 0;
-  KickRequest currentKickRequest;
   bool leftArmInterpolation = false;
   bool rightArmInterpolation = false;
 

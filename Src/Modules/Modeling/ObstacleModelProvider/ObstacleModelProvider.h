@@ -23,6 +23,7 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
@@ -73,8 +74,6 @@ MODULE(ObstacleModelProvider,
     (unsigned) distJointToToe,                 /**< The distance from the joint to the toe. */
     (unsigned) distToeToBumper,                /**< The distance between the bumper and the toe. */
     // addPlayerPercepts()
-    (Vector2f) pRobotRotationDeviationInStand, /**< Deviation of the rotation of the robot's torso while standing. */
-    (Vector2f) pRobotRotationDeviation,        /**< Deviation of the rotation of the robot's torso. */
     // considerTeammates()
     (bool) useTeammatePositionForClassification,
     (unsigned) maxTeammateRadius,              /**< Maximal radius of an obstacle to be considered as nearby. */
@@ -89,7 +88,6 @@ MODULE(ObstacleModelProvider,
     (int) recentlySeenTime,                    /**< Obstacle was seen in the last 300ms. */
     // calculateMergeRadius()
     (float) mergeDistance,                     /**< Distance to merge obstacles. */
-    (float) goalMergeDistance,                 /**< Distance to merge goalposts. */
     (unsigned) minMergeDistance,               /**< Distance of an obstacle until it has a constant radius. */
     // calculateVelocity
     (int) velocitySampleTime,                  /**< Min time between two samples for velocity calculation in ms. */
@@ -99,7 +97,6 @@ MODULE(ObstacleModelProvider,
     // ObstacleHypothesis::considerType
     (int) teamThreshold,                       /**< Only switch team if this threshold is reached. */
     (int) uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
-    (float) goalAreaIgnoreTolerance,           /**< Tolerance around the goal area in mm for ignoring obstacles while the goalkeeper walks in at the beginning of the half. 0 turns it off. */
   }),
 });
 
@@ -114,7 +111,6 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   static_assert(Obstacle::Type::fallenOpponent > Obstacle::Type::opponent, "Assumption broken");
   static_assert(Obstacle::Type::fallenSomeRobot > Obstacle::Type::someRobot, "Assumption broken");
   static_assert(Obstacle::Type::unknown < Obstacle::Type::someRobot, "Assumption broken");
-  static_assert(Obstacle::Type::goalpost < Obstacle::Type::unknown, "Assumption broken");
 
   struct TeammateMeasurement
   {
@@ -182,11 +178,10 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
    */
   bool isAnyObstacleInShadow(ObstacleHypothesis* closer, const std::size_t i, const float cameraAngleLeft, const float cameraAngleRight);
 
-  float calculateMergeRadius(const Vector2f center, const Obstacle::Type type, const unsigned maxRadius) const
+  float calculateMergeRadius(const Vector2f center, const unsigned maxRadius) const
   {
     const float measurementDistance = center.norm() - minMergeDistance;
-    return (type == Obstacle::goalpost ? goalMergeDistance : mergeDistance)
-           + (measurementDistance < 0 ? 0.f : measurementDistance * maxRadius / maxDistance);
+    return mergeDistance + (measurementDistance < 0 ? 0.f : measurementDistance * maxRadius / maxDistance);
   }
 
   bool isObstacle(const ObstacleHypothesis& obstacle)
@@ -196,11 +191,4 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
 
   /** Calculates the velocity for every obstacles. */
   void calculateVelocity();
-
-  /**
-   * Checks whether this obstacle hypothesis should be ignored.
-   * Currently checks for obstacles close to the goal area, while the
-   * goal keeper is walking in at the beginning of the half.
-   */
-  bool shouldIgnore(const ObstacleHypothesis& obstacle) const;
 };

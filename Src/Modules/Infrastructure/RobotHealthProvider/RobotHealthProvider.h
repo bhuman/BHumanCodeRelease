@@ -9,7 +9,6 @@
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
-#include "Representations/Communication/BHumanMessageOutputGenerator.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
@@ -22,7 +21,6 @@ MODULE(RobotHealthProvider,
   REQUIRES(LibDemo),
   REQUIRES(MotionRobotHealth),
   REQUIRES(SystemSensorData),
-  USES(BHumanMessageOutputGenerator),
   PROVIDES(RobotHealth),
   LOADS_PARAMETERS(
   {,

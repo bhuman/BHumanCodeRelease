@@ -17,7 +17,9 @@
 
 #ifdef WINDOWS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <Windows.h>
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#include <ws2tcpip.h>
 #else
 #include <unistd.h>
 #include <netdb.h>
@@ -56,15 +58,15 @@ const char* SystemCall::getHostAddr()
   static const char* hostaddr = 0;
   if(!hostaddr)
   {
-    static char buf[100];
+    static char buf[INET_ADDRSTRLEN];
     hostent* hostAddr = static_cast<hostent*>(gethostbyname(getHostName()));
     if(hostAddr && *hostAddr->h_addr_list)
-      strcpy(buf, inet_ntoa(*reinterpret_cast<in_addr*>(*hostAddr->h_addr_list)));
+      inet_ntop(AF_INET, *hostAddr->h_addr_list, buf, INET_ADDRSTRLEN);
     else
     {
       hostAddr = static_cast<hostent*>(gethostbyname((std::string(getHostName()) + ".local").c_str()));
       if(hostAddr && *hostAddr->h_addr_list)
-        strcpy(buf, inet_ntoa(*reinterpret_cast<in_addr*>(*hostAddr->h_addr_list)));
+        inet_ntop(AF_INET, *hostAddr->h_addr_list, buf, INET_ADDRSTRLEN);
       else
         strcpy(buf, "127.0.0.1");
     }

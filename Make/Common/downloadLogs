@@ -1,130 +1,149 @@
 #!/bin/bash
-# Downloads all log files from the robot to the directory 
-# Config/Logs.
+# Downloads all log files from one or more robots
 
-basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
+BASEPATH=$(cd "$(dirname "$(which "$0")")" && pwd)
+LOGPATH=/home/nao/logs/
+
+# Try to make size calculation the the same locally and on the robot.
+# Does not seem to work perfectly.
+DUOPTIONS_LINUX="-hc --apparent-size"
+if [ "$(uname)" = "Darwin" ]; then
+  DUOPTIONS="-hcAB 1"
+else
+  DUOPTIONS="$DUOPTIONS_LINUX"
+fi
 
 usage()
 {
-  echo "usage: downloadLogs [-d | --just-delete] <ip>"
-  echo " -d            - Delete log files after download."
-  echo " --just-delete - Just delete log files."
+  echo "usage: downloadLogs [-d | -D | --just-delete] <ip> {<ip>}"
+  echo " -d                  Delete log files after download."
+  echo " -D | --just-delete  Just delete log files."
   echo "  examples:"
   echo "    ./downloadLogs 192.168.2.28"
-  echo "    ./downloadLogs -d 192.168.2.28"
+  echo "    ./downloadLogs -d 192.168.2.28 192.168.2.29"
   exit 1
 }
 
-#Variables
-logpath="/home/nao/logs/"
-keySource="${basePath}/../../Install/Keys/id_rsa_nao"
-keyFile=/tmp/id_rsa_nao
-cp -n "${keySource}" ${keyFile}
-sshoptions="-c aes128-ctr -i ${keyFile} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
-
-chmod 600 $keyFile
-
-if [ $# -lt 1 ]
-then
-  usage
-fi
-
-if [ "$1" = "-d" ]
-then
-    download=true
-    delete=true
-    ip=$2
-elif [ "$1" = "--just-delete" ]
-then
-    download=false
-    delete=true
-    ip=$2
-else
-    download=true
-    delete=false
-    ip=$1
-fi
-
-if $download
-then
-  name=`ssh $sshoptions -o ConnectTimeout=2 nao@$ip "hostname"`
-  if [ -z "$name" ]
-  then
-    echo "Could not get name from robot."
-    exit 1
-  fi
-  localLogpath=${BHUMAN_LOG_DIR:="${basePath}/../../Config/Logs"}/$(date +%F-%H-%M)/$name
-
-  #check if log file dir exists
-  if [ ! -d "$localLogpath" ]; then
-    mkdir -p "$localLogpath"
-  fi
-
-  #check if log dir exist on the remote robot
-  ssh $sshoptions nao@$ip "test -d $logpath"
-  logPathExists=$?
-  if [ "$logPathExists" -ne 0 ]
-  then
-    echo "Logfile directory does not exist on robot."
-    exit 1
-  fi
-
-  #check if log directory is not empty
-  LOGS=`ssh $sshoptions nao@$ip "ls $logpath | grep .log"`
-  if [ -z "$LOGS" ]; then
-    echo "No log files on robot."
-    exit 1
-  fi
-fi
-
-PROCESSES=`ssh $sshoptions nao@$ip "pgrep bhuman"`
-if [ ! -z "$PROCESSES" ]; then
-  RESTART=1
-  echo "stopping bhuman"
-  ssh $sshoptions nao@$ip "systemctl --user stop bhuman.service > /dev/null"
-fi
-
-if $download
-then
-  #download all log files
-  echo "Downloading log files..."
-
-  #-p = preserve original date and time
-  remoteSize=$(ssh $sshoptions nao@$ip "du -h $logpath" | awk '{print $1}')
-  scp $sshoptions -p nao@$ip:$logpath*.log "$localLogpath" &
-  SCPPID=$!
-
-  ps -p$SCPPID 2>&1 > /dev/null
-  finished=$?
-  cnt=0
-  while [ "$finished" == "0" ]; do
-    ps -p$SCPPID 2>&1 > /dev/null
-    finished=$?
-    if (( $cnt % 30 == 0 )) # show download status every 30s
-    then
-      echo "downloaded: $(ls -l "$localLogpath" | awk '{ total += $5 }; END { CONVFMT = "%.0f"; print total/1024/1024 " MB" }') / $remoteSize"
+download()
+{
+  local IP=$1
+  if $DOWNLOAD; then
+    local NAME="$(ssh $SSHOPTIONS -o ConnectTimeout=2 nao@$IP "hostname")"
+    if [ -z "$NAME" ]; then
+      echo >&2 "error: could not get name from robot!"
+      RETURN=1
+      return
     fi
-    let cnt+=1
-    sleep 1
-  done
 
-  wait $SCPPID
-  FAIL=$?
-  if [ $FAIL -ne 0 ]
-  then
-     echo "scp failed!"
-     exit 1
+    ssh $SSHOPTIONS nao@$IP "test -d $LOGPATH"
+    if [ $? -ne 0 ]; then
+      echo >&2 "error: log file directory does not exist on robot!"
+      RETURN=1
+      return
+    fi
+
+    if [ -z "$(ssh $SSHOPTIONS nao@$IP "ls $LOGPATH | grep .log")" ]; then
+      echo "no log files on robot"
+      return # No error
+    fi
+
+    local LOCALPATH="$BASEPATH/../../Config/Logs"/$(date +%F-%H-%M)/$NAME
+    mkdir -p "$LOCALPATH"
   fi
+
+  if [ ! -z "$(ssh $SSHOPTIONS nao@$IP "pgrep bhuman")" ]; then
+    local RESTART=true
+    echo "stopping bhuman"
+    ssh $SSHOPTIONS nao@$IP "systemctl --user stop bhuman.service > /dev/null"
+  else
+    local RESTART=false
+  fi
+
+  if $DOWNLOAD; then
+    echo "downloading log files..."
+
+    SIZE=$(ssh $SSHOPTIONS nao@$IP "du $DUOPTIONS_LINUX $LOGPATH/*.log" | tail -n 1 | awk '{print $1}')
+
+    # -p = preserve original date and time
+    scp $SSHOPTIONS -p nao@$IP:$LOGPATH*.log "$LOCALPATH" >/dev/null &
+    SCPPID=$!
+
+    while true; do
+      LC_ALL=C echo "downloaded: $(( LC_ALL=C du $DUOPTIONS "$LOCALPATH/"*.log 2>/dev/null ) | tail -n 1 | awk '{print $1}') / $SIZE"
+      ps -p$SCPPID 2>&1 >/dev/null || break
+      sleep 2
+    done
+
+    wait $SCPPID
+    if [ $? -ne 0 ]; then
+      echo >&2 "error: scp failed!"
+      RETURN=1
+      return
+    fi
+  fi
+
+  if $DELETE; then
+    echo "deleting log files from robot"
+    ssh $SSHOPTIONS nao@$IP "rm -f $LOGPATH*"
+  fi
+
+  if $RESTART; then
+    echo "starting bhuman"
+    ssh $SSHOPTIONS nao@$IP "systemctl --user start bhuman.service > /dev/null"
+  fi
+
+  return 0
+}
+
+IPS=
+NUMIPS=0
+DOWNLOAD=true
+DELETE=false
+RETURN=0
+
+# parse options
+[[ $# -eq 0 ]] && usage
+while true; do
+  case $1 in
+    "")
+      break
+      ;;
+    "-d" | "/d")
+      DELETE=true
+      ;;
+    "-D" | "/D" | "--just-delete")
+      DELETE=true
+      DOWNLOAD=false
+      ;;
+    "-h" | "/h" | "/?" | "--help")
+      usage
+      ;;
+    -*)
+      echo "error: unknown parameter: $1!" >&2
+      usage
+      ;;
+    *)
+      IPS[$NUMIPS]=$1
+      let NUMIPS++
+      ;;
+  esac
+  shift
+done
+
+source "$BASEPATH/setupSSH"
+
+trap "trap - SIGTERM && kill -- -$$ 2>/dev/null" SIGINT SIGTERM
+
+if [ $NUMIPS == 0 ]; then
+  echo >&2 "error: no ip addresses specified!"
+  usage
+elif [ $NUMIPS == 1 ]; then
+  download ${IPS[0]}
+else
+  for ((i=0; i < NUMIPS; i++)); do
+    download ${IPS[i]} 2> >(sed "s%^%[${IPS[i]}] %" >&2) | sed "s%^%[${IPS[i]}] %" &
+  done
+  wait
 fi
 
-if $delete
-then
-  #remove log files from robot
-  echo "Deleting log files from robot"
-  ssh $sshoptions nao@$ip "rm -f $logpath*"
-fi
-
-if [ ! -z $RESTART ]; then
-  echo "starting bhuman"
-  ssh $sshoptions nao@$ip "systemctl --user start bhuman.service > /dev/null"
-fi
+exit $RETURN

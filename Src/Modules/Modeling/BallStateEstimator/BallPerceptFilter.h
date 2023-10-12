@@ -32,11 +32,8 @@
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Framework/Module.h"
 
 MODULE(BallPerceptFilter,
@@ -44,15 +41,12 @@ MODULE(BallPerceptFilter,
   REQUIRES(BallPercept),
   REQUIRES(BallSpecification),
   REQUIRES(CameraInfo),
-  REQUIRES(CameraMatrix),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
-  REQUIRES(OdometryData),
   REQUIRES(TeamData),
   REQUIRES(TeammatesBallModel),
   REQUIRES(WorldModelPrediction),
@@ -63,7 +57,6 @@ MODULE(BallPerceptFilter,
     (float) fieldBorderExclusionDistance,              /**< Stuff that is more far away from the field (not the carpet!) is excluded. */
     (float) robotBanRadius,                            /**< If a ball is at the image border and this close to a teammate, it becomes excluded. */
     (int) fieldFeatureTimeout,                         /**< When using self-localization information, there should have been a field feature recently. */
-    (Vector2f) robotRotationDeviation,                 /**< Deviation of the rotation of the robot's torso */
     (int) farBallIgnoreTimeout,                        /**< If we have seen a ball in the lower image recently, ignore balls in upper image for this time, if they are far away. */
     (float) farBallIgnoreDistance,                     /**< If we have seen a ball in the lower image recently, ignore balls in upper image (for some time) that are farther away than this parameter specifies. */
     (int) bufferedSeenBallTimeout,                     /**< The seen ball percepts for verification must have been seen within this amount of time. */
@@ -105,9 +98,6 @@ private:
   RingBuffer<FilteredBallPercept, 10> bufferedBalls;     /**< A buffer for all guessed and seen balls, used for accepting moving guessed balls. */
   unsigned int timeOfLastFilteredPercept;                /**< Point of time when the last percept has been added to the module's output representation */
   unsigned int timeOfLastPerceivedFieldFeature;          /**< Save time of field feature perception to evaluate robot pose quality (not sure, if this is cool) */
-
-
-  void doSomeTestStuff();
 
   /** Check, if the percept is outside the field
    * @return true, if it is outside the field

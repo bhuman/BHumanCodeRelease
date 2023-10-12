@@ -16,11 +16,11 @@
   &lt;#enumerator2#&gt; = &lt;#value2#&gt;
 };</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>5D04838B-FD25-4CA1-BCF7-BA2F6569F1FE</string>
+	<string>B-Human_enumdef</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for describing a new enumeration type whose value can be one of several named constants.</string>
+	<string>B-Human: Declare a new enumerated type with named constant values.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Enumeration Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>

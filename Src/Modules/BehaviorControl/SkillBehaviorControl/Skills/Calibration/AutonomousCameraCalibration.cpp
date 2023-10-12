@@ -26,7 +26,6 @@
 SKILL_IMPLEMENTATION(AutonomousCameraCalibrationImpl,
 {,
   IMPLEMENTS(AutonomousCameraCalibration),
-  CALLS(Activity),
   CALLS(CalibrateRobot),
   CALLS(LookAtAngles),
   CALLS(LookAtPoint),
@@ -45,18 +44,19 @@ SKILL_IMPLEMENTATION(AutonomousCameraCalibrationImpl,
   USES(CameraCalibrationStatus),
   DEFINES_PARAMETERS(
   {,
-    (float)(0.7) walkSpeed,
+    (Pose2f)(Pose2f(0.7f, 0.7f, 0.7f)) walkSpeed,
     (float)(400) adjustmentRadius, /**< The maximum distance to the calibrationPose for adjustment, in mm. */
     (float)(1200) goalAreaCornerDistance, /**< The distance to the goal area corner in the first calibration phase, in mm.*/
     (float)(1200) penaltyMarkDistance, /**< The distance to the penalty mark in the second calibration phase, in mm. */
     (int)(5000) settleAfterWalkDuration, /**< The duration the robot will wait before recording samples after walking, in milliseconds. */
-    (int)(1500) settleAfterHeadMovementDuration, /**< The duration the robot will wait before recording samples after turning its head, in milliseconds. */
+    (int)(3000) settleAfterHeadMovementDuration, /**< The duration the robot will wait before recording samples after turning its head, in milliseconds. */
+    (int)(1000) panAndTilGridWaitInPositionTime, /**< While searching for a good head position wait this long between the head movements. */
     (int)(2500) waitDurationForSamplesWhenRecording, /**< The time we look for samples when recording before adjusting head or position, in milliseconds. */
     (Angle)(10_deg) maxHorizontalAdjustmentAngle, /**< The maximum additional head pan angle for adjustment. */
     (Angle)(5_deg) horizontalAdjustmentAngleStep, /**< The step size by which the head pan angle is increased. */
     (Angle)(5_deg) maxVerticalAdjustmentAngle, /**< The maximum additional head pan angle for adjustment. */
     (Angle)(5_deg) verticalAdjustmentAngleStep, /**< The step size by which the head pan angle is increased. */
-    (std::vector<Angle>)({0.f, -0.75f, 0.75f}) headPans, /**< The head pan angles for recording samples. */
+    (std::vector<Angle>)({0.f, -1.f, 1.f}) headPans, /**< The head pan angles for recording samples. */
     (Angle)(120_deg) headSpeed, /**< The maximum speed with which the head moves between targets (deg/s). */
     (Angle)(0.38f) headTiltUpper, /**< The head tilt angle for recording samples with the upper camera. */
     (Angle)(-.25f) headTiltLower, /**< The head tilt angle for recording samples with the lower camera. */
@@ -67,7 +67,7 @@ SKILL_IMPLEMENTATION(AutonomousCameraCalibrationImpl,
 
 class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBase
 {
-  bool forceWalkToPoseAfterInteruption = false;
+  bool forceWalkToPoseAfterInterruption = false;
   bool finishedCalibration = false;
   struct SampleConfigurationInfo
   {
@@ -131,7 +131,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
       {
         if(!sampleConfigurations.empty())
         {
-          forceWalkToPoseAfterInteruption = state_time == 0;
+          forceWalkToPoseAfterInterruption = state_time == 0;
           goto walkToCalibrationPose;
         }
       }
@@ -192,7 +192,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
           goto waitAndSettleAfterHeadMoved;
         }
 
-        const Pose2f relativeCalibrationPose = theRobotPose.inversePose * currentSampleConfiguration->calibrationPose;
+        const Pose2f relativeCalibrationPose = theRobotPose.inverse() * currentSampleConfiguration->calibrationPose;
         if(theWalkToPointSkill.isDone() || (relativeCalibrationPose.translation.squaredNorm() < sqr(standStillTranslationThreshold) && std::abs(relativeCalibrationPose.rotation) < standStillOrientationThreshold))
         {
           goto waitAndSettleAfterWalking;
@@ -201,7 +201,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
       action
       {
         // Check if we need to walk a different position.
-        if(!forceWalkToPoseAfterInteruption && lastSampleConfiguration && lastSampleConfiguration->calibrationPose.translation == currentSampleConfiguration->calibrationPose.translation)
+        if(!forceWalkToPoseAfterInterruption && lastSampleConfiguration && lastSampleConfiguration->calibrationPose.translation == currentSampleConfiguration->calibrationPose.translation)
         {
           setHeadMotionRequest(currentSampleConfiguration->request);
           // Check if we need to turn towards a different angle.
@@ -214,21 +214,22 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
           }
           else
           {
-            theTurnAngleSkill({.angle = -(currentSampleConfiguration->request.headPan - lastSampleConfiguration->request.headPan),                 .margin = 0_deg});
+            theTurnAngleSkill({.angle = lastSampleConfiguration->request.headPan - currentSampleConfiguration->request.headPan,
+                               .margin = 0_deg});
           }
         }
         else
         {
-          const Pose2f relativeCalibrationPose = theRobotPose.inversePose * currentSampleConfiguration->calibrationPose;
+          const Pose2f relativeCalibrationPose = theRobotPose.inverse() * currentSampleConfiguration->calibrationPose;
           theWalkToPointSkill({.target = relativeCalibrationPose,
                                .speed = walkSpeed,
                                .disableObstacleAvoidance = true});
 
-          const auto relativeTarget = theRobotPose.inversePose * currentSampleConfiguration->lookTarget;
+          const auto relativeTarget = theRobotPose.inverse() * currentSampleConfiguration->lookTarget;
           theLookAtPointSkill({.target = {relativeTarget.x(), relativeTarget.y(), 0.f},
                                .camera = HeadMotionRequest::upperCamera});
 
-          forceWalkToPoseAfterInteruption &= std::abs(relativeCalibrationPose.translation.x()) > standStillTranslationThreshold ||
+          forceWalkToPoseAfterInterruption &= std::abs(relativeCalibrationPose.translation.x()) > standStillTranslationThreshold ||
                                              std::abs(relativeCalibrationPose.translation.y()) > standStillTranslationThreshold ||
                                              std::abs(relativeCalibrationPose.rotation) > standStillOrientationThreshold;
         }
@@ -271,7 +272,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
                                 .maximum = max,
                                 .panStep = horizontalAdjustmentAngleStep,
                                 .tiltStep = verticalAdjustmentAngleStep,
-                                .waitInPosition = settleAfterHeadMovementDuration,
+                                .waitInPosition = panAndTilGridWaitInPositionTime,
                                 .speed = headSpeed});
         theStandSkill();
       }
@@ -285,7 +286,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
         bool walkIsDone = false;
         if(adjustmentTarget)
         {
-          const auto poseTarget = theRobotPose.inversePose * *adjustmentTarget;
+          const auto poseTarget = theRobotPose.inverse() * *adjustmentTarget;
           walkIsDone = poseTarget.translation.squaredNorm() < sqr(standStillTranslationThreshold) && std::abs(poseTarget.rotation) < standStillOrientationThreshold;
         }
 
@@ -324,7 +325,7 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
 
         theSaySkill({.text = "Adjusting position."});
         setHeadMotionRequest(currentSampleConfiguration->request);
-        theWalkToPointSkill({.target = theRobotPose.inversePose * *adjustmentTarget,
+        theWalkToPointSkill({.target = theRobotPose.inverse() * *adjustmentTarget,
                              .speed = walkSpeed,
                              .disableObstacleAvoidance = true});
       }
@@ -434,7 +435,6 @@ class AutonomousCameraCalibrationImpl : public AutonomousCameraCalibrationImplBa
 
     // FIXME: this is a bit hacky.
     theCalibrateRobotSkill({.request = theCalibrationRequest});
-    theActivitySkill({.activity = BehaviorStatus::unknown});
   }
 
   void addSampleConfiguration(unsigned index, const Vector2f& position, const Vector2f& lookTarget, CameraInfo::Camera camera, const Angle& headPan, unsigned sampleTypes)

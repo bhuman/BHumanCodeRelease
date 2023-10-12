@@ -168,8 +168,10 @@ JointHeaderedWidget::JointHeaderedWidget(JointView& sensorView)
 }
 
 JointView::JointView(const QString& fullName, RobotConsole& robotConsole, const JointSensorData& jointSensorData, const JointRequest& jointRequest) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(robotConsole), jointSensorData(jointSensorData), jointRequest(jointRequest)
-{}
+  fullName(fullName), icon(":/Icons/icons8-view-50.png"), console(robotConsole), jointSensorData(jointSensorData), jointRequest(jointRequest)
+{
+  icon.setIsMask(true);
+}
 
 SimRobot::Widget* JointView::createWidget()
 {

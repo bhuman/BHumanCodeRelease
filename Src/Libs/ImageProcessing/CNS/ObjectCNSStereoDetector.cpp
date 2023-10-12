@@ -118,7 +118,7 @@ void ObjectCNSStereoDetector::searchBlockAllPoses(IsometryWithResponses& object2
   if(!(minLambda <= maxLambda))
     return;
   Eigen::Vector3d object2WorldTranslation = p + minLambda * v;
-  int ctr = 0;
+  [[maybe_unused]] int ctr = 0;
   while((object2WorldTranslation - p).dot(v) <= maxLambda * v.squaredNorm())
   {
     assert((object2WorldTranslation - p).dot(v) >= (minLambda - 1E-3)*v.squaredNorm());

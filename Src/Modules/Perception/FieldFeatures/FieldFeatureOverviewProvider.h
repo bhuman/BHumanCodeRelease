@@ -8,20 +8,14 @@
 
 #include "Framework/Module.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
-#include "Representations/Perception/FieldFeatures/MidCircle.h"
-#include "Representations/Perception/FieldFeatures/MidCorner.h"
-#include "Representations/Perception/FieldFeatures/OuterCorner.h"
-#include "Representations/Perception/FieldFeatures/PenaltyArea.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
 
 MODULE(FieldFeatureOverviewProvider,
 {,
+  REQUIRES(CenterCircleWithLine),
   REQUIRES(FrameInfo),
-  REQUIRES(MidCircle),
-  REQUIRES(MidCorner),
-  REQUIRES(OuterCorner),
-  REQUIRES(PenaltyArea),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
   PROVIDES(FieldFeatureOverview),
 });

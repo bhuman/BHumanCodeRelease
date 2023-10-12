@@ -35,7 +35,10 @@ bool Cognition::beforeFrame()
 
   // During replay if there is no new frame and no delayed frame, there is nothing to process
   if(replay && !LogDataProvider::isFrameDataComplete(false) && !delayedLogCounter)
+  {
+    acceptNext = false;
     return false;
+  }
 
   const FrameInfo* lowerFrameInfo = Blackboard::getInstance().exists("LowerFrameInfo")
                                     ? static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["LowerFrameInfo"]))
@@ -46,6 +49,8 @@ bool Cognition::beforeFrame()
   unsigned lowerFrameTime = lowerFrameInfo ? lowerFrameInfo->time : 0;
   unsigned upperFrameTime = upperFrameInfo ? upperFrameInfo->time : 0;
 
+  const bool upperIsLate = static_cast<int>(lowerFrameTime - upperFrameTime) >= 100;
+  const bool lowerIsLate = static_cast<int>(upperFrameTime - lowerFrameTime) >= 100;
   upperIsNew |= upperFrameTime != lastUpperFrameTime && upperFrameTime >= lastAcceptedTime;
   lowerIsNew |= lowerFrameTime != lastLowerFrameTime && lowerFrameTime >= lastAcceptedTime;
   lastUpperFrameTime = upperFrameTime;
@@ -53,7 +58,7 @@ bool Cognition::beforeFrame()
 
   // Begin a new frame if either there is data for a new one left over from
   // the previous frame or we have two from which we can choose.
-  if(acceptNext || (upperIsNew && lowerIsNew))
+  if(acceptNext || (upperIsNew && lowerIsNew) || (upperIsNew && lowerIsLate) || (lowerIsNew && upperIsLate))
   {
     // The frame will be processed, so no delay and no data waiting anymore
     delayedLogCounter = 0;
@@ -62,8 +67,14 @@ bool Cognition::beforeFrame()
     if(replay)
       LogDataProvider::isFrameDataComplete();
 
-    // We always switch between upper and lower
-    isUpper ^= true;
+    // We switch between upper and lower except if one of them is really late
+    if(upperIsLate)
+      isUpper = false;
+    else if(lowerIsLate)
+      isUpper = true;
+    else
+      isUpper ^= true;
+
     if(isUpper)
     {
       lastAcceptedTime = upperFrameTime;
@@ -105,6 +116,7 @@ bool Cognition::beforeFrame()
 
 void Cognition::beforeModules()
 {
+  BHExecutionUnit::beforeModules();
   if(SystemCall::getMode() != SystemCall::physicalRobot)
   {
     DEBUG_RESPONSE_NOT("unmute")

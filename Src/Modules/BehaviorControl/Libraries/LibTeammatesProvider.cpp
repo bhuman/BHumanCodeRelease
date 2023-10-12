@@ -4,54 +4,52 @@
  */
 
 #include "LibTeammatesProvider.h"
-#include "Tools/BehaviorControl/Strategy/PositionRole.h"
+#include "Tools/BehaviorControl/Strategy/ActiveRole.h"
 
-MAKE_MODULE(LibTeammatesProvider, behaviorControl);
+MAKE_MODULE(LibTeammatesProvider);
 
 void LibTeammatesProvider::update(LibTeammates& libTeammates)
 {
-  libTeammates.nonKeeperTeammatesInOwnPenaltyArea = nonKeeperTeammatesInOwnPenaltyArea();
-  libTeammates.teammatesInOpponentPenaltyArea = teammatesInOpponentPenaltyArea();
+  libTeammates.nonKeeperTeammatesInOwnGoalArea = nonKeeperTeammatesInOwnGoalArea();
+
+  libTeammates.getStrikerBallPosition = [this]() -> Vector2f
+  {
+    if(theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall))
+      return theBallModel.estimate.position;
+    else
+    {
+      for(auto const& teammate : theTeamData.teammates)
+        if(teammate.theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall))
+          return teammate.theBallModel.estimate.position;
+    }
+    return Vector2f::Zero();
+  };
 }
 
-int LibTeammatesProvider::nonKeeperTeammatesInOwnPenaltyArea() const
+int LibTeammatesProvider::nonKeeperTeammatesInOwnGoalArea() const
 {
   float distanceThreshold = outsideDistanceThreshold;
   bool isNear = false;
-  if(theLibPosition.isNearOwnPenaltyArea(theRobotPose.translation, -theRobotPose.getXAxisStandardDeviation(), -theRobotPose.getYAxisStandardDeviation()))
+  if(theLibPosition.isNearOwnGoalArea(theRobotPose.translation, -theRobotPose.getXAxisStandardDeviation(), -theRobotPose.getYAxisStandardDeviation()))
     distanceThreshold = insideDistanceThreshold;
-  else if(theLibPosition.isNearOwnPenaltyArea(theRobotPose.translation, outsideDistanceThreshold, outsideDistanceThreshold))
+  else if(theLibPosition.isNearOwnGoalArea(theRobotPose.translation, outsideDistanceThreshold, outsideDistanceThreshold))
     isNear = true;
-  int teammatesInPenaltyArea = 0;
+  int teammatesInGoalArea = 0;
   for(auto const& teammate : theTeamData.teammates)
   {
     const Vector2f teammatePosition = teammate.getEstimatedPosition(theFrameInfo.time);
     if(!teammate.isGoalkeeper
-       && theLibPosition.isNearOwnPenaltyArea(teammatePosition, distanceThreshold, distanceThreshold))
+       && theLibPosition.isNearOwnGoalArea(teammatePosition, distanceThreshold, distanceThreshold))
     {
-      if(isNear && !theLibPosition.isNearOwnPenaltyArea(teammatePosition, insideDistanceThreshold, insideDistanceThreshold))
+      if(isNear && !theLibPosition.isNearOwnGoalArea(teammatePosition, insideDistanceThreshold, insideDistanceThreshold))
       {
         /// breaks ties between two robots attempting to enter simultaneously
         if(teammate.theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall))
-          ++teammatesInPenaltyArea;
+          ++teammatesInGoalArea;
       }
       else
-        ++teammatesInPenaltyArea;
+        ++teammatesInGoalArea;
     }
   }
-  return teammatesInPenaltyArea;
-}
-
-int LibTeammatesProvider::teammatesInOpponentPenaltyArea() const
-{
-  float distanceThreshold = outsideDistanceThreshold;
-  if(theLibPosition.isNearOpponentPenaltyArea(theRobotPose.translation, -theRobotPose.getXAxisStandardDeviation(), -theRobotPose.getYAxisStandardDeviation()))
-    distanceThreshold = insideDistanceThreshold;
-  int teammatesInPenaltyArea = 0;
-  for(auto const& teammate : theTeamData.teammates)
-  {
-    if(theLibPosition.isNearOpponentPenaltyArea(teammate.getEstimatedPosition(theFrameInfo.time), distanceThreshold, distanceThreshold))
-      ++teammatesInPenaltyArea;
-  }
-  return teammatesInPenaltyArea;
+  return teammatesInGoalArea;
 }

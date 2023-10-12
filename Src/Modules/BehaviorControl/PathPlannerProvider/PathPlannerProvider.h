@@ -102,7 +102,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
   /** The nodes of the visibility graph, i.e. the obstacles. */
   struct Node : public Geometry::Circle
   {
-    std::vector<Edge> edges[numOfRotations]; /** The outgoing edges per rotation. */
+    std::vector<Edge> edges[numOfRotations]; /**< The outgoing edges per rotation. */
     std::vector<BlockedSector> blockedSectors; /**< Angular sectors that are blocked by overlapping other obstacles. */
     Edge* fromEdge[numOfRotations]; /**< From which edge was this node reached first (per rotation) during the A* search? */
     bool expanded = false; /**< Were the outgoing edges of this node already expanded? */

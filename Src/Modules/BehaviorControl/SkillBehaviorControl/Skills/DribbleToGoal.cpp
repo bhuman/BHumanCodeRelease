@@ -38,7 +38,7 @@ SKILL_IMPLEMENTATION(DribbleToGoalImpl,
     (Angle)(3_deg) minFreeSector,
     (float)(1000.f) dribbleRange, /**< Planned look ahead dribble kick range. */
     (float)(500.f) safeDistanceToFieldBoarder, /**< Dribble range + this threshold shall not touch the field border. */
-    (float)(500.f) lookActiveMinBallDistance, /**< If the ball is atleast this far away, use lookActive with withBall = true. */
+    (float)(500.f) lookActiveMinBallDistance, /**< If the ball is at least this far away, use lookActive with withBall = true. */
     (float)(15.f) searchStepDrawWidth,
     (float)(5.f) searchStepDrawScale,
     (int)(10) searchStepDrawModulo,
@@ -58,7 +58,7 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
     PotentialValue pv;
     lastDribbleAngle = Angle::normalize(lastDribbleAngle + theRobotPose.rotation);
     // clip ball inside the field
-    Vector2f position = theFieldBall.endPositionOnField;
+    Vector2f position = theFieldBall.interceptedEndPositionOnField;
     xMinMax.clamp(position.x());
     yMinMax.clamp(position.y());
     const Vector2f startPosition = position - position.normalized(0.001f); // To ensure we are not on the field line
@@ -68,7 +68,6 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
     {
       pv = theFieldRating.potentialFieldOnly(position.x(), position.y(), true);
       theFieldRating.getObstaclePotential(pv, position.x(), position.y(), true);
-      theFieldRating.potentialWithRobotFacingDirection(pv, position.x(), position.y(), true);
       const float directionNorm = pv.direction.norm();
       if(directionNorm == 0.f)
         break;
@@ -92,8 +91,8 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
 
     COMPLEX_DRAWING("skill:DribbleToGoal:direction")
     {
-      const Vector2f pos2 = theFieldBall.endPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
-      ARROW("skill:DribbleToGoal:direction", theFieldBall.endPositionOnField.x(), theFieldBall.endPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::cyan);
+      const Vector2f pos2 = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
+      ARROW("skill:DribbleToGoal:direction", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::cyan);
     }
 
     const float distanceToFieldBorderThresholdSquared = sqr(dribbleRange + safeDistanceToFieldBoarder);
@@ -158,7 +157,7 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
           map.emplace(std::abs(dribbleAngleInField - minNextLeftSector), minNextLeftSector);
           map.emplace(std::abs(dribbleAngleInField - maxPreviousRightSector), maxPreviousRightSector);
 
-          for(const auto angle : map)
+          for(const auto& angle : map)
           {
             if(getDistanceToFieldBorder(startPosition, angle.second) > distanceToFieldBorderThresholdSquared)
             {
@@ -179,15 +178,16 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
     }
     COMPLEX_DRAWING("skill:DribbleToGoal:direction")
     {
-      Vector2f pos2 = theFieldBall.endPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
-      ARROW("skill:DribbleToGoal:direction", theFieldBall.endPositionOnField.x(), theFieldBall.endPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::red);
+      Vector2f pos2 = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
+      ARROW("skill:DribbleToGoal:direction", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::red);
     }
 
     const Angle dribbleAngle = Angle::normalize(dribbleAngleInField - theRobotPose.rotation);
     lastDribbleAngle = dribbleAngle;
     // TODO set kickLength to something higher?
     theGoToBallAndDribbleSkill({.targetDirection = dribbleAngle,
-                                .lookActiveWithBall = theFieldBall.endPositionRelative.squaredNorm() > sqr(lookActiveMinBallDistance)});
+                                .kickLength = dribbleRange,
+                                .lookActiveWithBall = theFieldBall.interceptedEndPositionRelative.squaredNorm() > sqr(lookActiveMinBallDistance)});
     return;
   }
 
@@ -201,7 +201,7 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
                       i1, i2));
     Vector2f ballToIntersection1 = i1 - startPosition;
     Vector2f ballToIntersection2 = i2 - startPosition;
-    // the 5_degs is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding erros.
+    // the 5_degs is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding errors.
     if(std::abs(ballToIntersection1.angle() - direction) < 5_deg)
       distanceToFieldBorderSquared = ballToIntersection1.squaredNorm();
     else if(std::abs(ballToIntersection2.angle() - direction) < 5_deg)
@@ -218,7 +218,7 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
       if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGroundLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
         continue;
 
-      const float ballFactor = obstacle.type != Obstacle::goalpost ? 3.f : 1.f;
+      const float ballFactor = 3.f;
 
       const float width = (obstacle.left - obstacle.right).norm() + ballFactor * theBallSpecification.radius;
       const float distance = (obstacleOnField - theFieldBall.positionOnField).norm();
@@ -230,7 +230,7 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
       obstacleSectors.back().sector = obstacleSectorRange;
       obstacleSectors.back().distance = distance;
       obstacleSectors.back().x = obstacleOnField.x();
-      obstacleSectors.back().type = obstacle.type == Obstacle::goalpost ? Obstacle::goalpost : Obstacle::opponent;
+      obstacleSectors.back().type = Obstacle::opponent;
     }
 
     SectorWheel wheel;
@@ -247,11 +247,8 @@ class DribbleToGoalImpl : public DribbleToGoalImplBase
       wheel.addSector(Rangea(angleToRightPost, angleToLeftPost), std::numeric_limits<float>::max(), SectorWheel::Sector::goal);
 
     for(const ObstacleSector& obstacleSector : obstacleSectors)
-    {
-      if(obstacleSector.type == Obstacle::goalpost)
-        continue;
       wheel.addSector(obstacleSector.sector, obstacleSector.distance, SectorWheel::Sector::obstacle);
-    }
+
     kickAngles = wheel.finish();
 
     SectorWheel wheelFiltered;

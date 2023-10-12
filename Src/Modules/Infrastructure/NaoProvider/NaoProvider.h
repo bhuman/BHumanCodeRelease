@@ -23,6 +23,7 @@ MODULE(NaoProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(JointCalibration),
+  USES(JointSensorData),
   USES(JointRequest),
   REQUIRES(LEDRequest),
   PROVIDES(FrameInfo),
@@ -38,6 +39,9 @@ MODULE(NaoProvider,
     (int)(5000) timeBetweenCPUTemperatureUpdates, /**< Time between reading the CPU temperature (in ms). */
     (unsigned)(10) retries, /**< Number of tries to connect socket. */
     (unsigned)(10) retryDelay, /**< Delay before a retry to connect socket. */
+    (Angle)(0.00064_deg) jointVariance, /**< Variance of a joint measurement (in deg²). */
+    (Angle)(0.00000387f) gyroVariance, /**< Variance of the gyro (in (rad / s)²). */
+    (float)(0.000374f) accVariance, /**< White noise variance of the accelerometer measurements (in (m/s²)²). */
   }),
 });
 

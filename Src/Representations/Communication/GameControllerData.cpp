@@ -9,7 +9,7 @@
 
 #include "GameControllerData.h"
 
-static_assert(GAMECONTROLLER_STRUCT_VERSION == 14);
+static_assert(GAMECONTROLLER_STRUCT_VERSION == 15);
 
 struct RobotInfo : public RoboCup::RobotInfo
 {
@@ -57,7 +57,9 @@ private:
     PUBLISH(reg);
     REG_CLASS(TeamInfo);
     REG(teamNumber);
-    REG(teamColor);
+    REG(fieldPlayerColor);
+    REG(goalkeeperColor);
+    REG(goalkeeper);
     REG(score);
     REG(penaltyShot);
     REG(singleShots);
@@ -76,7 +78,9 @@ Out& operator<<(Out& stream, const TeamInfo& teamInfo)
 {
   const RobotInfo(&players)[MAX_NUM_PLAYERS] = reinterpret_cast<const RobotInfo(&)[MAX_NUM_PLAYERS]>(teamInfo.players);
   STREAM_EXT(stream, teamInfo.teamNumber);
-  STREAM_EXT(stream, teamInfo.teamColor);
+  STREAM_EXT(stream, teamInfo.fieldPlayerColor);
+  STREAM_EXT(stream, teamInfo.goalkeeperColor);
+  STREAM_EXT(stream, teamInfo.goalkeeper);
   STREAM_EXT(stream, teamInfo.score);
   STREAM_EXT(stream, teamInfo.penaltyShot);
   STREAM_EXT(stream, teamInfo.singleShots);
@@ -95,7 +99,9 @@ In& operator>>(In& stream, TeamInfo& teamInfo)
 {
   RobotInfo(&players)[MAX_NUM_PLAYERS] = reinterpret_cast<RobotInfo(&)[MAX_NUM_PLAYERS]>(teamInfo.players);
   STREAM_EXT(stream, teamInfo.teamNumber);
-  STREAM_EXT(stream, teamInfo.teamColor);
+  STREAM_EXT(stream, teamInfo.fieldPlayerColor);
+  STREAM_EXT(stream, teamInfo.goalkeeperColor);
+  STREAM_EXT(stream, teamInfo.goalkeeper);
   STREAM_EXT(stream, teamInfo.score);
   STREAM_EXT(stream, teamInfo.penaltyShot);
   STREAM_EXT(stream, teamInfo.singleShots);

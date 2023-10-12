@@ -1,4 +1,5 @@
 .*
+!.gitattributes
 !.gitignore
 !.editorconfig
 *~
@@ -30,7 +31,6 @@ Thumbs.db
 !/Make/Linux/.idea/runConfigurations
 /Make/Windows/B-Human.lnk
 /Make/macOS/B-Human.xcodeproj
-/Make/Common/deploy-options.txt
 /Util/Buildchain/macOS/bin/cmake
 /Util/Buildchain/macOS/include
 /Util/Buildchain/macOS/lib

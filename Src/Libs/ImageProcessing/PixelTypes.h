@@ -17,21 +17,12 @@ namespace PixelTypes
     BGRA,             // the format that QImage uses
     YUYV,             // the format the NaoCamera supplies
     YUV,              // useful for DebugImages?
-    Colored,          // format of the colored image in ECImage
     Grayscale,        // format of the gray-scaled image in ECImage
     Hue,              // hue channel of a YHS image
     Binary,           //
     Edge2,            //
     Edge2MonoAvg,     //
     Edge2MonoAbsAvg,  //
-  });
-
-  ENUM(Color, // color classes for segmentation
-  {,
-    none,  // any color that is none of the others
-    white,
-    black,
-    field,
   });
 
   struct RGBPixel
@@ -159,10 +150,7 @@ namespace PixelTypes
     };
   };
 
-  using ColoredPixel = Color;
   using GrayscaledPixel = unsigned char;
-
-
 
   class HuePixel
   {
@@ -194,10 +182,9 @@ namespace PixelTypes
               : (type == YUYV ? sizeof(YUYVPixel)
                  : (type == YUV ? sizeof(YUVPixel)
                     : (type == Grayscale ? sizeof(GrayscaledPixel)
-                       : (type == Colored ? sizeof(ColoredPixel)
-                          : (type == Hue ? sizeof(HuePixel)
-                             : ((type == Edge2 || type == Edge2MonoAvg || type == Edge2MonoAbsAvg) ? sizeof(Edge2Pixel)
-                                : (type == Binary ? sizeof(BinaryPixel)
-                                   : 0))))))));
+                        : (type == Hue ? sizeof(HuePixel)
+                           : ((type == Edge2 || type == Edge2MonoAvg || type == Edge2MonoAbsAvg) ? sizeof(Edge2Pixel)
+                              : (type == Binary ? sizeof(BinaryPixel)
+                                 : 0)))))));
   }
 }

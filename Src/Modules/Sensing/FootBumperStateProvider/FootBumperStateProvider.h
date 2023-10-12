@@ -17,7 +17,6 @@
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/TorsoMatrix.h"
 #include "Math/Constants.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
@@ -35,7 +34,6 @@ MODULE(FootBumperStateProvider,
   REQUIRES(MotionInfo),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(TorsoMatrix),
   PROVIDES(FootBumperState),
   DEFINES_PARAMETERS(
   {,

@@ -1,27 +1,28 @@
 #!/bin/bash
-# Copies a B-Human distribution to a robot or creates an image file.
+# copies a bhuman distribution to a robot
 
 usage()
 {
   echo "usage: deploy [Release|Develop|Debug] [<ipaddress>|(-r <playernumber> <ipaddress>)*] {options}"
   echo "  options:"
-  echo "    -b                     restart bhuman"
-  echo "    -c <team color>        set team color to blue, red, yellow, black, white, orange, purple, brown, or gray"
-  echo "    -d                     delete logs or add timestamp to image"
-  echo "    -h | --help | /h | /?  print this text"
-  echo "    -i                     create image instead of deploying"
-  echo "    -k                     keep ip address for remote connection"
-  echo "    -l <location>          set location"
-  echo "    -m <magic number>      set magic number for teamcomm (0-255). Set -1 for random."
-  echo "    -nc                    never compile"
-  echo "    -nr                    do not check whether target is reachable"
-  echo "    -p <player number>     set player number"
-  echo "    -r <n> <ip>            copy to <ip> and set playernumber to <n> (one -r per robot)"
-  echo "    -s <scenario>          set scenario"
-  echo "    -t <team number>       set team number"
-  echo "    -u                     check for USB drive before starting (only when creating an image)"
-  echo "    -v <volume percent>    set NAO's volume"
-  echo "    -w <wireless profile>  set wireless profile"
+  echo "    -b                       restart bhuman"
+  echo "    -c <field player color>  set field player color to blue, red, yellow, black, white, orange, purple, brown, or gray"
+  echo "    -d                       delete logs or add timestamp to image"
+  echo "    -g <goalkeeper color>    set goalkeeper color to blue, red, yellow, black, white, orange, purple, brown, or gray"
+  echo "    -h | --help | /h | /?    print this text"
+  echo "    -i                       create image instead of deploying"
+  echo "    -k                       keep ip address for remote connection"
+  echo "    -l <location>            set location"
+  echo "    -m <magic number>        set magic number for teamcomm (0-255). Set -1 for random."
+  echo "    -nc                      never compile"
+  echo "    -nr                      do not check whether target is reachable"
+  echo "    -p <player number>       set player number"
+  echo "    -r <n> <ip>              copy to <ip> and set playernumber to <n> (one -r per robot)"
+  echo "    -s <scenario>            set scenario"
+  echo "    -t <team number>         set team number"
+  echo "    -u                       check for USB drive before starting (only when creating an image)"
+  echo "    -v <volume percent>      set NAO's volume"
+  echo "    -w <wireless profile>    set wireless profile"
   echo "  examples:"
   echo "    ./deploy Develop 192.168.5.14 -p 1"
   echo "    ./deploy Release -r 1 10.0.5.14 -r 3 10.0.0.2"
@@ -34,7 +35,8 @@ settingsReplacements()
   local SEDFLAGS=""
   [ ! -z $SCENARIO ] && SEDFLAGS="$SEDFLAGS -e 's/scenario =.*/scenario = $SCENARIO;/'"
   [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location =.*/location = $LOCATION;/'"
-  [ ! -z $COLOR ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $COLOR;/'"
+  [ ! -z $FIELDPLAYERCOLOR ] && SEDFLAGS="$SEDFLAGS -e 's/fieldPlayerColor =.*/fieldPlayerColor = $FIELDPLAYERCOLOR;/'"
+  [ ! -z $GOALKEEPERCOLOR ] && SEDFLAGS="$SEDFLAGS -e 's/goalkeeperColor =.*/goalkeeperColor = $GOALKEEPERCOLOR;/'"
   [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber =.*/playerNumber = $PLAYER;/'"
   [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $TEAM;/'"
   [ ! -z $MAGICNUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber =.*/magicNumber = $MAGICNUMBER;/'"
@@ -46,34 +48,34 @@ copy()
   REMOTE=`$RESOLVE <<<"$1"`
   PLAYER=$2
 
-  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 7 )) ); then
+  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 20 )) ); then
     echo "error: player number is $PLAYER!" >&2
     exit 1
   fi
 
   if [ ! -z $CHECK ]; then
-    if [ `ping ${pingoptions} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
+    if [ `ping ${PINGOPTIONS} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
       echo "$REMOTE not reachable" >&2
       exit 1
     fi
   fi
 
   echo "stopping bhuman"
-  ssh $sshoptions nao@$REMOTE "systemctl --user stop bhuman.service > /dev/null"
+  ssh $SSHOPTIONS nao@$REMOTE "systemctl --user stop bhuman.service > /dev/null"
 
   if [ ! -z $DELETELOGS ]; then
     echo "removing log files"
-    ssh $sshoptions nao@$REMOTE "rm -f /home/nao/logs/* > /dev/null"
+    ssh $SSHOPTIONS nao@$REMOTE "rm -f /home/nao/logs/* > /dev/null"
   fi
 
   echo "updating wireless profiles"
-  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $sshoptions" ../../Install/Profiles/. nao@$REMOTE:/home/nao/Profiles
+  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $SSHOPTIONS" ../../Install/Profiles/. nao@$REMOTE:/home/nao/Profiles
   #check if PROFILE is existent
   if [ -n "$PROFILE" ]; then
     if [ ! -r "../../Install/Profiles/$PROFILE" ]; then
       echo "wireless profile \"$PROFILE\" is not existent, that profile is not activated" >&2
     else
-      RESULT=`ssh $sshoptions nao@$REMOTE "/home/nao/bin/setprofile $PROFILE"`
+      RESULT=`ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setprofile $PROFILE"`
       if [ -n "$RESULT" ]; then
         if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
           RESULT=""
@@ -87,24 +89,26 @@ copy()
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0 ../../Config/. nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0 ../../Config/. nao@$REMOTE:/home/nao/Config
 
   # set playback volume and reset capture value to 75%
   echo "setting volume to $VOLUME%"
   CAPTURE_VOLUME=75
   echo "setting capture volume to $CAPTURE_VOLUME%"
-  ssh $sshoptions nao@$REMOTE "/home/nao/bin/setvolume $VOLUME $CAPTURE_VOLUME"
+  ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setvolume $VOLUME $CAPTURE_VOLUME"
 
   # set settings on robot
   SEDFLAGS="$(settingsReplacements)"
   if [ ! -z "$SEDFLAGS" ]; then
     echo "updating settings"
-    ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS -i /home/nao/Config/settings.cfg"
+    ssh $SSHOPTIONS nao@$REMOTE "sed $SEDFLAGS -i /home/nao/Config/settings.cfg"
+  else
+    ssh $SSHOPTIONS nao@$REMOTE "touch /home/nao/Config/settings.cfg"
   fi
 
   if [ ! -z $RESTART ]; then
     echo "starting bhuman"
-    ssh $sshoptions nao@$REMOTE "systemctl --user start bhuman.service > /dev/null"
+    ssh $SSHOPTIONS nao@$REMOTE "systemctl --user start bhuman.service > /dev/null"
   fi
 
   true
@@ -112,21 +116,21 @@ copy()
 
 set -e
 
-keySource=../../Install/Keys/id_rsa_nao
-keyFile=/tmp/id_rsa_nao
 if [ $(uname) == "Darwin" ]; then
-  pingoptions="-t 1 -c 1"
+  PINGOPTIONS="-t 1 -c 1"
 else
-  pingoptions="-w 1 -c 1"
+  PINGOPTIONS="-w 1 -c 1"
 fi
 
 cd "$(dirname "$(which "$0")")"
-cp -n $keySource $keyFile || true
+
+source ../Common/setupSSH
 
 # init variables
 CONFIG="Develop"
 PLAYER=
-COLOR=
+FIELDPLAYERCOLOR=
+GOALKEEPERCOLOR=
 TEAM=
 SCENARIO=
 LOCATION=
@@ -174,7 +178,11 @@ while true; do
       ;;
     "-c" | "/c")
       shift
-      COLOR=$1
+      FIELDPLAYERCOLOR=$1
+      ;;
+    "-g" | "/g")
+      shift
+      GOALKEEPERCOLOR=$1
       ;;
     "-t" | "/t")
       shift
@@ -248,8 +256,6 @@ elif [ -z "$IMAGE" -a ! -z "$REQUIREUSB" ]; then
   exit 1
 fi
 
-sshoptions="-c aes128-ctr -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
-
 if [ ! -z $SCENARIO ]; then
   if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
     if [ "$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})" != "" ]; then
@@ -285,10 +291,21 @@ if [ ! -z $MAGICNUMBER ]; then
   fi
   # calculate magic number from ip if -1
   if [ $MAGICNUMBER -le -1 ]; then
-    MAGICNUMBER=$(ifconfig 2>/dev/null \
-                  | grep -e "${REMOTE%.*}" \
-                  | head -n 1 \
-                  | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
+    if [ ! -z "$REMOTE" ]; then
+      IP="$REMOTE"
+    elif [ "$NUMMULTIPLE" -ne 0 ]; then
+      IP="${MULTIPLEDATA[1]}"
+    else
+      IP=
+    fi
+    if [ -z "$IP" ]; then
+      MAGICNUMBER=$(awk 'BEGIN{srand();print int(rand()*255) }')
+    else
+      MAGICNUMBER=$(ifconfig 2>/dev/null \
+                    | grep -e "${IP%.*}" \
+                    | head -n 1 \
+                    | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
+    fi
     if [ -z "$MAGICNUMBER" ]; then
       echo "error: cannot generate magic number (set one other than -1)."
       exit 1
@@ -303,12 +320,12 @@ chmod 600 $keyFile
 if [ ! -z $COMPILE ]; then
   if [ "`uname`" = "Darwin" ]; then
     # macOS
-    ./compile Nao $CONFIG
+    ../macOS/compile Nao $CONFIG
     [ $? -ne 0 ] && exit 1
   else
     # Linux (either native or WSL)
     echo "------ Compiling Nao ($CONFIG) ------"
-    cmake --build ../../Build/Linux/CMake/$CONFIG --target Nao --config $CONFIG
+    ( cd ../Linux; cmake --build ../../Build/Linux/CMake/$CONFIG --target Nao --config $CONFIG )
     [ $? -ne 0 ] && exit 1
     echo "------ Successfully compiled ------"
   fi
@@ -356,10 +373,12 @@ elif [ ! -z $REMOTE ]; then # deploy to a single robot
   fi
   copy $REMOTE $PLAYER
 else # try to deploy to multiple targets
+  trap "trap - SIGTERM && kill -- -$$ 2>/dev/null" SIGINT SIGTERM
   if [ "$NUMMULTIPLE" -ne 0 ]; then
     for ((i=0; i < NUMMULTIPLE; i+=2))
     do
-      copy ${MULTIPLEDATA[i+1]} ${MULTIPLEDATA[i]} | sed "s%^%[${MULTIPLEDATA[i+1]}] %" &
+      copy ${MULTIPLEDATA[i+1]} ${MULTIPLEDATA[i]} 2> >(sed "s%^%[${MULTIPLEDATA[i+1]}] %" >&2) \
+      | sed "s%^%[${MULTIPLEDATA[i+1]}] %" &
     done
     wait
   else

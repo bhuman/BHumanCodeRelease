@@ -39,14 +39,20 @@ SkillRequest PlayBall::smashOrPass(const Agent& self, const Agents& teammates)
   const float decisionPenalty = mapToRange(self.ballPosition.norm(), p.ballDistMaxPenalty, p.ballDistMinPenalty, p.maxPenalty, p.minPenalty);
 
   // Get the estimated probability of shooting a goal from the current ball position
+  // TODO: Use ballEndPosition instead?
   const Vector2f ballPosition = self.pose * self.ballPosition;
   float maxValue = theExpectedGoals.getRating(ballPosition);
+  float maxPassDistance = p.maxPassDistance;
+  if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
+  {
+    // Minimize the own goal rating because the rules do not allow this robot to perform a direct kick.
+    maxValue = p.minRating;
+    maxPassDistance = theGameState.isGoalKick() ? p.maxGoalKickDistance : p.maxFreeKickDistance;
+  }
   draw(ballPosition, goalPosition, goalPosition, maxValue, decisionPenalty, lastPassTarget > 0);
   // Apply the decision penalty when this action is different from the last frame
   if(lastPassTarget > 0)
     maxValue -= decisionPenalty;
-  if(p.alwaysPass)
-    maxValue = p.minRating;
   if(maxValue > p.shootThreshold)
   {
     lastPassTarget = -1;
@@ -61,9 +67,6 @@ SkillRequest PlayBall::smashOrPass(const Agent& self, const Agents& teammates)
       continue;
     Vector2f agentPosition = agent->currentPosition;
     const float passDistance = (agentPosition - ballPosition).norm();
-    float maxPassDistance = theGameState.isFreeKick() && theGameState.isForOwnTeam() ?
-                            (theGameState.isGoalKick() ? p.maxGoalKickDistance : p.maxFreeKickDistance) :
-                            p.maxPassDistance;
     if(passDistance < p.minPassDistance ||
        passDistance > maxPassDistance)
       continue;
@@ -103,6 +106,12 @@ SkillRequest PlayBall::smashOrPass(const Agent& self, const Agents& teammates)
   {
     lastPassTarget = passTarget->number;
     return SkillRequest::Builder::passTo(passTarget->number);
+  }
+  else if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
+  {
+    // Here, the pass skill request is set with an invalid pass target on purpose. This way, the waiting states of the pass skill are utilized during setplays. Outside of setplays, the shoot skill request is set and the robot will dribble immediately without waiting behind the ball.
+    lastPassTarget = -1;
+    return SkillRequest::Builder::passTo(0);
   }
   lastPassTarget = maxValue > p.minRating ? -1 : 0;
   return SkillRequest::Builder::shoot();

@@ -41,7 +41,7 @@ ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName,
     this->debugSender = new DebugSender<MessageQueue>(*this->debugReceiver, Communication::dummy);
   }
 
-  Global::theDebugOut = &this->debugSender->out;
+  Global::theDebugOut = this->debugSender;
 }
 
 ThreadFrame::~ThreadFrame()
@@ -55,7 +55,7 @@ ThreadFrame::~ThreadFrame()
 void ThreadFrame::setGlobals()
 {
   Global::theAnnotationManager = &annotationManager;
-  Global::theDebugOut = &debugSender->out;
+  Global::theDebugOut = debugSender;
   Global::theSettings = &settings;
   Global::theDebugRequestTable = &debugRequestTable;
   Global::theDebugDataTable = &debugDataTable;
@@ -99,14 +99,14 @@ void ThreadFrame::threadMain()
   terminate();
 }
 
-bool ThreadFrame::handleMessage(InMessage& message)
+bool ThreadFrame::handleMessage(MessageQueue::Message message)
 {
-  switch(message.getMessageID())
+  switch(message.id())
   {
     case idDebugRequest:
     {
       DebugRequest debugRequest;
-      message.bin >> debugRequest;
+      message.bin() >> debugRequest;
       Global::getDebugRequestTable().addRequest(debugRequest);
       return true;
     }
@@ -120,5 +120,6 @@ bool ThreadFrame::handleMessage(InMessage& message)
 
 void ThreadFrame::handleAllMessages(MessageQueue& messageQueue)
 {
-  messageQueue.handleAllMessages(*this);
+  for(MessageQueue::Message message : messageQueue)
+    handleMessage(message);
 }

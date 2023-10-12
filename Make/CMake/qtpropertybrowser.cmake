@@ -5,6 +5,7 @@ file(GLOB_RECURSE QTPROPERTYBROWSER_SOURCES CONFIGURE_DEPENDS
     "${QTPROPERTYBROWSER_ROOT_DIR}/*.qrc")
 
 add_library(qtpropertybrowser STATIC ${QTPROPERTYBROWSER_SOURCES})
+set_property(TARGET qtpropertybrowser PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET qtpropertybrowser PROPERTY AUTOMOC ON)
 set_property(TARGET qtpropertybrowser PROPERTY AUTORCC ON)
 set_property(TARGET qtpropertybrowser PROPERTY FOLDER Libs)

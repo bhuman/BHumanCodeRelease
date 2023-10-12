@@ -28,9 +28,9 @@ STREAMABLE(PotentialValue,
 STREAMABLE(FieldRating,
 {
   FUNCTION(PotentialValue(const float x, const float y, const bool calculateFieldDirection)) potentialFieldOnly;
-  FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) potentialWithRobotFacingDirection;
   FUNCTION(void(PotentialValue& pv, const float x, const float y, bool& teammateArea, const bool calculateFieldDirection, const int passTarget)) potentialOverall;
   FUNCTION(void(PotentialValue& pv, const PotentialValue& ballNear)) removeBallNearFromTeammatePotential;
   FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) duelBallNearPotential;
-  FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) getObstaclePotential,
+  FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) getObstaclePotential;
+  FUNCTION(std::vector<Vector2f>()) getPossiblePassTargets,
 });

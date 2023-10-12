@@ -1,0 +1,131 @@
+<Simulation>
+
+  <Include href="../Includes/NaoV6H25.rsi2"/>
+  <Include href="../Includes/Ball2016SPL.rsi2"/>
+  <Include href="../Includes/Field2020SPL.rsi2"/>
+
+  <Compound name="robots">
+    <Body ref="Nao" name="robot5">
+      <Translation x="0" z="320mm"/>
+      <Rotation z="270degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+  </Compound>
+
+   <Compound name="kickInBlue">
+      <ComplexAppearance>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
+        <Vertices>
+          0 -0.96 0
+          0 0.35 0
+          0 0.35 1.9
+          0 -0.96 1.9
+        </Vertices>
+        <Quads>
+          0 1 2 3
+        </Quads>
+        <TexCoords>
+          0 0
+          1 0
+          1 1
+          0 1
+        </TexCoords>
+      </ComplexAppearance>
+    </Compound>
+
+    <Compound name="kickInRed">
+      <ComplexAppearance>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
+        <Vertices>
+          0 -0.35 0
+          0 0.96 0
+          0 0.96 1.9
+          0 -0.35 1.9
+        </Vertices>
+        <Quads>
+          0 1 2 3
+        </Quads>
+        <TexCoords>
+          1 0
+          0 0
+          0 1
+          1 1
+        </TexCoords>
+      </ComplexAppearance>
+    </Compound>
+
+    <Compound name="pushingFreeKickBlue">
+      <ComplexAppearance>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
+        <Vertices>
+          0 -0.96 0
+          0 0.35 0
+          0 0.35 1.9
+          0 -0.96 1.9
+        </Vertices>
+        <Quads>
+          0 1 2 3
+        </Quads>
+        <TexCoords>
+          1 0
+          0 0
+          0 1
+          1 1
+        </TexCoords>
+      </ComplexAppearance>
+    </Compound>
+
+    <Compound name="pushingFreeKickRed">
+      <ComplexAppearance>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
+        <Vertices>
+          0 -0.35 0
+          0 0.96 0
+          0 0.96 1.9
+          0 -0.35 1.9
+        </Vertices>
+        <Quads>
+          0 1 2 3
+        </Quads>
+        <TexCoords>
+          0 0
+          1 0
+          1 1
+          0 1
+        </TexCoords>
+      </ComplexAppearance>
+    </Compound>
+
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="teams">
+      <Compound name="B-Human">
+        <Compound name="5"/>
+        <Compound name="black"/>
+        <Compound name="purple"/>
+      </Compound>
+      <Compound name="B-Team">
+        <Compound name="70"/>
+        <Compound name="red"/>
+        <Compound name="blue"/>
+      </Compound>
+    </Compound>
+
+    <Compound ref="robots"/>
+
+    <Compound ref="field"/>
+
+      <Compound name="balls">
+        <Body ref="ball">
+          <Translation y="-1m" z="1m"/>
+        </Body>
+    </Compound>
+
+    <Compound name="scenarios">
+      <Compound name="AnyPlaceDemo"/>
+    </Compound>
+
+  </Scene>
+</Simulation>

@@ -30,9 +30,7 @@
  *
  * In the implementation file, the existence of the module has to be announced:
  *
- * MAKE_MODULE(MyImageProcessor, perception)
- *
- * The second parameter defines a category that is used to group modules.
+ * MAKE_MODULE(MyImageProcessor)
  *
  * @author Thomas Röfer
  */
@@ -53,19 +51,6 @@
 class ModuleBase
 {
 public:
-  ENUM(Category,
-  {,
-    infrastructure,
-    perception,
-    communication,
-    modeling,
-    behaviorControl,
-    sensing,
-    motionControl,
-  });
-
-  static const unsigned char numOfCategories = numOfCategorys;
-
   class Info
   {
   public:
@@ -118,7 +103,6 @@ private:
   static ModuleBase* first; /**< The head of the list of all modules available. */
   ModuleBase* next; /**< The next entry in the list of all modules. */
   const char* name; /**< The name of the module that can be created by this instance. */
-  Category category; /**< The category of this module. */
   std::vector<Info> (*getModuleInfo)(); /**< A function that returns information about the requirements and provisions of the module. */
 
 protected:
@@ -132,18 +116,17 @@ public:
   /**
    * Constructor.
    * @param name The name of the module that can be created by this instance.
-   * @param category The category of this module.
    * @param getModuleInfo The function that returns the module info.
    */
-  ModuleBase(const char* name, Category category, std::vector<Info> (*getModuleInfo)()) noexcept :
-    next(first), name(name), category(category), getModuleInfo(getModuleInfo)
+  ModuleBase(const char* name, std::vector<Info> (*getModuleInfo)()) noexcept :
+    next(first), name(name), getModuleInfo(getModuleInfo)
   {
     first = this;
   }
 
   friend class ModuleGraphCreator; /**< The ModuleGraphCreator gathers all private data. */
   friend class ModuleGraphRunner; /**< To create new modules. */
-  friend class Debug; /**< To send the ModuleTabe. */
+  friend class Debug; /**< To send the ModuleTable. */
 };
 
 /**
@@ -179,8 +162,8 @@ public:
    * @param category The category of this module.
    * @param getModuleInfo The function that returns the module info.
    */
-  Module(const char* name, Category category, std::vector<ModuleBase::Info> (*getModuleInfo)()) noexcept :
-    ModuleBase(name, category, getModuleInfo)
+  Module(const char* name, std::vector<ModuleBase::Info> (*getModuleInfo)()) noexcept :
+    ModuleBase(name, getModuleInfo)
   {}
 };
 
@@ -608,21 +591,20 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
   _MODULE_I(name, _MODULE_TUPLE_SIZE(__VA_ARGS__), (header), __VA_ARGS__)
 
 /**
- * MAKE_MODULE(module, category [, getModuleInfo])
+ * MAKE_MODULE(module [, getModuleInfo])
  *
  * The macro creates a creator for the module.
  * See beginning of this file.
  * It has to be part of the implementation file.
- * @param module The name of the module that can be created.
- * Second parameter: The category of this module.
- * Optional third parameter: A function that provides the dependencies of the
+ * First parameter: The name of the module that can be created.
+ * Optional second parameter: A function that provides the dependencies of the
  * module. It is only required if the module wants do define more dependencies
  * than already defined inside the MODULE macro. The function has to query the
  * pre-defined dependencies from the static function getModuleInfo of the base
  * class of the module and return an extended version of that data.
  */
-#define MAKE_MODULE(module, ...) _MAKE_MODULE_I(module, _STREAM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
-#define _MAKE_MODULE_I(module, n, ...) _MAKE_MODULE_II((_MAKE_MODULE_, n), module, __VA_ARGS__)
+#define MAKE_MODULE(...) _MAKE_MODULE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
+#define _MAKE_MODULE_I(n, ...) _MAKE_MODULE_II((_MAKE_MODULE_, n), __VA_ARGS__)
 #define _MAKE_MODULE_II(param, ...) _STREAM_JOIN param (__VA_ARGS__)
-#define _MAKE_MODULE_1(module, category) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, module##Base::getModuleInfo)
-#define _MAKE_MODULE_2(module, category, getModuleInfo) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, getModuleInfo)
+#define _MAKE_MODULE_1(module) Module<module, module##Base> the##module##Module(#module, module##Base::getModuleInfo)
+#define _MAKE_MODULE_2(module, getModuleInfo) Module<module, module##Base> the##module##Module(#module, getModuleInfo)

@@ -287,3 +287,22 @@ void KickEngineParameters::initFirstPhaseLoop(const Vector3f* origins, const Vec
   phaseParameters[0].comOriginOffset = Vector2f::Zero();
   phaseParameters[0].headOrigin = head;
 }
+
+float KickEngineParameters::getArmCompensationRatio(const int phaseNumber, const float phase)
+{
+  // No interpolation active -> 0
+  if(armBalancing.startAndEndKeyframe.min > phaseNumber || armBalancing.startAndEndKeyframe.max < phaseNumber)
+    return 0.f;
+  Rangef startEndRatios(-1.f, 0.f);
+  // Start of balancing -> interpolate from 0 to 1
+  if(armBalancing.startAndEndKeyframe.min == phaseNumber)
+    startEndRatios = Rangef(0.f, armBalancing.startAndEndRatio.min);
+  // End of balancing -> interpolate from 1 to 0
+  else if(armBalancing.startAndEndKeyframe.max == phaseNumber)
+    startEndRatios = Rangef(0.f, armBalancing.startAndEndRatio.max);
+  float armRatio = mapToRange(phase, startEndRatios.min, startEndRatios.max, 0.f, 1.f);
+  // Flip value
+  if(armBalancing.startAndEndKeyframe.max == phaseNumber)
+    armRatio = 1.f - armRatio;
+  return armRatio;
+}

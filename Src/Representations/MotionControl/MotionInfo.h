@@ -10,6 +10,7 @@
 
 #include "Representations/Configuration/KickInfo.h"
 #include "Representations/MotionControl/KeyframeMotionRequest.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Math/BHMath.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Streaming/AutoStreamable.h"
@@ -51,7 +52,7 @@ STREAMABLE(MotionInfo,
   (unsigned int)(0) lastStandTimeStamp, /**< Timestamp when last stand started. */
   (unsigned int)(0) lastMotionPhaseStarted, /**< Timestamp when last motion phase started. */
 
-  (bool)(true) walkPhaseIsLeftPhase, /** If the current motion phase is a walk phase, then is the current phase a left swing phase? */
+  (bool)(true) walkPhaseIsLeftPhase, /**< If the current motion phase is a walk phase, then is the current phase a left swing phase? */
 
   // kick or walk-kick phase
   (unsigned)(0) lastKickTimestamp, /**< The timestamp of the most recently finished kick. */
@@ -62,4 +63,7 @@ STREAMABLE(MotionInfo,
 
   // keyframe motion phase
   (KeyframeMotionRequest) executedKeyframeMotion, /**< The specific type of keyframe motion. */
+
+  (OdometryData) odometryAtLastPhaseSwitch,
+  (OdometryTranslationRequest) odometryRequestAtLastPhaseSwitch,
 });

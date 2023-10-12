@@ -11,6 +11,7 @@
 #include "Math/Angle.h"
 #include "Math/Eigen.h"
 #include "Streaming/AutoStreamable.h"
+#include <vector>
 
 /**
  * @struct FieldLines
@@ -28,6 +29,7 @@ STREAMABLE(FieldLines,
     (float) length,   /**< Distance between first and last point. Redundant but useful information */
     (Vector2f) first, /**< The starting point of this line in field coordinates relative to the robot */
     (Vector2f) last,  /**< The end point of this line in field coordinates relative to the robot */
+    (Matrix2f) cov,   /**< Covariance of the line measurement, currently based on the center of the line */
   });
 
   /** The method draws the lines to image/field/3D scene. */

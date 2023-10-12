@@ -10,7 +10,7 @@
 #include "Platform/SystemCall.h"
 #include "Debugging/Modify.h"
 
-MAKE_MODULE(SoundFileTester, infrastructure);
+MAKE_MODULE(SoundFileTester);
 
 void SoundFileTester::update(DummyRepresentation& dummyRepresentation)
 {

@@ -37,7 +37,6 @@ MODULE(WalkToPoseEngine,
                                                     then slow down. */
     (float)(0.25f) reduceForwardStepLowerThreshold, /**< If after the next step the forward step distance is below this forward step size
                                                     relative to the forward max speed (in %), then slow down. */
-    (Rangea)(-50_deg, 50_deg) maxTargetFocusAngle,
     (float)(230.f) useReferenceMaxForwardSpeed,
   }),
 });
@@ -63,6 +62,6 @@ class WalkToPoseEngine : public WalkToPoseEngineBase
   std::unique_ptr<MotionPhase> createPhase(const Pose2f& targetInSCS, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                            const Pose2f& walkSpeed, bool isLeftPhase, bool keepTargetRotation,
                                            const MotionPhase& lastPhase, const bool isFastWalkAllowed,
-                                           const std::optional<Vector2f>& targetOfInterest, const bool sideWalkAllowed,
-                                           const bool forceSideWalk, const bool doNotForceDiagonalWalk) const;
+                                           const std::optional<Vector2f>& targetOfInterest,
+                                           const bool forceSideWalk, const bool isSideWalkAllowed, const bool useModTarget) const;
 };

@@ -36,6 +36,8 @@ private:
   std::vector<SimRobot::Object*> secondTeamRobots; /**< The simulated robots in the second team (excluding this robot). */
   mutable Vector3f lastBallPosition; /**< The ball position at the time when \c getWorldState was called last. */
   mutable unsigned lastBallTime = 0; /**< The simulated time when \c getWorldState was called last. */
+  mutable bool hadVelocity = false;
+  mutable Angle curveVel = 0_deg;
 
 protected:
   static SimRobot::Object* ball; /**< The simulated ball. */
@@ -202,7 +204,7 @@ public:
    */
   static int getNumber(const SimRobot::Object* obj);
 
-  static constexpr int robotsPerTeam = 7; /**< Actually the offset of the second team's robot object numbers in the simulation scene. */
+  static constexpr int robotsPerTeam = 20; /**< Actually the offset of the second team's robot object numbers in the simulation scene. */
 
 protected:
   /**

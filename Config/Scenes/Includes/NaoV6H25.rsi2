@@ -2,7 +2,7 @@
   <Body name="Nao"> <!-- Torso -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="black"/>
+    <Set name="NaoColor" value="skin"/>
 
     <InertiaMatrixMass value="1049.56g" x="-4.13mm" z="43.42mm"
       ixx="5062341.69g*mm^2" ixy="14311.60g*mm^2" ixz="155190.83g*mm^2"
@@ -96,7 +96,7 @@
       <Translation y="98mm" z="100mm"/><!-- ShoulderOffsetY, ShoulderOffsetZ -->
       <Axis y="1.0">
         <Deflection min="-119.5degree" max="119.5degree"/>
-        <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
       </Axis>
       <Body name="LShoulder">
 
@@ -109,7 +109,7 @@
         <Hinge name="LShoulderRoll">
           <Axis z="1.0">
             <Deflection min="-18degree" max="76degree"/>
-            <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
+            <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
           </Axis>
           <Body name="LUpperArm">
 
@@ -128,7 +128,7 @@
               <Translation x="105mm" y="15mm"/><!-- UpperArmLength, ElbowOffsetY -->
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
-                <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+                <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
               </Axis>
               <Body name="LElbow">
 
@@ -139,7 +139,7 @@
                 <Hinge name="LElbowRoll">
                   <Axis z="1.0">
                     <Deflection min="-88.5degree" max="-2degree"/>
-                    <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
+                    <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
                   </Axis>
                   <Body name="LLowerArm">
 
@@ -158,7 +158,7 @@
                       <Translation x="55.95mm"/><!-- LowerArmLength -->
                       <Axis x="1.0">
                         <Deflection min="-104.5degree" max="104.5degree"/>
-                        <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+                        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
                       </Axis>
 
                       <Body name="LWrist">
@@ -187,7 +187,7 @@
       <Translation y="-98mm" z="100mm"/><!-- -ShoulderOffsetY, ShoulderOffsetZ -->
       <Axis y="1.0">
         <Deflection min="-119.5degree" max="119.5degree"/>
-        <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
       </Axis>
       <Body name="RShoulder">
 
@@ -200,7 +200,7 @@
         <Hinge name="RShoulderRoll">
           <Axis z="1.0">
             <Deflection min="-76degree" max="18degree"/>
-            <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
+            <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
           </Axis>
           <Body name="RUpperArm">
 
@@ -219,7 +219,7 @@
               <Translation x="105mm" y="-15mm"/><!-- UpperArmLength, ElbowOffsetY -->
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
-                <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+                <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
               </Axis>
               <Body name="RElbow">
 
@@ -230,7 +230,7 @@
                 <Hinge name="RElbowRoll">
                   <Axis z="1.0">
                     <Deflection min="2degree" max="88.5degree"/>
-                    <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
+                    <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
                   </Axis>
                   <Body name="RLowerArm">
 
@@ -249,7 +249,7 @@
                       <Translation x="55.95mm"/><!-- LowerArmLength -->
                       <Axis x="1.0">
                         <Deflection min="-104.5degree" max="104.5degree"/>
-                        <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+                        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
                       </Axis>
 
                       <Body name="RWrist">
@@ -278,7 +278,7 @@
       <Translation y="50mm" z="-85mm"/><!-- HipOffsetY, HipOffsetZ -->
       <Axis y="0.7" z="-0.7">
         <Deflection min="-65.62degree" max="42.44degree"/>
-        <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+        <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
       </Axis>
       <Body name="LHip1">
 
@@ -291,7 +291,7 @@
         <Hinge name="LHipRoll">
           <Axis x="1.0">
             <Deflection min="-21.74degree" max="45.29degree"/>
-            <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
           </Axis>
           <Body name="LHip2">
 
@@ -308,7 +308,7 @@
             <Hinge name="LHipPitch">
               <Axis y="1.0">
                 <Deflection min="-88degree" max="27.73degree"/>
-                <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                <ServoMotor maxVelocity="330degree/s" maxForce="16" p="80.0" i="50.0"/>
               </Axis>
               <Body name="LThigh">
 
@@ -327,7 +327,7 @@
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
                     <Deflection min="-5.29degree" max="121.04degree"/>
-                    <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                    <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
                   </Axis>
                   <Body name="LTibia">
 
@@ -346,7 +346,7 @@
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
                         <Deflection min="-68.15degree" max="52.86degree"/>
-                        <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                        <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
                       </Axis>
                       <Body name="LAnkle">
 
@@ -359,7 +359,7 @@
                         <Hinge name="LAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-22.79degree" max="44.06degree"/>
-                            <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+                            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
                           </Axis>
                           <Body name="LFoot">
 
@@ -390,7 +390,7 @@
       <Translation y="-50mm" z="-85mm"/><!-- -HipOffsetY, HipOffsetZ -->
       <Axis y="0.7" z="0.7">
         <Deflection min="-65.62degree" max="42.44degree"/>
-        <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+        <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
       </Axis>
       <Body name="RHip1">
 
@@ -403,7 +403,7 @@
         <Hinge name="RHipRoll">
           <Axis x="1.0">
             <Deflection min="-45.29degree" max="21.74degree"/>
-            <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
           </Axis>
 
           <Body name="RHip2">
@@ -421,7 +421,7 @@
             <Hinge name="RHipPitch">
               <Axis y="1.0">
                 <Deflection min="-88degree" max="27.73degree"/>
-                <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                <ServoMotor maxVelocity="330degree/s" maxForce="16" p="80.0" i="50.0"/>
               </Axis>
               <Body name="RThigh">
 
@@ -440,7 +440,7 @@
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
                     <Deflection min="-5.90degree" max="121.47degree"/>
-                    <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                    <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
                   </Axis>
                   <Body name="RTibia">
 
@@ -459,7 +459,7 @@
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
                         <Deflection min="-67.97degree" max="53.40degree"/>
-                        <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
+                        <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
                       </Axis>
                       <Body name="RAnkle">
 
@@ -472,7 +472,7 @@
                         <Hinge name="RAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-44.06degree" max="22.80degree"/>
-                            <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
+                            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
                           </Axis>
                           <Body name="RFoot">
 
@@ -502,7 +502,7 @@
   <Body name="NaoDummy"><!-- A box that looks like a Nao -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="black"/>
+    <Set name="NaoColor" value="skin"/>
 
     <BoxGeometry depth="100mm" width="200mm" height="566mm">
       <Translation x="5mm" z="-50mm"/>
@@ -599,19 +599,17 @@
     </Appearance>
   </Body>
 
+  <Surface name="nao-skin" diffuseColor="rgb(50%, 50%, 50%)" ambientColor="rgb(60%, 60%, 60%)"/>
+  <Surface name="nao-red" diffuseColor="rgb(100%, 0%, 0%)" ambientColor="rgb(80%, 0%, 0%)"/>
+  <Surface name="nao-blue" diffuseColor="rgb(0%, 60%, 80%)" ambientColor="rgb(0%, 48%, 64%)"/>
+  <Surface name="nao-yellow" diffuseColor="rgb(100%, 100%, 0%)" ambientColor="rgb(80%, 80%, 0%)"/>
   <Surface name="nao-black" diffuseColor="rgb(0%, 0%, 0%)" ambientColor="rgb(0%, 0%, 0%)"/>
-  <Surface name="nao-blue" diffuseColor="rgb(0%, 100%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
-  <Surface name="nao-dblue" diffuseColor="rgb(0%, 40%, 100%)" ambientColor="rgb(0%, 12%, 20%)"/>
-  <Surface name="nao-magenta" diffuseColor="rgb(100%, 0%, 100%)" ambientColor="rgb(20%, 12%, 12%)"/>
-  <Surface name="nao-red" diffuseColor="rgb(100%, 0%, 0%)" ambientColor="rgb(20%, 12%, 12%)"/>
-  <Surface name="nao-hgray" diffuseColor="rgb(30%, 30%, 30%)" ambientColor="rgb(20%, 20%, 20%)"/>
-
-  <Surface name="nao-yellow" diffuseColor="rgb(100%, 100%, 0%)" ambientColor="rgb(20%, 12%, 12%)"/>
-  <Surface name="nao-white" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(42%, 42%, 42%)"/>
-  <Surface name="nao-green" diffuseColor="rgb(5%, 61%, 0%)" ambientColor="rgb(42%, 42%, 42%)"/>
-  <Surface name="nao-orange" diffuseColor="rgb(100%, 51%, 0%)" ambientColor="rgb(47%, 24%, 0%)"/>
-  <Surface name="nao-purple" diffuseColor="rgb(46%, 0%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
-  <Surface name="nao-brown" diffuseColor="rgb(42%, 19%, 9%)" ambientColor="rgb(20%, 12%, 12%)"/>
+  <Surface name="nao-white" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(80%, 80%, 80%)"/>
+  <Surface name="nao-green" diffuseColor="rgb(0%, 80%, 0%)" ambientColor="rgb(0%, 64%, 0%)"/>
+  <Surface name="nao-orange" diffuseColor="rgb(100%, 50%, 0%)" ambientColor="rgb(80%, 40%, 0%)"/>
+  <Surface name="nao-purple" diffuseColor="rgb(80%, 0%, 100%)" ambientColor="rgb(64%, 0%, 80%)"/>
+  <Surface name="nao-brown" diffuseColor="rgb(50%, 20%, 0%)" ambientColor="rgb(40%, 16%, 0%)"/>
+  <Surface name="nao-gray" diffuseColor="rgb(50%, 50%, 50%)" ambientColor="rgb(40%, 40%, 40%)"/>
 
   <Surface name="NaoMat_SecondarySkin_pantone445C" diffuseColor="rgb(25%, 27%, 28%)" ambientColor="rgb(31%, 34%, 35%)" specularColor="rgb(50%, 50%, 50%)" shininess="12.5"/>
   <Surface name="NaoMat_Buton_nao_pantone445C" diffuseColor="rgb(25%, 27%, 28%)" ambientColor="rgb(31%, 34%, 35%)" specularColor="rgb(50%, 50%, 50%)" shininess="12.5" diffuseTexture="../Textures/nao_torso_button_nao.png"/>

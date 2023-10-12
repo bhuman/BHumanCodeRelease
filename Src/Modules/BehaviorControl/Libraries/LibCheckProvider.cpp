@@ -10,7 +10,7 @@
 
 #include "LibCheckProvider.h"
 
-MAKE_MODULE(LibCheckProvider, behaviorControl);
+MAKE_MODULE(LibCheckProvider);
 
 void LibCheckProvider::update(LibCheck& libCheck)
 {

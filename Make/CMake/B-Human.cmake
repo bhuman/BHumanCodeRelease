@@ -12,13 +12,12 @@ file(GLOB BHUMAN_OPTIMIZED_SOURCES CONFIGURE_DEPENDS
 list(APPEND BHUMAN_OPTIMIZED_SOURCES
     "${BHUMAN_ROOT_DIR}/Modules/BehaviorControl/FieldRatingProvider/FieldRatingProvider.h" "${BHUMAN_ROOT_DIR}/Modules/BehaviorControl/FieldRatingProvider/FieldRatingProvider.cpp"
     "${BHUMAN_ROOT_DIR}/Representations/Sensing/RobotModel.cpp" "${BHUMAN_ROOT_DIR}/Representations/Sensing/RobotModel.h")
-if(NOT ${PLATFORM} STREQUAL Windows)
+if(NOT WINDOWS)
   list(APPEND BHUMAN_OPTIMIZED_SOURCES
       "${BHUMAN_ROOT_DIR}/Modules/MotionControl/HeadMotionEngine/HeadMotionEngine.cpp" "${BHUMAN_ROOT_DIR}/Modules/MotionControl/HeadMotionEngine/HeadMotionEngine.h"
       "${BHUMAN_ROOT_DIR}/Modules/MotionControl/WalkingEngine/WalkingEngine.cpp" "${BHUMAN_ROOT_DIR}/Modules/MotionControl/WalkingEngine/WalkingEngine.h"
       "${BHUMAN_ROOT_DIR}/Modules/Perception/FieldPerceptors/LinePerceptor.cpp" "${BHUMAN_ROOT_DIR}/Modules/Perception/FieldPerceptors/LinePerceptor.h"
       "${BHUMAN_ROOT_DIR}/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Perception/ImagePreprocessors/ECImageProvider.h"
-      "${BHUMAN_ROOT_DIR}/Modules/Perception/PlayersPerceptors/JerseyClassifierProvider2020.cpp" "${BHUMAN_ROOT_DIR}/Modules/Perception/PlayersPerceptors/JerseyClassifierProvider2020.h"
       "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.h"
       "${BHUMAN_ROOT_DIR}/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Sensing/InertialDataProvider/InertialDataProvider.h"
       "${BHUMAN_ROOT_DIR}/Tools/Modeling/UKFPose2D.cpp" "${BHUMAN_ROOT_DIR}/Tools/Modeling/UKFPose2D.h")
@@ -38,7 +37,7 @@ set(BHUMAN_PCHS
     <list>
     <sstream>)
 
-if(APPLE AND BUILD_DESKTOP)
+if(MACOS AND BUILD_DESKTOP)
   add_library(B-Human-Optimized${TARGET_SUFFIX} OBJECT ${BHUMAN_OPTIMIZED_SOURCES})
   set_property(TARGET B-Human-Optimized${TARGET_SUFFIX} PROPERTY FOLDER "Libs/${TARGET_SUFFIX}")
   set_property(TARGET B-Human-Optimized${TARGET_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -53,7 +52,7 @@ if(APPLE AND BUILD_DESKTOP)
   target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PRIVATE Debugging${TARGET_SUFFIX})
   target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PRIVATE Framework${TARGET_SUFFIX})
   target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PRIVATE CompiledNN::ONNX)
-  target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
+  target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PUBLIC asmjit${TARGET_SUFFIX})
 
   target_link_libraries(B-Human-Optimized${TARGET_SUFFIX} PRIVATE Flags::Default)
   target_precompile_headers(B-Human-Optimized${TARGET_SUFFIX} PRIVATE ${BHUMAN_PCHS})
@@ -63,7 +62,7 @@ endif()
 
 add_library(B-Human${TARGET_SUFFIX} OBJECT ${BHUMAN_SOURCES})
 if(BUILD_DESKTOP)
-  if(APPLE)
+  if(MACOS)
     target_sources(B-Human${TARGET_SUFFIX} INTERFACE $<TARGET_OBJECTS:B-Human-Optimized${TARGET_SUFFIX}>)
     target_link_libraries(B-Human${TARGET_SUFFIX} PUBLIC B-Human-Optimized${TARGET_SUFFIX})
   else()
@@ -90,8 +89,10 @@ if(BUILD_DESKTOP)
   set_property(TARGET B-Human${TARGET_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE ON)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE FFTW::FFTW FFTW::FFTWF)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE libjpeg::libjpeg)
-  if(NOT ${PLATFORM} STREQUAL macOSarm64)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
+  if(X86)
+    if(NOT MACOS)
+      target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
+    endif()
     target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE CompiledNN${TARGET_SUFFIX})
   endif()
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE CompiledNN::ONNX)
@@ -109,6 +110,7 @@ else()
   target_compile_options(B-Human${TARGET_SUFFIX} PRIVATE $<$<CONFIG:Develop>:-UNDEBUG> $<$<CONFIG:Release>:-Wno-unused>)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Flags::Default)
 endif()
+target_link_libraries(B-Human${TARGET_SUFFIX} PUBLIC GameController::GameController)
 target_compile_definitions(B-Human${TARGET_SUFFIX} PRIVATE CONFIGURATION=$<CONFIG>) # for RobotHealthProvider
 
 target_precompile_headers(B-Human${TARGET_SUFFIX} PUBLIC ${BHUMAN_PCHS})

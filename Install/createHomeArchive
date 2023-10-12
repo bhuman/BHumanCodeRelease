@@ -111,8 +111,8 @@ done
 
 echo "${playbackVolume}" >"${homeDir}/nao/.config/volume"
 
-# /home/nao/robocup.conf
-touch "${homeDir}/nao/robocup.conf"
+# /home/nao/robocup.conf and a flag to touch some files during first bootup
+touch "${homeDir}/nao/robocup.conf" "${homeDir}/nao/touchfiles"
 
 # /home/nao/bin
 cp -r "${installDir}/Files/bin" "${homeDir}/nao"
@@ -127,7 +127,7 @@ sed -e "s/^/        /" "${installDir}/Profiles/${wirelessProfile}" >"${homeDir}/
 mkdir -p "${homeDir}/nao/logs"
 
 # /home/nao/Config
-rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -r "${bhDir}/Build/Linux/Nao/${buildConfiguration}/bhuman" "${bhDir}/Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0" "${bhDir}/Config/." "${homeDir}/nao/Config"
+rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -r "${bhDir}/Build/Linux/Nao/${buildConfiguration}/bhuman" "${bhDir}/Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0" "${bhDir}/Config/." "${homeDir}/nao/Config"
 
 # /home/nao/.config/{hostname,wiredIP,wirelessIP}
 echo "${defaultHostname}" >"${homeDir}/nao/.config/hostname"

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "Math/Eigen.h"
-#include <Graphics/OpenGL.h>
+#include <qopengl.h>
 #include <SimRobotCore2.h>
 #include <unordered_map>
 #include <vector>

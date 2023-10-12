@@ -7,81 +7,72 @@
 
 #pragma once
 
-#include <QtVariantEditorFactory>
+#include <qtvariantproperty.h>
 #include <QMap>
 #include <QDoubleSpinBox>
-#include <QSpinBox>
 #include "DataView.h"
 
-class AngleEditor;
+class QComboBox;
 
 /**
- * The class fixes the strange behavior that QSpinBox accepts the decimal
- * point, but ignoring it when converting the text to int ("1.0" -> 10).
- * The implementation in this class truncates everything after the decimal
- * point instead.
+ * This class creates spin box that handles both integer and floating point
+ * values. It rejects group separators (',') as well as '.', 'e', and 'E' if it edits
+ * a integer value, i.e. decimals() == 0.. It assumes that the current locale
+ * is 'C', i.e. '.' represents the decimal point and ',' would represent the
+ * group separator.
  */
-class IntSpinBox : public QSpinBox
+class SpinBox : public QDoubleSpinBox
 {
   Q_OBJECT
 
 protected:
-  QValidator::State validate(QString& input, int& pos) const
-  {
-    while(true)
-    {
-      auto index = input.indexOf('.');
-      if(index == -1)
-        break;
-      input = input.left(index) + input.mid(index + 1);
-      if(pos > index)
-        --pos;
-    }
-    return QSpinBox::validate(input, pos);
-  }
+  /**
+   * Convert a value to a string and  remove trailing zeros and a trailing decimal point.
+   * @value The value to be converted.
+   * @return The string representation of the value.
+   */
+  QString textFromValue(double value) const;
+
+  /**
+   * Validate the input string. Group separators are removed (',') as well as '.', 'e', and
+   * 'E'  if this represents an integer value.
+   * @param input The string to be validated. It might be modified.
+   * @param pos The current cursor position in the string. It might be modified.
+   * @return Is the string valid?
+   */
+  QValidator::State validate(QString& input, int& pos) const;
 
 public:
-  IntSpinBox(QWidget* parent) : QSpinBox(parent) {}
+  /** Use the same constructors as the super class. */
+  using QDoubleSpinBox::QDoubleSpinBox;
 };
 
-/**
- * The class fixes the strange behavior that QDoubleSpinBox sometimes
- * expects the decimal point symbol according to the locale and ignores
- * the dot, and sometimes expects the dot. In addition, trailing zeros
- * are removed.
- * The class also fixes that values starting with a decimal points are
- * not allowed, which is annoying while editing a number.
- */
-class FloatSpinBox : public QDoubleSpinBox
+class AngleEditor : public QWidget
 {
-  Q_OBJECT
-
-protected:
-  QString textFromValue(double value) const
-  {
-    QString text = QString("%1").arg(value, 0, 'f', 5); // avoid exponents
-    while(text.size() > 1 && text.contains('.') && (text.endsWith('0') || text.endsWith('.'))) // remove trailing '0's
-      text = text.left(text.size() - 1);
-    return text;
-  }
-
-  double valueFromText(const QString& text) const
-  {
-    return text.toFloat();
-  }
-
-  /** Accept numbers such as ".17" */
-  QValidator::State validate(QString& input, int& pos) const
-  {
-    QValidator::State state = QDoubleSpinBox::validate(input, pos);
-    if(state != QValidator::Invalid || input.isEmpty() || input[0] != '.')
-      return state;
-    QString temp = "0" + input;
-    return QDoubleSpinBox::validate(temp, pos);
-  }
+  Q_OBJECT;
+  QComboBox* unitBox;
 
 public:
-  FloatSpinBox(QWidget* parent = nullptr) : QDoubleSpinBox(parent) {}
+  SpinBox* spinBox;
+
+  AngleEditor(QWidget* parent = nullptr);
+
+  void setValue(const AngleWithUnit& value);
+
+signals:
+  void valueChanged(float value);
+  void unitChanged(int index);
+
+private slots:
+  void updateValue(double value)
+  {
+    emit valueChanged(static_cast<float>(value));
+  }
+
+  void updateUnit(int index)
+  {
+    emit unitChanged(index);
+  }
 };
 
 /**
@@ -95,12 +86,7 @@ class PropertyEditorFactory : public QtVariantEditorFactory
 
 private:
   DataView* pTheView;
-  //FIXME comments
-  QMap<QtProperty*, QSpinBox*> propertyToSpinBox;
-  QMap<QSpinBox*, QtProperty*> spinBoxToProperty;
-  QMap<QtProperty*, QDoubleSpinBox*> propertyToDoubleSpinBox;
-  QMap<QDoubleSpinBox*, QtProperty*> doubleSpinBoxToProperty;
-  QMap<QtProperty*, AngleEditor*> propertyToAngleEditor;
+  QMap<SpinBox*, QtProperty*> spinBoxToProperty;
   QMap<AngleEditor*, QtProperty*> angleEditorToProperty;
   QtVariantPropertyManager* pTheManager = nullptr;
 
@@ -110,6 +96,10 @@ public:
    */
   PropertyEditorFactory(DataView* pView) : pTheView(pView) {}
 
+  /**
+   * Whenever the user wants to edit a property a new editor is created.
+   * The editor is destroyed as soon as the user finished editing the property.
+   */
   QWidget* createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent);
 
 protected:
@@ -117,54 +107,19 @@ protected:
 
   void disconnectPropertyManager(QtVariantPropertyManager* manager);
 
+private:
+  template <typename T> QWidget* createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent, int precision);
+
 protected slots:
   /**
    * This slot is invoked whenever one of the managed spinboxes changes its value.
    * It updates the value in the property belonging to the box.
    */
-  void slotSpinBoxValueChanged(int newValue);
-
-  /**
-   * This slot is invoked whenever one of the managed DoubleSpinboxes (float really) changes its value.
-   * It updates the value of the property belonging to the box.
-   */
-  void slotFloatSpinBoxValueChanged(double newValue);
+  void slotSpinBoxValueChanged(double newValue);
 
   void slotAngleEditorValueChanged(float newValue);
-  void slotAngleEditorUnityChanged(int index);
+  void slotAngleEditorUnitChanged(int index);
 
 private slots:
   void slotEditorDestroyed(QObject* pObject);
-};
-
-class FloatSpinBox;
-class QComboBox;
-
-class AngleEditor : public QWidget
-{
-private:
-  Q_OBJECT;
-
-public:
-  FloatSpinBox* fBox;
-  QComboBox* unityBox;
-
-  AngleEditor(QWidget* parent = nullptr);
-
-  void setValue(const AngleWithUnity& value);
-
-signals:
-  void valueChanged(float value);
-  void unityChanged(int index);
-
-private slots:
-  void updateValue(double value)
-  {
-    emit valueChanged(static_cast<float>(value));
-  }
-
-  void updateUnity(int index)
-  {
-    emit unityChanged(index);
-  }
 };

@@ -55,4 +55,8 @@ private:
   JointCalibration jointCalibration; /**< The simulated robot is perfectly calibrated, but this is useful for testing calibration. */
   ENUM_INDEXED_ARRAY(CameraInfo, CameraInfo::Camera) cameraInfos; /**< Information about the upper camera. */
   RobotDimensions robotDimensions;
+
+  const Angle jointVariance = 0.00064_deg;  /**< Variance of a joint measurement (in deg²). */
+  const Angle gyroVariance = 0.00000387f; /**< Variance of the gyro (in (rad / s)²). */
+  const float accVariance = 0.000374f; /**< White noise variance of the accelerometer measurements (in (m/s²)²). */
 };

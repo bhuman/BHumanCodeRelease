@@ -16,6 +16,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "Framework/Robot.h"
 #include "Framework/Settings.h"
 #include "Math/Angle.h"
 #include "Math/Constants.h"
@@ -26,7 +27,6 @@
 #include "Streaming/InStreams.h"
 #include "Streaming/OutStreams.h"
 #include "Tools/Communication/MsgPack.h"
-#include "Tools/Framework/Robot.h"
 
 static pid_t bhumanPid = 0;
 static Robot* robot = nullptr;
@@ -151,6 +151,8 @@ static void sitDown(bool ok)
     // Determine current angles and whether sitting down is required, i.e. has the hip stiffness?
     bool sitDownRequired = false;
     Angle startAngles[Joints::numOfJoints - 1];
+    std::array<float, 3> torsoAngles; /**< The addresses of torso angle data inside receivedPacket. */
+
     MsgPack::parse(packet, bytesReceived,
                    [&sitDownRequired, &startAngles](const std::string& key, const unsigned char* p)
                    {
@@ -172,15 +174,45 @@ static void sitDown(bool ok)
     // If sitting down is required, interpolate from start angles to target angles.
     if(sitDownRequired)
     {
-      float phase = 0.f;
-      while(phase < 1.f)
+      float ratio = 0.f;
+      while(ratio < 1.f)
       {
+        // Do sinus interpolation
+        const float phase = 0.5f * std::sin(ratio * Constants::pi - Constants::pi / 2.f) + 0.5f;
+
+        // Get torso angles from IMU
+        MsgPack::parse(packet, bytesReceived,
+                       [&torsoAngles](const std::string& key, const unsigned char* p)
+                       {
+                         const std::string::size_type pos = key.find(":");
+                         ASSERT(pos != std::string::npos);
+                         const std::string category = key.substr(0, pos);
+                         const int index = std::stoi(key.substr(pos + 1));
+                         if(category == "Angles")
+                           torsoAngles[index] = MsgPack::readFloat(p);
+                       },
+                       // Ignore ints and strings
+                       [](const std::string&, const unsigned char*) {},
+                       [](const std::string&, const unsigned char*, size_t) {});
+
         unsigned char* p = packet;
-        MsgPack::writeMapHeader(1, p);
+        // Reduce stiffness if robot is falling
+        if(std::abs(torsoAngles[0]) > 45_deg || std::abs(torsoAngles[1]) > 45_deg)
+        {
+          MsgPack::writeMapHeader(2, p);
+          MsgPack::write("Stiffness", p);
+          MsgPack::writeArrayHeader(Joints::numOfJoints - 1, p);
+
+          for(int i = 0; i < Joints::numOfJoints - 1; ++i)
+            MsgPack::write(0.2f, p);
+        }
+        else
+          MsgPack::writeMapHeader(1, p);
+
         MsgPack::write("Position", p);
         MsgPack::writeArrayHeader(Joints::numOfJoints - 1, p);
-        // The should pitch joints interpolate faster because to avoid collisions of the arms with the legs.
-        const float shoulderPitchPhase = std::sqrt(std::min(1.f, phase / 0.6f));
+        // The shoulder pitch joints interpolate faster to avoid collisions of the arms with the legs.
+        const float shoulderPitchPhase = std::sqrt(std::min(1.f, ratio / 0.6f));
         for(int i = 0; i < Joints::numOfJoints - 1; ++i)
         {
           if(i == 2 || i == 18)
@@ -193,9 +225,9 @@ static void sitDown(bool ok)
         send(socket, reinterpret_cast<char*>(packet), static_cast<int>(p - packet), 0);
 
         // Receive next packet (required for sending again)
-        recv(socket, reinterpret_cast<char*>(packet), static_cast<int>(sizeof(packet)), 0);
+        bytesReceived = recv(socket, reinterpret_cast<char*>(packet), static_cast<int>(sizeof(packet)), 0);
 
-        phase += Constants::motionCycleTime / 2.f; // 2 seconds
+        ratio += Constants::motionCycleTime / 2.f; // 2 seconds
       }
     }
 
@@ -350,7 +382,8 @@ int main(int argc, char* argv[])
     else
       printf("Hi, I am %s (using %s's body).\n", settings.headName.c_str(), settings.bodyName.c_str());
     printf("teamNumber %d\n", settings.teamNumber);
-    printf("teamColor %s\n", TypeRegistry::getEnumName(settings.teamColor));
+    printf("fieldPlayerColor %s\n", TypeRegistry::getEnumName(settings.fieldPlayerColor));
+    printf("goalkeeperColor %s\n", TypeRegistry::getEnumName(settings.goalkeeperColor));
     printf("playerNumber %d\n", settings.playerNumber);
     printf("location %s\n", settings.location.c_str());
     printf("scenario %s\n", settings.scenario.c_str());

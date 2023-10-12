@@ -26,7 +26,7 @@ namespace Projection
    * @param robotPose The pose of the robot on the field
    * @param cameraMatrix The position and orientation of the robot's camera.
    * @param cameraInfo The resolution and the opening angle of the robot's camera.
-   * @param fieldDimenstions The specification of the playing field
+   * @param fieldDimensions The specification of the playing field
    * @param p The list of points
    */
   void computeFieldOfViewInFieldCoordinates(const RobotPose& robotPose, const CameraMatrix& cameraMatrix,
@@ -66,7 +66,7 @@ namespace Projection
   /**
    * The function determines how far an object is away depending on its real size and the size in the image
    * along with its center position, using camera intrinsic parameters.
-   * @param cameraInfo Class containing the intrinsic paramaters
+   * @param cameraInfo Class containing the intrinsic parameters
    * @param sizeInReality The real size of the object.
    * @param sizeInPixels The size in the image.
    * @param centerX X coordinate (in image reference) of object's baricenter.

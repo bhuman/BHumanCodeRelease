@@ -84,8 +84,7 @@ class ObstacleHypothesis : public Obstacle
    * EKF measurement step.
    * @param weightedSum Factor how much the measured width affects the actual width.
    */
-  void measurement(const ObstacleHypothesis& measurement, const float weightedSum,
-                   const float goalPostRadius);
+  void measurement(const ObstacleHypothesis& measurement, const float weightedSum);
 
   /** Trying to identify the type of the obstacle. */
   void considerType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold);

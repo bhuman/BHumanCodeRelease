@@ -170,6 +170,10 @@ private:
 
 QT_END_NAMESPACE
 
-Q_DECLARE_METATYPE(QIcon)
-Q_DECLARE_METATYPE(QtIconMap)
+//Q_DECLARE_METATYPE(QtIconMap)
+
+// Hardcode meta type id, because dynamic method does not support
+// unloading and reloading shared libraries on Windows.
+template<> constexpr int qMetaTypeId<QtIconMap>() {return QMetaType::User + 4;}
+
 #endif

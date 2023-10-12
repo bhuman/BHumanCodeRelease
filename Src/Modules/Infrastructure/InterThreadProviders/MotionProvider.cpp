@@ -9,7 +9,7 @@
 
 #include "MotionProvider.h"
 
-MAKE_MODULE(MotionProvider, infrastructure);
+MAKE_MODULE(MotionProvider);
 
 void MotionProvider::update(OdometryData& odometryData)
 {

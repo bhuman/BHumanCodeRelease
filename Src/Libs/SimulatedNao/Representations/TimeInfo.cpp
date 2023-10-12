@@ -9,7 +9,6 @@
 #include "TimeInfo.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
-#include "Streaming/InMessage.h"
 
 void TimeInfo::reset()
 {
@@ -18,21 +17,22 @@ void TimeInfo::reset()
   lastStartTime = 0;
 }
 
-bool TimeInfo::handleMessage(InMessage& message, bool justReadNames)
+bool TimeInfo::handleMessage(MessageQueue::Message message, bool justReadNames)
 {
-  if(message.getMessageID() == idStopwatch)
+  if(message.id() == idStopwatch)
   {
+    auto stream = message.bin();
     timestamp = Time::getCurrentSystemTime();
     //first get the names of some of the stopwatches (usually we get 3 names per frame)
     unsigned short nameCount;
-    message.bin >> nameCount;
+    stream >> nameCount;
 
     for(int i = 0; i < nameCount; ++i)
     {
       std::string watchName;
       unsigned short watchId;
-      message.bin >> watchId;
-      message.bin >> watchName;
+      stream >> watchId;
+      stream >> watchName;
       auto j = names.find(watchId);
       if(j == names.end() || j->second != watchName) //new or different name
       {
@@ -43,14 +43,14 @@ bool TimeInfo::handleMessage(InMessage& message, bool justReadNames)
 
     //now get timing data
     unsigned short dataCount;
-    message.bin >> dataCount;
+    stream >> dataCount;
 
     for(int i = 0; i < dataCount; ++i)
     {
       unsigned short watchId;
       unsigned time;
-      message.bin >> watchId;
-      message.bin >> time;
+      stream >> watchId;
+      stream >> time;
       if(!justReadNames)
         infos[watchId].push_front(static_cast<float>(time));
       infos[watchId].timestamp = Time::getCurrentSystemTime();
@@ -60,9 +60,9 @@ bool TimeInfo::handleMessage(InMessage& message, bool justReadNames)
       return true;
 
     unsigned threadStartTime;
-    message.bin >> threadStartTime;
+    stream >> threadStartTime;
     unsigned frameNo;
-    message.bin >> frameNo;
+    stream >> frameNo;
 
     int diff = frameNo - lastFrameNo;
     //sometimes we do not get data every frame. Compensate by assuming that the missing frames have

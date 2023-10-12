@@ -22,10 +22,12 @@ PositionRole::Type PositionRole::fromPosition(Tactic::Position::Type type)
     case Tactic::Position::defenderR:
       return defender;
     case Tactic::Position::midfielder:
+    case Tactic::Position::midfielderM:
     case Tactic::Position::midfielderL:
     case Tactic::Position::midfielderR:
       return midfielder;
     case Tactic::Position::forward:
+    case Tactic::Position::forwardM:
     case Tactic::Position::forwardL:
     case Tactic::Position::forwardR:
       return forward;
@@ -43,6 +45,9 @@ PositionRole::Side PositionRole::sideFromPosition(Tactic::Position::Type type)
     case Tactic::Position::midfielder:
     case Tactic::Position::forward:
       return unspecified;
+    case Tactic::Position::midfielderM:
+    case Tactic::Position::forwardM:
+      return center;
     case Tactic::Position::defenderL:
     case Tactic::Position::midfielderL:
     case Tactic::Position::forwardL:

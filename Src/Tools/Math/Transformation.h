@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Math/Eigen.h"
-#include "Math/Pose2f.h"
 
 struct CameraMatrix;
 struct CameraInfo;
@@ -17,24 +16,6 @@ struct CameraInfo;
  */
 namespace Transformation
 {
-  /**
-   * Perform a transformation from 2D relative robot coordinates
-   * to absolute field coordinates.
-   * @param  rp Current robot pose
-   * @param  relPos Position relative to the robot
-   * @return Returns a position in absolute field coordinates
-   */
-  Vector2f robotToField(const Pose2f& rp, const Vector2f& relPos);
-
-  /**
-   * Function does the transformation from absolute 2D field coordinates
-   * to coordinates relative to the robot.
-   * @param  rp Current robot pose
-   * @param  fieldPos A position in absolute field coordinates
-   * @return Returns the position relative to the robot
-   */
-  Vector2f fieldToRobot(const Pose2f& rp, const Vector2f& fieldPos);
-
   /**
    * Computes a position relative to the robot given a position of
    * a pixel in the image.

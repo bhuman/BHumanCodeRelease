@@ -241,14 +241,9 @@ bool OutFile::exists() const
   return stream != nullptr && stream->exists();
 }
 
-void OutFile::open(const std::string& name)
+void OutFile::open(const std::string& name, bool keep, bool append)
 {
-  stream = new File(name, "wb", false);
-}
-
-void OutFile::open(const std::string& name, bool append)
-{
-  stream = append ? new File(name, "ab", false) : new File(name, "wb", false);
+  stream = new File(name, append ? "ab" : keep ? "r+b" : "wb", false);
 }
 
 void OutFile::writeToStream(const void* p, size_t size)

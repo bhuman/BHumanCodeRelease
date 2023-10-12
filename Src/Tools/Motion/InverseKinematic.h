@@ -63,7 +63,7 @@ namespace InverseKinematic
    *
    * @param arm specifies the arm (left or right) to calculate for
    * @param elBowPosition the elbow position to calc from (relative to the robots origin)
-   * @param handPostion the hand position to calc from (relative to the robots origin)
+   * @param handPosition the hand position to calc from (relative to the robots origin)
    * @param robotDimensions the dimensions of the robot
    * @param jointLimits the joint limits of the robot
    * @param jointAngle the result: the calculated joint angles for the given parameters
@@ -78,7 +78,7 @@ namespace InverseKinematic
    * This method calculates the joint angles for an arm of the robot from a hand pose.
    *
    * @param arm specifies the arm (left or right) to calculate for
-   * @param handPostion the hand pose to calc from (relative to the robots origin)
+   * @param handPosition the hand pose to calc from (relative to the robots origin)
    * @param robotDimensions the dimensions of the robot
    * @param jointLimits the joint limits of the robot
    * @param jointAngle the result: the calculated joint angles for the given parameters

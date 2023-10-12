@@ -1,6 +1,8 @@
 #include "ColorRGBA.h"
 #include "Network/RoboCupGameControlData.h"
 #include "Platform/BHAssert.h"
+#include "Streaming/FunctionList.h"
+#include "Streaming/Streamable.h"
 
 const ColorRGBA ColorRGBA::white(255, 255, 255);
 const ColorRGBA ColorRGBA::gray(128, 128, 128);
@@ -49,6 +51,11 @@ ColorRGBA ColorRGBA::operator*(float scale) const
   return ColorRGBA(r2, g2, b2, a2);
 }
 
+bool ColorRGBA::operator==(const ColorRGBA& other) const
+{
+  return r == other.r && g == other.g && b == other.b && a == other.a;
+}
+
 ColorRGBA ColorRGBA::blend(const ColorRGBA& other) const
 {
   const unsigned char invA = (255 - a);
@@ -71,20 +78,30 @@ ColorRGBA ColorRGBA::interpolate(const float factor, const ColorRGBA& other) con
          );
 }
 
+void ColorRGBA::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(ColorRGBA);
+  REG(r);
+  REG(g);
+  REG(b);
+  REG(a);
+}
+
 In& operator>>(In& stream, ColorRGBA& color)
 {
-  stream >> color.r;
-  stream >> color.g;
-  stream >> color.b;
-  stream >> color.a;
+  STREAM_EXT(stream, color.r);
+  STREAM_EXT(stream, color.g);
+  STREAM_EXT(stream, color.b);
+  STREAM_EXT(stream, color.a);
   return stream;
 }
 
 Out& operator<<(Out& stream, const ColorRGBA& color)
 {
-  stream << color.r;
-  stream << color.g;
-  stream << color.b;
-  stream << color.a;
+  STREAM_EXT(stream, color.r);
+  STREAM_EXT(stream, color.g);
+  STREAM_EXT(stream, color.b);
+  STREAM_EXT(stream, color.a);
   return stream;
 }

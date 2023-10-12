@@ -19,10 +19,10 @@ class DebugDrawing3DAdapter : private DebugDrawing3D, public SimRobotCore2::Cont
   /** Helper for temporarily changing the alpha value for drawing. */
   struct Alpha
   {
-    float blendColor[4]; /** The original blend color currently set. */
+    float blendColor[4]; /**< The original blend color currently set. */
 
     /**
-     * The constuctor integrates the alpha value into the current blend color.
+     * The constructor integrates the alpha value into the current blend color.
      * @param alpha The alpha value in the range of 0 ... 255.
      */
     Alpha(unsigned char alpha);

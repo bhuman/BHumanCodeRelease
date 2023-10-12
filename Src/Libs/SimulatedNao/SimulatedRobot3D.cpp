@@ -280,7 +280,10 @@ void SimulatedRobot3D::getAndSetJointData(const JointRequest& jointRequest, Join
   {
     // Get angles
     if(jointSensors[i])
+    {
       jointSensorData.angles[i] = static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue - jointCalibration.offsets[i];
+      jointSensorData.variance[i] = jointVariance;
+    }
 
     // Set angles
     const float targetAngle = jointRequest.angles[i];
@@ -338,18 +341,26 @@ void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, InertialSenso
   inertialSensorData.gyro.y() = floatArray[1];
   inertialSensorData.gyro.z() = floatArray[2];
 
+  inertialSensorData.gyroVariance.x() = gyroVariance;
+  inertialSensorData.gyroVariance.y() = gyroVariance;
+  inertialSensorData.gyroVariance.z() = gyroVariance;
+
   // Acc
   floatArray = reinterpret_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
   inertialSensorData.acc.x() = floatArray[0];
   inertialSensorData.acc.y() = floatArray[1];
   inertialSensorData.acc.z() = floatArray[2];
 
+  inertialSensorData.accVariance.x() = accVariance;
+  inertialSensorData.accVariance.y() = accVariance;
+  inertialSensorData.accVariance.z() = accVariance;
+
   // angle
   float position[3];
   float world2robot[3][3];
   reinterpret_cast<SimRobotCore2::Body*>(robot)->getPose(position, world2robot);
 
-  const float axis[2] = { world2robot[1][2], -world2robot[0][2] }; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
+  const float axis[2] = {world2robot[1][2], -world2robot[0][2]}; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
   const float axisLength = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
   if(axisLength == 0.0f)
   {

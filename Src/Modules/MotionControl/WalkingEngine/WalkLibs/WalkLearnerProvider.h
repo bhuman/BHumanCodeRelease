@@ -12,6 +12,7 @@
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkLearner.h"
 #include "Representations/MotionControl/WalkModifier.h"
+#include "Representations/Sensing/JointPlay.h"
 #include "Framework/Module.h"
 #include <vector>
 #include "Debugging/DebugDrawings.h"
@@ -19,8 +20,21 @@
 MODULE(WalkLearnerProvider,
 {,
   REQUIRES(InertialData),
+  REQUIRES(JointPlay),
   REQUIRES(WalkModifier),
   PROVIDES(WalkLearner),
+  DEFINES_PARAMETERS(
+  {,
+    (Rangef)({30.f, 1.f}) adjustmentRange,
+    (float)(20.f) adjustmentSteps,
+    (float)(15.f) minForwardStep,
+    (float)(30.f) maxSideStep,
+    (Angle)(15_deg) maxTurnStep,
+    (float)(1.2f) clipStepDurationRatio,
+    (int)(2) maxStepsForJointPlayInitializing,
+    (float)(240.f) jointPlayInitializing,
+    (Rangef)({1.f, 1.07f}) bestStepDuration,
+  }),
 });
 
 class WalkLearnerProvider : public WalkLearnerProviderBase
@@ -44,6 +58,9 @@ private:
   std::vector<float> gyroForwardMax, //save the last theWalkModifier.numOfGyroPeaks gyro peaks
       gyroBackwardMin;
 
+  RingBufferWithSum<float, 10> stepDurationBuffer;
+  int adjustmentCounter = 0;
+
   void update(WalkLearner& walkLearner) override;
 
   //learn method
@@ -51,6 +68,8 @@ private:
 
   //This method is needed so the WalkLearnerProvider knows the starting balancing values and the current walking speed.
   void setBaseWalkParams(float gyroForward, float gyroBackward, float speedTransX);
+
+  void learnStepHeightDuration(const Pose2f& lastStep, const float lastDuration, const float refStepDuration, float& currentAdjustment);
 
 public:
   WalkLearnerProvider();

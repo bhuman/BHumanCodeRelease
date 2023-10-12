@@ -26,7 +26,7 @@ class TurnAngleImpl : public TurnAngleImplBase
   void execute(const TurnAngle& p) override
   {
     const Pose2f targetRel = Pose2f(Angle::normalize(startRotation + p.angle - theOdometryData.rotation));
-    theWalkToPointSkill({ .target = targetRel, .reduceWalkingSpeed = false });
+    theWalkToPointSkill({.target = targetRel, .reduceWalkingSpeed = false});
   }
 
   void reset(const TurnAngle&) override

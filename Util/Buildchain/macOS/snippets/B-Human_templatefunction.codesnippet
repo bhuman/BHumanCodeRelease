@@ -14,13 +14,13 @@
   &lt;#statements#&gt;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>FF27D094-644B-4BD2-80D8-5A22E02F3455</string>
+	<string>B-Human_templatefunction</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used to define a new function template.</string>
+	<string>B-Human: Define a new function template.</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>C++ Function Template</string>
+	<string>Function Template</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

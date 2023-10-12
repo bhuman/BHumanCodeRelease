@@ -19,7 +19,7 @@ template<typename T, std::size_t n = 0> class RingBufferWithSum : public RingBuf
 private:
   T zero; /**< Sum when the buffer is empty. */
   T currentSum; /**< Sum of current round since index 0. */
-  T prevSum; /** Sum of previous round. */
+  T prevSum; /**< Sum of previous round. */
 
 public:
   /**

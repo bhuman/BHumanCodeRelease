@@ -12,22 +12,23 @@
 #include "Tools/Modeling/BallPhysics.h"
 #include "Tools/Motion/InverseKinematic.h"
 #include "Tools/Motion/KickLengthConverter.h"
+#include "Tools/Motion/Transformation.h"
 
-MAKE_MODULE(WalkToBallAndKickEngine, motionControl);
+MAKE_MODULE(WalkToBallAndKickEngine);
+
+using namespace Motion::Transformation;
 
 void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKickGenerator)
 {
   DECLARE_DEBUG_RESPONSE("module:WalkToBallAndKickEngine:forwardTurnInterpolation");
   DECLARE_DEBUG_RESPONSE("module:WalkToBallAndKickEngine:UseMirroredForwardKick");
+  MODIFY("module:WalkToBallAndKickEngine:ignoreBallTimestamp", ignoreBallTimestamp);
   walkToBallAndKickGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
     lastPhaseWasKick = lastPhase.type == MotionPhase::kick;
 
-    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(false /* TODO */, lastPhase);
-    const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
-    const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset);
-    const Pose2f scsCognition = hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * motionRequest.odometryData;
+    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, Pose2f(0, motionRequest.ballEstimate.position));
+    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
 
     const Rangef ttrbRange(1.f, 2.f);
     const float timeToReachBall = ttrbRange.limit(std::max(std::abs(motionRequest.ballEstimate.position.x()) / theWalkingEngineOutput.maxSpeed.translation.x(), std::abs(motionRequest.ballEstimate.position.y()) / theWalkingEngineOutput.maxSpeed.translation.y()));
@@ -46,19 +47,24 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
     // interpolate between forward and turn kick
     if(motionRequest.turnKickAllowed && motionRequest.preStepAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
     {
-      KickInfo::KickType turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRight : KickInfo::walkTurnRightFootToLeft;
+      KickInfo::KickType turnKick;
+
+      if(motionRequest.shiftTurnKickPose)
+        turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRightShifted : KickInfo::walkTurnRightFootToLeftShifted;
+      else
+        turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRight : KickInfo::walkTurnRightFootToLeft;
+
       const float factor = Rangef::ZeroOneRange().limit(targetDirection / -theKickInfo[turnKick].rotationOffset);
       kickPose.rotate(theKickInfo[motionRequest.kickType].rotationOffset * (1.f - factor) + theKickInfo[turnKick].rotationOffset * factor);
+      kickPose.rotation = Angle::normalize(kickPose.rotation);
       kickPose.translate(theKickInfo[motionRequest.kickType].ballOffset * (1.f - factor) + theKickInfo[turnKick].ballOffset * factor);
     }
     else
     {
       kickPose.rotate(theKickInfo[motionRequest.kickType].rotationOffset);
+      kickPose.rotation = Angle::normalize(kickPose.rotation);
       kickPose.translate(theKickInfo[motionRequest.kickType].ballOffset);
     }
-
-    const float kickPoseShiftY = shiftInWalkKickInYDirection(kickPose, motionRequest.kickType, targetDirection);
-    kickPose.translation.y() += kickPoseShiftY;
 
     bool isInPositionForKick = false;
     const Angle directionThreshold = motionRequest.alignPrecisely == KickPrecision::precise ? 2_deg : 3_deg;
@@ -79,8 +85,10 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
         break;
       case KickInfo::walkForwardsLeft:
       case KickInfo::walkForwardsLeftLong:
+      case KickInfo::walkForwardsLeftVeryLong:
       case KickInfo::walkForwardsRight:
       case KickInfo::walkForwardsRightLong:
+      case KickInfo::walkForwardsRightVeryLong:
       case KickInfo::walkSidewardsRightFootToRight:
       case KickInfo::walkTurnRightFootToLeft:
       case KickInfo::walkSidewardsLeftFootToLeft:
@@ -90,8 +98,13 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       case KickInfo::walkForwardsRightAlternative:
       case KickInfo::walkForwardsLeftAlternative:
       {
-        walkKickVariant = WalkKickVariant(motionRequest.kickType, theKickInfo[motionRequest.kickType].walkKickType, theKickInfo[motionRequest.kickType].kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, motionRequest.targetDirection);
-        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, precisionRange, motionRequest.preStepAllowed, motionRequest.turnKickAllowed, kickPoseShiftY);
+        walkKickVariant = WalkKickVariant(motionRequest.kickType, theKickInfo[motionRequest.kickType].walkKickType, theKickInfo[motionRequest.kickType].kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, motionRequest.targetDirection, motionRequest.shiftTurnKickPose);
+        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, precisionRange, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
+        if(!isInPositionForKick)
+        {
+          walkKickVariant = WalkKickVariant(theKickInfo.mirror(motionRequest.kickType), theKickInfo[theKickInfo.mirror(motionRequest.kickType)].walkKickType, theKickInfo[theKickInfo.mirror(motionRequest.kickType)].kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, motionRequest.targetDirection, motionRequest.shiftTurnKickPose);
+          isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, precisionRange, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
+        }
         break;
       }
       case KickInfo::newKick:
@@ -103,15 +116,18 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
         FAIL("Unknown kick type.");
     }
     isInPositionForKick &= lastPhase.type == MotionPhase::stand || lastPhase.type == MotionPhase::walk; // prevent kicking from potential unstable phases
-    isInPositionForKick &= motionRequest.ballTimeWhenLastSeen >= theMotionInfo.lastKickTimestamp;
-    isInPositionForKick &= theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen) < 3000.f;
+    if(!ignoreBallTimestamp)
+    {
+      isInPositionForKick &= motionRequest.ballTimeWhenLastSeen >= theMotionInfo.lastKickTimestamp;
+      isInPositionForKick &= theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen) < 3000.f;
+    }
     // velocity.norm() does not need to be transformed to another coordinate system.
     if(!(motionRequest.kickType == KickInfo::walkForwardStealBallLeft || motionRequest.kickType == KickInfo::walkForwardStealBallRight)) // we are so close to the ball. The velocity might be a false perception
       isInPositionForKick &= motionRequest.ballEstimate.velocity.norm() < maxBallVelocity;
 
     if(isInPositionForKick)
     {
-      auto kickPhase = createKickPhase(motionRequest, lastPhase, walkKickVariant, kickPoseShiftY);
+      auto kickPhase = createKickPhase(motionRequest, lastPhase, walkKickVariant);
       if(kickPhase)
       {
         lastPhaseWasKickPossible = isInPositionForKick;
@@ -142,7 +158,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       {
         kickPose = theWalkKickGenerator.getVShapeWalkStep(isLeftPhase, motionRequest.targetDirection + theKickInfo[motionRequest.kickType].rotationOffset);
         if(std::abs(kickPose.translation.y()) < kickPoseMaxYTranslation)
-          return theWalkGenerator.createPhase(kickPose, lastPhase);
+          return theWalkGenerator.createPhase(kickPose, lastPhase, 0.f);
       }
     }
 
@@ -151,11 +167,22 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
     for(auto& segment : obstacleAvoidanceInSCS.path)
       segment.obstacle.center = scsCognition * segment.obstacle.center;
 
-    if(lastPhaseWasKickPossible && !lastPhaseWasKick && std::abs(kickPose.rotation) < kickPoseThresholds.rotation && std::abs(kickPose.translation.x()) < kickPoseThresholds.translation.x() && std::abs(kickPose.translation.y()) < kickPoseThresholds.translation.y())
+    if(lastPhaseWasKickPossible && !lastPhaseWasKick && std::abs(kickPose.rotation) < robotStuckThresholds.rotation && std::abs(kickPose.translation.x()) < robotStuckThresholds.translation.x() && std::abs(kickPose.translation.y()) < robotStuckThresholds.translation.y())
     {
-      const Vector2f offsetToBall = ballPosition + theKickInfo[motionRequest.kickType].ballOffset;
-      kickPose.translation.x() = (std::abs(kickPose.translation.x()) > std::abs(offsetToBall.x()) ? kickPose.translation.x() : offsetToBall.x()) * 1.5f;
-      kickPose.translation.y() = (std::abs(kickPose.translation.y()) > std::abs(offsetToBall.y()) ? kickPose.translation.y() : offsetToBall.y()) * 1.5f;
+      const Pose2f odometryMeasuredChanged = theOdometryDataPreview.inverse() * theMotionInfo.odometryAtLastPhaseSwitch;
+      const Pose2f odometryRequestChanged = theOdometryTranslationRequest.inverse() * theMotionInfo.odometryRequestAtLastPhaseSwitch;
+      const Pose2f odometryError = odometryRequestChanged.inverse() * odometryMeasuredChanged;
+      kickPose.rotation += Rangef::ZeroOneRange().limit(std::abs(odometryError.rotation / kickPose.rotation)) * odometryError.rotation;
+      kickPose.translation.x() += Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.x() / kickPose.translation.x())) * kickPose.translation.x();
+      kickPose.translation.y() += Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.y() / kickPose.translation.y())) * kickPose.translation.y();
+    }
+    else if(theKickInfo[motionRequest.kickType].walkKickType == WalkKicks::none && kickPose.translation.x() < 40.f && std::abs(kickPose.translation.y()) < 50.f)
+    {
+      WalkKickStep walkKickStep;
+      Pose2f lastStep;
+      theWalkGenerator.getLastWalkPhase(walkKickStep, lastStep, lastPhase);
+      if(lastStep.translation.y() * kickPose.translation.y() < 0.f)
+        kickPose.translation.y() = 0.f;
     }
     lastPhaseWasKickPossible = isInPositionForKick;
 
@@ -167,14 +194,22 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       // interpolate between forward and turn kick
       if(motionRequest.turnKickAllowed && motionRequest.preStepAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
       {
-        KickInfo::KickType turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRight : KickInfo::walkTurnRightFootToLeft;
+        KickInfo::KickType turnKick;
+
+        if(motionRequest.shiftTurnKickPose)
+          turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRightShifted : KickInfo::walkTurnRightFootToLeftShifted;
+        else
+          turnKick = motionRequest.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRight : KickInfo::walkTurnRightFootToLeft;
+
         const float factor = Rangef::ZeroOneRange().limit(targetDirection / -theKickInfo[turnKick].rotationOffset);
         kickPose.rotate(theKickInfo[motionRequest.kickType].rotationOffset * (1.f - factor) + theKickInfo[turnKick].rotationOffset * factor);
+        kickPose.rotation = Angle::normalize(kickPose.rotation);
         kickPose.translate(theKickInfo[motionRequest.kickType].ballOffset * (1.f - factor) + theKickInfo[turnKick].ballOffset * factor);
       }
       else
       {
         kickPose.rotate(theKickInfo[motionRequest.kickType].rotationOffset);
+        kickPose.rotation = Angle::normalize(kickPose.rotation);
         kickPose.translate(theKickInfo[motionRequest.kickType].ballOffset);
       }
     }
@@ -183,10 +218,10 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
   };
 }
 
-std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const MotionRequest& motionRequest, const MotionPhase& lastPhase, const WalkKickVariant& walkKickVariant, const float kickPoseShiftY)
+std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const MotionRequest& motionRequest, const MotionPhase& lastPhase, const WalkKickVariant& walkKickVariant)
 {
   if(theKickInfo[motionRequest.kickType].motion == MotionPhase::walk)
-    return theWalkKickGenerator.createPhase(walkKickVariant, lastPhase, true, kickPoseShiftY);
+    return theWalkKickGenerator.createPhase(walkKickVariant, lastPhase, true);
   else if(theKickInfo[motionRequest.kickType].motion == MotionPhase::kick)
   {
     KickRequest kr;
@@ -201,11 +236,7 @@ std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const Moti
       Vector2f ball = lastStableBall;
       if(phaseNumber <= 2) // after the robot shifts all his weight on the support foot, the torsoMatrix might be off and results in a miss position of the ball by up to 3cm
       {
-        const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
-        const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-        const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset);
-        const Pose2f scsCognition = hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * theMotionRequest.odometryData;
-
+        const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, theMotionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
         ball = scsCognition * theMotionRequest.ballEstimate.position;
         lastStableBall = ball;
       }

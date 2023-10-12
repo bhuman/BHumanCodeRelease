@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iomanip>
 
-MAKE_MODULE(JointAnglesProvider, infrastructure);
+MAKE_MODULE(JointAnglesProvider);
 
 void JointAnglesProvider::update(JointAngles& jointAngles)
 {

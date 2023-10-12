@@ -29,7 +29,7 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
     if(logPlayer.open(logFile))
     {
       updateAnnotationsFromLog();
-      logPlayer.play();
+      logPlayer.state = LogPlayer::playing;
       if(!ctrl->is2D)
       {
         SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
@@ -76,101 +76,62 @@ bool LocalConsole::main()
         {
           if(jointLastTimestampSent != jointSensorData.timestamp)
           {
-            debugSender->out.bin << "Motion";
-            debugSender->out.finishMessage(idFrameBegin);
-            debugSender->out.bin << jointSensorData;
-            debugSender->out.finishMessage(idJointSensorData);
-            debugSender->out.bin << fsrSensorData;
-            debugSender->out.finishMessage(idFsrSensorData);
-            debugSender->out.bin << inertialSensorData;
-            debugSender->out.finishMessage(idInertialSensorData);
-            debugSender->out.bin << odometryData;
-            debugSender->out.finishMessage(idGroundTruthOdometryData);
-            debugSender->out.bin << "Motion";
-            debugSender->out.finishMessage(idFrameFinished);
+            debugSender->bin(idFrameBegin) << "Motion";
+            debugSender->bin(idJointSensorData) << jointSensorData;
+            debugSender->bin(idFsrSensorData) << fsrSensorData;
+            debugSender->bin(idInertialSensorData) << inertialSensorData;
+            debugSender->bin(idGroundTruthOdometryData) << odometryData;
+            debugSender->bin(idFrameFinished) << "Motion";
             jointLastTimestampSent = jointSensorData.timestamp;
           }
 
           if(imageLastTimestampSent != cameraImage.timestamp)
           {
-            std::string perception = TypeRegistry::getEnumName(cameraInfo.camera);
-            perception[0] &= ~0x20;
-            debugSender->out.bin << perception;
-            debugSender->out.finishMessage(idFrameBegin);
+            std::string perception = cameraInfo.getThreadName();
+            debugSender->bin(idFrameBegin) << perception;
             if(imageCalculated)
-            {
-              debugSender->out.bin << cameraImage;
-              debugSender->out.finishMessage(idCameraImage);
-            }
+              debugSender->bin(idCameraImage) << cameraImage;
             else
             {
               FrameInfo frameInfo;
               frameInfo.time = cameraImage.timestamp;
-              debugSender->out.bin << frameInfo;
-              debugSender->out.finishMessage(idFrameInfo);
+              debugSender->bin(idFrameInfo) << frameInfo;
             }
-            debugSender->out.bin << cameraInfo;
-            debugSender->out.finishMessage(idCameraInfo);
-            debugSender->out.bin << worldState;
-            debugSender->out.finishMessage(idGroundTruthWorldState);
-            debugSender->out.bin << perception;
-            debugSender->out.finishMessage(idFrameFinished);
+            debugSender->bin(idCameraInfo) << cameraInfo;
+            debugSender->bin(idGroundTruthWorldState) << worldState;
+            debugSender->bin(idFrameFinished) << perception;
 
-            debugSender->out.bin << "Cognition";
-            debugSender->out.finishMessage(idFrameBegin);
-            debugSender->out.bin << gameControllerData;
-            debugSender->out.finishMessage(idGameControllerData);
-            debugSender->out.bin << worldState;
-            debugSender->out.finishMessage(idGroundTruthWorldState);
-            debugSender->out.bin << "Cognition";
-            debugSender->out.finishMessage(idFrameFinished);
-            debugSender->out.bin << "Audio";
-            debugSender->out.finishMessage(idFrameBegin);
-            debugSender->out.bin << whistle;
-            debugSender->out.finishMessage(idWhistle);
-            debugSender->out.bin << "Audio";
-            debugSender->out.finishMessage(idFrameFinished);
+            debugSender->bin(idFrameBegin) << "Cognition";
+            debugSender->bin(idGameControllerData) << gameControllerData;
+            debugSender->bin(idGroundTruthWorldState) << worldState;
+            debugSender->bin(idFrameFinished) << "Cognition";
+            debugSender->bin(idFrameBegin) << "Audio";
+            debugSender->bin(idWhistle) << whistle;
+            debugSender->bin(idFrameFinished) << "Audio";
             imageLastTimestampSent = cameraImage.timestamp;
           }
         }
         else
         {
-          debugSender->out.bin << "Cognition";
-          debugSender->out.finishMessage(idFrameBegin);
+          debugSender->bin(idFrameBegin) << "Cognition";
           FrameInfo frameInfo;
           frameInfo.time = cameraImage.timestamp;
-          debugSender->out.bin << frameInfo;
-          debugSender->out.finishMessage(idFrameInfo);
-          debugSender->out.bin << cameraInfo;
-          debugSender->out.finishMessage(idCameraInfo);
-          debugSender->out.bin << odometryData;
-          debugSender->out.finishMessage(idGroundTruthOdometryData);
-          {
-            FallDownState fallDownState;
-            fallDownState.state = FallDownState::upright;
-            debugSender->out.bin << fallDownState;
-            debugSender->out.finishMessage(idFallDownState);
-          }
-          {
-            GroundContactState groundContactState;
-            groundContactState.contact = true;
-            debugSender->out.bin << groundContactState;
-            debugSender->out.finishMessage(idGroundContactState);
-          }
-          {
-            CameraMatrix cameraMatrix;
-            cameraMatrix.isValid = false;
-            debugSender->out.bin << cameraMatrix;
-            debugSender->out.finishMessage(idCameraMatrix);
-          }
-          debugSender->out.bin << motionInfo;
-          debugSender->out.finishMessage(idMotionInfo);
-          debugSender->out.bin << gameControllerData;
-          debugSender->out.finishMessage(idGameControllerData);
-          debugSender->out.bin << worldState;
-          debugSender->out.finishMessage(idGroundTruthWorldState);
-          debugSender->out.bin << "Cognition";
-          debugSender->out.finishMessage(idFrameFinished);
+          debugSender->bin(idFrameInfo) << frameInfo;
+          debugSender->bin(idCameraInfo) << cameraInfo;
+          debugSender->bin(idGroundTruthOdometryData) << odometryData;
+          FallDownState fallDownState;
+          fallDownState.state = FallDownState::upright;
+          debugSender->bin(idFallDownState) << fallDownState;
+          GroundContactState groundContactState;
+          groundContactState.contact = true;
+          debugSender->bin(idGroundContactState) << groundContactState;
+          CameraMatrix cameraMatrix;
+          cameraMatrix.isValid = false;
+          debugSender->bin(idCameraMatrix) << cameraMatrix;
+          debugSender->bin(idMotionInfo) << motionInfo;
+          debugSender->bin(idGameControllerData) << gameControllerData;
+          debugSender->bin(idGroundTruthWorldState) << worldState;
+          debugSender->bin(idFrameFinished) << "Cognition";
         }
       }
       debugSender->send(true);
@@ -184,16 +145,7 @@ bool LocalConsole::main()
 void LocalConsole::update()
 {
   RobotConsole::update();
-
-#ifdef MACOS
-  pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
-#endif
-
   updatedSignal.wait();
-
-#ifdef MACOS
-  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-#endif
 
   QString statusText;
   {
@@ -202,9 +154,16 @@ void LocalConsole::update()
 
     if(mode == SystemCall::logFileReplay)
     {
-      std::string threadIdentifier = logPlayer.getThreadIdentifierOfNextFrame();
-      if(threadIdentifier != "" && threadData[threadIdentifier].logAcknowledged && logPlayer.replay())
-        threadData[threadIdentifier].logAcknowledged = false;
+      if(logPlayer.state == LogPlayer::playing && (logPlayer.cycle || logPlayer.frame() + 1 < logPlayer.frames()))
+      {
+        const std::string threadName = logPlayer.threadOf(logPlayer.frame() +  1);
+        if(threadName != "" && threadData[threadName].logAcknowledged)
+        {
+          logPlayer.playBack(logPlayer.frame() + 1);
+          threadData[threadName].currentFrame = logPlayer.frame();
+          threadData[threadName].logAcknowledged = false;
+        }
+      }
       if(simulatedRobot)
       {
         if(RobotConsole::jointSensorData.timestamp)
@@ -266,22 +225,13 @@ void LocalConsole::update()
                    logFile.c_str()
 #endif
                    + " ";
-      if(logPlayer.currentFrameNumber != -1)
-      {
-        char buf[33];
-        sprintf(buf, "%u", logPlayer.currentFrameNumber);
-        statusText += buf;
-      }
+      if(logPlayer.frame() + 1 < logPlayer.frames())
+        statusText += QString("%1").arg(static_cast<int>(logPlayer.frame()));
       else
         statusText += "finished";
     }
-    else if(logPlayer.numberOfFrames != 0)
-    {
-      statusText += QString("recorded ");
-      char buf[33];
-      sprintf(buf, "%u", logPlayer.numberOfFrames);
-      statusText += buf;
-    }
+    else if(!logPlayer.empty())
+      statusText += QString("recorded %1 mb").arg(static_cast<float>(logPlayer.size()) / 1000000.f, 0, 'f', 1);
   }
 
   updateSignal.post();

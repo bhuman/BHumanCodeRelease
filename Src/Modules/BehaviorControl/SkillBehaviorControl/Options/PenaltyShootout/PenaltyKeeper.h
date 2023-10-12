@@ -3,11 +3,8 @@ option(PenaltyKeeper)
   // Martin Kroker, 14.04.2013?
   auto penaltyKeeperShouldCatchBall = [&]
   {
-    float offsetToYAxis = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalArea, 0.f)).x();
-    if(offsetToYAxis < 0.f)
-      offsetToYAxis = 0.f;
+    const float offsetToYAxis = std::max(0.f, (theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGoalArea, 0.f)).x());
 
-    float timeToIntersectYAxis = std::numeric_limits<float>::max();
     const Vector2f& ballPositionRel = theBallModel.estimate.position;
     const Vector2f& ballVelocityRel = theBallModel.estimate.velocity;
     // Return false if the ball does not move or moves away from the robot.
@@ -24,7 +21,7 @@ option(PenaltyKeeper)
     const float s = ballToIntersectPositionVector.norm();
     const float a = theBallSpecification.friction;
     ASSERT(a < 0.f);
-    timeToIntersectYAxis = BallPhysics::timeForDistance(ballVelocityRel, s, a);
+    const float timeToIntersectYAxis = BallPhysics::timeForDistance(ballVelocityRel, s, a);
 
     return between<float>(timeToIntersectYAxis, 0.01f, 10.5f) && theFieldBall.ballWasSeen(500) && (theGameState.isPenaltyShootout() || theFieldBall.isRollingTowardsOwnGoal);
   };
@@ -39,10 +36,7 @@ option(PenaltyKeeper)
     action
     {
       theLookForwardSkill();
-      if(theGameState.isPenaltyShootout())
-        theDiveSkill({ .request = MotionRequest::Dive::prepare });
-      else
-        theStandSkill();
+      theDiveSkill({.request = MotionRequest::Dive::prepare});
     }
   }
 
@@ -50,9 +44,8 @@ option(PenaltyKeeper)
   {
     action
     {
-      unsigned interceptionMethods = bit(Interception::jumpLeft) | bit(Interception::jumpRight);
-      if(!theGameState.isPenaltyShootout())
-        interceptionMethods |= bit(Interception::genuflectStand) | bit(Interception::walk);
+      // Don't add other interception methods here until InterceptBall can handle them.
+      const unsigned interceptionMethods = bit(Interception::jumpLeft) | bit(Interception::jumpRight);
       theInterceptBallSkill({.interceptionMethods = interceptionMethods,
                              .allowGetUp = !theGameState.isPenaltyShootout(),
                              .allowDive = theBehaviorParameters.keeperJumpingOn});

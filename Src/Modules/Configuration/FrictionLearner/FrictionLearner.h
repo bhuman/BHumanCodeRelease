@@ -12,7 +12,7 @@
  *   s = v * t + 0.5 * a * t^2  with v = ball velocity, a = ballFriction, s = rolled distance
  *
  * You can use this module as follows.
- * 1. Start it: mr DummyRepresentation FrictionLearner
+ * 1. Start it: for Cognition mr DummyRepresentation FrictionLearner
  * 2. Roll the ball once through the robot's field of view
  *    - start and end point do not matter, but starting and ending outside the field of view *might* be better
  *    - avoid collisions as well as places on the field that are not completely even
@@ -38,10 +38,10 @@ MODULE(FrictionLearner,
   PROVIDES(DummyRepresentation),
   DEFINES_PARAMETERS(
   {,
-    (int)(1000) timeout,                 /** Time in ms. If there has not been observed any ball for timeout ms, the data collection phase ends. */
-    (unsigned int)(20) minObservations,  /** Minimum number of ball observations that is required for optimization */
-    (unsigned int)(8) offset,            /** Buffer index offset between two observations that are used as a pair for optimization*/
-    (bool)(false) acceptGuessedBalls,    /** Incorporate guessed balls in friction estimation, if set to true */
+    (int)(1000) timeout,                 /**< Time in ms. If there has not been observed any ball for timeout ms, the data collection phase ends. */
+    (unsigned int)(20) minObservations,  /**< Minimum number of ball observations that is required for optimization */
+    (unsigned int)(8) offset,            /**< Buffer index offset between two observations that are used as a pair for optimization*/
+    (bool)(false) acceptGuessedBalls,    /**< Incorporate guessed balls in friction estimation, if set to true */
   }),
 });
 
@@ -65,7 +65,7 @@ private:
     unsigned int time; /**< The point of time (in ms) of the observation */
   };
 
-  std::vector<BallObservation> balls; /** List of observed balls */
+  std::vector<BallObservation> balls; /**< List of observed balls */
 
   /**
    * Main function that triggers the estimation process

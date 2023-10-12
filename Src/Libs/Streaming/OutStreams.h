@@ -688,20 +688,12 @@ protected:
    * @param name The name of the file to open. It will be interpreted
    *             as relative to the configuration directory. If the file
    *             does not exist, it will be created. If it already
-   *             exists, its previous contents will be discarded.
-   */
-  void open(const std::string& name);
-
-  /**
-   * Opens the stream.
-   * @param name The name of the file to open. It will be interpreted
-   *             as relative to the configuration directory. If the file
-   *             does not exist, it will be created. If it already
    *             exists, its previous contents will be preserved,
    *             if append = true.
-   * @param append Determines, if the file content is preserved or discarded.
+   * @param keep Are original file contents preserved or discarded?
+   * @param append Is data written appended to the end of the file?
    */
-  void open(const std::string& name, bool append);
+  void open(const std::string& name, bool keep, bool append);
 
   /**
    * The function writes a number of bytes into the file.
@@ -858,25 +850,14 @@ public:
    * @param name The name of the file to open. It will be interpreted
    *             as relative to the configuration directory. If the file
    *             does not exist, it will be created. If it already
-   *             exists, its previous contents will be discared.
-   */
-  OutBinaryFile(const std::string& name)
-  {
-    open(name);
-  }
-
-  /**
-   * Constructor.
-   * @param name The name of the file to open. It will be interpreted
-   *             as relative to the configuration directory. If the file
-   *             does not exist, it will be created. If it already
    *             exists, its previous contents will be preserved,
    *             if append = true.
-   * @param append Determines, if the file content is preserved or discared.
+   * @param keep Are original file contents preserved or discarded?
+   * @param append Is data written appended to the end of the file?
    */
-  OutBinaryFile(const std::string& name, bool append)
+  OutBinaryFile(const std::string& name, bool keep = false, bool append = false)
   {
-    open(name, append);
+    open(name, keep, append);
   }
 
   /**
@@ -932,25 +913,14 @@ public:
    * @param name The name of the file to open. It will be interpreted
    *             as relative to the configuration directory. If the file
    *             does not exist, it will be created. If it already
-   *             exists, its previous contents will be discared.
-   */
-  OutTextFile(const std::string& name)
-  {
-    open(name);
-  }
-
-  /**
-   * Constructor.
-   * @param name The name of the file to open. It will be interpreted
-   *             as relative to the configuration directory. If the file
-   *             does not exist, it will be created. If it already
    *             exists, its previous contents will be preserved,
    *             if append = true.
-   * @param append Determines, if the file content is preserved or discared.
+   * @param keep Are original file contents preserved or discarded?
+   * @param append Is data written appended to the end of the file?
    */
-  OutTextFile(const std::string& name, bool append)
+  OutTextFile(const std::string& name, bool keep = false, bool append = false)
   {
-    open(name, append);
+    open(name, keep, append);
   }
 };
 
@@ -967,25 +937,14 @@ public:
    * @param name The name of the file to open. It will be interpreted
    *             as relative to the configuration directory. If the file
    *             does not exist, it will be created. If it already
-   *             exists, its previous contents will be discared.
-   */
-  OutTextRawFile(const std::string& name)
-  {
-    open(name);
-  }
-
-  /**
-   * Constructor.
-   * @param name The name of the file to open. It will be interpreted
-   *             as relative to the configuration directory. If the file
-   *             does not exist, it will be created. If it already
    *             exists, its previous contents will be preserved,
    *             if append = true.
-   * @param append Determines, if the file content is preserved or discared.
+   * @param keep Are original file contents preserved or discarded?
+   * @param append Is data written appended to the end of the file?
    */
-  OutTextRawFile(const std::string& name, bool append)
+  OutTextRawFile(const std::string& name, bool keep = false, bool append = false)
   {
-    open(name, append);
+    open(name, keep, append);
   }
 };
 
@@ -1069,7 +1028,7 @@ private:
     {}
   };
   Out* stream; /**< The map that is currently written to. */
-  Out& target; /** The actual target stream. */
+  Out& target; /**< The actual target stream. */
   OutTextRawMemory buffer; /**< A buffer that will be used sometimes. */
   Mode mode; /**< How to structure the output into lines? */
   size_t maxCollapsedLength; /**< The maximum length of text collapsed to a single line. */

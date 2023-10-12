@@ -10,21 +10,25 @@
 #include "Debugging/DebugDrawings.h"
 #include "Platform/SystemCall.h"
 
-MAKE_MODULE(ReplayWalkRequestProvider, motionControl);
+MAKE_MODULE(ReplayWalkRequestProvider);
 
 void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
 {
+  bool cycle = false;
   MODIFY("module:ReplayWalkRequestProvider:startRecord", recordWalkPhase);
   MODIFY("module:ReplayWalkRequestProvider:initRecord", initRecord);
+  MODIFY_ONCE("module:ReplayWalkRequestProvider:cycle", cycle);
   if(theGameState.isPenalized())
   {
     indexCurrentWalkRequest = 0;
     const bool thisBumperState = theKeyStates.pressed[KeyStates::lFootLeft] || theKeyStates.pressed[KeyStates::lFootRight];
-    if(lastBumperState && !thisBumperState && theFrameInfo.getTimeSince(lastSwitch) > 800)
+    cycle |= lastBumperState && !thisBumperState && theFrameInfo.getTimeSince(lastSwitch) > 800;
+    if(cycle)
     {
       currentWalkRequest = (currentWalkRequest + 1) % motionRequests.size();
       SystemCall::say(motionRequests[currentWalkRequest].description.c_str());
       lastSwitch = theFrameInfo.time;
+      OUTPUT_TEXT(motionRequests[currentWalkRequest].description);
     }
     lastBumperState = thisBumperState;
   }
@@ -32,10 +36,11 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
   if(!recordWalkPhase)
     lastSaveTimestamp = 0;
 
-  if(recordWalkPhase && (lastStepTargetCopyTimestamp <= lastSaveTimestamp || lastSaveTimestamp == 0))
+  if(recordWalkPhase && (lastStepTargetCopyTimestamp < lastSaveTimestamp || lastSaveTimestamp == 0))
   {
     actualLastStepTarget = theWalkStepData.stepTarget;
     lastStepTargetCopyTimestamp = theFrameInfo.time;
+    lastSaveTimestamp = theFrameInfo.time;
   }
 
   request.createPhase = [this](const MotionRequest&, const MotionPhase& lastPhase)
@@ -47,7 +52,7 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
         indexCurrentWalkRequest = 0;
     }
     if(indexCurrentWalkRequest >= static_cast<int>(motionRequests[currentWalkRequest].walkRequests.size()))
-      return theWalkGenerator.createPhase(Pose2f(), lastPhase);
+      return theWalkGenerator.createPhase(Pose2f(), lastPhase, 0.f);
     else if(currentWalkRequest >= 0 && indexCurrentWalkRequest >= 0)
     {
       if((indexCurrentWalkRequest == 0 && lastLeft != motionRequests[currentWalkRequest].isLeftPhaseStart) || indexCurrentWalkRequest > 0)
@@ -61,12 +66,12 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
           {
             OUTPUT_ERROR("Wrong Foot Support");
             indexCurrentWalkRequest = static_cast<int>(motionRequests[currentWalkRequest].walkRequests.size());
-            return theWalkGenerator.createPhase(Pose2f(), lastPhase);
+            return theWalkGenerator.createPhase(Pose2f(), lastPhase, 0.f);
           }
           const int currentIndex = indexCurrentWalkRequest;
           indexCurrentWalkRequest++;
           return theWalkGenerator.createPhaseWithNextPhase(motionRequests[currentWalkRequest].walkRequests[currentIndex].walkKickStep,
-                                                           lastPhase, WalkGenerator::CreateNextPhaseCallback());
+                                                           lastPhase, WalkGenerator::CreateNextPhaseCallback(), motionRequests[currentWalkRequest].walkRequests[currentIndex].delay);
         }
 
         // Fail safe, so robot does not damage itself
@@ -75,25 +80,25 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
         {
           OUTPUT_ERROR("Wrong Foot Support");
           indexCurrentWalkRequest = static_cast<int>(motionRequests[currentWalkRequest].walkRequests.size());
-          return theWalkGenerator.createPhase(Pose2f(), lastPhase);
+          return theWalkGenerator.createPhase(Pose2f(), lastPhase, 0.f);
         }
 
         // Normal step
         const int currentIndex = indexCurrentWalkRequest;
         indexCurrentWalkRequest++;
-        return theWalkGenerator.createPhase(motionRequests[currentWalkRequest].walkRequests[currentIndex].step, lastPhase);
+        return theWalkGenerator.createPhase(motionRequests[currentWalkRequest].walkRequests[currentIndex].step, lastPhase, motionRequests[currentWalkRequest].walkRequests[currentIndex].delay);
       }
       else if(indexCurrentWalkRequest == 0 && lastLeft == motionRequests[currentWalkRequest].isLeftPhaseStart)
       {
         if(lastPhase.type != MotionPhase::walk)
-          return theWalkGenerator.createPhase(Pose2f(0_deg, 0.f, -1.f), lastPhase);
+          return theWalkGenerator.createPhase(Pose2f(0_deg, 0.f, -1.f), lastPhase, 0.f);
         else
           return theWalkGenerator.createPhase(Pose2f(0_deg, 0.f, motionRequests[currentWalkRequest].isLeftPhaseStart != lastLeft ?
                                                      (motionRequests[currentWalkRequest].isLeftPhaseStart ? -1.f : 1.f) :
-                                                     0.f), lastPhase);
+                                                     0.f), lastPhase, 0.f);
       }
     }
-    return theWalkGenerator.createPhase(Pose2f(), lastPhase);
+    return theWalkGenerator.createPhase(Pose2f(), lastPhase, 0.f);
   };
 
   request.savePhase = [this](const MotionPhase& lastPhase)

@@ -9,15 +9,19 @@
 #include "Framework/Module.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/Libraries/LibTeammates.h"
+#include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
 
 MODULE(LibTeammatesProvider,
 {,
+  REQUIRES(BallModel),
   REQUIRES(FrameInfo),
   REQUIRES(LibPosition),
   REQUIRES(RobotPose),
+  REQUIRES(StrategyStatus),
   REQUIRES(TeamData),
   PROVIDES(LibTeammates),
   DEFINES_PARAMETERS(
@@ -33,18 +37,10 @@ private:
   void update(LibTeammates& libTeammates) override;
 
   /**
-   * Returns the amount of other teammates in the own penalty area, not counting the goalkeeper.
-   * Uses two different distance thresholds depending on this robot being already inside the penalty area or not.
-   * This prevents robots inside the penalty area from running out because of nearby teammates who don't enter.
-   * @return number of teammates in the own penalty area excluding the goalkeeper
+   * Returns the amount of other teammates in the own goal area, not counting the goalkeeper.
+   * Uses two different distance thresholds depending on this robot being already inside the goal area or not.
+   * This prevents robots inside the goal area from running out because of nearby teammates who don't enter.
+   * @return number of teammates in the own goal area excluding the goalkeeper
    */
-  int nonKeeperTeammatesInOwnPenaltyArea() const;
-
-  /**
-   * Returns the amount of other teammates in the opponents penalty area.
-   * Uses two different distance thresholds depending on this robot being already inside the penalty area or not.
-   * This prevents robots inside the penalty area from running out because of nearby teammates.
-   * @return number of teammates in the opponents penalty area
-   */
-  int teammatesInOpponentPenaltyArea() const;
+  int nonKeeperTeammatesInOwnGoalArea() const;
 };

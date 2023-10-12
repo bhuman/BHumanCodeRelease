@@ -10,7 +10,7 @@
 
 ENUM(KickPrecision,
 {,
-  precise, /** As precise as the kick can get. */
+  precise, /**< As precise as the kick can get. */
   notPrecise, /**< Some inaccuracy is allowed. */
   justHitTheBall, /**< Throw all precision out of the window and just touch the ball. */
 });

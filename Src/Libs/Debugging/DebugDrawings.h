@@ -707,7 +707,7 @@ inline const char* DrawingManager::getTypeName(char id) const
   while(false)
 
 /**
- * A macro that send a covariance ellipses (overlaid) with default confidence intervals
+ * A macro that sends a covariance ellipses (overlaid) with default confidence intervals
  * @param id A drawing id
  * @param cov The covariance matrix as Matrix2f
  * @param mean The mean value
@@ -742,49 +742,7 @@ inline const char* DrawingManager::getTypeName(char id) const
   while(false)
 
 /**
- * A macro that plots a value.
- * These values are collected and plotted over time.
- * @param id The name of the plot.
- * @param value The value to be plotted.
- */
-#define PLOT(id, value) \
-  do \
-    DEBUG_RESPONSE("plot:" id) OUTPUT(idPlot, bin, id << static_cast<float>(value)); \
-  while(false)
-
-/**
- * A macro that declares a pollable plot.
- * @param id The name of the plot.
- */
-#define DECLARE_PLOT(id) \
-  DECLARE_DEBUG_RESPONSE("plot:" id)
-
-/**
- * A macro that creates three plots for the three axis of a vector3
- */
-#define DECLARE_VEC3_PLOT(id) \
-  do \
-  { \
-    DECLARE_PLOT(id "X"); \
-    DECLARE_PLOT(id "Y"); \
-    DECLARE_PLOT(id "Z"); \
-  } \
-  while(false)
-
-/**
- * A macro that plots the three values of a vector3.
- */
-#define PLOT_VEC3(id, vec) \
-  do \
-  { \
-    PLOT(id "X", vec.x()); \
-    PLOT(id "Y", vec.y()); \
-    PLOT(id "Z", vec.z()); \
-  } \
-  while(false)
-
-/**
- * A macro that sends a grid which has quadratic cells of diffent color intensity
+ * A macro that sends a grid that has quadratic cells of different color intensity
  * @param id A drawing id
  * @param x The x-coordinate of the grid center
  * @param y The y-coordinate of the grid center
@@ -800,17 +758,17 @@ inline const char* DrawingManager::getTypeName(char id) const
     { \
       const int _cellsX = static_cast<int>(cellsX); \
       const int _cellsY = static_cast<int>(cellsY); \
-      Global::getDebugOut().bin << static_cast<char>(Drawings::gridMono) << \
-                                Global::getDrawingManager().getDrawingId(id) << \
-                                static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellSize) << \
-                                _cellsX << _cellsY << ColorRGBA(baseColor); \
-      Global::getDebugOut().bin.write(cells, _cellsX * _cellsY); \
-      Global::getDebugOut().finishMessage(idDebugDrawing); \
+      auto _stream = Global::getDebugOut().bin(idDebugDrawing); \
+      _stream << static_cast<char>(Drawings::gridMono) \
+              << Global::getDrawingManager().getDrawingId(id) \
+              << static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellSize) \
+              << _cellsX << _cellsY << ColorRGBA(baseColor); \
+      _stream.write(cells, _cellsX * _cellsY); \
     } \
   while(false)
 
 /**
- * A macro that sends a grid which has quadratic cells of diffent color intensity
+ * A macro that sends a grid that has quadratic cells of different color intensity
  * @param id A drawing id
  * @param x The x-coordinate of the grid center
  * @param y The y-coordinate of the grid center
@@ -825,17 +783,17 @@ inline const char* DrawingManager::getTypeName(char id) const
     { \
       const int _cellsX = static_cast<int>(cellsX); \
       const int _cellsY = static_cast<int>(cellsY); \
-      Global::getDebugOut().bin << static_cast<char>(Drawings::gridRGBA) << \
-                                Global::getDrawingManager().getDrawingId(id) << \
-                                static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellSize) << \
-                                _cellsX << _cellsY; \
-      Global::getDebugOut().bin.write(cells, _cellsX * _cellsY * sizeof(ColorRGBA)); \
-      Global::getDebugOut().finishMessage(idDebugDrawing); \
+      auto _stream = Global::getDebugOut().bin(idDebugDrawing); \
+      _stream << static_cast<char>(Drawings::gridRGBA) \
+              << Global::getDrawingManager().getDrawingId(id) \
+              << static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellSize) \
+              << _cellsX << _cellsY; \
+      _stream.write(cells, _cellsX * _cellsY * sizeof(ColorRGBA)); \
     } \
   while(false)
 
 /**
- * A macro that sends a grid which has reactangle cells of diffent color intensity
+ * A macro that sends a grid that has reactangle cells of different color intensity
  * @param id A drawing id
  * @param x The x-coordinate of the grid center
  * @param y The y-coordinate of the grid center
@@ -851,12 +809,12 @@ inline const char* DrawingManager::getTypeName(char id) const
     { \
       const int _cellsX = static_cast<int>(cellsX); \
       const int _cellsY = static_cast<int>(cellsY); \
-      Global::getDebugOut().bin << static_cast<char>(Drawings::gridRectangleRGBA) << \
-                                Global::getDrawingManager().getDrawingId(id) << \
-                                static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellWidth) << \
-                                static_cast<int>(cellHeight) << _cellsX << _cellsY; \
-      Global::getDebugOut().bin.write(cells, _cellsX * _cellsY * sizeof(ColorRGBA)); \
-      Global::getDebugOut().finishMessage(idDebugDrawing); \
+      auto _stream = Global::getDebugOut().bin(idDebugDrawing); \
+      _stream << static_cast<char>(Drawings::gridRectangleRGBA) \
+              << Global::getDrawingManager().getDrawingId(id) \
+              << static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(cellWidth) \
+              << static_cast<int>(cellHeight) << _cellsX << _cellsY; \
+      _stream.write(cells, _cellsX * _cellsY * sizeof(ColorRGBA)); \
     } \
   while(false)
 
@@ -893,10 +851,6 @@ inline const char* DrawingManager::getTypeName(char id) const
 #define COVARIANCE_ELLIPSES_2D_OWN_COLORS(id, cov, mean, color99, color95, color68) static_cast<void>(0)
 #define COVARIANCE_ELLIPSES_2D(id, cov, mean) static_cast<void>(0)
 #define COVARIANCE_ELLIPSE_2D(id, cov, mean, p, color) static_cast<void>(0)
-#define PLOT(id, value) static_cast<void>(0)
-#define DECLARE_PLOT(id) static_cast<void>(0)
-#define DECLARE_VEC3_PLOT(id) static_cast<void>(0)
-#define PLOT_VEC3(id, vec) static_cast<void>(0)
 #define GRID_MONO(id, x, y, cellSize, cellsX, cellsY, baseColor, cells) static_cast<void>(0)
 #define GRID_RGBA(id, x, y, cellSize, cellsX, cellsY, cells) static_cast<void>(0)
 #define GRID_RECTANGLE_RGBA(id, x, y, cellWidth, cellHeight, cellsX, cellsY, cells) static_cast<void>(0)

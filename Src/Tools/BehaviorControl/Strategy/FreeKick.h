@@ -45,9 +45,8 @@ STREAMABLE_WITH_BASE(OwnFreeKick, FreeKick,
 {
   ENUM(Type,
   {,
-    passFreeKick,
-    cornerKick,
-    goalKick,
+    ownCornerKick,
+    ownGoalKick,
   });
 
   static SetPlay::Type toSetPlay(Type type)
@@ -60,7 +59,7 @@ STREAMABLE_WITH_BASE(OpponentFreeKick, FreeKick,
 {
   ENUM(Type,
   {,
-    placeholder, // will be removed once there are real elements
+    opponentCornerKick,
   });
 
   static SetPlay::Type toSetPlay(Type type)

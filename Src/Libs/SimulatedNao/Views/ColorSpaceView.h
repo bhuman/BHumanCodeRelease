@@ -45,7 +45,7 @@ public:
    * @param ch The channel to display (1..3) or 0 to display all channels.
    * @param b The background color.
    */
-  ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, const std::string& threadIdentifier);
+  ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, const std::string& threadName);
 
   /**
    * The function returns the name of a channel in a certain color model as string.
@@ -72,7 +72,7 @@ private:
   bool needsUpdate() const;
 
   const QString fullName; /**< The path to this view in the scene graph */
-  const QIcon icon; /**< The icon used for listing this view in the scene graph */
+  QIcon icon; /**< The icon used for listing this view in the scene graph */
 
   RobotConsole& console; /**< A reference to the console object. */
   const std::string name; /**< The name of the image. */
@@ -81,7 +81,7 @@ private:
   const Vector3f& background; /**< The background color. */
   Vector3f lastBackground; /**< The last background color used. */
   unsigned lastTimestamp = 0; /**< The frame number of last image that was drawn. */
-  const std::string threadIdentifier; /**< The thread that created the images shown in this view. */
+  const std::string threadName; /**< The thread that created the images shown in this view. */
 
   /**
    * The method returns a new instance of a widget for this direct view.

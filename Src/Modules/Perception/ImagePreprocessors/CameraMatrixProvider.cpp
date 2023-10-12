@@ -10,7 +10,7 @@
 #include "Debugging/DebugDrawings3D.h"
 #include "Math/RotationMatrix.h"
 
-MAKE_MODULE(CameraMatrixProvider, perception);
+MAKE_MODULE(CameraMatrixProvider);
 
 void CameraMatrixProvider::update(CameraMatrix& cameraMatrix)
 {
@@ -76,7 +76,7 @@ void CameraMatrixProvider::drawFieldLines(const CameraMatrix& cameraMatrix) cons
   Vector3f start0C, start1C, end0C, end1C;
   Vector2f start0I, start1I, end0I, end1I;
 
-  const Pose2f& robotPoseInv(theRobotPose.inversePose);
+  const Pose2f& robotPoseInv(theRobotPose.inverse());
   const Pose3f& cameraMatrixInv(cameraMatrix.inverse());
   float halfFieldLinesWidth = theFieldDimensions.fieldLinesWidth / 2;
 

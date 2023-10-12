@@ -9,10 +9,8 @@
 
 #pragma once
 
-#include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/PerceptRegistration.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Modeling/UKFPose2D.h"
 
 /**
@@ -25,9 +23,9 @@
 class UKFRobotPoseHypothesis : public UKFPose2D
 {
 public:
-  float weighting;   /** The weighting required for the resampling process. Computation is based on validity and a base weighting. */
-  float validity;    /** The validity represents the average success rate of the measurement matching process. 1 means that all recent measurements are compatible to the sample, 0 means that no measurements are compatible.*/
-  int id;            /** Each sample has a unique identifier, which is set at initialization. */
+  float weighting;   /**< The weighting required for the resampling process. Computation is based on validity and a base weighting. */
+  float validity;    /**< The validity represents the average success rate of the measurement matching process. 1 means that all recent measurements are compatible to the sample, 0 means that no measurements are compatible.*/
+  int id;            /**< Each sample has a unique identifier, which is set at initialization. */
 
   /** Initializes the members of this sample.
    * @param pose The initial pose
@@ -39,9 +37,6 @@ public:
 
   /** The RoboCup field is point-symmetric. Calling this function turns the whole pose by 180 degrees around the field's center.*/
   void mirror();
-
-  /** Turns the robot by 180 degrees but does not change its position. Used only by a special handling for goalie delocalization.*/
-  void twist();
 
   /** Computes a new validity value based on the current validity and the previous validity.
    * @param frames The old validity is weighted by (frames-1)
@@ -83,28 +78,6 @@ public:
   /** Update the estimate based on a virtual direct measurement of the own pose,
    *  which can be computed by complex field elements such as a center circle together with the center line.
    * @param pose The computed pose
-   * @param cameraMatrix The current pose of the camera
-   * @param inverseCameraMatrix The inverted current pose of the camera, extra parameter as this value is precomputed to save computing time
-   * @param currentRotationDeviation The assumed rotational uncertainty that results from the robot's current motion.
-   * @param theFieldDimensions The specification of the field
    */
-  void updateByPose(const RegisteredAbsolutePoseMeasurement& pose, const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
-                    const Vector2f& currentRotationDeviation, const FieldDimensions& theFieldDimensions);
-
-private:
-  /** The computation of covariances is currently based on the distance to the perceived elements.
-   *  Poses are not directly perceived but computed given multiple perceptions.
-   *  This might lead to poses that have their (virtual) center point quite close to the robot,
-   *  leading to an extremely small covariance that does not reflect the measurement uncertainty.
-   *  Thus, this function serves as a workaround to compute a minimum covariance.
-   *  @param perceivedPosition The position of the element that serves as base for computing the pose
-   *  @param minimumDistance The minimum distance for which a normal covariance computation is carried out. If the element is closer, this distance is assumed.
-   *  @param cameraMatrix The current pose of the camera
-   *  @param inverseCameraMatrix The inverted current pose of the camera, extra parameter as this value is precomputed to save computing time
-   *  @param currentRotationDeviation The assumed rotational uncertainty that results from the robot's current motion.
-   *  @return A covariance matrix
-   */
-  Matrix2f computeCorrectedPoseCovariance(const Vector2f& perceivedPosition, float minimumDistance,
-                                          const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
-                                          const Vector2f& currentRotationDeviation) const;
+  void updateByPose(const RegisteredAbsolutePoseMeasurement& pose);
 };

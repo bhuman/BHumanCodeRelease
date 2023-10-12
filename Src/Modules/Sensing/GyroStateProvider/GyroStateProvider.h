@@ -33,8 +33,6 @@ private:
   RingBufferWithSum<Angle, 27> gyroValuesX;
   RingBufferWithSum<Angle, 27> gyroValuesY;
   RingBufferWithSum<Angle, 27> gyroValuesZ;
-  int samplingCounter;
-  bool isNotMoving = false;
 
   void update(GyroState& gyroOffset) override;
 };

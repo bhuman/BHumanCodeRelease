@@ -19,7 +19,6 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 
 #include "Representations/MotionControl/DiveGenerator.h"
@@ -43,7 +42,6 @@
 
 MODULE(KeyframeMotionEngine,
 {,
-  REQUIRES(DamageConfigurationBody),
   REQUIRES(EnergySaving),
   REQUIRES(FilteredCurrent),
   REQUIRES(FrameInfo),
@@ -55,14 +53,10 @@ MODULE(KeyframeMotionEngine,
   REQUIRES(JointAngles),
   USES(JointLimits),
   USES(JointRequest),
-  REQUIRES(JointSensorData),
   REQUIRES(KeyframeMotionParameters),
   REQUIRES(KeyStates),
-  REQUIRES(MassCalibration),
-  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(StaticJointPoses),
-  REQUIRES(StiffnessSettings),
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
   PROVIDES(KeyframeMotionGenerator),
@@ -73,17 +67,11 @@ MODULE(KeyframeMotionEngine,
   LOADS_PARAMETERS(
   {,
     (int) maxTryCounter, // Number of allowed get up tries
-    (int) motionSpecificRetries, // Number of allowed retries
-    (int) motionSpecificRetriesFront, // Number of allowed retries to move the arms to the side for the front get up
-    (Angle) shoulderPitchThreshold, // Threshold to trigger retry in front get up
-    (Angle) shoulderRollThreshold, // Threshold to trigger retry in front get up
     (bool) motorMalfunctionBreakUp, // Go to helpMeState if a motorMalfunction was detected once
     (int) maxStiffnessDebugMode, // Max allowed stiffness when stepKeyframes is true
     (ENUM_INDEXED_ARRAY(KeyframeMotionList, KeyframeMotionListID::KeyframeMotionListID)) motions, // The different keyframe motions
     (ENUM_INDEXED_ARRAY(KeyframeBlock, KeyframeMotionBlockID::KeyframeMotionBlockID)) keyframeBlock, // Basic keyframed motions
-    (ENUM_INDEXED_ARRAY(float, Joints::Joint)) brokenJointData, // Thresholds to detect if a joint is too far of the request
     (Angle) minJointCompensationReduceAngleDiff, // Threshold for joint compensation. Joint must change its position by this value between 2 frames to trigger a reduction in the joint compensation
-    (float) jointCompensationSimulationFactor, // Value for forcing stuck joints
     (BalanceOutParams) balanceOutParams, // The parameters for the balanceOutMethod
     (Vector3f) supportPolygonOffsets, // Offsets for the support polygon. x Forward, y Backward, z Sideways
     (SafeFallParameters) safeFallParameters, // Parameters for waitForFallen()
@@ -105,7 +93,7 @@ public:
 private:
 
   /**
-   * All debuging related stuff
+   * All debugging related stuff
    * @param output The KeyframeMotionGenerator
    */
   void setUpDebugCommands(KeyframeMotionGenerator& output);

@@ -1,7 +1,4 @@
 #!/bin/bash
-# Downloads the calibration files from a robot and stores them
-# in a way, so that they will be reused when the software is
-# again deployed to that robot.
 
 basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
 
@@ -13,12 +10,7 @@ usage()
   exit 1
 }
 
-keySource="${basePath}/../../Install/Keys/id_rsa_nao"
-keyFile=/tmp/id_rsa_nao
-cp -n "${keySource}" ${keyFile}
-sshoptions="-c aes128-ctr -i ${keyFile} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
-
-chmod 600 $keyFile
+source "${basePath}/setupSSH"
 
 if [ $# -ne 1 ]
 then
@@ -27,7 +19,7 @@ fi
 
 ip=$1
 
-robotNames=`ssh $sshoptions -o ConnectTimeout=2 nao@$ip "hostname; cat /var/volatile/tmp/bodyName.txt 2>/dev/null"`
+robotNames=`ssh $SSHOPTIONS -o ConnectTimeout=2 nao@$ip "hostname; cat /var/volatile/tmp/bodyName.txt 2>/dev/null"`
 if [ -z "$robotNames" ]
 then
   echo "Could not get name from robot."
@@ -38,7 +30,6 @@ headName=$(echo $robotNames | cut -d " " -f 1)
 bodyName=$(echo $robotNames | cut -d " " -f 2)
 
 files=("Config/Robots/$headName/$bodyName/cameraCalibration.cfg"
-       "Config/Robots/$bodyName/Body/footSoleRotationCalibration.cfg"
        "Config/Robots/$bodyName/Body/imuCalibration.cfg")
 
-rsync --chmod=F-x -Rzce "ssh $sshoptions" "nao@$ip:${files[*]}" "$basePath/../.."
+rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "nao@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"

@@ -56,8 +56,8 @@ public:
    * @param cam1 The first camera
    * @param cam2 The second camera
    * @param timeout The maximum waiting time
-   * @param errorCam1 Whether an error occured on cam1
-   * @param errorCam2 Whether an error occured on cam2
+   * @param errorCam1 Whether an error occurred on cam1
+   * @param errorCam2 Whether an error occurred on cam2
    */
   static bool captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout);
 

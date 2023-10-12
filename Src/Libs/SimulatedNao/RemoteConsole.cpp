@@ -21,7 +21,7 @@ RemoteConsole::RemoteConsole(const std::string& robotName, const std::string& ip
 
   // try to connect for one second
   Thread::start(this, &RemoteConsole::connect);
-  Thread::stop();
+  Thread::stop(1000);
 }
 
 void RemoteConsole::connect()
@@ -37,29 +37,44 @@ bool RemoteConsole::main()
   unsigned char* receivedData;
   int sendSize = 0;
   int receivedSize = 0;
-  MessageQueue temp;
 
   // If there is something to send, prepare a packet
-  if(!debugSender->isEmpty())
+  if(!numOfDataMessageIDsRequestSent)
   {
-    SYNC;
-    sendSize = static_cast<int>(debugSender->getStreamedSize());
-    OutBinaryMemory stream(sendSize);
-    stream << *debugSender;
-    sendData = reinterpret_cast<unsigned char*>(stream.obtainData());
-    // make backup
-    debugSender->moveAllMessages(temp);
+    sendSize = sizeof(MessageQueue::QueueHeader) + sizeof(MessageQueue::MessageHeader);
+    sendData = new unsigned char[sendSize]();
+    *sendData = sizeof(MessageQueue::MessageHeader);
+  }
+  else if(numOfDataMessageIDsReceived && !debugSender->empty())
+  {
+    {
+      SYNC;
+      sendSize = static_cast<int>(sizeof(MessageQueue::QueueHeader) + debugSender->size());
+      OutBinaryMemory stream(sendSize);
+      stream << *debugSender;
+      sendData = reinterpret_cast<unsigned char*>(stream.obtainData());
+    }
+    if(messageIdOffset)
+      correctMessageIDs(sendData, sendSize, -messageIdOffset);
   }
 
   // exchange data with the robot
-  if(!sendAndReceive(sendData, sendSize, receivedData, receivedSize) && sendSize)
+  if(sendAndReceive(sendData, sendSize, receivedData, receivedSize) && sendSize)
   {
-    // sending failed, restore theDebugSender
-    SYNC;
-    // move all messages since cleared (if any)
-    debugSender->moveAllMessages(temp);
-    // restore
-    temp.moveAllMessages(*debugSender);
+    if(numOfDataMessageIDsRequestSent)
+    {
+      // Remove messages from queue that were sent.
+      SYNC;
+      if(sendSize == static_cast<int>(debugSender->size() + sizeof(MessageQueue::QueueHeader)))
+        debugSender->clear();
+      else
+        debugSender->filter([this, originalSize = sendSize - sizeof(MessageQueue::QueueHeader)](MessageQueue::const_iterator i)
+        {
+          return i - debugSender->begin() >= originalSize;
+        });
+    }
+    else
+      numOfDataMessageIDsRequestSent = true;
   }
 
   // If a packet was prepared, remove it
@@ -69,6 +84,8 @@ bool RemoteConsole::main()
   // If a packet was received from the robot, add it to receiver queue
   if(receivedSize > 0)
   {
+    if(messageIdOffset)
+      correctMessageIDs(receivedData, receivedSize, messageIdOffset);
     InBinaryMemory stream(receivedData, receivedSize);
     {
       SYNC;
@@ -81,12 +98,24 @@ bool RemoteConsole::main()
   return false;
 }
 
+bool RemoteConsole::handleMessage(MessageQueue::Message message)
+{
+  if(message.id() == idNumOfDataMessageIDs)
+  {
+    MessageID otherNumOfDataMessageIDs;
+    message.bin() >> otherNumOfDataMessageIDs;
+    messageIdOffset = numOfDataMessageIDs - otherNumOfDataMessageIDs;
+    numOfDataMessageIDsReceived = true;
+    return true;
+  }
+  return RobotConsole::handleMessage(message);
+}
+
 void RemoteConsole::announceStop()
 {
   {
     SYNC;
-    debugSender->out.bin << DebugRequest("disableAll");
-    debugSender->out.finishMessage(idDebugRequest);
+    debugSender->bin(idDebugRequest) << DebugRequest("disableAll");
   }
   Thread::sleep(1000);
   Thread::announceStop();
@@ -112,19 +141,15 @@ void RemoteConsole::update()
     transferSpeed = bytes / 2000.0f;
   }
 
-  char buf[33];
-  sprintf(buf, "%.1lf kb/s", transferSpeed);
   QString statusText = QString::fromStdString(robotName) +
-                       (isConnected() ? QString(": connected to ") + QString::fromStdString(ip) + ", " + buf
-                        : QString(": connection lost from ") + QString::fromStdString(ip));
+                       (isConnected()
+                        ? QString(": connected to %1, %2 kb/s").arg(ip.c_str()).arg(transferSpeed, 0, 'f', 1)
+                        : QString(": connection lost from %1").arg(ip.c_str()));
 
   {
     SYNC;
-    if(logPlayer.getNumberOfMessages() != 0)
-    {
-      sprintf(buf, "%u", logPlayer.numberOfFrames);
-      statusText += QString(", recorded ") + buf;
-    }
+    if(!logPlayer.empty())
+      statusText += QString(", recorded %1 mb").arg(static_cast<float>(logPlayer.size()) / 1000000.f, 0, 'f', 1);
   }
 
   if(pollingFor)
@@ -134,4 +159,12 @@ void RemoteConsole::update()
   }
 
   ctrl->printStatusText(statusText);
+}
+
+void RemoteConsole::correctMessageIDs(unsigned char* buffer, size_t size, char offset)
+{
+  for(unsigned char* p = buffer + sizeof(MessageQueue::QueueHeader), *end = buffer + size; p < end;
+      p += sizeof(MessageQueue::MessageHeader) + reinterpret_cast<MessageQueue::MessageHeader*>(p)->size)
+    if(static_cast<unsigned char>(*p + offset) >= numOfDataMessageIDs)
+      *p += offset;
 }

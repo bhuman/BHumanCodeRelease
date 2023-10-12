@@ -63,6 +63,12 @@ public:
   void write(const void* p, size_t size);
 
   /**
+   * Skip a number of bytes in the stream.
+   * @param size The amount of bytes to skip.
+   */
+  void skip(size_t size);
+
+  /**
    * The function implements printf for the stream represented by
    * instances of this class.
    * @param format Format string as used by printf defined in stdio.h.
@@ -120,12 +126,19 @@ public:
   static const char* getBHDir();
 
   /**
-   * Checks if the delivered path is an absolute path.
-   * Empty pathes are handled as relative pathes.
-   * @param path  Must be a valid c string.
-   * @return true, if the delivered path is absolute.
+   * Checks whether a path is an absolute path.
+   * Empty paths are handled as relative paths.
+   * @param path The path.
+   * @return true, if the path is absolute.
    */
-  static bool isAbsolute(const char* path);
+  static bool isAbsolute(const std::string& path);
+
+  /**
+   * Checks whether the path name has an extension.
+   * @param path The path.
+   * @return true, if the path has an extension.
+   */
+  static bool hasExtension(const std::string& path);
 
   /**
    * Sets the search path for \c getConfigDirs.

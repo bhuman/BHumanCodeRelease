@@ -1,7 +1,5 @@
 #include "Obstacle.h"
 #include "Math/Probabilistics.h"
-#include "Framework/Blackboard.h"
-#include "Representations/Configuration/FieldDimensions.h"
 
 Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
                    unsigned int lastSeen, Obstacle::Type type) :
@@ -11,12 +9,7 @@ Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vec
 Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, unsigned int lastSeen, Type type) :
   covariance(covariance), center(center), velocity(Vector2f::Zero()), lastSeen(lastSeen), type(type)
 {
-  float radius = 55.f;
-  if(type != Obstacle::goalpost)
-    radius = getRobotDepth();
-  else if(Blackboard::getInstance().exists("FieldDimensions"))
-    radius = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]).goalPostRadius;
-
+  const float radius = getRobotDepth();
   left = right = center.normalized(radius);
   left.rotateLeft();
   right.rotateRight();
@@ -60,9 +53,4 @@ bool Obstacle::isSomeRobot() const
 bool Obstacle::isUnknown() const
 {
   return type == Obstacle::unknown;
-}
-
-bool Obstacle::isGoalpost() const
-{
-  return type == Obstacle::goalpost;
 }

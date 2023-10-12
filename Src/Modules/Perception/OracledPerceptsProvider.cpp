@@ -16,7 +16,7 @@
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Obstacle.h"
 
-MAKE_MODULE(OracledPerceptsProvider, infrastructure);
+MAKE_MODULE(OracledPerceptsProvider);
 
 OracledPerceptsProvider::OracledPerceptsProvider()
 {
@@ -183,7 +183,8 @@ void OracledPerceptsProvider::trueBallPercept(BallPercept& ballPercept)
       if(applyBallNoise)
       {
         applyNoise(ballCenterInImageStdDev, ballPercept.positionInImage);
-        if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theBallSpecification.radius, theCameraMatrix, theCameraInfo, ballPercept.positionOnField))
+        if(!theMeasurementCovariance.transformWithCovLegacy(ballPercept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
+                                                            ballPercept.positionOnField, ballPercept.covarianceOnField))
         {
           ballPercept.status = BallPercept::notSeen;
           return;
@@ -233,49 +234,11 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
     addPercept(penaltyMarks[i]);
 
   if(possiblePercepts.size())
-    ballPercept = possiblePercepts[Random::uniformInt(possiblePercepts.size() - 1)];
-}
-
-void OracledPerceptsProvider::update(GoalPostsPercept& goalPostsPercept)
-{
-  goalPostsPercept.goalPosts.clear();
-  if(!theCameraMatrix.isValid)
-    return;
-  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
-  for(unsigned int i = 0; i < goalPosts.size(); i++)
   {
-    const Vector2f relativePostPos = robotPoseInv * goalPosts[i];
-    if(relativePostPos.norm() > nearGoalPostMaxVisibleDistance || isPointBehindObstacle(goalPosts[i]))
-      continue;
-    if(Random::bernoulli(1. - nearGoalPostRecognitionRate))
-      continue;
-    Vector2f postInImage;
-    if(pointIsInImage(relativePostPos, postInImage))
-    {
-      goalPostsPercept.goalPosts.emplace_back();
-      GoalPostsPercept::GoalPost& goalPost = goalPostsPercept.goalPosts.back();
-      goalPost.baseInImage = true;
-      goalPost.positionInImage = postInImage;
-      goalPost.thicknessInImage = static_cast<int>(Projection::getSizeByDistance(theCameraInfo, theFieldDimensions.goalPostRadius * 2.f,
-                                                                                 (theCameraMatrix.inverse() * (Vector3f() << relativePostPos, 0.f).finished()).norm()) + 0.5f);
-      float heightInImage = postInImage.y();
-      Vector2f goalTopInImage;
-      if(Transformation::robotToImage((Vector3f() << relativePostPos, theFieldDimensions.goalHeight).finished(), theCameraMatrix, theCameraInfo, goalTopInImage) &&
-         goalTopInImage.y() > 0.f)
-        heightInImage -= goalTopInImage.y();
-      goalPost.heightInImage = static_cast<int>(std::max(1.f, heightInImage + .5f));
-      goalPost.relativePosition = relativePostPos;
-      // Add some noise:
-      if(applyNearGoalPostNoise)
-      {
-        applyNoise(nearGoalPostPosInImageStdDev, goalPost.positionInImage);
-        if(!Transformation::imageToRobot(goalPost.positionInImage.x(), goalPost.positionInImage.y(), theCameraMatrix, theCameraInfo, goalPost.relativePosition))
-        {
-          goalPostsPercept.goalPosts.pop_back();
-          continue;
-        }
-      }
-    }
+    auto percept = possiblePercepts[Random::uniformInt(possiblePercepts.size() - 1)];
+    if(!theMeasurementCovariance.transformWithCovLegacy(percept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
+                                                        percept.positionOnField, percept.covarianceOnField))
+      ballPercept = percept;
   }
 }
 
@@ -371,6 +334,9 @@ void OracledPerceptsProvider::update(CirclePercept& circlePercept)
         {
           circlePercept.pos = circlePos;
           circlePercept.wasSeen = true;
+          const float distToCenter = circlePercept.pos.norm();
+          const Vector2f virtualPosForCovariance(distToCenter > theFieldDimensions.centerCircleRadius ? distToCenter : theFieldDimensions.centerCircleRadius, 0.f);
+          circlePercept.cov = theMeasurementCovariance.computeForRelativePosition(virtualPosForCovariance);
         }
       }
     }
@@ -399,17 +365,13 @@ void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
     Vector2f penaltyMarkInImage;
     if(pointIsInImage(relativeMarkPos, penaltyMarkInImage))
     {
-      bool success = true;
       if(applyPenaltyMarkNoise)
-      {
         applyNoise(penaltyMarkPosInImageStdDev, penaltyMarkInImage);
-        success = Transformation::imageToRobot(penaltyMarkInImage, theCameraMatrix, theCameraInfo, relativeMarkPos);
-      }
-      if(success)
+
+      if(theMeasurementCovariance.transformWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
       {
-        penaltyMarkPercept.positionOnField = relativeMarkPos;
         penaltyMarkPercept.positionInImage = Vector2i(static_cast<int>(penaltyMarkInImage.x()), static_cast<int>(penaltyMarkInImage.y()));
-        penaltyMarkPercept.wasSeen         = true;
+        penaltyMarkPercept.wasSeen = true;
       }
     }
   }
@@ -422,9 +384,9 @@ void OracledPerceptsProvider::falsePenaltyMarkPercept(PenaltyMarkPercept& penalt
   if(Random::bernoulli(0.5))
     falseMarkPos.x() *= penaltyMarkFalseDeviationFactor;
   Vector2f penaltyMarkInImage;
-  if(pointIsInImage(falseMarkPos, penaltyMarkInImage))
+  if(pointIsInImage(falseMarkPos, penaltyMarkInImage)
+     && theMeasurementCovariance.transformWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
   {
-    penaltyMarkPercept.positionOnField = falseMarkPos;
     penaltyMarkPercept.positionInImage = penaltyMarkInImage.cast<int>();
     penaltyMarkPercept.wasSeen = true;
   }
@@ -559,7 +521,10 @@ void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::G
     if(success)
     {
       ObstaclesFieldPercept::Obstacle o;
-      o.type = isOpponent ? ObstaclesFieldPercept::opponentPlayer : ObstaclesFieldPercept::ownPlayer;
+      if(player.number != 1)
+        o.type = isOpponent ? ObstaclesFieldPercept::opponentPlayer : ObstaclesFieldPercept::ownPlayer;
+      else
+        o.type = isOpponent ? ObstaclesFieldPercept::opponentGoalkeeper : ObstaclesFieldPercept::ownGoalkeeper;
       o.fallen = !player.upright;
       o.right = o.center = o.left = relativePlayerPos;
       o.right.normalize(Obstacle::getRobotDepth());
@@ -568,7 +533,11 @@ void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::G
       o.left.rotateLeft();
       o.right += o.center;
       o.left += o.center;
-      obstaclesFieldPercept.obstacles.push_back(o);
+
+      Vector2f inImage;
+      if(Transformation::robotToImage(o.center, theCameraMatrix, theCameraInfo, inImage)
+         && theMeasurementCovariance.transformWithCov(inImage, 0.f, o.center, o.covariance))
+        obstaclesFieldPercept.obstacles.push_back(o);
     }
   }
 }

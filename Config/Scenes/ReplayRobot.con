@@ -4,7 +4,7 @@ call Includes/replayDialog Includes/replay
 
 # simulation time on, otherwise log data may be skipped
 st on
-dt 203
+dt 219
 
 # all views are defined in another script
 call Includes/ImageViews
@@ -19,28 +19,17 @@ vid lower representation:PenaltyMarkPercept:image
 vfd worldState representation:GameState
 vfd worldState representation:GameState:ownTeam
 
-# navigate in log file using shortcuts
-jc press 1 log pause # Shift+Crtl+A
-jc press 19 log start # Shift+Crtl+S
-jc press 4 log goto 1 # Shift+Crtl+D
-jc press 6 log repeat # Shift+Crtl+F
-jc press 25 log backward # Shift+Crtl+Y
-jc press 24 log forward # Shift+Crtl+X
-jc press 3 log backward image # Shift+Crtl+C
-jc press 22 log forward image # Shift+Crtl+V
-jc press 2 log fastBackward # Shift+Ctrl+B
-jc press 14 log fastForward # Shift+Ctrl+N
-
 # deactivate game info provided in Cognition
 mr GameControllerData default
 mr GameState default
 
-# Support replaying legacy logs: It is assumed that the
-# Cognition log was selected and a Motion log is merged
-# in. Otherwise, this will not work.
-log merge
-log mr legacy
-log start
+# Remove these lines when we have enough new log files with covariances :-)
+for Cognition mr FilteredBallPercepts off
+mr BallModel default
+mr CenterCircleWithLine default
+mr PenaltyMarkWithPenaltyAreaLine default
+
+log mr
 
 # enable behavior graph
 dr representation:ActivationGraph
@@ -55,15 +44,13 @@ dr representation:FsrSensorData
 dr representation:SystemSensorData
 dr representation:KeyStates
 
-echo Use keyboard to navigate the log.
-echo - Ctrl+Shift+A: Pause replay
-echo - Ctrl+Shift+S: Start/continue replaying the log
-echo - Ctrl+Shift+D: Goto first frame
-echo - Ctrl+Shift+F: Repeat current frame
-echo - Ctrl+Shift+Y: One frame backward
-echo - Ctrl+Shift+X: One frame forward
-echo - Ctrl+Shift+C: Jump to previous frame that contains an image
-echo - Ctrl+Shift+V: Jump to next frame that contains an image
-echo - Ctrl+Shift+B: Jump backward 100 frames
-echo - Ctrl+Shift+N: Jump forward 100 frames
-echo
+echo Use keyboard to navigate log if console does not have focus:
+echo "Space	" Play/pause
+echo "Home	" Stop
+echo "End	" Repeat frame
+echo "Left	" Go to previous frame
+echo "Right	" Go to next frame
+echo "Up	" Go to previous image
+echo "Down	" Go to next image
+echo "PageUp	" Go 100 frames back
+echo "PageDown	" Go 100 frames forward

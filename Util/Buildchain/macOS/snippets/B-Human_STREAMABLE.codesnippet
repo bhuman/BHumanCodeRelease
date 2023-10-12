@@ -15,16 +15,16 @@
   (&lt;#type#&gt;)(&lt;#init#&gt;) &lt;#var#&gt;,
 });</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>D5F2FE17-3B66-469C-ADC5-C939EDB5AA18</string>
+	<string>B-Human_STREAMABLE</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Declaration of a streamable structure.</string>
+	<string>B-Human: Declare a streamable structure.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>STREAMABLE Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>
-	<integer>0</integer>
+	<integer>2</integer>
 </dict>
 </plist>

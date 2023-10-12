@@ -13,31 +13,26 @@ robot all
 ci off
 
 # Select modules for simulator
-mr CameraInfo LogDataProvider Lower
-mr CameraInfo LogDataProvider Upper
-mr FrameInfo LogDataProvider Lower
-mr FrameInfo LogDataProvider Upper
-mr CameraCalibration ConfigurationDataProvider Upper
-mr CameraCalibration ConfigurationDataProvider Lower
-mr CameraCalibration ConfigurationDataProvider Cognition
-mr CameraCalibration ConfigurationDataProvider Motion
-mr BallModel OracledWorldModelProvider Cognition
-mr GroundTruthBallModel OracledWorldModelProvider Cognition
-mr TeammatesBallModel OracledWorldModelProvider Cognition
-mr GroundTruthRobotPose OracledWorldModelProvider Cognition
-mr GroundTruthWorldState LogDataProvider Cognition
-mr ObstacleModel OracledWorldModelProvider Cognition
-mr RobotPose OracledWorldModelProvider Cognition
-mr FrameInfo LogDataProvider Motion
-mr FsrSensorData LogDataProvider Motion
-mr InertialSensorData LogDataProvider Motion
-mr JointSensorData LogDataProvider Motion
-mr KeyStates LogDataProvider Motion
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Lower Upper Cognition Motion mr CameraCalibration ConfigurationDataProvider
+for Cognition mr BallModel OracledWorldModelProvider
+for Cognition mr GroundTruthBallModel OracledWorldModelProvider
+for Cognition mr TeammatesBallModel OracledWorldModelProvider
+for Cognition mr GlobalOpponentsModel OracledWorldModelProvider
+for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr ObstacleModel OracledWorldModelProvider
+for Cognition mr RobotPose OracledWorldModelProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr InertialSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
 
 # Deactivate Upper/Lower inter-thread communication
 mr ObstaclesPerceptorData off
 mr OtherFieldBoundary off
-mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
 mr OtherOdometryData off
 
@@ -52,10 +47,8 @@ mr CameraCalibrationStatus off
 mr CameraImage off
 mr CameraIntrinsics off
 mr CameraResolutionRequest off
+mr CenterCircleWithLine off
 mr CirclePercept off
-mr CNSImage off
-mr CNSPenaltyMarkRegions off
-mr CNSRegions off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage off
@@ -63,35 +56,34 @@ mr FieldBoundary off
 mr FieldLineIntersections off
 mr FieldLines off
 mr FilteredBallPercepts off
-mr GoalPostsPercept off
 mr ImageCoordinateSystem off
 mr IntersectionsPercept off
-mr JerseyClassifierOld off
 mr JerseyClassifier off
 mr JPEGImage off
+mr Keypoints off
 mr LinesPercept off
-mr MidCircle off
-mr MidCorner off
 mr ObstaclesImagePercept off
 mr OptionalECImage off
-mr OuterCorner off
-mr PenaltyArea off
 mr PenaltyMarkPercept off
 mr PenaltyMarkRegions off
 mr PenaltyMarkWithPenaltyAreaLine off
 mr PerceptRegistration off
 mr RelativeFieldColors off
 mr ScanGrid off
+mr SegmentedObstacleImage off
 mr SelfLocalizationHypotheses off
 mr SideInformation off
 mr WorldModelPrediction off
+mr OptionalCameraImage off
 
 # Representations that are still required
 mr CameraStatus default
 mr FieldFeatureOverview default
+#mr GlobalOpponentsModel default
 mr ObstaclesFieldPercept default
 mr RobotHealth default
-mr Whistle default
+mr RefereePercept default
+for Motion mr CameraIntrinsics ConfigurationDataProvider
 
 call Includes/GameStates
 call Includes/DebugResponses

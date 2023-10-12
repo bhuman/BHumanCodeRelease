@@ -25,6 +25,10 @@ set(MATH_SOURCES
     "${MATH_ROOT_DIR}/Rotation.h"
     "${MATH_ROOT_DIR}/RotationMatrix.cpp"
     "${MATH_ROOT_DIR}/RotationMatrix.h"
+    "${MATH_ROOT_DIR}/SE3fWithCov.cpp"
+    "${MATH_ROOT_DIR}/SE3fWithCov.h"
+    "${MATH_ROOT_DIR}/SE3Tools.cpp"
+    "${MATH_ROOT_DIR}/SE3Tools.h"
     "${MATH_ROOT_DIR}/UnscentedKalmanFilter.h")
 
 add_library(Math${TARGET_SUFFIX} OBJECT ${MATH_SOURCES})

@@ -27,3 +27,11 @@ QBrush getAlternateBase()
   qtColor.setRgbF(static_cast<float>(red), static_cast<float>(green), static_cast<float>(blue), static_cast<float>(alpha));
   return QBrush(qtColor);
 }
+
+void runInMainThread(std::function<void()> function)
+{
+  dispatch_async(dispatch_get_main_queue(),
+  ^{
+    function();
+  });
+}

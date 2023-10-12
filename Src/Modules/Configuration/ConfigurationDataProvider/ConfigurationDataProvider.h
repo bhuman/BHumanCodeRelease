@@ -11,11 +11,11 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/CameraCalibration.h"
+#include "Representations/Configuration/CameraIntrinsics.h"
 #include "Representations/Configuration/CameraSettings.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/FootOffset.h"
-#include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Configuration/JointCalibration.h"
@@ -24,7 +24,6 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Configuration/RelativeFieldColorsParameters.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Configuration/SetupPoses.h"
 #include "Representations/Configuration/StaticJointPoses.h"
 #include "Representations/Infrastructure/StiffnessData.h"
 #include "Representations/MotionControl/KeyframeMotionParameters.h"
@@ -38,6 +37,7 @@ MODULE(ConfigurationDataProvider,
   USES(BallSpecification),
   PROVIDES(BehaviorParameters),
   PROVIDES(CameraCalibration),
+  PROVIDES(CameraIntrinsics),
   PROVIDES(CameraSettings),
   PROVIDES(DamageConfigurationBody),
   PROVIDES(DamageConfigurationHead),
@@ -52,7 +52,6 @@ MODULE(ConfigurationDataProvider,
   PROVIDES(MassCalibration),
   PROVIDES(RelativeFieldColorsParameters),
   PROVIDES(RobotDimensions),
-  PROVIDES(SetupPoses),
   PROVIDES(StaticJointPoses),
   PROVIDES(StiffnessSettings),
   PROVIDES(WalkModifier),
@@ -64,6 +63,7 @@ private:
   std::unique_ptr<BallSpecification> theBallSpecification;
   std::unique_ptr<BehaviorParameters> theBehaviorParameters;
   std::unique_ptr<CameraCalibration> theCameraCalibration;
+  std::unique_ptr<CameraIntrinsics> theCameraIntrinsics;
   std::unique_ptr<CameraSettings> theCameraSettings;
   std::unique_ptr<DamageConfigurationBody> theDamageConfigurationBody;
   std::unique_ptr<DamageConfigurationHead> theDamageConfigurationHead;
@@ -78,7 +78,6 @@ private:
   std::unique_ptr<MassCalibration> theMassCalibration;
   std::unique_ptr<RelativeFieldColorsParameters> theRelativeFieldColorsParameters;
   std::unique_ptr<RobotDimensions> theRobotDimensions;
-  std::unique_ptr<SetupPoses> theSetupPoses;
   std::unique_ptr<StaticJointPoses> theStaticJointPoses;
   std::unique_ptr<StiffnessSettings> theStiffnessSettings;
   std::unique_ptr<WalkModifier> theWalkModifier;
@@ -86,6 +85,7 @@ private:
   void update(BallSpecification& ballSpecification) override {update(ballSpecification, theBallSpecification);}
   void update(BehaviorParameters& behaviorParameters) override {update(behaviorParameters, theBehaviorParameters);}
   void update(CameraCalibration& cameraCalibration) override;
+  void update(CameraIntrinsics& cameraIntrinsics) override { update(cameraIntrinsics, theCameraIntrinsics); }
   void update(CameraSettings& cameraSettings) override {update(cameraSettings, theCameraSettings);}
   void update(DamageConfigurationBody& damageConfigurationBody) override {update(damageConfigurationBody, theDamageConfigurationBody);}
   void update(DamageConfigurationHead& damageConfigurationHead) override {update(damageConfigurationHead, theDamageConfigurationHead);}
@@ -102,7 +102,6 @@ private:
   void update(RobotDimensions& robotDimensions) override;
   void update(StaticJointPoses& staticJointPoses) override { update(staticJointPoses, theStaticJointPoses); }
   void update(StiffnessSettings& stiffnessSettings) override {update(stiffnessSettings, theStiffnessSettings);}
-  void update(SetupPoses& setupPoses) override {update(setupPoses, theSetupPoses);}
   void update(WalkModifier& walkModifier) override {update(walkModifier, theWalkModifier);}
 
   template<typename T> void update(T& representation, std::unique_ptr<T>& theRepresentation)

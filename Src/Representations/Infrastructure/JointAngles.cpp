@@ -1,5 +1,5 @@
 #include "JointAngles.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 
 Angle JointAngles::mirror(Joints::Joint joint) const
 {

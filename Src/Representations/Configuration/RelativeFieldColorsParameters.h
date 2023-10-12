@@ -11,7 +11,6 @@
 
 #include "Streaming/AutoStreamable.h"
 #include "Math/Range.h"
-#include <algorithm>
 
 STREAMABLE(RelativeFieldColorsParameters,
 {,

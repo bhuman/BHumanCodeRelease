@@ -29,7 +29,7 @@
 
 namespace asmjit
 {
-  inline namespace _abi_1_8
+  inline namespace _abi_1_9
   {
     class JitRuntime;
   }
@@ -41,13 +41,13 @@ namespace asmjit
  * System-independent base class for threads.
  * The class is the toplevel processing unit for threads and implements base features such as the main routine.
  */
-class ThreadFrame : public Thread, public MessageHandler
+class ThreadFrame : public Thread
 #ifdef TARGET_ROBOT
   , public AlignedMemory
 #endif
 {
 protected:
-  DebugReceiver<MessageQueue>* debugReceiver = nullptr; /**< The MessageQueue for incomming debug messages. */
+  DebugReceiver<MessageQueue>* debugReceiver = nullptr; /**< The MessageQueue for incoming debug messages. */
   DebugSender<MessageQueue>* debugSender = nullptr; /**< The MessageQueue for outgoing debug messages. */
 
 private:
@@ -152,7 +152,7 @@ protected:
    * @param message An interface to read the message from the queue.
    * @return Has the message been handled?
    */
-  bool handleMessage(InMessage& message) override;
+  virtual bool handleMessage(MessageQueue::Message message);
 
   /**
    * Is called from within threadMain() with the debugReceiver message queue.

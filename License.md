@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2022 B-Human.  All rights reserved.
+Copyright (c) 2023 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup
@@ -58,9 +58,9 @@ are met:
       
       - The announcement on the SPL mailing list shall also contain
         a description of the own contribution that addresses the
-        criteria set by the SPL rule book (in the 2022 SPL rules
+        criteria set by the SPL rule book (in the 2023 SPL rules
         described in section A.1 of
-        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2022.pdf).
+        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2023.pdf).
 
       - For each year, the derived software as used in the last
         RoboCup competition game in that year, including the

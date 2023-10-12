@@ -12,7 +12,6 @@
 
 #include "BallPhysics.h"
 #include "Math/Eigen.h"
-#include "Math/Geometry.h"
 #include "Platform/BHAssert.h"
 #include <limits>
 
@@ -21,13 +20,6 @@ Vector2f BallPhysics::getEndPosition(const Vector2f& p, const Vector2f& v, float
   ASSERT(ballFriction < 0.f);
   const float tStop = computeTimeUntilBallStops(v, ballFriction);  // unit: seconds
   return propagateBallPosition(p, v, tStop, ballFriction);
-}
-
-Vector2f BallPhysics::getEndPositionRegardingRotation(const Vector2f& p, const Vector2f& v, const float rotation, float ballFriction)
-{
-  ASSERT(ballFriction < 0.f);
-  const float tStop = computeTimeUntilBallStops(v, ballFriction);  // unit: seconds
-  return propagateBallPositionWithRotation(p, v, tStop, ballFriction, rotation);
 }
 
 Vector2f BallPhysics::propagateBallPosition(const Vector2f& p, const Vector2f& v, float t, float ballFriction)
@@ -40,22 +32,6 @@ Vector2f BallPhysics::propagateBallPosition(const Vector2f& p, const Vector2f& v
     t = tStop;
   const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
   return p + v * t + a * 0.5f * t * t;                                   // unit: millimeter
-}
-
-Vector2f BallPhysics::propagateBallPositionWithRotation(const Vector2f& p, const Vector2f& v, float t, float ballFriction, const float rotation)
-{
-  ASSERT(ballFriction < 0.f);
-  float velLength = v.norm();
-  if(velLength == 0.f)
-    return p;
-  const float tStop = computeTimeUntilBallStops(v, ballFriction);        // unit: seconds
-  if(tStop < t)
-    t = tStop;
-  if(rotation == 0.f)
-    return propagateBallPosition(p, v, t, ballFriction);
-  const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
-  const Matrix2f rot = Eigen::Rotation2D<float>(rotation * t).toRotationMatrix();
-  return p + rot * (v * t + a * 0.5f * t * t);                                          // unit: millimeter
 }
 
 void BallPhysics::propagateBallPositionAndVelocity(Vector2f& p, Vector2f& v, float t, float ballFriction)
@@ -72,28 +48,6 @@ void BallPhysics::propagateBallPositionAndVelocity(Vector2f& p, Vector2f& v, flo
     v = Vector2f::Zero();                                                // unit: millimeter / s
   else
     v += a * t;                                                          // unit: millimeter / s
-}
-
-void BallPhysics::propagateBallPositionAndVelocityWithRotation(Vector2f& p, Vector2f& v, float t, float ballFriction, float& rotation)
-{
-  ASSERT(ballFriction < 0.f);
-  float velLength = v.norm();
-  if(velLength == 0.f)
-    return;
-  const float tStop = computeTimeUntilBallStops(v, ballFriction);        // unit: seconds
-  if(tStop < t)
-    t = tStop;
-  if(rotation == 0.f)
-    return propagateBallPositionAndVelocity(p, v, t, ballFriction);
-  const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
-  const Matrix2f rot = Eigen::Rotation2D<float>(rotation * t).toRotationMatrix();
-  p += rot * (v * t + a * 0.5f * t * t);                                          // unit: millimeter
-  v += a * t;     // unit: millimeter / s
-  //Please don't change the code due to debug reasons, sincerely Alex
-  float stabilityValue = 1000.f / velLength;
-  float minResult = std::min(1.5f, stabilityValue);
-  float maxResult = std::max(minResult, 1.f);
-  rotation *= maxResult;
 }
 
 void BallPhysics::applyFrictionToPositionAndVelocity(Vector2f& p, Vector2f& v, float t, float ballFriction)

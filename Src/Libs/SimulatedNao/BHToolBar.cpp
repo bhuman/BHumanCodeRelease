@@ -10,15 +10,21 @@ QMenu* BHToolBar::createUserMenu() const
 {
   QMenu* menu = new QMenu(tr("B-Human"));
 
-  QAction* standAction = new QAction(QIcon(":/Icons/stand.png"), tr("&MotionRequest stand"), menu);
+  QIcon standIcon(":/Icons/icons8-standing-man-50.png");
+  standIcon.setIsMask(true);
+  QAction* standAction = new QAction(standIcon, tr("&MotionRequest stand"), menu);
   standAction->setCheckable(true);
   standAction->setChecked(currentMotion == stand);
 
-  QAction* sitDownAction = new QAction(QIcon(":/Icons/sitDown.png"), tr("&MotionRequest sitDown"), menu);
+  QIcon sitDownIcon(":/Icons/icons8-squats-50.png");
+  sitDownIcon.setIsMask(true);
+  QAction* sitDownAction = new QAction(sitDownIcon, tr("&MotionRequest sitDown"), menu);
   sitDownAction->setCheckable(true);
   sitDownAction->setChecked(currentMotion == sitDown);
 
-  QAction* headAngleAct = new QAction(QIcon(":/Icons/headAngle.png"), tr("Move Head &Freely"), menu);
+  QIcon headAngleIcon(":/Icons/icons8-drag-50.png");
+  headAngleIcon.setIsMask(true);
+  QAction* headAngleAct = new QAction(headAngleIcon, tr("Move Head &Freely"), menu);
   headAngleAct->setCheckable(true);
   headAngleAct->setChecked(headMotionRequest);
 

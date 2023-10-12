@@ -7,12 +7,12 @@
 #include "LogDataProvider.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
-#include "Representations/Infrastructure/Thumbnail.h"
 #include "Debugging/DebugDataStreamer.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Debugging/Debugging.h"
 #include "Debugging/DebugImages.h"
-#include "Tools/Framework/ModuleContainer.h"
+#include "Debugging/Plot.h"
+#include "Framework/ModuleContainer.h"
 #include "Streaming/Global.h"
 #include "Streaming/Streamable.h"
 
@@ -22,11 +22,10 @@
 
 thread_local LogDataProvider* LogDataProvider::theInstance = nullptr;
 
-MAKE_MODULE(LogDataProvider, infrastructure);
+MAKE_MODULE(LogDataProvider);
 
 LogDataProvider::LogDataProvider() :
-  frameDataComplete(false),
-  thumbnail(nullptr)
+  frameDataComplete(false)
 {
   theInstance = this;
   TypeInfo::initCurrent();
@@ -38,8 +37,6 @@ LogDataProvider::LogDataProvider() :
 
 LogDataProvider::~LogDataProvider()
 {
-  if(thumbnail)
-    delete thumbnail;
   if(logTypeInfo)
     delete logTypeInfo;
 
@@ -50,9 +47,7 @@ void LogDataProvider::update(CameraImage& cameraImage)
 {
   if(SystemCall::getMode() == SystemCall::logFileReplay)
   {
-    if(thumbnail)
-      thumbnail->toCameraImage(cameraImage);
-    else if(theCameraInfo.width / 2 != static_cast<int>(cameraImage.width) || theCameraInfo.height != static_cast<int>(cameraImage.height))
+    if(theCameraInfo.width / 2 != static_cast<int>(cameraImage.width) || theCameraInfo.height != static_cast<int>(cameraImage.height))
     {
       cameraImage.setResolution(theCameraInfo.width / 2, theCameraInfo.height);
       CameraImage::PixelType color;
@@ -72,12 +67,6 @@ void LogDataProvider::update(CameraImage& cameraImage)
   DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(cameraImage));
 }
 
-void LogDataProvider::update(ECImage& ecImage)
-{
-  if(SystemCall::getMode() == SystemCall::logFileReplay && thumbnail)
-    thumbnail->toECImage(ecImage);
-}
-
 void LogDataProvider::update(GroundTruthOdometryData& groundTruthOdometryData)
 {
   Pose2f odometryOffset(groundTruthOdometryData);
@@ -88,50 +77,51 @@ void LogDataProvider::update(GroundTruthOdometryData& groundTruthOdometryData)
   lastOdometryData = groundTruthOdometryData;
 }
 
-bool LogDataProvider::handle(InMessage& message)
+bool LogDataProvider::handle(MessageQueue::Message message)
 {
-  if(message.getMessageID() == idTypeInfo)
+  if(message.id() == idTypeInfo)
   {
     if(!logTypeInfo)
       logTypeInfo = new TypeInfo(false);
-    message.bin >> *logTypeInfo;
+    message.bin() >> *logTypeInfo;
     return true;
   }
   else if(SystemCall::getMode() == SystemCall::logFileReplay && !logTypeInfo)
     return false;
-  else if(Blackboard::getInstance().exists(TypeRegistry::getEnumName(message.getMessageID()) + 2) && // +2 to skip the id of the messageID enums.
-          ModuleGraphRunner::getInstance().getProvider(TypeRegistry::getEnumName(message.getMessageID()) + 2) == "LogDataProvider")
+  else if(Blackboard::getInstance().exists(TypeRegistry::getEnumName(message.id()) + 2) && // +2 to skip the id of the messageID enums.
+          ModuleGraphRunner::getInstance().getProvider(TypeRegistry::getEnumName(message.id()) + 2) == "LogDataProvider")
   {
     if(logTypeInfo)
     {
-      if(states[message.getMessageID()] == unknown)
+      if(states[message.id()] == unknown)
       {
         // Check whether the current and the logged specifications are the same.
-        const char* type = TypeRegistry::getEnumName(message.getMessageID()) + 2;
-        states[message.getMessageID()] = TypeInfo::current->areTypesEqual(*logTypeInfo, type, type) ? accept : convert;
-        if(states[message.getMessageID()] == convert)
+        const char* type = TypeRegistry::getEnumName(message.id()) + 2;
+        states[message.id()] = TypeInfo::current->areTypesEqual(*logTypeInfo, type, type) ? accept : convert;
+        if(states[message.id()] == convert)
           OUTPUT_WARNING(std::string(type) + " has changed and is converted. Some fields will keep their previous values.");
       }
     }
-    readMessage(message, Blackboard::getInstance()[TypeRegistry::getEnumName(message.getMessageID()) + 2]);
+    readMessage(message, Blackboard::getInstance()[TypeRegistry::getEnumName(message.id()) + 2]);
     return true;
   }
   else
     return false;
 }
 
-void LogDataProvider::readMessage(InMessage& message, Streamable& representation)
+void LogDataProvider::readMessage(MessageQueue::Message message, Streamable& representation)
 {
-  if(states[message.getMessageID()] != convert)
-    message.bin >> representation;
+  if(states[message.id()] != convert)
+    message.bin() >> representation;
   else
   {
     ASSERT(logTypeInfo);
-    const char* type = TypeRegistry::getEnumName(message.getMessageID()) + 2;
+    const char* type = TypeRegistry::getEnumName(message.id()) + 2;
 
     // Stream into textual representation in memory using type specification of log file.
     OutMapMemory outMap(true, 16384);
-    DebugDataStreamer streamer(*logTypeInfo, message.bin, type);
+    auto stream = message.bin();
+    DebugDataStreamer streamer(*logTypeInfo, stream, type);
     outMap << streamer;
 
     // Read from textual representation. Errors are suppressed.
@@ -139,7 +129,7 @@ void LogDataProvider::readMessage(InMessage& message, Streamable& representation
     inMap >> representation;
 
     // HACK: This does not work if anything else than the sample format is changed in AudioData.
-    if(message.getMessageID() == idAudioData)
+    if(message.id() == idAudioData)
     {
       AudioData& audioData = dynamic_cast<AudioData&>(representation);
       for(AudioData::Sample& sample : audioData.samples)
@@ -148,7 +138,7 @@ void LogDataProvider::readMessage(InMessage& message, Streamable& representation
   }
 }
 
-bool LogDataProvider::handleMessage(InMessage& message)
+bool LogDataProvider::handleMessage(MessageQueue::Message message)
 {
   return theInstance && theInstance->handleMessage2(message);
 }
@@ -172,9 +162,9 @@ bool LogDataProvider::isFrameDataComplete(bool ack)
     return false;
 }
 
-bool LogDataProvider::handleMessage2(InMessage& message)
+bool LogDataProvider::handleMessage2(MessageQueue::Message message)
 {
-  switch(message.getMessageID())
+  switch(message.id())
   {
     case idCameraImage:
       handle<CameraImage, FrameInfo>(message, "CameraImage", "FrameInfo",
@@ -231,21 +221,11 @@ bool LogDataProvider::handleMessage2(InMessage& message)
         handle(message);
       return true;
 
-    case idThumbnail:
-      if(ModuleGraphRunner::getInstance().getProvider("CameraImage") == "LogDataProvider" ||
-         ModuleGraphRunner::getInstance().getProvider("ECImage") == "LogDataProvider")
-      {
-        if(!thumbnail)
-          thumbnail = new Thumbnail;
-        message.bin >> *thumbnail;
-      }
-      return true;
-
     case idJPEGImage:
       if(ModuleGraphRunner::getInstance().getProvider("CameraImage") == "LogDataProvider")
       {
         JPEGImage jpegImage;
-        message.bin >> jpegImage;
+        message.bin() >> jpegImage;
         jpegImage.toCameraImage(static_cast<CameraImage&>(Blackboard::getInstance()["CameraImage"]));
         if(Blackboard::getInstance().exists("FrameInfo"))
           static_cast<FrameInfo&>(Blackboard::getInstance()["FrameInfo"]).time = static_cast<const CameraImage&>(Blackboard::getInstance()["CameraImage"]).timestamp;
@@ -259,25 +239,13 @@ bool LogDataProvider::handleMessage2(InMessage& message)
     case idStopwatch:
     {
       DEBUG_RESPONSE_NOT("timing")
-      {
-        const int size = message.getMessageSize();
-        std::vector<unsigned char> data;
-        data.resize(size);
-        message.bin.read(&data[0], size);
-        Global::getDebugOut().bin.write(&data[0], size);
-        Global::getDebugOut().finishMessage(idStopwatch);
-      }
+        Global::getDebugOut() << message;
       return true;
     }
 
     case idAnnotation:
     {
-      const int size = message.getMessageSize();
-      std::vector<unsigned char> data;
-      data.resize(size);
-      message.bin.read(&data[0], size);
-      Global::getDebugOut().bin.write(&data[0], size);
-      Global::getDebugOut().finishMessage(idAnnotation);
+      Global::getDebugOut() << message;
       return true;
     }
 

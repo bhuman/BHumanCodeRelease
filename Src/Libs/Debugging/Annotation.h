@@ -23,8 +23,8 @@
 #define ANNOTATION(name, message) \
   do \
   { \
-    Global::getAnnotationManager().addAnnotation(); \
-    Global::getAnnotationManager().getOut().out.text << name << message; \
-    Global::getAnnotationManager().getOut().out.finishMessage(idAnnotation); \
+    OutTextMemory _text; \
+    _text << name << message; \
+    Global::getAnnotationManager().add().write(_text.data(), _text.size()); \
   } \
   while(false)

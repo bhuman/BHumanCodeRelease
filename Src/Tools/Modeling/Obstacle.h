@@ -6,10 +6,9 @@
 
 STREAMABLE(Obstacle,
 {
-  // Definition of an obstacle
-  ENUM(Type, /**< The type of an obstacle. Any changes might have an impact on ObstacleModelProvider.cpp/InternalObstacle.cpp <- probably not */ //TODO: check whether order is important
+  // The different obstacle types
+  ENUM(Type, /**< The type of an obstacle. Current code assumes the "fallen" elements to be at the end of the list */*
   {,
-    goalpost,
     unknown,
     someRobot,
     opponent,
@@ -26,7 +25,6 @@ STREAMABLE(Obstacle,
   bool isOpponent() const;
   bool isSomeRobot() const;
   bool isUnknown() const;
-  bool isGoalpost() const;
 
   Obstacle() = default;
   Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,

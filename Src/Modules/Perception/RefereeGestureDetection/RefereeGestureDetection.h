@@ -3,67 +3,101 @@
  *
  * This file declares a module that detects referee gestures.
  *
- * @author <a href="mailto:aylu@uni-bremen.de">Ayleen Lührsen</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
 
 #include "Framework/Module.h"
-#include "Representations/Infrastructure/CameraInfo.h"
+#include "Math/Range.h"
+#include "MathBase/RingBuffer.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Perception/ImagePreprocessing/OptionalCameraImage.h"
 #include "Representations/Perception/RefereePercept/Keypoints.h"
 #include "Representations/Perception/RefereePercept/RefereePercept.h"
-#include "Streaming/EnumIndexedArray.h"
-#include <vector>
-
-/*Exists for Debugging purposes*/
-ENUM(RefArmPose,
-{,
-  none,
-  down,
-  degree45,
-  degree90,
-  up,
-  forward,
-  folded,
-  wing,
-  spreadwing,
-});
-STREAMABLE(Rule,
-{,
-  (Rangea) angleBodyToUpperArm, // Angle between upper arm and a vertical line
-  (Rangea) angleUpperToLower, // Angle between upper Arm and lower arm, with the elbow as angle if you want so
-  (Rangef) distanceRatio, // distance from sum of upper and lower arm in relation to body
-});
 
 MODULE(RefereeGestureDetection,
 {,
+  REQUIRES(FieldDimensions),
+  REQUIRES(GameState),
   REQUIRES(Keypoints),
-  REQUIRES(CameraInfo),
+  REQUIRES(OptionalCameraImage),
+  REQUIRES(RobotPose),
   PROVIDES(RefereePercept),
   LOADS_PARAMETERS(
-  {,
-    (ENUM_INDEXED_ARRAY(Rule, RefArmPose)) constraints, /**Rules that define the pose of the arm*/
-    (int) posePortion, /**Size of the buffer is divided by this number to determine the minimum amount of frames a pose needs to be recognized before we apply it to the percept*/
+  {
+    STREAMABLE(Constraint,
+    {,
+      (Keypoints::Keypoint) from, /**< The first keypoint the position of which is checked. */
+      (Keypoints::Keypoint) to, /**< The second keypoint the position of which is checked. */
+      (Rangef) distance, /**< The distance between the two keypoints must be in this range (in pixels). */
+      (Rangea) direction, /**< The direction from \c from to \c to must be in this range (in radians). */
+    });
+
+    STREAMABLE(Rule,
+    {,
+      (RefereePercept::Gesture) gesture, /**< The gesture detected by this rule. */
+      (std::vector<Constraint>) constraints, /**< The constraints that must be satisfied to detect the gesture. */
+    }),
+
+    (unsigned) bufferSize, /**< Number of gesture detections buffered for majority vote. */
+    (float) minDetectionRatio, /**< Minimum ratio of buffered gestures that make up an accepted gesture. */
+    (std::vector<Rule>) rules, /**< The rules made up of constraints that must be satisfied to detect a gesture. */
   }),
 });
 
-RefArmPose leftArmPose;
-RefArmPose rightArmPose;
-int leftArmPoseInt = 0;
-int rightArmPoseInt = 0;
-RingBuffer<RefereePercept::Gesture, 10> poseMemory;
-ENUM_INDEXED_ARRAY(int, RefereePercept::Gesture) poseAppearances;
-
 class RefereeGestureDetection : public RefereeGestureDetectionBase
 {
-  /** current position in the memories of the robot regarding the  **/
-  // int memCtr = 0;
-  /** to be able to convert a Keypoint to the array index instead of iterating / switch case **/
-  ENUM_INDEXED_ARRAY(int, Keypoints::Keypoint) kpToIndex = { -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1, -1 };
+  RingBuffer<RefereePercept::Gesture> history; /**< Recently detected gestures. */
+  std::array<int, RefereePercept::numOfGestures> histogram = {}; /**< How often was each gesture detected recently? */
+  unsigned lastHistoryUpdate = 0; /**< For updating the gesture history in SimRobot as slow as on the real robot. */
 
   /**
-   * This method calculates the position that may be assigned to the RefereePercept. It uses the KeypointRepresentation from KeypointProvider, and uses them to calculate a position. It then fills a buffer with them, and in each round the first pose that fills a given portion of the buffer will be selected as the pose.
-   * @param theDummyRepresentation The representation updated.
+   * This method is called when the representation provided needs to be updated.
+   * @param theRefereePercept The representation updated.
    */
   void update(RefereePercept& theRefereePercept) override;
+
+  /**
+   * Checks whether keypoints exist on both sides of the image.
+   * The referee should stand in the middle of the image. Therefore, there must be
+   * points on both sides.
+   * @return Could this detection be the referee?
+   */
+  bool crossesMiddle() const;
+
+  /**
+   * Get a keypoint returned by the network. The order to its left/right counterpart
+   * is maintained under the assumption that the referee faces this robot.
+   * @param keypoint The keypoint from the perspective of the observed referee.
+   * @return The network output for the keypoint.
+   */
+  const Keypoints::Point& getOrdered(const Keypoints::Keypoint keypoint) const;
+
+  /**
+   * Detect a gesture based on the network output.
+   * @return The keypoint detected. Can be \c none.
+   */
+  RefereePercept::Gesture detectGesture() const;
+
+  /**
+   * Update the histogram of the recently detected gestures.
+   * @param gesture The latest gesture detected. Can be \c none.
+   */
+  void updateHistogram(const RefereePercept::Gesture gesture);
+
+  /**
+   * Compute the predominant gesture from the histogram of recently detected gestures.
+   * @return The predominant gesture. Is \c none if no gesture is predominant enough.
+   */
+  RefereePercept::Gesture getPredominantGesture() const;
+
+public:
+  /**
+   * Constructor.
+   * Initializes the gesture history.
+   */
+  RefereeGestureDetection();
 };

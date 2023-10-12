@@ -7,6 +7,7 @@
 
 #include "KeyframePhaseBase.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Modules/MotionControl/KeyframeMotionEngine/KeyframeMotionEngine.h"
 
 void KeyframePhaseBase::pidWithCom()

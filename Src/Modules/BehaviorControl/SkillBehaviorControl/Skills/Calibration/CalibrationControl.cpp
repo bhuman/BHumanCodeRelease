@@ -8,7 +8,6 @@
 
 #include "Representations/BehaviorControl/Skills.h"
 #include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
-#include "Representations/Configuration/FootSoleRotationCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/FallDownState.h"
@@ -17,7 +16,7 @@
 SKILL_IMPLEMENTATION(CalibrationControlImpl,
 {,
   IMPLEMENTS(CalibrationControl),
-  CALLS(Activity),
+  CALLS(CalibrationFinished),
   CALLS(LookForward),
   CALLS(PlayDead),
   CALLS(Say),
@@ -25,9 +24,7 @@ SKILL_IMPLEMENTATION(CalibrationControlImpl,
   CALLS(LookLeftAndRight),
   CALLS(AutomaticIMUCalibration),
   CALLS(AutonomousCameraCalibration),
-  CALLS(AutomaticFootSoleRotationCalibration),
   REQUIRES(FallDownState),
-  REQUIRES(FootSoleRotationCalibration),
   REQUIRES(FrameInfo),
   REQUIRES(GyroState),
   REQUIRES(RobotPose),
@@ -35,6 +32,7 @@ SKILL_IMPLEMENTATION(CalibrationControlImpl,
   {,
     (int)(3000) lookAroundDuration, /**< Min duration to look around before starting the calibration process. */
     (int)(6000) lookAroundDurationMax, /**< Max duration to look around before starting the calibration process. */
+    (int)(3) notMovingCycles, /**< Sample size from gyro state times this factor to check if we can calibrate. */
   }),
 });
 
@@ -53,8 +51,6 @@ class CalibrationControlImpl : public CalibrationControlImplBase
       transition
       {
         if(!imuCalibrationFinished ||
-           !theFootSoleRotationCalibration.footCalibration[Legs::left].isCalibrated || // TODO ignore these flags but execute the calibration always
-           !theFootSoleRotationCalibration.footCalibration[Legs::right].isCalibrated ||
            !cameraCalibrationFinished)
           goto lookAroundBeforeCalibration;
         else
@@ -88,10 +84,6 @@ class CalibrationControlImpl : public CalibrationControlImplBase
           goto calibrateIMU;
         else if(!cameraCalibrationFinished)
           goto calibrateCamera;
-        else if((!theFootSoleRotationCalibration.footCalibration[Legs::left].isCalibrated ||
-                 !theFootSoleRotationCalibration.footCalibration[Legs::right].isCalibrated) &&
-                !theFootSoleRotationCalibration.notCalibratable)
-          goto calibrateFootSoleRotation;
         else
           goto calibrationFinished;
       }
@@ -115,8 +107,8 @@ class CalibrationControlImpl : public CalibrationControlImplBase
       action
       {
         theAutomaticIMUCalibrationSkill();
-        if(theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) < 50) // the time should be less than the robot needs to say the text
-          theSaySkill("Please do not move me. I need to calibrate my i m u");
+        if(theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) < theGyroState.filterTimeWindow * notMovingCycles) // the time should be less than the robot needs to say the text
+          theSaySkill({.text = "Please do not move me. I need to calibrate my i m u"});
       }
     }
 
@@ -136,22 +128,9 @@ class CalibrationControlImpl : public CalibrationControlImplBase
       }
     }
 
-    state(calibrateFootSoleRotation)
-    {
-      transition
-      {
-        if(theAutomaticFootSoleRotationCalibrationSkill.isDone())
-          goto decideForNextState;
-      }
-      action
-      {
-        theAutomaticFootSoleRotationCalibrationSkill();
-      }
-    }
-
     state(calibrationFinished)
     {
-      theActivitySkill({.activity = BehaviorStatus::calibrationFinished});
+      theCalibrationFinishedSkill();
       theSaySkill({.text = "Calibration finished."});
       thePlayDeadSkill();
       theLookForwardSkill();

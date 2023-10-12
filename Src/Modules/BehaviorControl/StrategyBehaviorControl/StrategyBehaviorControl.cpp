@@ -12,7 +12,7 @@
 #include "Tools/Modeling/BallPhysics.h"
 #include "Debugging/DebugDrawings.h"
 
-MAKE_MODULE(StrategyBehaviorControl, behaviorControl, StrategyBehaviorControl::getExtModuleInfo);
+MAKE_MODULE(StrategyBehaviorControl, StrategyBehaviorControl::getExtModuleInfo);
 
 StrategyBehaviorControl::StrategyBehaviorControl() :
   theBehavior(theBallDropInModel, theExtendedGameState, theFieldBall, theFieldDimensions, theFrameInfo,
@@ -113,7 +113,7 @@ Agent* StrategyBehaviorControl::updateAgents()
   {
     for(Agent& agent : agents)
     {
-      agent.lastKnownPose = theSetupPoses.getPoseOfRobot(theGameState.ownTeam.getSubstitutedPlayerNumber(agent.number)).position;
+      agent.lastKnownPose = theSetupPoses.getPoseOfRobot(agent.number).position;
     }
   }
   else if(theGameState.isSet() && theExtendedGameState.wasReady())
@@ -236,8 +236,8 @@ void StrategyBehaviorControl::updateAgentByTeamMessage(Agent& agent, const Recei
       agent.disagreeOnBall = (itsBallOnField - myBallOnField).squaredNorm() > sqr(777.f + (agent.disagreeOnBall ? 0.f : 222.f));
     }
   }
-  agent.isUpright = teamMessage.isUpright;
-  agent.timeWhenLastUpright = teamMessage.timeWhenLastUpright;
+  agent.isUpright = teamMessage.theRobotStatus.isUpright;
+  agent.timeWhenLastUpright = teamMessage.theRobotStatus.timeWhenLastUpright;
   agent.proposedTactic = teamMessage.theStrategyStatus.proposedTactic;
   agent.acceptedTactic = teamMessage.theStrategyStatus.acceptedTactic;
   agent.proposedMirror = teamMessage.theStrategyStatus.proposedMirror;

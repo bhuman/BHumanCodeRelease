@@ -37,12 +37,14 @@ private:
 public:
   ,
   (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) angles, /**< The angles of all joints. */
+  (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) variance, /**< The variance of all joints in squared rad. */
   (unsigned)(0) timestamp, /**< The time when the jointangles were received*/
 });
 
 inline JointAngles::JointAngles()
 {
   angles.fill(0.f);
+  variance.fill(0.f);
 }
 
 inline void JointAngles::mirror(const JointAngles& other)

@@ -11,7 +11,6 @@
 #include "Debugging/DebugDrawings3D.h"
 #include "Math/Eigen.h"
 #include "Math/Pose3f.h"
-#include "Streaming/InMessage.h"
 #include <array>
 #include <vector>
 
@@ -20,7 +19,7 @@ struct CameraImage;
 class DebugDrawing3D
 {
 public:
-  bool addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType);
+  bool addShapeFromQueue(In& message, Drawings3D::ShapeType shapeType);
 
   /** base class for all drawing elements */
   struct Element

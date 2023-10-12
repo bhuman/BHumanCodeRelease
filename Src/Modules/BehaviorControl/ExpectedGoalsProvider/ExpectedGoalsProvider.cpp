@@ -9,7 +9,7 @@
 
 #include "ExpectedGoalsProvider.h"
 
-MAKE_MODULE(ExpectedGoalsProvider, behaviorControl);
+MAKE_MODULE(ExpectedGoalsProvider);
 
 ExpectedGoalsProvider::ExpectedGoalsProvider()
 {
@@ -117,13 +117,9 @@ Angle ExpectedGoalsProvider::getOpeningAngle(const Vector2f& pointOnField) const
   wheel.addSector(Rangea(angleToRightPost, angleToLeftPost), std::numeric_limits<float>::max(), SectorWheel::Sector::goal);
 
   // TODO: Replace the ObstacleModel with the GlobalOpponentsModel once implemented
-  for(const Obstacle& obstacle : theObstacleModel.obstacles)
+  for(const auto& obstacle : theGlobalOpponentsModel.opponents)
   {
-    if(obstacle.type == Obstacle::goalpost ||
-       obstacle.isTeammate())
-      continue;
-
-    const Vector2f obstacleOnField = theRobotPose * obstacle.center;
+    const Vector2f& obstacleOnField = obstacle.position;
     // Skip opponents inside of their goal (behind the groundline)
     if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGroundLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
       continue;

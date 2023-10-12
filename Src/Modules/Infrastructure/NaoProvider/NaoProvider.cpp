@@ -19,7 +19,7 @@
 #include <cstring>
 #include <csignal>
 
-MAKE_MODULE(NaoProvider, infrastructure);
+MAKE_MODULE(NaoProvider);
 
 #ifdef TARGET_ROBOT
 
@@ -287,7 +287,9 @@ void NaoProvider::update(InertialSensorData& theInertialSensorData)
   for(size_t i = 0; i < 3; ++i)
   {
     theInertialSensorData.gyro(i) = MsgPack::readFloat(gyros[i]);
+    theInertialSensorData.gyroVariance(i) = gyroVariance;
     theInertialSensorData.acc(i) = MsgPack::readFloat(accs[i]);
+    theInertialSensorData.accVariance(i) = accVariance;
     theInertialSensorData.angle(i) = MsgPack::readFloat(torsoAngles[i]);
   }
 
@@ -314,6 +316,7 @@ void NaoProvider::update(JointSensorData& theJointSensorData)
       theJointSensorData.temperatures[joint] = static_cast<unsigned char>(MsgPack::readFloat(jointTemperatures[joint]));
       theJointSensorData.status[joint] = static_cast<JointSensorData::TemperatureStatus>(jointStatuses[joint] ? *jointStatuses[joint] : 0);
     }
+    theJointSensorData.variance[joint] = jointVariance;
   }
   theJointSensorData.timestamp = timeWhenPacketReceived;
 }
@@ -345,7 +348,9 @@ void NaoProvider::update(SystemSensorData& theSystemSensorData)
   theSystemSensorData.batteryCharging = (static_cast<short>(MsgPack::readFloat(batteryCharging)) & 0x80) != 0;
   if(theFrameInfo.getTimeSince(timeWhenBatteryLevelWritten) >= timeBetweenBatteryLevelUpdates)
   {
-    OutTextFile("/var/volatile/tmp/batteryLevel.txt") << theSystemSensorData.batteryLevel << MsgPack::readFloat(batteryCharging);
+    const Joints::Joint jointWithMaxTemperature = static_cast<Joints::Joint>(std::distance(theJointSensorData.temperatures.begin(), std::max_element(theJointSensorData.temperatures.begin(), theJointSensorData.temperatures.end())));
+    const float maxTemperature = static_cast<float>(theJointSensorData.temperatures[jointWithMaxTemperature]);
+    OutTextFile("/var/volatile/tmp/internalState.txt") << theSystemSensorData.batteryLevel << MsgPack::readFloat(batteryCharging) << maxTemperature;
     timeWhenBatteryLevelWritten = theFrameInfo.time;
   }
 }
@@ -503,7 +508,7 @@ void NaoProvider::waitForFrameData()
     else
       OUTPUT_TEXT("Hi, I am " << Global::getSettings().headName << " (using " << Global::getSettings().bodyName << "'s body).");
 
-    OUTPUT(idRobotname, bin, Global::getSettings().headName << Global::getSettings().bodyName << Global::getSettings().location << Global::getSettings().scenario << Global::getSettings().playerNumber);
+    OUTPUT(idRobotName, bin, Global::getSettings().headName << Global::getSettings().bodyName << Global::getSettings().location << Global::getSettings().scenario << Global::getSettings().playerNumber);
   }
 
   if(theInstance)
@@ -530,8 +535,7 @@ float NaoProvider::readCPUTemperature() const
   char buffer[8];
   for(size_t i = 0; i < numOfCPUCores; ++i)
   {
-    VERIFY(::lseek(cpuTemperatureFiles[i], 0, SEEK_SET) == 0);
-    ssize_t length = ::read(cpuTemperatureFiles[i], buffer, 8);
+    ssize_t length = ::pread(cpuTemperatureFiles[i], buffer, 8, 0);
     ASSERT(length > 1);
     ASSERT(buffer[length - 1] == '\n');
     result = std::max(result, static_cast<float>(std::atoi(buffer)) / 1000.f);

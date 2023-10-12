@@ -12,6 +12,7 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -39,6 +40,7 @@ MODULE(LinePerceptor,
   REQUIRES(FieldDimensions),
   REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
+  REQUIRES(MeasurementCovariance),
   REQUIRES(ObstaclesImagePercept),
   REQUIRES(RelativeFieldColors),
   PROVIDES(LinesPercept),
@@ -47,7 +49,6 @@ MODULE(LinePerceptor,
   LOADS_PARAMETERS(
   {,
     (int) maxLineWidthDeviationPx,           /**< maximum deviation of line width in the image to the expected width at that position in px */
-    (float) maxLineWidthDeviationMm,         /**< maximum deviation of line width to the expected width in mm */
     (int) maxSkipWidth,                      /**< regions with a size of up to this many pixels can be skipped next to lines. */
     (int) maxSkipNumber,                     /**< The maximum number of neighboring regions to skip. */
     (float) greenAroundLineRatio,            /**< minimum green next to the line required as factor of line width. */
@@ -61,13 +62,11 @@ MODULE(LinePerceptor,
     (float) minSquaredLineLength,            /**< minimum squared length of found lines in mm */
     (float) maxCircleFittingError,           /**< maximum error of fitted circles through spots on the field in mm */
     (float) maxCircleRadiusDeviation,        /**< maximum deviation in mm of the perceived center circle radius to the expected radius */
-    (unsigned int) minSpotsOnCircle,         /**< minimum number of spots on the center circle */
     (Angle) minCircleAngleBetweenSpots,      /**< minimum angular distance around the circle center that has to be spanned by a circle candidate */
-    (Angle) circleAngleBetweenSpots,         /**< angular distance around the circle center that should be spanned by a circle candidates spots */
+    (unsigned int) minSpotsOnCircle,         /**< minimum number of spots on the center circle */
     (float) minCircleWhiteRatio,             /**< minimum ratio of white pixels in the center circle */
     (float) sqrCircleClusterRadius,          /**< squared radius for clustering center circle candidates */
     (unsigned) minCircleClusterSize,         /**< minimum size of a cluster to be considered a valid circle candidate */
-    (float) maxWidthCheckDistance,           /**< maximum distance of line spots in mm to be checked for the correct line width on forming candidates */
     (bool) trimLines,                        /**< whether lines extended by robots shall be trimmed */
     (bool) trimLinesCalibration,
     (int) maxWidthImage,                     /**< maximum width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks*/
@@ -191,9 +190,9 @@ private:
     }
 
     /**
-     * Calculates how much of a circle corresponding to this candidate lies between the outermost fieldSpots.
-     * @return Portion of the candidate that is between the outermost fieldSpots expressed as an angle.
-     */
+    * Calculates how much of a circle corresponding to this candidate lies between the outermost fieldSpots.
+    * @return Portion of the candidate that is between the outermost fieldSpots expressed as an angle.
+    */
     Angle circlePartInImage() const
     {
       Vector2f referenceVector = fieldSpots[0] - center;
@@ -217,6 +216,20 @@ private:
         }
       }
       return low + high;
+    }
+
+    /**
+     * Computes the average distance of the robot to all field spots.
+     * The distance will be used later for computing a covariance of the circle measurement.
+     *
+     * @param The average distance to all points that form the circle
+     */
+    float getAverageDistanceToFieldSpots()
+    {
+      float sqrDistSum = 0.f;
+      for(const Vector2f& spot : fieldSpots)
+        sqrDistSum += spot.squaredNorm();
+      return std::sqrt(sqrDistSum / static_cast<float>(fieldSpots.size())); // Function will/should not be called, if there are no spots.
     }
   };
 
@@ -339,6 +352,16 @@ private:
   void markLinesOnCircle(const Vector2f& center);
 
   /**
+   * Checks if the model error of the circle is lower than the error if the spots
+   * were fitted to a line.
+   *
+   * @param circle the circle candidate to check
+   * @param lineError returns the model error of the fitted line
+   * @return true if the circle error is lower than the line error
+   */
+  bool isCircleNotALine(const CircleCandidate& circle, float& lineError) const;
+
+  /**
    * Checks whether the given center circle candidate is white when projected
    * into image coordinates.
    *
@@ -375,7 +398,7 @@ private:
   float calcWhiteCheckDistance(const Vector2f& pointOnField) const;
 
   /**
-   * Calculates the pixel distance a reference point for a white check shoud have to a given point.
+   * Calculates the pixel distance a reference point for a white check should have to a given point.
    * @param pointOnField the Point in field coordinates. Used to estimate its distance
    * @return the points white check distance in pixels
    */

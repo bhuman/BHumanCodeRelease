@@ -6,11 +6,27 @@
 #include "OdometryDataPreviewProvider.h"
 #include "Math/Rotation.h"
 
-MAKE_MODULE(OdometryDataPreviewProvider, sensing);
+MAKE_MODULE(OdometryDataPreviewProvider);
 
 void OdometryDataPreviewProvider::update(OdometryDataPreview& odometryDataPreview)
 {
   static_cast<OdometryData&>(odometryDataPreview) = theOdometryData;
+
+  const Pose2f odometryOffset = getOdometryOffset(theRobotModel, theOdometryData, true, lastSoleLeft, lastSoleRight);
+  odometryDataPreview += odometryOffset;
+  odometryDataPreview.odometryChange = odometryOffset;
+
+  JointAngles executedRequest;
+  FOREACH_ENUM(Joints::Joint, joint)
+    executedRequest.angles[joint] = theJointPlay.jointState[joint].lastExecutedRequest;
+  const RobotModel robotModelRequest(executedRequest, theRobotDimensions, theMassCalibration);
+  const Pose2f odometryOffsetRequest = getOdometryOffset(robotModelRequest, internalOdometryTranslationRequest, false, lastRequestedSoleLeft, lastRequestedSoleRight);
+
+  internalOdometryTranslationRequest += odometryOffsetRequest;
+}
+
+Pose2f OdometryDataPreviewProvider::getOdometryOffset(const RobotModel& theRobotModel, const Pose2f& lastOdometry, const bool overrideRotation, Pose2f& lastLeftSole, Pose2f& lastRightSole)
+{
   Pose2f odometryOffset;
 
   if(!theMotionInfo.isMotion(MotionPhase::walk))
@@ -26,8 +42,8 @@ void OdometryDataPreviewProvider::update(OdometryDataPreview& odometryDataPrevie
     const Pose2f currentSoleLeft(currentLeftSole3D.rotation.getZAngle(), currentLeftSole3D.translation.head<2>());
     const Pose2f currentSoleRight(currentRightSole3D.rotation.getZAngle(), currentRightSole3D.translation.head<2>());
 
-    const Pose2f& lastSupportFoot = useIsLeftPhase ? lastSoleRight : lastSoleLeft;
-    const Pose2f& lastSwingFoot = useIsLeftPhase ? lastSoleLeft : lastSoleRight;
+    const Pose2f& lastSupportFoot = useIsLeftPhase ? lastRightSole : lastLeftSole;
+    const Pose2f& lastSwingFoot = useIsLeftPhase ? lastLeftSole : lastRightSole;
 
     const Pose2f& currentSupportFoot = useIsLeftPhase ? currentSoleRight : currentSoleLeft;
     const Pose2f& currentSwingFoot = useIsLeftPhase ? currentSoleLeft : currentSoleRight;
@@ -43,15 +59,13 @@ void OdometryDataPreviewProvider::update(OdometryDataPreview& odometryDataPrevie
     odometryOffset.translation.x() *= odometryWalkScaling.x();
     odometryOffset.translation.y() *= odometryWalkScaling.y();
 
-    lastSoleLeft = currentSoleLeft;
-    lastSoleRight = currentSoleRight;
+    lastLeftSole = currentSoleLeft;
+    lastRightSole = currentSoleRight;
   }
   // Construct odometry update for this frame.
   if(theFallDownState.state == FallDownState::falling || theFallDownState.state == FallDownState::fallen)
     odometryOffset.rotation = 0_deg; // Postpone rotation change until being upright again to avoid huge variances in the self locator.
-  else
-    odometryOffset.rotation = Angle::normalize(Rotation::Euler::getZAngle(theInertialData.orientation3D) - odometryDataPreview.rotation);
-
-  odometryDataPreview += odometryOffset;
-  odometryDataPreview.odometryChange = odometryOffset;
+  else if(overrideRotation)
+    odometryOffset.rotation = Angle::normalize(Rotation::Euler::getZAngle(theInertialData.orientation3D) - lastOdometry.rotation);
+  return odometryOffset;
 }

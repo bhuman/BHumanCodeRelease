@@ -15,11 +15,11 @@
   &lt;#instance variables#&gt;
 };</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>E1953353-0E0A-4807-80B8-AFAD5F6B0A21</string>
+	<string>B-Human_uniondef</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for describing a new union type containing instance variables, only one of which is active at any given time.</string>
+	<string>B-Human: Declare a new union type, where all fields overlap at the same memory location.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Union Declaration</string>
 	<key>IDECodeSnippetUserSnippet</key>

@@ -1,6 +1,10 @@
 This is flite version 2.1-release
 
 Download repository from https://github.com/festvox/flite/
+
+Since there is no tag for release 2.1, for the Linux arm64 version, commit c5bd2add37725041c1924132a8a4fd67548fb975 was used, which seems to have identical
+header files.
+
 From root:
 
 Linux:

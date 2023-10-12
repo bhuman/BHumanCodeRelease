@@ -12,9 +12,8 @@
 #pragma once
 
 #include "Streaming/InStreams.h"
+#include "Streaming/MessageQueue.h"
 #include <string>
-
-class InMessage;
 
 /**
  * @class DebugDataTable
@@ -41,7 +40,7 @@ public:
    * respective entry in the table has been modified through RobotControl.
    */
   template<typename T> void updateObject(const char* name, T& t, bool once);
-  void processChangeRequest(InMessage& in);
+  void processChangeRequest(MessageQueue::Message message);
 };
 
 template<typename T> void DebugDataTable::updateObject(const char* name, T& t, bool once)

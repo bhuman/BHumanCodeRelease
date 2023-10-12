@@ -11,13 +11,13 @@
 	<key>IDECodeSnippetContents</key>
 	<string>PROVIDES_WITHOUT_MODIFY(&lt;#Representation#&gt;),</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>26CF828C-3A37-469B-AE77-6DD8E10ECE08</string>
+	<string>B-Human_PROVIDES_WITHOUT_MODIFY</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Definition of what a module provides (without MODIFY).</string>
+	<string>B-Human: Define a representation a module provides (without MODIFY).</string>
 	<key>IDECodeSnippetTitle</key>
-	<string>Provision Definition without Modifyability</string>
+	<string>Provision Definition without Modifiability</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>

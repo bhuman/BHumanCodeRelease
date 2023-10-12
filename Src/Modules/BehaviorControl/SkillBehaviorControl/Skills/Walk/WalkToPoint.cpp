@@ -42,15 +42,26 @@ SKILL_IMPLEMENTATION(WalkToPointImpl,
     (float)(1000.f) switchToPathPlannerDistance, /**< If the target is further away than this distance, the path planner is used. */
     (float)(900.f) switchToLibWalkDistance, /**< If the target is closer than this distance, LibWalk is used. */
     (float)(175.f) targetForwardWalkingSpeed, /**< Reduce walking speed to reach this forward speed (in mm/s). */
+    (float)(100.f) translationStopThreshold, /**< Threshold for the distance to the target regarding both axis (x, y) to stop walking. */
+    (float)(150.f) translationStartThreshold, /**< Threshold for the distance to the target regarding any axis (x, y) to start walking. */
+    (float)(10_deg) rotationStopThreshold, /**< Threshold for the angle to the target pose to stop walking. */
+    (float)(20_deg) rotationStartThreshold, /**< Threshold for the angle to the target pose to start walking. */
   }),
 });
 
 class WalkToPointImpl : public WalkToPointImplBase
 {
+  // TODO: Move the numbers from the code to meaningful parameters.
   option(WalkToPoint)
   {
     ASSERT(theWalkingEngineOutput.maxSpeed.translation.x() > 0.f);
-    const float walkingSpeedRatio = !p.reduceWalkingSpeed ? p.speed : std::min(p.speed, Rangef::ZeroOneRange().limit(targetForwardWalkingSpeed / theWalkingEngineOutput.maxSpeed.translation.x()));
+
+    Pose2f walkingSpeedRatio = p.speed;
+    if(p.reduceWalkingSpeed)
+    {
+      const float minimalSpeed = std::min(p.speed.translation.x(), Rangef::ZeroOneRange().limit(targetForwardWalkingSpeed / theWalkingEngineOutput.maxSpeed.translation.x()));
+      walkingSpeedRatio = Pose2f(std::min(p.speed.rotation, Angle(minimalSpeed)), minimalSpeed, std::min(p.speed.translation.y(), minimalSpeed));
+    }
     const float targetDistance = p.target.translation.norm();
 
     const bool disableObstacleAvoidance = p.disableObstacleAvoidance || theGameState.isPenaltyShootout();
@@ -72,7 +83,7 @@ class WalkToPointImpl : public WalkToPointImplBase
         if(targetDistance > switchToPathPlannerDistance && !disableObstacleAvoidance)
           goto walkFar;
 
-        if(targetDistance < 15.f && std::abs(p.target.rotation) < 3_deg)
+        if(stopWalking(p.target))
         {
           if(theMotionInfo.executedPhase == MotionPhase::stand && !p.disableStanding)
             goto destinationReachedStand;
@@ -84,7 +95,7 @@ class WalkToPointImpl : public WalkToPointImplBase
       {
         auto obstacleAvoidance = theLibWalk.calcObstacleAvoidance(p.target, p.rough, disableObstacleAvoidance, /* toBall: */ p.disableAvoidFieldBorder);
         theWalkToPoseSkill({.target = p.target,
-                            .speed = {walkingSpeedRatio, walkingSpeedRatio, walkingSpeedRatio},
+                            .speed = walkingSpeedRatio,
                             .obstacleAvoidance = obstacleAvoidance,
                             .keepTargetRotation = p.disableAligning,
                             .targetOfInterest = p.targetOfInterest,
@@ -103,9 +114,9 @@ class WalkToPointImpl : public WalkToPointImplBase
       }
       action
       {
-        auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * p.target, Pose2f(walkingSpeedRatio, walkingSpeedRatio, walkingSpeedRatio));
+        auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * p.target, walkingSpeedRatio);
         theWalkToPoseSkill({.target = p.target,
-                            .speed = {walkingSpeedRatio, walkingSpeedRatio, walkingSpeedRatio},
+                            .speed = walkingSpeedRatio,
                             .obstacleAvoidance = obstacleAvoidance,
                             .keepTargetRotation = p.disableAligning,
                             .targetOfInterest = p.targetOfInterest,
@@ -119,7 +130,7 @@ class WalkToPointImpl : public WalkToPointImplBase
     {
       transition
       {
-        if(targetDistance > 100.f || std::abs(p.target.rotation) > 10_deg)
+        if(startWalking(p.target))
         {
           if(targetDistance > switchToPathPlannerDistance && !disableObstacleAvoidance)
             goto walkFar;
@@ -133,7 +144,7 @@ class WalkToPointImpl : public WalkToPointImplBase
       {
         auto obstacleAvoidance = theLibWalk.calcObstacleAvoidance(p.target, p.rough, disableObstacleAvoidance, /* toBall: */ p.disableAvoidFieldBorder);
         theWalkToPoseSkill({.target = p.target,
-                            .speed = {walkingSpeedRatio, walkingSpeedRatio, walkingSpeedRatio},
+                            .speed = walkingSpeedRatio,
                             .obstacleAvoidance = obstacleAvoidance,
                             .keepTargetRotation = p.disableAligning,
                             .targetOfInterest = p.targetOfInterest,
@@ -147,7 +158,7 @@ class WalkToPointImpl : public WalkToPointImplBase
     {
       transition
       {
-        if(targetDistance > 100.f || std::abs(p.target.rotation) > 10_deg || p.disableStanding)
+        if(startWalking(p.target) || p.disableStanding)
         {
           if(targetDistance > switchToPathPlannerDistance && !disableObstacleAvoidance)
             goto walkFar;
@@ -158,7 +169,7 @@ class WalkToPointImpl : public WalkToPointImplBase
       action
       {
         thePublishMotionSkill({.target = p.target.translation,
-                               .speed = 0.f});
+                               .speed = {0.f, 0.f, 0.f}});
         theStandSkill();
       }
     }
@@ -178,8 +189,8 @@ class WalkToPointImpl : public WalkToPointImplBase
       action
       {
         thePublishMotionSkill({.target = p.target.translation,
-                               .speed = 0.f});
-        theWalkAtRelativeSpeedSkill({.speed = {0.f, -walkingSpeedRatio, 0.f}});
+                               .speed = {0.f, 0.f, 0.f}});
+        theWalkAtRelativeSpeedSkill({.speed = {0.f, -walkingSpeedRatio.translation.x(), 0.f}});
       }
     }
     state(armContactWalkLeft)
@@ -197,8 +208,8 @@ class WalkToPointImpl : public WalkToPointImplBase
       action
       {
         thePublishMotionSkill({.target = p.target.translation,
-                               .speed = walkingSpeedRatio});
-        theWalkAtRelativeSpeedSkill({.speed = {0.f, 0.f, walkingSpeedRatio}});
+                               .speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
+        theWalkAtRelativeSpeedSkill({.speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
       }
     }
     state(armContactWalkRight)
@@ -216,10 +227,24 @@ class WalkToPointImpl : public WalkToPointImplBase
       action
       {
         thePublishMotionSkill({.target = p.target.translation,
-                               .speed = walkingSpeedRatio});
-        theWalkAtRelativeSpeedSkill({.speed = {0.f, 0.f, -walkingSpeedRatio}});
+                               .speed = {0.f, 0.f, 0.f}});
+        theWalkAtRelativeSpeedSkill({.speed = {0.f, 0.f, -walkingSpeedRatio.translation.y()}});
       }
     }
+  }
+
+  bool startWalking(const Pose2f& targetPoseRelative)
+  {
+    return std::abs(targetPoseRelative.rotation) > rotationStartThreshold ||
+           std::abs(targetPoseRelative.translation.x()) > translationStartThreshold ||
+           std::abs(targetPoseRelative.translation.y()) > translationStartThreshold;
+  }
+
+  bool stopWalking(const Pose2f& targetPoseRelative)
+  {
+    return std::abs(targetPoseRelative.rotation) < rotationStopThreshold &&
+           std::abs(targetPoseRelative.translation.x()) < translationStopThreshold &&
+           std::abs(targetPoseRelative.translation.y()) < translationStopThreshold;
   }
 };
 

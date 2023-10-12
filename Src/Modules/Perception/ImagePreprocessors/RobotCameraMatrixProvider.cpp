@@ -7,9 +7,9 @@
 
 #include "RobotCameraMatrixProvider.h"
 
-MAKE_MODULE(RobotCameraMatrixProvider, perception);
+MAKE_MODULE(RobotCameraMatrixProvider);
 
 void RobotCameraMatrixProvider::update(RobotCameraMatrix& robotCameraMatrix)
 {
-  robotCameraMatrix.computeRobotCameraMatrix(theRobotDimensions, theJointAngles.angles[Joints::headYaw], theJointAngles.angles[Joints::headPitch], theCameraCalibration, theCameraInfo.camera);
+  robotCameraMatrix.computeRobotCameraMatrix(theRobotDimensions, theRobotModel.limbs[Limbs::head], theCameraCalibration, theCameraInfo.camera);
 }

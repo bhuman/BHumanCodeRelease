@@ -42,8 +42,6 @@ public:
   }
   DebugImage(const Image<PixelTypes::YUVPixel>& image)
     : data(const_cast<void*>(static_cast<const void*>(image[0]))), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::YUV) {}
-  DebugImage(const Image<PixelTypes::ColoredPixel>& image)
-    : data(const_cast<void*>(static_cast<const void*>(image[0]))), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::Colored) {}
   DebugImage(const Image<PixelTypes::GrayscaledPixel>& image, const bool copy = false)
     : data(copy ? Memory::alignedMalloc(image.width * image.height * sizeof(PixelTypes::GrayscaledPixel), 32) : const_cast<void*>(static_cast<const void*>(image[0]))), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(!copy), type(PixelTypes::PixelType::Grayscale)
   {

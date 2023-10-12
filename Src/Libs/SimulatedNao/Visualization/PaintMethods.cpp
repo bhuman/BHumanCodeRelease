@@ -6,6 +6,7 @@
  * @author Colin Graf
  */
 
+#include <QObject>
 #include <QPainter>
 #include <QPainterPath>
 #include "PaintMethods.h"

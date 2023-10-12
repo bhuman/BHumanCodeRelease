@@ -3,11 +3,24 @@
  *
  * This file declares a module that instructs other modules to create motions.
  *
+ * This is done with the help of so called MotionPhases.
+ * In each update execution, the following steps are done:
+ * 1. update the current MotionPhase
+ * 2.1 check if a FallPhase should start or if the current MotionPhase is done
+ * 2.2 create a new MotionPhase based on the MotionRequest
+ * 2.3 create a new MotionPhase based on the previous one
+ * 2.4 decide which one to use (follow up MotionPhases are prioritised)
+ * 3. calculate head angles (if current MotionPhase allows it)
+ * 4. calculate the current arm joint angles (if current MotionPhase allows it)
+ * 5. calculate the current (other) joint angles
+ * 6. some extra handling
+ *
  * @author Arne Hasselbring
  */
 
 #pragma once
 
+#include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
 #include "Representations/MotionControl/CalibrationGenerator.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointLimits.h"
@@ -25,6 +38,7 @@
 #include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
+#include "Representations/MotionControl/InterceptBallGenerator.h"
 #include "Representations/MotionControl/KeyframeMotionGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
@@ -41,6 +55,7 @@
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/JointPlay.h"
 #include "Framework/Module.h"
 #include "Tools/Motion/MotionGenerator.h"
 #include "Tools/Motion/MotionPhase.h"
@@ -51,6 +66,8 @@ MODULE(MotionEngine,
   REQUIRES(ArmMotionRequest),
   REQUIRES(CalibrationGenerator),
   REQUIRES(CognitionFrameInfo),
+  REQUIRES(UpperFrameInfo),
+  REQUIRES(LowerFrameInfo),
   REQUIRES(DamageConfigurationBody),
   REQUIRES(DiveGenerator),
   REQUIRES(DribbleGenerator),
@@ -62,10 +79,14 @@ MODULE(MotionEngine,
   REQUIRES(HeadMotionGenerator),
   REQUIRES(HeadMotionRequest),
   REQUIRES(InertialData),
+  REQUIRES(InterceptBallGenerator),
   REQUIRES(JointAngles),
   REQUIRES(JointLimits),
+  REQUIRES(JointPlay),
   REQUIRES(KeyframeMotionGenerator),
   REQUIRES(MotionRequest),
+  REQUIRES(OdometryDataPreview),
+  REQUIRES(OdometryTranslationRequest),
   REQUIRES(PointAtGenerator),
   REQUIRES(ReplayWalkRequestGenerator),
   REQUIRES(SpecialGenerator),
@@ -85,6 +106,10 @@ MODULE(MotionEngine,
   DEFINES_PARAMETERS(
   {,
     (int)(3000) emergencySitDownDelay, /**< If no new data from Cognition arrived for this duration, the robot sits down. */
+    (int)(100) brokenJointAutomaticStiffness, /**< If a broken joint is detected, reduce its stiffness. TODO set it to a lower value after tests on real NAO! */
+    (std::vector<Joints::Joint>)({Joints::lAnkleRoll, Joints::rAnkleRoll}) brokenJointsReducesStiffnessList, /**< Only automatically reduce stiffness of those joints. */
+    (Vector2a)(20_deg, 50_deg) uprightAngle,
+    (int)(5000) uprightWarningTime,
   }),
 });
 
@@ -161,12 +186,15 @@ struct PlayDeadPhase : MotionPhase
   explicit PlayDeadPhase(const MotionEngine& engine) :
     MotionPhase(MotionPhase::playDead),
     engine(engine)
-  {}
+  {};
+  PlayDeadPhase(const MotionPhase& lastPhase, const MotionEngine& engine);
 
 private:
   bool isDone(const MotionRequest& motionRequest) const override;
   void calcJoints(const MotionRequest& motionRequest, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo) override;
   std::unique_ptr<MotionPhase> createNextPhase(const MotionPhase& defaultNextPhase) const override;
+  void update() override;
 
   const MotionEngine& engine; /**< A reference to the running motion engine. */
+  unsigned int uprightWarningTimestamp = 0;
 };

@@ -42,7 +42,7 @@ option(HandleGoalkeeperCatchBall)
     }
     action
     {
-      unsigned interceptionMethods = bit(Interception::walk);
+      unsigned interceptionMethods = bit(Interception::stand) | bit(Interception::walk);
       if(theMotionInfo.executedPhase == MotionPhase::stand && theFrameInfo.getTimeSince(theMotionInfo.lastStandTimeStamp) > 1000.f)
         interceptionMethods |= bit(Interception::genuflectStandDefender);
       if(theLibPosition.isInOwnPenaltyArea(theRobotPose.translation))

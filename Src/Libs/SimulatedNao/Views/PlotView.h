@@ -28,19 +28,13 @@ class PlotView : public SimRobot::Object
 {
 public:
   /**
+   * Creates a new plot view.  \c setParameters must be called for a valid initialization.
    * @param fullName The path to this view in the scene graph
    * @param console The console object.
    * @param name The name of the view.
-   * @param plotSize The number of entries in a plot.
-   * @param minValue The minimum value in a plot.
-   * @param maxValue The maximum value in a plot.
-   * @param yUnit The name of the y-axis.
-   * @param xUnit The name of the x-axis.
-   * @param xScale A scale factor for the x-axis.
+   * @param threadName The name of the associated thread. If empty, no thread is associated.
    */
-  PlotView(const QString& fullName, RobotConsole& console, const std::string& name,
-           unsigned int plotSize, float minValue, float maxValue,
-           const std::string& yUnit = "", const std::string& xUnit = "", float xScale = 1);
+  PlotView(const QString& fullName, RobotConsole& console, const std::string& name, const std::string& threadName);
 
   ~PlotView();
 
@@ -54,22 +48,23 @@ public:
    * @param xScale A scale factor for the x-axis.
    */
   void setParameters(unsigned int plotSize, float minValue, float maxValue,
-                     const std::string& yUnit = "", const std::string& xUnit = "", float xScale = 1);
+                     const std::string& yUnit, const std::string& xUnit, float xScale);
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
-  const QIcon icon; /**< The icon used for listing this view in the scene graph */
+  QIcon icon; /**< The icon used for listing this view in the scene graph */
   RobotConsole& console; /**< A reference to the console object. */
-  PlotWidget* plotWidget = nullptr;
   const std::string name; /**< The name of the view. */
-  unsigned int plotSize; /**< The number of entries in a plot. */
+  std::string threadName; /**< The name of the associated thread. If empty, no thread is associated. */
+  PlotWidget* widget = nullptr;
+  unsigned int plotSize = 0; /**< The number of entries in a plot. */
   float minValue; /**< The minimum value in a plot. */
   float maxValue; /**< The maximum value in a plot. */
   float valueLength;
   std::string yUnit; /**< The name of the y-axis. */
   std::string xUnit; /**< The name of the x-axis. */
   float xScale; /**< A scale factor for the x-axis. */
-  QPointF* points; /**< A buffer for drawing points. */
+  QPointF* points = nullptr; /**< A buffer for drawing points. */
 
   /**
    * The method returns a new instance of a widget for this direct view.
@@ -89,9 +84,17 @@ class PlotWidget : public QWidget, public SimRobot::Widget
   Q_OBJECT
 
 public:
-  PlotWidget(PlotView& plotView, PlotWidget*& plotWidget);
-
+  PlotWidget(PlotView& view);
   ~PlotWidget();
+  void update() override;
+
+protected:
+
+  QWidget* getWidget() override { return this; }
+  void paint(QPainter& painter) override;
+  void paintEvent(QPaintEvent* event) override;
+  QMenu* createUserMenu() const override;
+  QSize sizeHint() const override { return QSize(320, 240); }
 
 public slots:
   void determineMinMaxValue();
@@ -101,25 +104,14 @@ public slots:
   void exportAsGnuplot();
 
 private:
-  PlotView& plotView;
-  PlotWidget*& plotWidget;
-  unsigned int lastTimestamp = 0; /**< Timestamp of the last plot drawing. */
-  QPainter painter; /**< The painter used for painting the plot. */
-  QPen blackPen;
-  QPen grayPen;
+  bool needsRepaint() const;
+  std::vector<const RobotConsole::Plot*> getPlots(const std::string& name) const;
 
+  PlotView& view;
+  QPen grayPen;
   bool drawUnits = true;
   bool drawLegend = true;
   bool antialiasing = false;
-
-  bool needsRepaint() const;
-
-  QSize sizeHint() const override { return QSize(320, 240); }
-
-  void paintEvent(QPaintEvent* event) override;
-
-  QWidget* getWidget() override { return this; }
-  void update() override;
-  QMenu* createUserMenu() const override;
-  void paint(QPainter& painter) override;
+  unsigned int lastTimestamp = 0; /**< Timestamp of the last plot drawing. */
+  QPainter painter; /**< The painter used for painting the plot. */
 };

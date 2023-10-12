@@ -59,7 +59,6 @@ MODULE(BallStateEstimator,
   DEFINES_PARAMETERS(
   {,
     (Vector4f)(0.1f, 0.1f, 1.f, 1.f) processDeviation,   /**< The process noise. (petite) */
-    (Vector2f)(0.02f, 0.08f) robotRotationDeviation,     /**< Deviation of the rotation of the robot's torso */
     (Pose2f)(0.5f, 0.5f, 0.5f) odometryDeviation,        /**< The percentage inaccuracy of the odometry */
     (float)(0.1f) initialStateWeight,                    /**< The weight of newly created states (between >0 and <1) */
     (float)(1000.f) ballDisappearedMaxCheckingDistance,  /**< Balls can only "disappear" within this distance */
@@ -84,7 +83,8 @@ public:
 
 private:
   unsigned int lastFrameTime;                               /**< The point of time at the last execution of this module */
-  BallStateEstimate* bestState;                             /**< Pointer to the moving hypothesis that is most likely */
+  BallStateEstimate* bestState;                             /**< Pointer to the hypothesis that is most likely */
+  BallStateEstimate* bestMovingState;                       /**< Pointer to the moving hypothesis that is most likely */
   bool recomputeBestState;                                  /**< If true, the bestState pointer is set again. Needed, if balls are removed from a list. */
   std::vector<StationaryBallKalmanFilter,
               Eigen::aligned_allocator<StationaryBallKalmanFilter>>

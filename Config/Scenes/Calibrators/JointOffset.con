@@ -1,0 +1,57 @@
+vp JointOffset:lHP 20 -10 10
+echo vp JointOffset:lHP 20 -10 10
+vpd JointOffset:lHP representation:JointPlayTranslation:lHipPitch
+
+vp JointOffset:lKP 20 -10 10
+echo vp JointOffset:lKP 20 -10 10
+vpd JointOffset:lKP representation:JointPlayTranslation:lKneePitch
+
+vp JointOffset:lAP 20 -10 10
+echo vp JointOffset:lAP 20 -10 10
+vpd JointOffset:lAP representation:JointPlayTranslation:lAnklePitch
+
+vp JointOffset:rHP 20 -10 10
+echo vp JointOffset:rHP 20 -10 10
+vpd JointOffset:rHP representation:JointPlayTranslation:rHipPitch
+
+vp JointOffset:rKP 20 -10 10
+echo vp JointOffset:rKP 20 -10 10
+vpd JointOffset:rKP representation:JointPlayTranslation:rKneePitch
+
+vp JointOffset:rAP 20 -10 10
+echo vp JointOffset:rAP 20 -10 10
+vpd JointOffset:rAP representation:JointPlayTranslation:rAnklePitch
+
+vp JointOffset:lHYP 20 -10 10
+echo vp JointOffset:lHYP 20 -10 10
+vpd JointOffset:lHYP representation:JointPlayTranslation:lHipYawPitch
+
+#####
+
+vp WalkJointOffset:lHP 20 -10 10
+echo vp WalkJointOffset:lHP 20 -10 10
+vpd WalkJointOffset:lHP module:WalkingEngine:JointOffset:lHipPitch
+
+vp WalkJointOffset:lKP 20 -10 10
+echo vp WalkJointOffset:lKP 20 -10 10
+vpd WalkJointOffset:lKP module:WalkingEngine:JointOffset:lKneePitch
+
+vp WalkJointOffset:lAP 20 -10 10
+echo vp WalkJointOffset:lAP 20 -10 10
+vpd WalkJointOffset:lAP module:WalkingEngine:JointOffset:lAnklePitch
+
+vp WalkJointOffset:rHP 20 -10 10
+echo vp WalkJointOffset:rHP 20 -10 10
+vpd WalkJointOffset:rHP module:WalkingEngine:JointOffset:rHipPitch
+
+vp WalkJointOffset:rKP 20 -10 10
+echo vp WalkJointOffset:rKP 20 -10 10
+vpd WalkJointOffset:rKP module:WalkingEngine:JointOffset:rKneePitch
+
+vp WalkJointOffset:rAP 20 -10 10
+echo vp WalkJointOffset:rAP 20 -10 10
+vpd WalkJointOffset:rAP module:WalkingEngine:JointOffset:rAnklePitch
+
+vp WalkJointOffset:lHYP 20 -10 10
+echo vp WalkJointOffset:lHYP 20 -10 10
+vpd WalkJointOffset:lHYP module:WalkingEngine:JointOffset:lHipYawPitch

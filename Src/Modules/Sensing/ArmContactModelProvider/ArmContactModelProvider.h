@@ -19,13 +19,10 @@
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/MotionControl/ArmKeyFrameRequest.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
@@ -45,15 +42,11 @@ MODULE(ArmContactModelProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(GroundContactState),
-  REQUIRES(JointAngles),
   REQUIRES(MassCalibration),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(DamageConfigurationBody),
-  USES(ArmMotionInfo),
   USES(JointRequest),
   USES(MotionInfo),
-  USES(OdometryData),
   PROVIDES(ArmContactModel),
   DEFINES_PARAMETERS(
   {,

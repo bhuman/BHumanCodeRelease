@@ -53,7 +53,7 @@ template<bool avx> ALWAYSINLINE bool simdAligned(const void* x) { return avx ? a
   template<int imm> static ALWAYSINLINE __m256i name (const __m256i a, const __m256i b){return name256 (a, b, imm);}
 #endif
 
-#ifndef __arm64__
+#if !defined __arm64__ && !defined __aarch64__
 ALWAYSINLINE __m128i _mm_slli_epi8(const __m128i& a, int imm)
 {
   return _mm_and_si128(_mm_slli_epi16(a, imm), _mm_set1_epi8(static_cast<unsigned char>(0xFF << imm)));
@@ -134,7 +134,7 @@ DEFINE_FUNCTIONI_MI(_mmauto_srli_si_all, _mm_srli_si128, _mm256_srli_si256)
 #define _mmauto_srli_si_all(a, i) _mmauto_srli_si_all<i>(a) /** ATTENTION: THIS BEHAVES DIFFERENTLY ON 128 AND 256 */
 DEFINE_FUNCTIONI_MI(_mmauto_srli_epi8, _mm_srli_epi8, _mm256_srli_epi8)
 #define _mmauto_srli_epi8(a, i) _mmauto_srli_epi8<i>(a)
-#ifndef __arm64__
+#if !defined __arm64__ && !defined __aarch64__
 DEFINE_FUNCTIONI_MI(_mmauto_slli_epi8, _mm_slli_epi8, _mm256_slli_epi8)
 #endif
 #define _mmauto_slli_epi8(a, i) _mmauto_slli_epi8<i>(a)

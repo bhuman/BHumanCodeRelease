@@ -18,7 +18,7 @@ void PropertyTreeWriter::inUInt(unsigned int& value)
 void PropertyTreeWriter::inAngle(Angle& value)
 {
   Entry& e = stack.back();
-  value = propertyManager.value(e.property).value<AngleWithUnity>();
+  value = propertyManager.value(e.property).value<AngleWithUnit>();
 }
 
 void PropertyTreeWriter::select(const char*, int type, const char*)

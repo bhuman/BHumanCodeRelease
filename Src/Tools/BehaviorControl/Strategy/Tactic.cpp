@@ -226,11 +226,6 @@ std::vector<std::vector<Vector2f>> Tactic::generateVoronoiDiagram(const std::vec
   {
     points[i].x = positions[i].pose.translation.x();
     points[i].y = positions[i].pose.translation.y();
-
-    // Voronoi diagram is constructed incorrectly due to a bug in the library, that's causing the corner points (4500,+-3000) to go missing for input point (2250,0) but not (2250,1)
-    // TODO: Remove this hack after library is fixed
-    if(positions[i].pose.translation.y() == 0.f)
-      points[i].y = 1.f;
   }
 
   jcv_diagram_generate(numOfPositions, points.data(), &boundingBox, nullptr, &diagram);

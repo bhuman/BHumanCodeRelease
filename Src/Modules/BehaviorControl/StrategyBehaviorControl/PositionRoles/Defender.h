@@ -25,6 +25,7 @@ class Defender : public PositionRole
     (Rangef)(150.f, 250.f) translationYThresholdRange, /**< Interpolate translation threshold between these values. */
     (Angle)(3_deg) shouldStopRotation, /**< Stop walking if orientation to the target is less than this value. */
     (Vector2f)(100.f, 50.f) shouldStopTranslation, /**< Stop walking if translation to the target is less than this value. */
+    (float)(3000.f) annotationTime, /**< Wait this long between annotations. */
   });
 
   void preProcess() override;
@@ -83,4 +84,5 @@ class Defender : public PositionRole
 
   const Agent* otherDefender = nullptr;
   const Agent* goalkeeper = nullptr;
+  unsigned int annotationTimestamp = 0;
 };

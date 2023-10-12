@@ -15,26 +15,53 @@
 #include "Streaming/Global.h"
 #include <CompiledNN2ONNX/Model.h>
 
-MAKE_MODULE(KeypointsProvider, perception);
+MAKE_MODULE(KeypointsProvider);
 
 KeypointsProvider::KeypointsProvider()
   : detector(&Global::getAsmjitRuntime())
 {
-  NeuralNetworkONNX::CompilationSettings settings;
-  settings.useCoreML = true;
-  detector.compile(NeuralNetworkONNX::Model(std::string(File::getBHDir()) + "/" + filename),
-                   settings);
-  createMask(384, 384, detector.input(0).dims(0), detector.input(0).dims(1));
+#ifdef TARGET_ROBOT
+  compileNetwork();
+#endif
 }
 
 void KeypointsProvider::update(Keypoints& theKeypoints)
 {
+  DECLARE_DEBUG_DRAWING("module:KeypointsProvider:patch", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:KeypointsProvider:mask", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:KeypointsProvider:mask:rows", "drawingOnImage");
+
+  if(!theOptionalCameraImage.image.has_value())
+  {
+    FOREACH_ENUM(Keypoints::Keypoint, keypoint)
+      theKeypoints.points[keypoint].valid = false;
+    return;
+  }
+
+  if(mask.empty())
+  {
+#ifndef TARGET_ROBOT
+    compileNetwork();
+#endif
+  }
+
+  if(mask.empty() || (theRobotPose.translation - lastRobotPosition).norm() > maskRecomputeThreshold)
+  {
+    createMask(384, 384, detector.input(0).dims(0), detector.input(0).dims(1));
+    lastRobotPosition = theRobotPose.translation;
+  }
+
   ASSERT(detector.input(0).dims(0) == detector.input(0).dims(1));
   ASSERT(detector.input(0).dims(2) == 3);
+
+  const CameraImage& theCameraImage = theOptionalCameraImage.image.value();
 
   // The only patch size supported.
   const int height = 384;
   const int width = 384;
+
+  theKeypoints.patchBoundary = Boundaryi(Rangei(theCameraImage.width - width / 2, theCameraImage.width + width / 2),
+                                         Rangei((theCameraImage.height - height) / 2, (theCameraImage.height + height) / 2));
 
   STOPWATCH("module:KeypointsProvider:extractPatch")
   {
@@ -49,8 +76,7 @@ void KeypointsProvider::update(Keypoints& theKeypoints)
   }
 
   // Apply the mask to remove input that cannot be a person standing in the middle.
-  STOPWATCH("module:KeypointsProvider:applyMask")
-    applyMask(detector.input(0).dims(0), detector.input(0).dims(1), detector.input(0).data());
+  STOPWATCH("module:KeypointsProvider:applyMask") applyMask(detector.input(0).dims(0), detector.input(0).dims(1), detector.input(0).data());
 
   // Run network.
   STOPWATCH("module:KeypointsProvider:apply") detector.apply();
@@ -63,46 +89,79 @@ void KeypointsProvider::update(Keypoints& theKeypoints)
   {
     const Output& output = outputs[keypoint];
     Keypoints::Point& point = theKeypoints.points[keypoint];
-    point.position = Vector2f(theCameraInfo.width / 2 + (output.x - 0.5f) * width,
-                              theCameraInfo.height / 2 + (output.y - 0.5f) * height);
+    point.position = Vector2f(theCameraImage.width + (output.x - 0.5f) * width,
+                              theCameraImage.height / 2 + (output.y - 0.5f) * height);
     point.valid = output.confidence >= minConfidence;
   }
 
-  // The detection area.
-  DEBUG_DRAWING("module:KeypointsProvider:patch", "drawingOnImage")
+  // The image mask.
+  COMPLEX_DRAWING("module:KeypointsProvider:mask")
   {
-    const Vector2f p1((theCameraInfo.width - width) / 2, (theCameraInfo.height - height) / 2);
-    const Vector2f p2((theCameraInfo.width + width) / 2, (theCameraInfo.height + height) / 2);
-    RECTANGLE("module:KeypointsProvider:patch", p1.x(), p1.y(), p2.x(), p2.y(), 1, Drawings::solidPen, ColorRGBA::red);
+    const Vector2f refereeOnField(theFieldDimensions.xPosHalfWayLine,
+                                  (theFieldDimensions.yPosLeftSideline + theFieldDimensions.yPosLeftFieldBorder) / 2.f
+                                  * (theGameState.leftHandTeam ? 1 : -1));
+    const Vector2f refereeOffset = refereeOnField - theRobotPose.translation;
+    const float yScale = 3000.f / refereeOffset.norm();
+    const float xScale = yScale * std::cos(std::abs(refereeOffset.angle()) - 90_deg);
+    ELLIPSE("module:KeypointsProvider:mask", Vector2f(theCameraImage.width, theCameraImage.height / 2 + (maskCenterY - theCameraImage.height / 2) * yScale),
+            maskRadius * xScale, maskRadius * yScale, 0, 1, Drawings::solidPen, ColorRGBA::red, Drawings::noBrush, ColorRGBA::red);
+    RECTANGLE("module:KeypointsProvider:mask", theCameraImage.width - maskWidth / 2 * xScale, (theCameraImage.height - height) / 2,
+              theCameraImage.width + maskWidth / 2 * xScale, (theCameraImage.height + height) / 2, 1, Drawings::solidPen, ColorRGBA::red);
   }
 
-  // The image mask.
-  DEBUG_DRAWING("module:KeypointsProvider:mask", "drawingOnImage")
+  // The image mask as individual rows.
+  COMPLEX_DRAWING("module:KeypointsProvider:mask:rows")
   {
-    CIRCLE("module:KeypointsProvider:mask", theCameraInfo.width / 2, maskCenterY, maskRadius, 1,
-           Drawings::solidPen, ColorRGBA::red, Drawings::noBrush, ColorRGBA::red);
-    RECTANGLE("module:KeypointsProvider:mask", (theCameraInfo.width - maskWidth) / 2, (theCameraInfo.height - height) / 2,
-              (theCameraInfo.width + maskWidth) / 2, (theCameraInfo.height + height) / 2, 1, Drawings::solidPen, ColorRGBA::red);
+    const int patchSize = detector.input(0).dims(0);
+    for(int y = 0; y < patchSize; ++y)
+    {
+      const int row = theCameraImage.height / 2 + (y - patchSize / 2) * height / patchSize;
+      LINE("module:KeypointsProvider:mask:rows",
+           theCameraImage.width + (mask[y].min - patchSize / 2) * width / patchSize, row,
+           theCameraImage.width + (mask[y].max - patchSize / 2) * width / patchSize, row,
+           1, Drawings::solidPen, ColorRGBA(255, 255, 255, 128));
+    }
   }
+}
+
+void KeypointsProvider::compileNetwork()
+{
+  NeuralNetworkONNX::CompilationSettings settings;
+  settings.useCoreML = true;
+  detector.compile(NeuralNetworkONNX::Model(std::string(File::getBHDir()) + "/" + filename),
+                   settings);
 }
 
 void KeypointsProvider::createMask(const int height, const int width, const int patchHeight, const int patchWidth)
 {
-  const Geometry::Circle circle({static_cast<float>(theCameraInfo.width / 2), maskCenterY}, maskRadius);
+  const Vector2f refereeOnField(theFieldDimensions.xPosHalfWayLine,
+                                (theFieldDimensions.yPosLeftSideline + theFieldDimensions.yPosLeftFieldBorder) / 2.f
+                                * (theGameState.leftHandTeam ? 1 : -1));
+  const Vector2f refereeOffset = refereeOnField - theRobotPose.translation;
+  const float yScale = 3000.f / refereeOffset.norm();
+  const float xScale = std::cos(std::abs(refereeOffset.angle()) - 90_deg);
+
+  mask.clear();
+  const CameraImage& theCameraImage = theOptionalCameraImage.image.value();
+  const Geometry::Circle circle({static_cast<float>(theCameraImage.width),
+    static_cast<float>(theCameraImage.height) / 2 + (maskCenterY - static_cast<float>(theCameraImage.height) / 2.f) * yScale}, maskRadius * yScale);
+  const int maskWidth = std::min(width, static_cast<int>(this->maskWidth * xScale * yScale));
   for(int patchY = 0; patchY < patchHeight; ++patchY)
   {
-    const int y = (theCameraInfo.height - height) / 2 + patchY * height / patchHeight;
+    const int y = (theCameraImage.height - height) / 2 + patchY * height / patchHeight;
     const Geometry::Line row(Vector2i(0, y), Vector2i(1, 0));
     Vector2f inter1, inter2;
-    const int maskWidth = std::min(width, this->maskWidth);
-    Rangei range((theCameraInfo.width - maskWidth) / 2, (theCameraInfo.width + maskWidth) / 2);
+    Rangei range(theCameraImage.width - maskWidth / 2, theCameraImage.width + maskWidth / 2);
     if(Geometry::getIntersectionOfLineAndCircle(row, circle, inter1, inter2) == 2)
     {
-      range.min = std::max((theCameraInfo.width - width) / 2, std::min(range.min, static_cast<int>(std::min(inter1.x(), inter2.x()))));
-      range.max = std::min((theCameraInfo.width + width) / 2, std::max(range.max, static_cast<int>(std::max(inter1.x(), inter2.x())) + 1));
+      range.min = std::max(static_cast<int>(theCameraImage.width) - width / 2,
+                           std::min(range.min, static_cast<int>(theCameraImage.width) + static_cast<int>((std::min(inter1.x(), inter2.x()) - static_cast<float>(theCameraImage.width)) * xScale)));
+      range.max = std::min(static_cast<int>(theCameraImage.width) + width / 2,
+                           std::max(range.max, static_cast<int>(theCameraImage.width) + static_cast<int>((std::max(inter1.x(), inter2.x()) -
+                               static_cast<float>(theCameraImage.width)) * xScale) + 1));
     }
-    mask.emplace_back((range.min - (theCameraInfo.width - width) / 2) * patchWidth / width,
-                      (range.max - (theCameraInfo.width - width) / 2) * patchWidth / width);
+    mask.emplace_back((range.min - theCameraImage.width + width / 2) * patchWidth / width,
+                      (range.max - theCameraImage.width + width / 2) * patchWidth / width);
   }
 }
 
@@ -129,8 +188,9 @@ void KeypointsProvider::applyMask(const int patchHeight, const int patchWidth, f
 
 void KeypointsProvider::extractPatch2to1(const int height, const int width, float* channel) const
 {
-  for(int y = (theCameraInfo.height - height) / 2; y < (theCameraInfo.height + height) / 2; y += 2)
-    for(const CameraImage::PixelType* pixel = &theCameraImage[y][(theCameraInfo.width - width) / 4],
+  const CameraImage& theCameraImage = theOptionalCameraImage.image.value();
+  for(unsigned y = (theCameraImage.height - height) / 2; y < (theCameraImage.height + height) / 2; y += 2)
+    for(const CameraImage::PixelType* pixel = &theCameraImage[y][theCameraImage.width / 2 - width / 4],
         *pixelEnd = pixel + width / 2; pixel < pixelEnd; ++pixel)
     {
       unsigned char r, g, b;
@@ -143,9 +203,10 @@ void KeypointsProvider::extractPatch2to1(const int height, const int width, floa
 
 void KeypointsProvider::extractPatch3to2(const int height, const int width, float* channel) const
 {
-  for(int y = (theCameraInfo.height - height) / 2; y < (theCameraInfo.height + height) / 2; y += 3)
+  const CameraImage& theCameraImage = theOptionalCameraImage.image.value();
+  for(unsigned y = (theCameraImage.height - height) / 2; y < (theCameraImage.height + height) / 2; y += 3)
   {
-    for(const CameraImage::PixelType* pixel = &theCameraImage[y][theCameraInfo.width / 4 - width / 4],
+    for(const CameraImage::PixelType* pixel = &theCameraImage[y][theCameraImage.width / 2 - width / 4],
                                     * pixelEnd = pixel + width / 2; pixel < pixelEnd;)
     {
       unsigned char r, g, b;
@@ -173,8 +234,8 @@ void KeypointsProvider::extractPatch3to2(const int height, const int width, floa
       *channel++ = b;
       ++pixel;
     }
-    for(const CameraImage::PixelType* pixel = &theCameraImage[y + 1][theCameraInfo.width / 4 - width / 4],
-                                    * pixel2 =  &theCameraImage[y + 2][theCameraInfo.width / 4 - width / 4],
+    for(const CameraImage::PixelType* pixel = &theCameraImage[y + 1][theCameraImage.width / 2 - width / 4],
+                                    * pixel2 =  &theCameraImage[y + 2][theCameraImage.width / 2 - width / 4],
                                     * pixelEnd = pixel + width / 2; pixel < pixelEnd;)
     {
       unsigned char r, g, b;

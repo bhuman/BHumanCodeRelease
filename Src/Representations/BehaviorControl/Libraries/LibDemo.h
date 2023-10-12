@@ -16,9 +16,10 @@ STREAMABLE(LibDemo,
 {
   ENUM(DemoGameState,
   {,
+    soccer,
     waving,
-    normal,
     talking,
+    posing,
   });
 
   using StdVectorDemoGameState = std::vector<LibDemo::DemoGameState>,

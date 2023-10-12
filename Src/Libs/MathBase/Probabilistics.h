@@ -68,7 +68,7 @@ inline bool twoDimSquareEquation(Vector2f& mean, Matrix2f& covariance, const Vec
   const Eigen::Matrix<float, 4, 4> SigmaInv = Sigma.inverse();
   const Eigen::Vector4f z = (Eigen::Vector4f() << mean, mean2).finished();
   covariance = ((AT * SigmaInv) * A).inverse();
-  Covariance::fixCovariance(covariance);
+  Covariance::fixCovariance<2>(covariance);
   mean = covariance * AT * SigmaInv * z;
   ASSERT(mean.allFinite());
   ASSERT(covariance.allFinite());

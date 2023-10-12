@@ -7,7 +7,7 @@
 #include "FsrDataProvider.h"
 #include "Platform/SystemCall.h"
 
-MAKE_MODULE(FsrDataProvider, sensing);
+MAKE_MODULE(FsrDataProvider);
 
 FsrDataProvider::FsrDataProvider()
 {
@@ -29,10 +29,11 @@ FsrDataProvider::FsrDataProvider()
 
 void FsrDataProvider::update(FsrData& theFsrData)
 {
-  if(isCalibrated && !theFsrData.isCalibrated)
+  if((isCalibrated || SystemCall::getMode() == SystemCall::simulatedRobot) && !theFsrData.isCalibrated)
   {
     theFsrData.minPressure = minPressurePercent;
     theFsrData.isCalibrated = true;
+    isCalibrated = true;
   }
   else if(!theFsrData.isCalibrated)
     theFsrData.minPressure = minPressurePercent;

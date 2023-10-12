@@ -6,13 +6,16 @@
  */
 
 #include "ModuleGraphView.h"
+#include "Framework/Module.h"
 #include "SimulatedNao/RobotConsole.h"
 
 #include <sstream>
 #include <algorithm>
+#include <unordered_map>
+#include <unordered_set>
 
-ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConsole& console,  std::unordered_set<ModuleBase::Category> categories) :
-  DotViewObject(fullName), console(console), categories(categories)
+ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConsole& console, const std::string& threadName) :
+  DotViewObject(fullName), console(console), threadName(threadName)
 {}
 
 bool ModuleGraphViewObject::hasChanged()
@@ -25,99 +28,96 @@ QString ModuleGraphViewObject::generateDotFileContent()
 {
   SYNC_WITH(console);
   lastModulInfoTimestamp = console.moduleInfo.timestamp;
-  const ModuleInfo& m = console.moduleInfo;
-  bool success = false;
-  bool defaultCreated = false;
-  std::stringstream stream;
-  stream << "digraph G {" << std::endl;
-  stream << "node [style=filled,fillcolor=lightyellow,fontname=Arial,fontsize=9,height=0.2];" << std::endl;
-  stream << "concentrate = true;" << std::endl;
 
-  for(const ModuleInfo::Module& i : m.modules)
-    if(categories.find(static_cast<ModuleBase::Category>(ModuleBase::numOfCategories)) != categories.end() || categories.find(i.category) != categories.end())
+  const std::vector<Configuration::Thread>& threads = console.moduleInfo.config();
+
+  // Representations can be provided by "default".
+  std::unordered_set<std::string> defaultRepresentations(console.moduleInfo.config.defaultRepresentations.begin(),
+                                                         console.moduleInfo.config.defaultRepresentations.end());
+
+  // To mark missing requirements, it must be known which representations are currently provided.
+  // Possible names are "<representation>" and "<thread name><representation>".
+  std::unordered_set<std::string> providedRepresentations;
+  for(const Configuration::Thread& thread : threads)
+  {
+    for(const Configuration::RepresentationProvider& representationProvider : thread.representationProviders)
     {
-      bool used = false;
-      size_t index = -1;
-      for(const auto& j : i.representations)
-      {
-        for(size_t k = 0; k < m.config().size(); k++)
-          for(const auto& l : m.config()[k].representationProviders)
-            if(l.representation == j && l.provider == i.name)
-            {
-              index = k;
-              used = true;
-              stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
-              stream << i.name << "->" << j.c_str() << " [len=2];" << std::endl;
-            }
-      }
-      if(used)
-      {
-        for(const auto& j : i.requirements)
-        {
-          bool found = false;
-          bool foundInSameThread = false;
-          bool foundDefault = false;
-          for(const std::string& representation : m.config.defaultRepresentations)
-            if(representation == j)
-            {
-              foundDefault = true;
-              goto exitTwoLoops;
-            }
-          for(const auto& k : m.config()[index].representationProviders)
-            if(k.representation == j)
-              for(const auto& l : m.modules)
-              {
-                found = foundInSameThread |= l == k.provider;
-                if(foundInSameThread)
-                  goto exitTwoLoops;
-              }
-          for(const Configuration::Thread& thread : m.config())
-            if(thread.name != m.config()[index].name)
-              for(const auto& rp : thread.representationProviders)
-                if(rp.representation == j)
-                  for(const auto& l : m.modules)
-                  {
-                    found |= l == rp.provider;
-                    if(found)
-                      goto exitTwoLoops;
-                  }
-        exitTwoLoops:
+      providedRepresentations.insert(representationProvider.representation);
+      providedRepresentations.insert(thread.name + representationProvider.representation);
+    }
+    for(const std::string& representation : console.moduleInfo.config.defaultRepresentations)
+      defaultRepresentations.insert(thread.name + representation);
+  }
 
-          if(!foundInSameThread)
-          {
-            if(foundDefault)
-            {
-              if(!defaultCreated)
-              {
-                stream << "default[shape=box,fontcolor=red];" << std::endl;
-                defaultCreated = true;
-              }
-              stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
-              stream << "default->" << j << " [len=2];" << std::endl;
-            }
-            else if(!found)
-              stream << j << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
-            else
-              stream << j << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
-          }
-          stream << j << "->" << i.name << " [len=2];" << std::endl;
-        }
-        stream << i.name << "[shape=box];" << std::endl;
-        success = true;
-      }
+  const auto thread = std::find(threads.begin(), threads.end(), threadName);
+  if(thread != threads.end())
+  {
+    // Setup some data structures for quicker searching.
+    std::unordered_set<std::string> providersInThread;
+    std::unordered_map<std::string, std::string> representationProvidersInThread;
+    for(const Configuration::RepresentationProvider& representationProvider : thread->representationProviders)
+    {
+      providersInThread.insert(representationProvider.provider);
+      representationProvidersInThread[representationProvider.representation] = representationProvider.provider;
     }
 
-  stream << "}" << std::endl;
-  return success ? QString(stream.str().c_str()) : QString();
-}
+    // Create graph.
+    std::stringstream stream;
+    stream << "digraph G {" << std::endl;
+    stream << "node [style=filled,fillcolor=lightyellow,fontname=Arial,fontsize=9,height=0.2];" << std::endl;
+    stream << "concentrate = true;" << std::endl;
 
-std::string ModuleGraphViewObject::compress(const std::string& s) const
-{
-  std::string s2(s);
-  if(!isalpha(s2[0]))
-    s2[0] = '_';
-  for(unsigned i = 1; i < s2.size(); ++i)
-    if(!isalpha(s2[i]) && !isdigit(s2[i]))
-      s2[i] = '_';
-  return s2;
+    bool defaultCreated = false;
+    for(const ModuleInfo::Module& module : console.moduleInfo.modules)
+      if(providersInThread.contains(module.name))
+      {
+        // Node for module.
+        stream << module.name << "[shape=box];" << std::endl;
+
+        // Outgoing edges to all representations that are actually provided by this module and their nodes.
+        for(const std::string& representation : module.representations)
+        {
+          const auto representationProviderInThread = representationProvidersInThread.find(representation);
+          if(representationProviderInThread != representationProvidersInThread.end()
+             && representationProviderInThread->second == module.name)
+          {
+            stream << representation << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
+            stream << module.name << "->" << representation.c_str() << " [len=2];" << std::endl;
+          }
+        }
+
+        // Ingoing edges from all requirements of this module.
+        for(const std::string& requirement : module.requirements)
+        {
+          // Requirement is provided by "default" -> create representation node.
+          if(defaultRepresentations.contains(requirement))
+          {
+            // Create node for "default" if it does not exist yet.
+            if(!defaultCreated)
+            {
+              stream << "default[shape=box,fontcolor=red];" << std::endl;
+              defaultCreated = true;
+            }
+            stream << requirement << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
+            stream << "default->" << requirement << " [len=2];" << std::endl;
+          }
+
+          // Create node for representation without a provider (illegal configuration).
+          else if(!providedRepresentations.contains(requirement))
+            stream << requirement << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
+
+          // Create node for representation provided in a different thread.
+          else if(!representationProvidersInThread.contains(requirement))
+            stream << requirement << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
+
+          // Create edge from requirement to this module.
+          stream << requirement << "->" << module.name << " [len=2];" << std::endl;
+        }
+      }
+
+    stream << "}" << std::endl;
+    return stream.str().c_str();
+  }
+  else
+    return "";
 }

@@ -30,6 +30,10 @@ STREAMABLE_WITH_BASE(OtherOdometryData, OdometryData,
 {,
 });
 
+STREAMABLE_WITH_BASE(OdometryTranslationRequest, OdometryData,
+{,
+});
+
 /**
  * @struct GroundTruthOdometryData
  * Contains an observed overall movement the robot has done.

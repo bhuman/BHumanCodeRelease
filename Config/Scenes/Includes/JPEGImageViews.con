@@ -1,8 +1,6 @@
 # Normal views
-mr JPEGImage CameraProvider Upper
-mr JPEGImage CameraProvider Lower
-vi image jpeg Upper
-vi image jpeg Lower
+for Upper Lower mr JPEGImage CameraProvider
+for Upper Lower vi JPEGImage
 
 vid all representation:FieldLines:image
 vid all representation:BallPercept:image
@@ -14,7 +12,3 @@ vid all representation:BallSpots:image
 vid all horizon
 
 call Includes/ManualHeadMotion
-
-# 3-D image views
-v3 image jpeg Upper
-v3 image jpeg Lower

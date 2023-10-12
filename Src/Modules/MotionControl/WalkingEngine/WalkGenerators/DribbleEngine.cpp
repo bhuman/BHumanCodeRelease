@@ -10,19 +10,19 @@
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Math/BHMath.h"
 #include "Tools/Modeling/BallPhysics.h"
+#include "Tools/Motion/Transformation.h"
 
-MAKE_MODULE(DribbleEngine, motionControl);
+MAKE_MODULE(DribbleEngine);
+
+using namespace Motion::Transformation;
 
 void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
 {
   DECLARE_DEBUG_RESPONSE("module:DribbleEngine:dribbleInWalkKick");
   dribbleGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
-    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(false /* TODO */, lastPhase);
-    const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
-    const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset);
-    const Pose2f scsCognition = hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * motionRequest.odometryData;
+    const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, Pose2f(0.f, motionRequest.ballEstimate.position));
+    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
 
     const Rangef ttrbRange(1.f, 2.f);
     const float timeToReachBall = ttrbRange.limit(std::max(std::abs(motionRequest.ballEstimate.position.x()) / theWalkingEngineOutput.maxSpeed.translation.x(), std::abs(motionRequest.ballEstimate.position.y()) / theWalkingEngineOutput.maxSpeed.translation.y()));
@@ -40,15 +40,15 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
       // check forward kick that is faster to execute
       Legs::Leg kickLeg = ballSCS.y() > 0.f ? Legs::left : Legs::right;
 
-      WalkKickVariant walkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS);
-      bool isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed, 0.f);
+      WalkKickVariant walkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
+      bool isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
 
       // check forward kick that is slower but executable on the next step
       if(!isInPositionForKick)
       {
         kickLeg = ballSCS.y() < 0.f ? Legs::left : Legs::right;
-        walkKickVariant = WalkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS);
-        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed, 0.f);
+        walkKickVariant = WalkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
+        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
       }
 
       isInPositionForKick &= motionRequest.ballTimeWhenLastSeen >= theMotionInfo.lastKickTimestamp;
@@ -58,7 +58,7 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
       if(isInPositionForKick)
       {
         const KickInfo::KickType kickType = kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight;
-        auto kickPhase = theWalkKickGenerator.createPhase(walkKickVariant, lastPhase, false, 0.f);
+        auto kickPhase = theWalkKickGenerator.createPhase(walkKickVariant, lastPhase, false);
         if(kickPhase)
         {
           kickPhase->kickType = kickType;

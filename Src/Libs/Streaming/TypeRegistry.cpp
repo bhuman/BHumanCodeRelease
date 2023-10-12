@@ -222,19 +222,19 @@ void TypeRegistry::print()
   for(const std::string& p : primitives)
     std::cout << demangle(p) << std::endl;
 
-  for(const auto& e : enums)
+  for(const auto& [name, constants] : enums)
   {
-    std::cout << "enum " << demangle(e.first) << " {";
-    for(const std::string& c : e.second.byOrder)
-      std::cout << (&c == e.second.byOrder.data() ? "" : ", ") << c;
+    std::cout << "enum " << demangle(name) << " {";
+    for(const std::string& c : constants.byOrder)
+      std::cout << (&c == constants.byOrder.data() ? "" : ", ") << c;
     std::cout << "}" << std::endl;
   }
 
-  for(const auto& c : classes)
+  for(const auto& [name, info] : classes)
   {
-    std::cout << "class " << demangle(c.first) << (c.second.base ? " : " + demangle(c.second.base) : "") << " {";
-    for(const Attribute& a : c.second.attributes)
-      std::cout << (&a == c.second.attributes.data() ? "" : " ") << demangle(a.type) << " " << a.name << ";";
+    std::cout << "class " << demangle(name) << (info.base ? " : " + demangle(info.base) : "") << " {";
+    for(const Attribute& a : info.attributes)
+      std::cout << (&a == info.attributes.data() ? "" : " ") << demangle(a.type) << " " << a.name << ";";
     std::cout << "}" << std::endl;
   }
 }
@@ -244,19 +244,19 @@ void TypeRegistry::fill(TypeInfo& typeInfo)
   for(const char* primitive : primitives)
     typeInfo.primitives.insert(demangle(primitive));
 
-  for(const auto& enumeration : enums)
+  for(const auto& [name, constants] : enums)
   {
-    std::vector<std::string>& constants = typeInfo.enums[demangle(enumeration.first)];
-    constants.reserve(enumeration.second.byOrder.size());
-    for(const std::string& constant : enumeration.second.byOrder)
-      constants.emplace_back(constant);
+    std::vector<std::string>& targetConstants = typeInfo.enums[demangle(name)];
+    targetConstants.reserve(constants.byOrder.size());
+    for(const std::string& constant : constants.byOrder)
+      targetConstants.emplace_back(constant);
   }
 
-  for(const auto& theClass : classes)
+  for(const auto& [name, _] : classes)
   {
-    std::vector<TypeInfo::Attribute>& attributes = typeInfo.classes[demangle(theClass.first)];
+    std::vector<TypeInfo::Attribute>& attributes = typeInfo.classes[demangle(name)];
     std::list<const char*> hierarchy;
-    hierarchy.push_front(theClass.first);
+    hierarchy.push_front(name);
     while(classes[hierarchy.front()].base)
       hierarchy.push_front(classes[hierarchy.front()].base);
     for(const auto& entry : hierarchy)

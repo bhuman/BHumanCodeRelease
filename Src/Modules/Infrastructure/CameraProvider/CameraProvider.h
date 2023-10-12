@@ -43,8 +43,8 @@ MODULE(CameraProvider,
   PROVIDES_WITHOUT_MODIFY(JPEGImage),
   DEFINES_PARAMETERS(
   {,
-    (unsigned)(1000) maxWaitForImage, /** Timeout in ms for waiting for new images. */
-    (int)(2000) resetDelay, /** Timeout in ms for resetting camera without image. */
+    (unsigned)(1000) maxWaitForImage, /**< Timeout in ms for waiting for new images. */
+    (int)(2000) resetDelay, /**< Timeout in ms for resetting camera without image. */
   }),
 });
 

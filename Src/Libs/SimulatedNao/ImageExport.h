@@ -45,7 +45,7 @@ namespace ImageExport
     for(unsigned i = 0; i < name.size(); ++i)
       if(name[i] == '\\')
         name[i] = '/';
-    if(name[0] != '/' && (name.size() < 2 || name[1] != ':'))
+    if(!File::isAbsolute(name))
       name = File::getBHDir() + std::string("/Config/") + name;
 
     const size_t lastDirectorySeparatorIndex2 = static_cast<int>(name.find_last_of("\\/"));

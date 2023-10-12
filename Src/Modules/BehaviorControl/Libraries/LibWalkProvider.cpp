@@ -6,25 +6,7 @@
 
 #include "LibWalkProvider.h"
 
-MAKE_MODULE(LibWalkProvider, behaviorControl);
-
-LibWalkProvider::LibWalkProvider() : lastAvoidanceAngleOffset(0.f), activeLastFrame(false)
-{
-  leftPenCorner = Vector2f(theFieldDimensions.xPosOwnPenaltyArea + penaltyAreaExpansion, theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaExpansion);
-  leftPenGroundLine = Vector2f(theFieldDimensions.xPosOwnGroundLine - penaltyAreaExpansion, theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaExpansion);
-  rightPenCorner = Vector2f(theFieldDimensions.xPosOwnPenaltyArea + penaltyAreaExpansion, theFieldDimensions.yPosRightPenaltyArea - penaltyAreaExpansion);
-  rightPenGroundLine = Vector2f(theFieldDimensions.xPosOwnGroundLine - penaltyAreaExpansion, theFieldDimensions.yPosRightPenaltyArea - penaltyAreaExpansion);
-
-  leftOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine + fieldBorderExpansion, theFieldDimensions.yPosLeftSideline + fieldBorderExpansion);
-  rightOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine + fieldBorderExpansion, theFieldDimensions.yPosRightSideline - fieldBorderExpansion);
-  leftOwnCorner = Vector2f(theFieldDimensions.xPosOwnGroundLine - fieldBorderExpansion, theFieldDimensions.yPosLeftSideline + fieldBorderExpansion);
-  rightOwnCorner = Vector2f(theFieldDimensions.xPosOwnGroundLine - fieldBorderExpansion, theFieldDimensions.yPosRightSideline - fieldBorderExpansion);
-
-  goalPosts[0] = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal);
-  goalPosts[1] = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal);
-  goalPosts[2] = Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
-  goalPosts[3] = Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
-}
+MAKE_MODULE(LibWalkProvider);
 
 void LibWalkProvider::update(LibWalk& libWalk)
 {
@@ -60,31 +42,14 @@ MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Po
 
   calculateObstacles(target, targetOnField, rough, disableObstacleAvoidance, toBall);
 
+  // Calculate avoidance as normal
   const Angle targetAngle = target.translation.angle();
-  const Angle angleLeft = getNextFreeAngle(targetAngle, true);
-  const Angle angleRight = getNextFreeAngle(targetAngle, false);
-
-  const Angle angleOffsetLeft = Angle::normalize(angleLeft - targetAngle);
-  const Angle angleOffsetRight = Angle::normalize(angleRight - targetAngle);
-
-  const float ratingLeft = std::abs(angleOffsetLeft) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetLeft) ? -pi_2 : 0.f);
-  const float ratingRight = std::abs(angleOffsetRight) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetRight) ? -pi_2 : 0.f);
-
-  lastAvoidanceAngleOffset = ratingLeft < ratingRight ? angleOffsetLeft : angleOffsetRight;
-
-  /// Hack so the robot can always walk to the ball if it is on the goal line
-  if(theRobotPose.translation.x() < theFieldDimensions.xPosOwnPenaltyArea
-     && targetOnField.x() < theFieldDimensions.xPosOwnGroundLine && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftGoal)
-  {
-    if(targetOnField.y() > theFieldDimensions.yPosLeftGoal - 250.f && theRobotPose.translation.y() > targetOnField.y())
-      lastAvoidanceAngleOffset = angleOffsetLeft;
-    if(targetOnField.y() < theFieldDimensions.yPosRightGoal + 250.f && theRobotPose.translation.y() < targetOnField.y())
-      lastAvoidanceAngleOffset = angleOffsetRight;
-  }
+  Angle newAvoidanceAngleOffset = lastAvoidanceAngleOffset;
+  calculateAvoidanceAngleOffset(newAvoidanceAngleOffset, targetAngle, targetOnField);
 
   if(rough)
   {
-    Angle avoidanceAngle = lastAvoidanceAngleOffset + targetAngle;
+    Angle avoidanceAngle = newAvoidanceAngleOffset + targetAngle;
     if(std::abs(targetAngle) < pi_2)
     {
       if(avoidanceAngle > pi_2)
@@ -99,8 +64,19 @@ MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Po
       else if(avoidanceAngle < -pi)
         avoidanceAngle = -pi;
     }
-    lastAvoidanceAngleOffset = avoidanceAngle - targetAngle;
+    newAvoidanceAngleOffset = avoidanceAngle - targetAngle;
   }
+
+  // If rough equals true, but an avoidance was calculated, we need to recalculate the avoidance
+  // Otherwise the robot would be allowed to walk through the ball to avoid an obstacle
+  if(rough && newAvoidanceAngleOffset != 0.f)
+  {
+    newAvoidanceAngleOffset = lastAvoidanceAngleOffset;
+    deactivateRough();
+    calculateAvoidanceAngleOffset(newAvoidanceAngleOffset, targetAngle, targetOnField);
+  }
+
+  lastAvoidanceAngleOffset = newAvoidanceAngleOffset;
 
   MotionRequest::ObstacleAvoidance obstacleAvoidance;
   if(lastAvoidanceAngleOffset != 0.f)
@@ -112,6 +88,12 @@ MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Po
 
   COMPLEX_DRAWING("behavior:LibWalkProvider:angles")
   {
+    const Angle angleLeft = getNextFreeAngle(targetAngle, true);
+    const Angle angleRight = getNextFreeAngle(targetAngle, false);
+    const Angle angleOffsetLeft = Angle::normalize(angleLeft - targetAngle);
+    const Angle angleOffsetRight = Angle::normalize(angleRight - targetAngle);
+    const float ratingLeft = std::abs(angleOffsetLeft) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetLeft) ? -pi_2 : 0.f);
+    const float ratingRight = std::abs(angleOffsetRight) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetRight) ? -pi_2 : 0.f);
     Vector2f left(2000.f, 0.f);
     Vector2f right(2000.f, 0.f);
     left.rotate(angleLeft);
@@ -150,7 +132,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
       Vector2f obstaclePos(theRobotPose.translation.x(), leftOpponentCorner.y());
       if(obstaclePos.y() < theRobotPose.translation.y() + 10.f)
         obstaclePos.y() = theRobotPose.translation.y() + 10.f;
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
     }
     if(theRobotPose.translation.y() < rightOpponentCorner.y() + fieldBorderAvoidanceDistance)
@@ -158,7 +140,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
       Vector2f obstaclePos(theRobotPose.translation.x(), rightOpponentCorner.y());
       if(obstaclePos.y() > theRobotPose.translation.y() - 10.f)
         obstaclePos.y() = theRobotPose.translation.y() - 10.f;
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
     }
     if(theRobotPose.translation.x() > leftOpponentCorner.x() - fieldBorderAvoidanceDistance)
@@ -166,7 +148,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
       Vector2f obstaclePos(leftOpponentCorner.x(), theRobotPose.translation.y());
       if(obstaclePos.x() < theRobotPose.translation.x() + 10.f)
         obstaclePos.x() = theRobotPose.translation.x() + 10.f;
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
     }
     if(theRobotPose.translation.x() < leftOwnCorner.x() + fieldBorderAvoidanceDistance)
@@ -174,7 +156,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
       Vector2f obstaclePos(leftOwnCorner.x(), theRobotPose.translation.y());
       if(obstaclePos.x() > theRobotPose.translation.x() - 10.f)
         obstaclePos.x() = theRobotPose.translation.x() - 10.f;
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
     }
   }
@@ -184,32 +166,26 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
   for(int i = 0; i < 4; ++i)
   {
     if((theRobotPose.translation - goalPosts[i]).squaredNorm() < sqrGoalPostAvoidanceDistance)
-      addObstacle(theRobotPose.inversePose * goalPosts[i], theFieldDimensions.goalPostRadius, goalPostAvoidanceMinRadius, goalPostAvoidanceMaxRadius, goalPostAvoidanceDistance);
+      addObstacle(theRobotPose.inverse() * goalPosts[i], theFieldDimensions.goalPostRadius, goalPostAvoidanceMinRadius, goalPostAvoidanceMaxRadius, goalPostAvoidanceDistance);
   }
 
   // goal triangles are obstacles
   float sqrFieldBorderAvoidanceDistance = sqr(fieldBorderAvoidanceDistance);
   Vector2f closestPointOnLine;
   if(getSqrDistanceToLine(goalPosts[0], Vector2f(1.f, 0.f), 1000.f, theRobotPose.translation, closestPointOnLine) < sqrFieldBorderAvoidanceDistance)
-    addObstacle(theRobotPose.inversePose * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
+    addObstacle(theRobotPose.inverse() * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
   if(getSqrDistanceToLine(goalPosts[1], Vector2f(1.f, 0.f), 1000.f, theRobotPose.translation, closestPointOnLine) < sqrFieldBorderAvoidanceDistance)
-    addObstacle(theRobotPose.inversePose * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
+    addObstacle(theRobotPose.inverse() * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
   if(getSqrDistanceToLine(goalPosts[2], Vector2f(-1.f, 0.f), 1000.f, theRobotPose.translation, closestPointOnLine) < sqrFieldBorderAvoidanceDistance)
-    addObstacle(theRobotPose.inversePose * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
+    addObstacle(theRobotPose.inverse() * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
   if(getSqrDistanceToLine(goalPosts[3], Vector2f(-1.f, 0.f), 1000.f, theRobotPose.translation, closestPointOnLine) < sqrFieldBorderAvoidanceDistance)
-    addObstacle(theRobotPose.inversePose * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
+    addObstacle(theRobotPose.inverse() * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
 
   // Ball
-  if(!rough && theGameState.isPlaying()
-     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.teammatesBallIsValid))
-  {
-    const Vector2f& ballPosition = theFieldBall.recentBallPositionRelative(ballTimeout);
-    if(ballPosition.squaredNorm() < sqr(ballAvoidanceDistance))
-      addObstacle(ballPosition, theBallSpecification.radius, ballAvoidanceMinRadius, ballAvoidanceMaxRadius, ballAvoidanceDistance);
-  }
+  if(!rough)
+    static_cast<void>(applyNotRough()); // return value does not matter
 
   //////
-
   if(rough)
   {
     const float targetSqrDistance = target.translation.squaredNorm();
@@ -242,7 +218,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
           obstacleDir = Vector2f(-obstacleDir.norm(), 0.f);
         obstaclePos = theRobotPose.translation + obstacleDir;
       }
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, penaltyAreaAvoidanceMinRadius, penaltyAreaAvoidanceMaxRadius, penaltyAreaAvoidanceDistance);
     }
   }
@@ -267,7 +243,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
           obstacleDir = Vector2f(obstacleDir.norm(), 0.f);
         obstaclePos = theRobotPose.translation + obstacleDir;
       }
-      obstaclePos = theRobotPose.inversePose * obstaclePos;
+      obstaclePos = theRobotPose.inverse() * obstaclePos;
       addObstacle(obstaclePos, 300.f, penaltyAreaAvoidanceMinRadius, penaltyAreaAvoidanceMaxRadius, penaltyAreaAvoidanceDistance);
     }
   }
@@ -361,4 +337,80 @@ float LibWalkProvider::getSqrDistanceToLine(const Vector2f& base, const Vector2f
     l = length;
   orthogonalProjection = base + dir * l;
   return (orthogonalProjection - point).squaredNorm();
+}
+
+void LibWalkProvider::deactivateRough()
+{
+  for(Obstacle& o : obstacles)
+    o.active = true;
+  if(applyNotRough())
+  {
+    COMPLEX_DRAWING("behavior:LibWalkProvider:obstacles")
+    {
+      const Obstacle& o = obstacles.back();
+      const ColorRGBA color = o.active ? ColorRGBA::red : ColorRGBA::green;
+      auto left = theRobotPose * o.left;
+      auto right = theRobotPose * o.right;
+      auto outerLeft = theRobotPose * o.outerLeft;
+      auto outerRight = theRobotPose * o.outerRight;
+      LINE("behavior:LibWalkProvider:obstacles", left.x(), left.y(), right.x(), right.y(), 20, Drawings::solidPen, color);
+      LINE("behavior:LibWalkProvider:obstacles", left.x(), left.y(), outerLeft.x(), outerLeft.y(), 20, Drawings::solidPen, color);
+      LINE("behavior:LibWalkProvider:obstacles", right.x(), right.y(), outerRight.x(), outerRight.y(), 20, Drawings::solidPen, color);
+    }
+  }
+
+  obstaclesSortedLeft = obstacles;
+  obstaclesSortedRight = obstacles;
+
+  std::sort(obstaclesSortedLeft.begin(), obstaclesSortedLeft.end(),
+            [](const Obstacle& o1, const Obstacle& o2) -> bool
+  {
+    return o1.angleRight < o2.angleRight;
+  });
+
+  std::sort(obstaclesSortedRight.begin(), obstaclesSortedRight.end(),
+            [](const Obstacle& o1, const Obstacle& o2) -> bool
+  {
+    return o1.angleLeft < o2.angleLeft;
+  });
+}
+
+bool LibWalkProvider::applyNotRough()
+{
+  // Ball
+  if(theGameState.isPlaying()
+     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.teammatesBallIsValid))
+  {
+    const Vector2f& ballPosition = theFieldBall.recentBallPositionRelative(ballTimeout);
+    if(ballPosition.squaredNorm() < sqr(ballAvoidanceDistance))
+    {
+      addObstacle(ballPosition, theBallSpecification.radius, ballAvoidanceMinRadius, ballAvoidanceMaxRadius, ballAvoidanceDistance);
+      return true;
+    }
+  }
+  return false;
+}
+
+void LibWalkProvider::calculateAvoidanceAngleOffset(Angle& newAvoidanceAngleOffset, const Angle targetAngle, const Vector2f& targetOnField)
+{
+  const Angle angleLeft = getNextFreeAngle(targetAngle, true);
+  const Angle angleRight = getNextFreeAngle(targetAngle, false);
+
+  const Angle angleOffsetLeft = Angle::normalize(angleLeft - targetAngle);
+  const Angle angleOffsetRight = Angle::normalize(angleRight - targetAngle);
+
+  const float ratingLeft = std::abs(angleOffsetLeft) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetLeft) ? -pi_2 : 0.f);
+  const float ratingRight = std::abs(angleOffsetRight) + (sgn(lastAvoidanceAngleOffset) == sgn(angleOffsetRight) ? -pi_2 : 0.f);
+
+  newAvoidanceAngleOffset = ratingLeft < ratingRight ? angleOffsetLeft : angleOffsetRight;
+
+  /// Hack so the robot can always walk to the ball if it is on the goal line
+  if(theRobotPose.translation.x() < theFieldDimensions.xPosOwnPenaltyArea
+     && targetOnField.x() < theFieldDimensions.xPosOwnGroundLine && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftGoal)
+  {
+    if(targetOnField.y() > theFieldDimensions.yPosLeftGoal - 250.f && theRobotPose.translation.y() > targetOnField.y())
+      newAvoidanceAngleOffset = angleOffsetLeft;
+    if(targetOnField.y() < theFieldDimensions.yPosRightGoal + 250.f && theRobotPose.translation.y() < targetOnField.y())
+      newAvoidanceAngleOffset = angleOffsetRight;
+  }
 }

@@ -65,4 +65,5 @@ STREAMABLE(WalkKickStep,
   (OverrideFoot)(OverrideFoot::none) overrideOldSwingFoot, /**< Override the previous swing foot position variables based on the last measured/requested angles. */
   (OverrideFoot)(OverrideFoot::none) overrideOldSupportFoot, /**< Override the previous support foot position variables based on the last measured/requested angles. */
   (WalkKicks::Type)(WalkKicks::none) currentKick, /**< Name of the currently executed walk kick. */
+  (bool) useLastKeyframeForSupportFootXTranslation, // Shall the support foot use the interpolation of only the last keyframe?
 });

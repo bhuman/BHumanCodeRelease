@@ -8,7 +8,7 @@
 
 #include "ImageFrameProvider.h"
 
-MAKE_MODULE(ImageFrameProvider, perception);
+MAKE_MODULE(ImageFrameProvider);
 
 void ImageFrameProvider::update(OdometryData& odometryData)
 {

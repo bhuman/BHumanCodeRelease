@@ -9,6 +9,7 @@
     <Compound name="puppets">
       <Body ref="Nao" name="Remote">
         <Translation z="320mm"/>
+        <Set name="NaoColor" value="black"/>
       </Body>
     </Compound>
 

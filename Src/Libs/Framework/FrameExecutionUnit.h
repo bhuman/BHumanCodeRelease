@@ -11,8 +11,8 @@
 
 #include "Streaming/TypeRegistry.h"
 
-#include <list>
-
+struct Configuration;
+class LoggingController;
 struct ModulePacket;
 template<typename T>
 class Receiver;
@@ -27,6 +27,18 @@ class FrameExecutionUnit
 {
 public:
   virtual ~FrameExecutionUnit() = default;
+
+  /**
+   * The function initializes logging for the current module container. If this module container decides to
+   * be the logging controller, it returns a pointer to an instance of that interface. Ownership of that
+   * object is transferred to the caller.
+   * @param config The initial configuration of all threads.
+   * @param index The index of this thread in the config.
+   * @return An instance of a logging controller if this thread should control the logger or \c nullptr.
+   */
+  virtual const LoggingController* initLogging([[maybe_unused]] const Configuration& config,
+                                               [[maybe_unused]] const std::size_t index)
+  {return nullptr;}
 
   /**
    * The function is executed in every frame.

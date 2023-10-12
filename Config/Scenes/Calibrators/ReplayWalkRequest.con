@@ -1,4 +1,4 @@
-mr ReplayWalkRequestGenerator ReplayWalkRequestProvider Motion
+for Motion mr ReplayWalkRequestGenerator ReplayWalkRequestProvider
 
 echo --Start Recoding--
 echo set module:ReplayWalkRequestProvider:startRecord true
@@ -7,4 +7,4 @@ echo --Switch Back to Replaying--
 echo set module:ReplayWalkRequestProvider:startRecord false
 echo
 echo --Save Recoding--
-echo save parameters:ReplayWalkRequestProvider
+echo get parameters:ReplayWalkRequestProvider save

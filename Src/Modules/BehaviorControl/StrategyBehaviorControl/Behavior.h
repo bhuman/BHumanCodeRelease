@@ -137,16 +137,17 @@ private:
 
   struct Vote
   {
-    unsigned int count = 0; /** How often an option is voted for. */
+    unsigned int count = 0; /**< How often an option is voted for. */
     int playerNumber = Settings::highestValidPlayerNumber + 1; /**< The lowest number of any player voting for this option.  */
   };
 
   struct BallXTimestamps
   {
-    unsigned lastTimeWhenNotAhead = 0; /** The last time when the ball was not ahead of a certain x threshold. */
-    unsigned lastTimeWhenNotBehind = 0; /** The last time when the ball was not behind a certain x threshold. */
+    unsigned lastTimeWhenNotAhead = 0; /**< The last time when the ball was not ahead of a certain x threshold. */
+    unsigned lastTimeWhenNotBehind = 0; /**< The last time when the ball was not behind a certain x threshold. */
   };
 
+  static const int ballDisappearedThreshold = 64; /**< After how many ms has the ball actually disappeared? */
   std::array<Strategy, Strategy::numOfTypes> strategies;
   std::array<Tactic, Tactic::numOfTypes> tactics;
 

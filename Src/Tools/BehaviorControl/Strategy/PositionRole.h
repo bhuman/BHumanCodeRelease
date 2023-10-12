@@ -29,6 +29,7 @@ public:
     unspecified,
     left,
     right,
+    center,
   });
 
   static Role::Type toRole(Type type)

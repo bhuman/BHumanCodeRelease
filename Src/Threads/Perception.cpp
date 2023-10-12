@@ -19,6 +19,7 @@ bool Perception::beforeFrame()
 
 void Perception::beforeModules()
 {
+  BHExecutionUnit::beforeModules();
   // Reset coordinate system for debug field drawing
   DEBUG_DRAWING("perception:Reset", "drawingOnField") // Set the origin to the (0,0,0)
   {
@@ -41,5 +42,5 @@ bool Perception::afterFrame()
   else
     Thread::yield();
 
-  return FrameExecutionUnit::afterFrame();
+  return BHExecutionUnit::afterFrame();
 }

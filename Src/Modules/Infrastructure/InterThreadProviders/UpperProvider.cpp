@@ -9,16 +9,11 @@
 
 #include "UpperProvider.h"
 
-MAKE_MODULE(UpperProvider, infrastructure);
+MAKE_MODULE(UpperProvider);
 
 void UpperProvider::update(OtherFieldBoundary& theOtherFieldBoundary)
 {
   static_cast<FieldBoundary&>(theOtherFieldBoundary) = theUpperFieldBoundary;
-}
-
-void UpperProvider::update(OtherGoalPostsPercept& theOtherGoalPostsPercept)
-{
-  static_cast<GoalPostsPercept&>(theOtherGoalPostsPercept) = theUpperGoalPostsPercept;
 }
 
 void UpperProvider::update(OtherObstaclesPerceptorData& theOtherObstaclesPerceptorData)

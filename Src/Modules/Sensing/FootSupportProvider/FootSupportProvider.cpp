@@ -12,11 +12,12 @@
  */
 
 #include "FootSupportProvider.h"
-#include "Platform/File.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
+#include "Platform/File.h"
 #include <cmath>
 
-MAKE_MODULE(FootSupportProvider, sensing);
+MAKE_MODULE(FootSupportProvider);
 
 FootSupportProvider::FootSupportProvider()
 {
@@ -33,6 +34,7 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
 {
   DECLARE_PLOT("module:FootSupportProvider:supportSwitch");
   DECLARE_PLOT("module:FootSupportProvider:supportPredictSwitch");
+  DECLARE_PLOT("module:FootSupportProvider:support");
   if(theFrameInfo.time == 0)
     return;
   float totalPressure = 0.f;
@@ -76,8 +78,9 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
 
     theFootSupport.predictedSwitched = theFsrData.isCalibrated // Min pressure must be calibrated first
                                        && predictedSupport * theFootSupport.support < 0.f // support foot will switch
-                                       && ((theFootSupport.support < 0.f && leftFSR) // new support foot has some pressure and had not have it before
-                                           || (theFootSupport.support > 0.f && rightFSR));
+                                       && ((theFootSupport.support < 0.f && leftFSR && theFsrData.legInfo[Legs::right].totals < currentSupportMaxPressure && theFsrData.legInfo[Legs::left].totals > currentSwingMinPressure) // new support foot has some pressure and had not have it before
+                                           || (theFootSupport.support > 0.f && rightFSR && theFsrData.legInfo[Legs::left].totals < currentSupportMaxPressure && theFsrData.legInfo[Legs::right].totals > currentSwingMinPressure));
+
     lastSupport = theFootSupport.support;
   }
   else
@@ -87,6 +90,8 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
     theFootSupport.switched = false;
     theFootSupport.predictedSwitched = false;
   }
+
+  PLOT("module:FootSupportProvider:support", theFootSupport.support);
 
   PLOT("module:FootSupportProvider:supportPredictSwitch", theFootSupport.predictedSwitched ? 1.f : 0.f);
   PLOT("module:FootSupportProvider:supportSwitch", theFootSupport.switched ? 1.f : 0.f);

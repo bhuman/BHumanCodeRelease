@@ -12,6 +12,7 @@
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
@@ -32,6 +33,7 @@ SKILL_IMPLEMENTATION(HeadControlImpl,
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
+  REQUIRES(FrameInfo),
   REQUIRES(HeadMotionInfo),
   REQUIRES(JointAngles),
   REQUIRES(LibCheck),
@@ -43,6 +45,9 @@ SKILL_IMPLEMENTATION(HeadControlImpl,
   {,
     (int)(2000) ownBallTimeout, /**< LookAtBall will use the team ball or look active if the ball hasn't been seen for this time. */
     (int)(500) ownBallDisappearedTimeout, /**< LookAtBall will use the team ball or look active if the ball disappeared for this time. */
+    (int)(100) minTimeBetweenTargetSwitch,
+    (int)(200) minTimeLookingAtBall,
+    (Angle)(100_deg) maxHeadYawSpeed,
   }),
 });
 
@@ -65,8 +70,8 @@ class HeadControlImpl : public HeadControlImplBase
     if(useOwnEstimate || theTeammatesBallModel.isValid)
     {
       const Vector2f ballPosition = useOwnEstimate ?
-                                    (p.mirrored ? (theRobotPose.inversePose * (theRobotPose * theBallModel.estimate.position).rotated(pi)) : theBallModel.estimate.position) :
-                                    (theRobotPose.inversePose * (p.mirrored ? theTeammatesBallModel.position.rotated(pi) : theTeammatesBallModel.position));
+                                    (p.mirrored ? (theRobotPose.inverse() * (theRobotPose * theBallModel.estimate.position).rotated(pi)) : theBallModel.estimate.position) :
+                                    (theRobotPose.inverse() * (p.mirrored ? theTeammatesBallModel.position.rotated(pi) : theTeammatesBallModel.position));
       setTargetOnGroundRequest(HeadMotionRequest::autoCamera, Vector3f(ballPosition.x(), ballPosition.y(), theBallSpecification.radius), 180_deg);
     }
     else
@@ -80,7 +85,7 @@ class HeadControlImpl : public HeadControlImplBase
   {
     if(theTeammatesBallModel.isValid)
     {
-      const Vector2f ballPosition = theRobotPose.inversePose * (p.mirrored ? theTeammatesBallModel.position.rotated(pi) : theTeammatesBallModel.position);
+      const Vector2f ballPosition = theRobotPose.inverse() * (p.mirrored ? theTeammatesBallModel.position.rotated(pi) : theTeammatesBallModel.position);
       setTargetOnGroundRequest(HeadMotionRequest::autoCamera, Vector3f(ballPosition.x(), ballPosition.y(), theBallSpecification.radius), 180_deg);
     }
     else
@@ -116,22 +121,32 @@ class HeadControlImpl : public HeadControlImplBase
     const float ratio = Rangef::ZeroOneRange().limit(p.walkingDirection.norm() / 500.f); //todo: threshold has to be adjusted
     walkingAngle = ballPositionAngle * (1.f - ratio) + walkingAngle * ratio;
 
+    const bool headNearTarget = std::abs(Angle::normalize(theJointAngles.angles[Joints::headYaw] - nextTurnedAngle)) <= p.thresholdAngle;
+    const Angle maxHeadYawChange = (theJointAngles.timestamp - lastJointAnglesTime) / 1000.f * maxHeadYawSpeed;
+    const bool headMovedSlow = std::abs(lastHeadYawAngle - theJointAngles.angles[Joints::headYaw]) <= maxHeadYawChange;
+    if(!lookAtBallFirst || !(headNearTarget && headMovedSlow))
+      lookingAtBallSince = theFrameInfo.time;
+
     //look at the ball if we also see the target or the ball is moving
     if(std::abs(walkingAngle - ballPositionAngle) <= p.thresholdAngle || theBallModel.estimate.velocity.squaredNorm() > 0)//todo: oszillation
     {
       nextTurnedAngle = ballPositionAngle;
       lookAtBallFirst = true;
     }
-    else if(!theHeadMotionInfo.moving && std::abs(Angle::normalize(theJointAngles.angles[Joints::headYaw] - nextTurnedAngle)) <= p.thresholdAngle)
+    else if(!theHeadMotionInfo.moving && theFrameInfo.getTimeSince(lastTargetSwitch) > minTimeBetweenTargetSwitch &&
+            (theFrameInfo.getTimeSince(lookingAtBallSince) > minTimeLookingAtBall || !lookAtBallFirst) && headNearTarget)
     {
       lookAtBallFirst = !lookAtBallFirst;
+      lastTargetSwitch = theFrameInfo.time;
     }
     if(lookAtBallFirst)
       nextTurnedAngle = ballPositionAngle;
     else
       nextTurnedAngle = walkingAngle;
 
-    setPanTiltRequest(HeadMotionRequest::autoCamera, nextTurnedAngle, p.tilt, p.speed);
+    setPanTiltRequest(HeadMotionRequest::autoCamera, nextTurnedAngle, p.tilt, 500_deg);
+    lastHeadYawAngle = theJointAngles.angles[Joints::headYaw];
+    lastJointAnglesTime = theJointAngles.timestamp;
   }
 
   void reset(const LookActive&) override {}
@@ -148,6 +163,10 @@ class HeadControlImpl : public HeadControlImplBase
   {
     nextTurnedAngle = p.startTarget ? p.ballPositionAngle : Angle(p.walkingDirection.angle());
     lookAtBallFirst = !p.startTarget;
+    lastHeadYawAngle = theJointAngles.angles[Joints::headYaw];
+    lastTargetSwitch = 0;
+    lookingAtBallSince = theFrameInfo.time;
+    lastJointAnglesTime = theJointAngles.timestamp;
   }
 
   void setPanTiltRequest(HeadMotionRequest::CameraControlMode camera, Angle pan, Angle tilt, Angle speed, bool stopAndGoMode = false, bool calibrationMode = false)
@@ -173,7 +192,11 @@ class HeadControlImpl : public HeadControlImplBase
 
   float lookLeftAndRightSign; /**< The side to which LookLeftAndRight currently turns the head. */
   bool lookAtBallFirst; /**< If true, then look at the ball first. */
-  Angle nextTurnedAngle; /**< the last angle the head in LookAtBallTarget was turned*/
+  Angle nextTurnedAngle; /**< the last angle the head in LookAtBallTarget was turned */
+  unsigned int lastTargetSwitch = 0;
+  Angle lastHeadYawAngle = 0_deg;
+  unsigned int lookingAtBallSince = 0;
+  unsigned int lastJointAnglesTime = 0;
 };
 
 MAKE_SKILL_IMPLEMENTATION(HeadControlImpl);

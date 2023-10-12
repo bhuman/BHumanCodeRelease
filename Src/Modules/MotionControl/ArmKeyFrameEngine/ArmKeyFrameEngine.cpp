@@ -1,6 +1,7 @@
 #include "ArmKeyFrameEngine.h"
+#include "Debugging/Plot.h"
 
-MAKE_MODULE(ArmKeyFrameEngine, motionControl);
+MAKE_MODULE(ArmKeyFrameEngine);
 
 ArmKeyFrameEngine::ArmKeyFrameEngine() :
   arms{Arm(Arms::left), Arm(Arms::right)}
@@ -24,6 +25,7 @@ void ArmKeyFrameEngine::update(ArmKeyFrameGenerator& armKeyFrameGenerator)
     armMotionInfo.armKeyFrameRequest.arms[arm].fast = arms[arm].fast;
     armMotionInfo.isFree[arm] = arms[arm].isLastMotionFinished &&
                                 (arms[arm].currentMotion.id == ArmKeyFrameRequest::useDefault || arms[arm].currentMotion.id == ArmKeyFrameRequest::reverse);
+    armMotionInfo.isFinished[arm] = arms[arm].isLastMotionFinished;
   };
 }
 

@@ -12,9 +12,7 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/WalkGenerator.h"
-#include "Representations/MotionControl/WalkKickGenerator.h"
 #include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/ReplayWalkRequestGenerator.h"
 #include "Framework/Module.h"
@@ -25,6 +23,7 @@ STREAMABLE(ReplayRequest,
   (WalkKickStep) walkKickStep,
   (bool)(false) isWalkKickPhase,
   (Pose2f) step,
+  (float)(0.f) delay,
 });
 
 STREAMABLE(WalkPhaseData,
@@ -39,9 +38,7 @@ MODULE(ReplayWalkRequestProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(KeyStates),
-  REQUIRES(MotionRequest),
   REQUIRES(WalkGenerator),
-  REQUIRES(WalkKickGenerator),
   USES(WalkStepData),
   PROVIDES(ReplayWalkRequestGenerator),
   LOADS_PARAMETERS(

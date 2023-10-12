@@ -1,4 +1,4 @@
-if(APPLE)
+if(MACOS)
   set(APPLEHELPER_ROOT_DIR "${BHUMAN_PREFIX}/Src/Libs/AppleHelper")
 
   set(APPLEHELPER_SOURCES

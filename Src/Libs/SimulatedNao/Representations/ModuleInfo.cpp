@@ -19,31 +19,30 @@ void ModuleInfo::clear()
     thread.representationProviders.clear();
 }
 
-bool ModuleInfo::handleMessage(InMessage& message)
+bool ModuleInfo::handleMessage(MessageQueue::Message message)
 {
-  if(message.getMessageID() == idModuleTable)
+  if(message.id() == idModuleTable)
   {
+    auto stream = message.bin();
     int numOfModules;
-    message.bin >> numOfModules;
+    stream >> numOfModules;
     for(int i = 0; i < numOfModules; ++i)
     {
       Module module;
       int numOfRequirements;
-      unsigned char category;
-      message.bin >> module.name >> category >> numOfRequirements;
-      module.category = static_cast<ModuleBase::Category>(category);
+      stream >> module.name >> numOfRequirements;
       module.requirements.resize(numOfRequirements);
       for(unsigned j = 0; j < module.requirements.size(); ++j)
       {
-        message.bin >> module.requirements[j];
+        stream >> module.requirements[j];
         representations.insert(module.requirements[j]);
       }
       int numOfRepresentations;
-      message.bin >> numOfRepresentations;
+      stream >> numOfRepresentations;
       module.representations.resize(numOfRepresentations);
       for(unsigned j = 0; j < module.representations.size(); ++j)
       {
-        message.bin >> module.representations[j];
+        stream >> module.representations[j];
         representations.insert(module.representations[j]);
       }
       std::list<Module>::iterator k;
@@ -51,7 +50,7 @@ bool ModuleInfo::handleMessage(InMessage& message)
         ;
       modules.insert(k, module);
     }
-    message.bin >> config;
+    stream >> config;
     timestamp = Time::getCurrentSystemTime();
     return true;
   }

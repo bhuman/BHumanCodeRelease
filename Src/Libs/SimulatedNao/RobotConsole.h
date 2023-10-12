@@ -12,33 +12,27 @@
 #include <WinSock2.h> // This must be included first to prevent errors, since Windows.h is included in one of the following headers.
 #endif
 
-#include "Representations/BehaviorControl/ActivationGraph.h"
-#include "Representations/Configuration/JointCalibration.h"
-#include "Representations/Configuration/JointLimits.h"
-#include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
-#include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
-#include "Representations/MotionControl/MotionRequest.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Debugging/DebugImages.h"
 #include "Framework/ThreadFrame.h"
-
-#include "LogPlayer.h" // Must be included after ThreadFrame.h
 #include "LogExtractor.h"
+#include "LogPlayer.h"
 #include "Platform/Joystick.h"
 #include "Representations/AnnotationInfo.h"
+#include "Representations/BehaviorControl/ActivationGraph.h"
+#include "Representations/Configuration/JointCalibration.h"
+#include "Representations/Infrastructure/JointRequest.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/ModuleInfo.h"
+#include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/TimeInfo.h"
-#include "Visualization/DebugImageConverter.h"
+#include "Streaming/OutStreams.h"
 #include "Views/DataView/DataView.h"
 #include "Visualization/DebugDrawing.h"
 #include "Visualization/DebugDrawing3D.h"
 #include "Visualization/DebugDrawing3DAdapter.h"
+#include "Visualization/DebugImageConverter.h"
 
 #include <QString>
 #include <list>
@@ -54,6 +48,15 @@ class SimulatedRobot;
  */
 class RobotConsole : public ThreadFrame
 {
+private:
+  /** A console command based on the joystick's axes that is executed when no button is pressed. */
+  struct JoystickMotionCommand
+  {
+    int indices[Joystick::numOfAxes]; /**< Indices for the sequence of $x, $y, and $r in motionCommand. */
+    std::string command; /**< The pattern for the motion command. */
+    std::string lastCommand; /**< The last joystick commands calculated. */
+  };
+
 public:
   ENUM(Color, /**< Colors for plot drawings. Same sequence as constants in ColorRGBA (without white)! */
   {,
@@ -74,7 +77,7 @@ public:
   {
     DebugImage* image = nullptr;
     unsigned timestamp = 0;
-    std::string threadIdentifier;
+    std::string threadName;
 
     ~ImagePtr() { delete image; }
   };
@@ -90,6 +93,8 @@ public:
   using Drawings3D = std::unordered_map<std::string, DebugDrawing3D>;
   using DrawingAdapters3D = std::unordered_map<std::string, DebugDrawing3DAdapter>;
   using Plots = std::unordered_map<std::string, Plot>;
+  using DebugDataInfoPair = std::pair<std::string, MessageQueue*>; /**< The type of the information on a debug data entry. */
+  using DebugDataInfos = std::unordered_map<std::string, DebugDataInfoPair>; /**< The type of the map debug data. */
 
   struct ThreadData
   {
@@ -100,8 +105,14 @@ public:
     Drawings imageDrawings; /**< Drawings on camera images. */
     Drawings fieldDrawings; /**< Drawings on the field. */
     DrawingAdapters3D drawings3D; /**< Drawings in the scene view. */
+    Plots plots; /**< Buffers for plots. */
     AnnotationInfo annotationInfo; /**< Annotations collected so far or all from a log file. */
+    DebugRequestTable debugRequestTable; /**< Debug requests available in this thread. */
+    DebugDataInfos debugDataInfos; /**< All debug data information in this thread. */
+    std::unordered_map<std::string, DataView*> dataViews; /**< The map of all data views for this thread. */
+    std::string getOrSetWaitsFor; /**< The name of the representation get or set are waiting for. If empty, they are not waiting for any. */
     bool logAcknowledged = true; /**< The flag is true whenever log data sent to the robot code was processed. */
+    size_t currentFrame = 0; /**< The last frame that was played back for this thread (log replay only). */
   };
 
   struct Layer
@@ -143,91 +154,26 @@ public:
     Qt::KeyboardModifiers modifiers = Qt::NoModifier; /**< The modifier keys that have to be pressed while clicking. */
   };
 
-  using DebugDataInfoPair = std::pair<std::string, MessageQueue*>; /**< The type of the information on a debug data entry. */
-  using DebugDataInfos = std::unordered_map<std::string, DebugDataInfoPair>; /**< The type of the map debug data. */
-
-private:
-  /**
-   * Writes a message to a list of strings. Used to save representations as files,
-   * i.e. save calibration values set in the simulator.
-   */
-  class MapWriter : public MessageHandler
-  {
-  private:
-    const TypeInfo& typeInfo;
-    Out& stream;
-
-  public:
-    MapWriter(const TypeInfo& typeInfo, Out& stream) : typeInfo(typeInfo), stream(stream) {}
-
-    bool handleMessage(InMessage& message);
-  };
-
-  /**
-   * Writes a message to the console.
-   */
-  class Printer : public MessageHandler
-  {
-  private:
-    ConsoleRoboCupCtrl* ctrl;
-
-  public:
-    Printer(ConsoleRoboCupCtrl* ctrl) : ctrl(ctrl) {}
-
-    bool handleMessage(InMessage& message);
-  };
-
-  /**
-   * A MessageHandler that parses debug responses containing representation data and forwards them to the correct representation view
-   */
-  class DataViewWriter : public MessageHandler
-  {
-  private:
-    std::unordered_map<std::string, DataView*>* pDataViews; /**< Pointer to dataViews of RobotConsole */
-
-  public:
-    DataViewWriter(std::unordered_map<std::string, DataView*>* pViews) : pDataViews(pViews) {}
-
-    /**
-     * Forwards the specified message to the representation view that  displays it.
-     */
-    bool handleMessage(InMessage& message, const std::string& type, const std::string& name);
-    /**
-     * Same as above but it extracts the type and name from the message
-     */
-    bool handleMessage(InMessage& message);
-  };
-
-  /** A console command based on the joystick's axes that is executed when no button is pressed. */
-  struct JoystickMotionCommand
-  {
-    int indices[Joystick::numOfAxes]; /**< Indices for the sequence of $x, $y, and $r in motionCommand. */
-    std::string command; /**< The pattern for the motion command. */
-    std::string lastCommand; /**< The last joystick commands calculated. */
-  };
-
 public:
   DECLARE_SYNC; /**< Make this object synchronizable. */
   const SystemCall::Mode mode; /**< Defines the mode in which this thread runs. */
   std::string logFile; /**< The name of the log file replayed. */
-  std::unordered_map<std::string, ThreadData> threadData; /** Data that is maintained per thread. */
+  std::unordered_map<std::string, ThreadData> threadData; /**< Data that is maintained per thread. */
   Views fieldViews; /**< The map from field view names to the list of field drawings shown in them. */
   Views imageViews; /**< The map from image view names to the list of image drawings shown in them. */
-  Plots plots; /**< Buffers for plots. */
   PlotViews plotViews; /**< The map from plot view names to the list of plots shown in them. */
   std::unordered_map<std::string, std::list<ImageViewCommand>> imageViewCommands; /**< Commands executed after a click per image view. */
   ModuleInfo moduleInfo; /**< The current state of all solution requests. */
   DebugImageConverter debugImageConverter; /**< Helper for all image view to convert debug images. */
+  ConsoleRoboCupCtrl* ctrl; /**< A pointer to the controller object. */
 
 protected:
-  ConsoleRoboCupCtrl* ctrl; /** A pointer to the controller object. */
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
   const char* pollingFor = nullptr; /**< The information the console is waiting for. */
   bool jointCalibrationChanged = false; /**< Was the joint calibration changed since setting it for the local robot? */
   std::unique_ptr<SimulatedRobot> simulatedRobot; /**< The interface to simulated objects. */
 
   // Representations received
-  FrameInfo frameInfo; /**< The new frame info received from the robot code. */
   JointCalibration jointCalibration; /**< The new joint calibration angles received from the robot code. */
   JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
   InertialSensorData inertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
@@ -237,22 +183,18 @@ protected:
 private:
   TypeInfo typeInfo; /**< Information about all data types used by the connected robot. */
   DebugRequestTable debugRequestTable;
-  DebugDataInfos debugDataInfos; /** All debug data information. */
-  std::unordered_map<std::string, std::string> threadsOfDebugData; /**< From which thread was certain debug data accepted? */
-  Images incompleteImages; /** Buffers images of this frame (created on demand). */
+  Images incompleteImages; /**< Buffers images of this frame (created on demand). */
   Drawings incompleteImageDrawings; /**< Buffers incomplete image drawings from the debug queue. */
   Drawings incompleteFieldDrawings; /**< Buffers incomplete field drawings from the debug queue. */
   Drawings3D incompleteDrawings3D; /**< Buffers incomplete 3d drawings from the debug queue. */
-  std::unordered_map<std::string, DataView*> dataViews; /**< The map of all data views */
   Views imageViews3D; /**< The map of all 3-D image views. */
   Vector3f background = Vector3f(0.5f, 0.5f, 0.5f); /**< The background color of all 3-D views. */
-  Out* logMessages = nullptr; /** The file messages from the robot are written to. */
+  Out* logMessages = nullptr; /**< The file messages from the robot are written to. */
   std::list<std::string> lines; /**< Console lines buffered because the thread is currently waiting. */
   std::list<std::string> commands; /**< (Global) commands to execute in the next update step. */
   int waitingFor[numOfMessageIDs]; /**< Each entry states for how many information packets the thread waits. */
   bool polled[numOfMessageIDs]; /**< Each entry states whether certain information is up-to-date (if not waiting for). */
-  std::string getOrSetWaitsFor; /**< The name of the representation get or set are waiting for. If empty, they are not waiting for any. */
-  std::string threadIdentifier; /** The thread from which messages are currently read. */
+  std::string threadName; /**< The thread from which messages are currently read. */
 
   // Flags
   bool printMessages = true; /**< Decides whether to output text messages in the console window. */
@@ -260,16 +202,13 @@ private:
   bool destructed = false; /**< A flag stating that this object has already been destructed. */
   bool directMode = false; /**< Console is in direct mode, not replaying a script. */
   bool updateCompletion = false; /**< Determines whether the tab-completion table has to be updated. */
+  bool updateDataViews = false; /**< Determines whether the set of data views has to be updated. */
   bool moduleRequestChanged = false; /**< Was the module request changed since it was sent? */
-  bool logImagesAsJPEGs = false; /**< Compress images before they are stored in a log file. */
   bool perThreadViewsAdded = false; /**< Were the per-thread views already added? */
-  bool kickViewSet = false; /**< Indicator whether there already is a KickView, we need just one. */
   bool newDebugDrawing3D = false; /**< Whether a new 3D debug drawing must be registered. */
 
   // Helpers
   LogExtractor logExtractor; /**< The log extractor to extract things from log files. */
-  DataViewWriter dataViewWriter; /**< The writer which is used to translate data into a format that can be understood by the data views */
-  std::string printBuffer; /**< Buffer used to pass output of command get to kick view. */
   unsigned maxPlotSize = 0; /**< The maximum number of data points to remember for plots. */
   int imageSaveNumber = 0; /**< A counter for generating image file names. */
   int mrCounter = 0; /**< Counts the number of mr commands. */
@@ -278,12 +217,6 @@ private:
   // Representations received
   ActivationGraph activationGraph;/**< Graph of active options and states. */
   unsigned activationGraphReceived = 0; /**< When was the last activation graph received? */
-  FsrSensorData fsrSensorData; /**< The most current set of fsr sensor data received from the robot code. */
-  SystemSensorData systemSensorData; /**< The most current set of system sensor data received from the robot code. */
-  unsigned sensorDataTimestamp = 0; /**< Last time new sensor data was received. */
-  JointLimits jointLimits; /**< The joint calibration received from the robot code. */
-  KeyStates keyStates; /**< The most current set of key states received from the robot code. */
-  RobotDimensions robotDimensions; /**< The robotDimensions received from the robot code. */
 
   //Joystick
   Joystick joystick; /**< The joystick interface. */
@@ -298,7 +231,6 @@ private:
   std::vector<char> joystickCommandBuffer; /**< Reusable buffer for calculating the joystick command. */
   std::string joystickButtonPressCommand[Joystick::numOfButtons]; /**< Command for each button press. */
   std::string joystickButtonReleaseCommand[Joystick::numOfButtons]; /**< Command for each button release. */
-  bool joystickExecCommand(const std::string&); /**< Exec command and optionally output trace to console. */
 
 public:
   /**
@@ -318,8 +250,12 @@ public:
   ~RobotConsole();
 
   /**
-   * The function adds per-robot views.
+   * The function must be called to exchange data with SimRobot.
+   * It sends the motor commands to SimRobot and acquires new sensor data.
    */
+  virtual void update();
+
+  /** The function adds per-robot views. */
   void addPerRobotViews();
 
   /**
@@ -336,28 +272,19 @@ public:
   void handleKeyEvent(int key, bool pressed);
 
   /**
-   * The function must be called to exchange data with SimRobot.
-   * It sends the motor commands to SimRobot and acquires new sensor data.
-   */
-  virtual void update();
-
-  /**
-   * Sends the specified message to debugOut
-   */
-  void sendDebugMessage(InMessage& msg);
-
-  /**
    * Request debug data.
+   * @param threadName The name of the thread the request is sent to.
    * @param name The name of the debug data. Does not contain "debug data:".
-   * @param enable Is sending the debug data enabled?
    */
-  void requestDebugData(const std::string& name, bool on);
+  void requestDebugData(const std::string& threadName, const std::string& name);
 
   /**
-   * Returns the corresponding debug request string for the specified name.
-   * @return empty string in case of error.
+   * Send debug data to overwrite data in a specific thread.
+   * @param threadName The thread the data is sent to.
+   * @param name The name of the data to overwrite.
+   * @param data The data to be sent. If nullptr, stop overwriting data.
    */
-  std::string getDebugRequest(const std::string& name);
+  void sendDebugData(const std::string& threadName, const std::string& name, OutBinaryMemory* data = nullptr);
 
 protected:
   /**
@@ -366,64 +293,42 @@ protected:
    */
   int getPriority() const override { return 0; }
 
-  /**
-   * That function is called once before the first main(). It can be used
-   * for things that can't be done in the constructor.
-   */
+  /** The function is called once before the first call of the thread's main(). */
   void init() override;
 
-  /**
-   * The function is called when the thread is terminated.
-   */
+  /** The function is called when the thread is terminated. */
   void terminate() override {}
 
   /**
    * The function is called for every incoming debug message.
-   *
    * @param message An interface to read the message from the queue.
    * @return Has the message been handled?
    */
-  bool handleMessage(InMessage& message) override;
+  bool handleMessage(MessageQueue::Message message) override;
 
   /**
-   * Called by the thread (the base class) to get the
-   * debugReceiver message queue handled.
+   * Called by the thread to handle all messages received.
+   * @param The message queue of the thread.
    */
   void handleAllMessages(MessageQueue& messageQueue) override;
 
-  /** Retrieves all annotations from log player. */
+  /** Retrieves all annotations from the log player. */
   void updateAnnotationsFromLog();
 
 private:
-  /**
-   * The function adds per-thread views.
-   */
+  /** The function adds all per-thread views, but not. */
   void addPerThreadViews();
 
   /**
-   * The method returns whether the console is polling for some data from the robot.
-   * @return Currently waiting?
+   * The function is called by \c view3D to add a set of color space views.
+   * @param path The path in the scene view.
+   * @param name The name of the image shown by the views.
+   * @param threadName The name of the thread the views are added for.
    */
-  bool isPolling() const { return !lines.empty(); }
+  void addColorSpaceViews(const QString& path, const std::string& name, const std::string& threadName);
 
-  /**
-   * Poll information of a certain kind if it needs updated.
-   * @param id The information required.
-   * @return The information requested is already up-to-date.
-   */
-  bool poll(MessageID id);
-
-  /**
-   * The function polls all outdated information required for and only in direct mode.
-   */
-  void pollForDirectMode();
-
-  /**
-   * The method triggers the threads to keep them busy or to receive updated data.
-   */
-  void triggerThreads();
-
-  void addColorSpaceViews(const std::string& id, const std::string& name, const std::string& threadIdentifier);
+  /** Adds and removes data views for the current module configuration. */
+  void updateDataViewTree();
 
   /**
    * The function is called when a console command has been entered.
@@ -433,6 +338,40 @@ private:
   bool handleConsoleLine(const std::string& line);
 
   /**
+   * Handles all commands that can be prefixed by "for".
+   * @param command The name of the command.
+   * @param stream The stream containing the parameters of the command.
+   * @param threadName The name of the thread the command runs for.
+   * @param result The result of parsing the command.
+   * @return Were all prerequisites satisfied for executing the command?
+   */
+  bool handleForCommands(const std::string& command, In& stream,
+                         const std::string& threadName, bool& result);
+
+  /** The function handles the joystick. */
+  void handleJoystick();
+
+  /**
+   * Executes a console command that was initiated by joystick input.
+   * @param cmd The command.
+   * @return Was the command executed (vs. was it empty)?
+   */
+  bool handleJoystickCommand(const std::string& cmd);
+
+  /**
+   * Poll information of a certain kind if it needs updated.
+   * @param id The information required.
+   * @return The information requested is already up-to-date.
+   */
+  bool poll(MessageID id);
+
+  /** The function polls all outdated information required for and only in direct mode. */
+  void pollForDirectMode();
+
+  /** The method triggers the threads to keep them busy or to receive updated data. */
+  void triggerThreads();
+
+  /**
    * The function prints an unfolded type to the console.
    * @param type The type to print.
    * @param field The field with that type.
@@ -440,46 +379,44 @@ private:
   void printType(const std::string& type, const std::string& field = "");
 
   /**
-   * The function handles the joystick.
+   * Notifies all relevant views if a "set" or "set unchanged" command was executed.
+   * @param data The name of the data for which it was executed.
+   * @param set Was "set" executed (vs. "set unchanged")?
+   * @param threadName The name of the thread for which the status changed.
+   *                   Empty if it changes for all threads.
    */
-  void handleJoystick();
+  void notifyDataViewsAboutSetStatus(const std::string& data, bool set, const std::string& threadName);
 
   /**
    * The function returns the path and filename for a given representation
    * @param representation A string naming a representation
    * @return A string to the filename to the requested file
    */
-  std::string getPathForRepresentation(const std::string& representation);
-
-  /** Send module request to robot if it was changed. */
-  void sendModuleRequest();
+  std::string getPathForRepresentation(const std::string& representation) const;
 
   //!@name Handler for different console commands
   //!@{
-  bool msg(In&);
-  bool backgroundColor(In& stream);
-  bool debugRequest(In&);
-  bool joystickCommand(In& stream);
-  bool joystickSpeeds(In& stream);
-  bool joystickMaps(In& stream);
-  bool log(In& stream);
-  bool get(In& stream, bool first, bool print);
-  bool set(In& stream);
-  bool saveImage(In& stream);
-  bool saveRequest(In& stream, bool first);
-  bool repoll(In& stream);
-  bool penalizeRobot(In& stream);
-  bool moduleRequest(In&);
-  bool moveRobot(In&);
+  bool backgroundColor(In&);
+  bool debugRequest(In&, const std::string& threadName);
+  bool for_(In&, bool& result);
+  bool get(In&, const std::string& threadName, bool first);
+  bool joystickCommand(In&);
+  bool joystickMaps(In&);
+  bool joystickSpeeds(In&);
+  bool log(In&);
+  bool moduleRequest(In&, std::string threadName);
   bool moveBall(In&);
-  bool view3D(In& stream);
-  bool viewField(In& stream);
-  bool viewData(In& stream); /**< Creates a new representation view. Stream should contain the name of the debug data to display. */
-  bool kickView();
-  bool viewDrawing(In& stream, RobotConsole::Views& views, const char* type);
-  bool viewImage(In& stream);
-  bool viewImageCommand(In& stream);
-  bool viewPlot(In& stream);
-  bool viewPlotDrawing(In& stream);
+  bool moveRobot(In&);
+  bool msg(In&);
+  bool penalizeRobot(In&);
+  bool repoll(In&);
+  bool saveImage(In&, std::string threadName);
+  bool set(In&, const std::string& threadName);
+  bool viewDrawing(In&, Views& views, const char* type);
+  bool viewField(In&, const std::string& threadName);
+  bool viewImage(In&, std::string threadName);
+  bool viewImageCommand(In&);
+  bool viewPlot(In&, const std::string& threadName);
+  bool viewPlotDrawing(In&);
   //!@}
 };

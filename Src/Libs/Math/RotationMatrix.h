@@ -1,6 +1,6 @@
 /**
  * @file RotationMatrix.h
- * Delcaration of class RotationMatrix
+ * Declaration of class RotationMatrix
  * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
  * @author <a href="mailto:thomas.kindler@gmx.de">Thomas Kindler</a>
  * @author Max Risler

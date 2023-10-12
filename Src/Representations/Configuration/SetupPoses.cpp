@@ -28,7 +28,7 @@ void SetupPoses::draw() const
       if(Blackboard::getInstance().exists("GameState"))
       {
         auto& gameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
-        return gameState.ownTeam.getSubstitutedPlayerNumber(gameState.playerNumber);
+        return gameState.playerNumber;
       }
       else if(Global::settingsExist())
         return Global::getSettings().playerNumber;
@@ -48,6 +48,5 @@ const SetupPoses::SetupPose& SetupPoses::getPoseOfRobot(int number) const
   for(const auto& pose : poses)
     if(pose.playerNumber == number)
       return pose;
-  FAIL("No setup pose for player " << number << ".");
-  return poses[0]; // Dummy line to avoid compiler complaints
+  return poses.back(); // Default: Return last element of list
 }

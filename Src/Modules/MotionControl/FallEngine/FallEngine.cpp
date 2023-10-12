@@ -8,11 +8,12 @@
 
 #include "FallEngine.h"
 #include "Platform/SystemCall.h"
+#include "Representations/Infrastructure/StiffnessData.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Tools/Motion/MotionUtilities.h"
 #include <cmath>
 
-MAKE_MODULE(FallEngine, motionControl);
+MAKE_MODULE(FallEngine);
 
 void FallEngine::update(FallGenerator& fallGenerator)
 {
@@ -81,21 +82,6 @@ bool FallPhase::isDone(const MotionRequest& motionRequest) const
 
 void FallPhase::calcJoints(const MotionRequest&, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo)
 {
-  if(engine.theFrameInfo.getTimeSince(startTime) > engine.waitAfterFalling)
-  {
-    if(!afterFallMotion)
-    {
-      afterFallMotion = true;
-      afterFallStart = request;
-    }
-    const float ratio = Rangef::ZeroOneRange().limit((engine.theFrameInfo.getTimeSince(startTime) - engine.waitAfterFalling) / engine.standInterpolationDuration);
-    const auto& target = engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit];
-    FOREACH_ENUM(Joints::Joint, joint)
-    {
-      request.angles[joint] = target[joint] * ratio + afterFallStart.angles[joint] * (1.f - ratio);
-      request.stiffnessData.stiffnesses[joint] = 20;
-    }
-  }
   safeBody(request);
   safeArms(request);
 
@@ -272,22 +258,46 @@ void FallPhase::safeArms(JointRequest& request)
       JointAngles goal;
       MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit],
                             goal, static_cast<Joints::Joint>(0), Joints::firstLegJoint);
-      if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 10_deg)
+
+      const Angle shoulderPitchCorrection =
+        Rangef::OneRange().limit(engine.theInertialData.angle.y() / engine.shoulderPitchSideFallCorrectionRange) * -engine.shoulderPitchSideFallCorrectionValue;
+
+      request.angles[Joints::lShoulderRoll] = goal.angles[Joints::lShoulderRoll];
+      if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 10_deg || leftShoulderRollLowStiffness)
       {
         request.angles[Joints::lShoulderPitch] = goal.angles[Joints::lShoulderPitch];
         request.angles[Joints::lElbowYaw] = goal.angles[Joints::lElbowYaw];
         request.angles[Joints::lElbowRoll] = goal.angles[Joints::lElbowRoll];
         request.angles[Joints::lWristYaw] = goal.angles[Joints::lWristYaw];
         leftShoulderRollLowStiffness = true;
+        if(fallDirection == FallDownState::right)
+          request.angles[Joints::lShoulderPitch] += shoulderPitchCorrection;
       }
-      if(engine.theJointAngles.angles[Joints::rShoulderRoll] < -10_deg)
+      else
+      {
+        // Boost the joints. No idea if this is still needed
+        request.angles[Joints::lShoulderRoll] = 20_deg;
+        request.angles[Joints::lElbowYaw] = 0_deg;
+      }
+
+      request.angles[Joints::rShoulderRoll] = goal.angles[Joints::rShoulderRoll];
+      if(engine.theJointAngles.angles[Joints::rShoulderRoll] < -10_deg || rightShoulderRollLowStiffness)
       {
         request.angles[Joints::rShoulderPitch] = goal.angles[Joints::rShoulderPitch];
         request.angles[Joints::rElbowYaw] = goal.angles[Joints::rElbowYaw];
         request.angles[Joints::rElbowRoll] = goal.angles[Joints::rElbowRoll];
         request.angles[Joints::rWristYaw] = goal.angles[Joints::rWristYaw];
         rightShoulderRollLowStiffness = true;
+        if(fallDirection == FallDownState::left)
+          request.angles[Joints::rShoulderPitch] += shoulderPitchCorrection;
       }
+      else
+      {
+        // Boost the joints. No idea if this is still needed
+        request.angles[Joints::rShoulderRoll] = -20_deg;
+        request.angles[Joints::rElbowYaw] = 0_deg;
+      }
+
       request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = leftShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
       request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = engine.stiffnessArm.min;
       request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = rightShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;

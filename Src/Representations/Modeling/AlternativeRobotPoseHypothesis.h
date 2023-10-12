@@ -24,9 +24,9 @@ STREAMABLE(AlternativeRobotPoseHypothesis,
   /** Verifies vality of the pose */
   void verify() const,
 
-  (Pose2f) pose,                             /** the pose in 2D (position + rotation) */
-  (bool)(false) isValid,                     /** true, if the content of pose is valid */
-  (unsigned)(0) timeOfLastPerceptionUpdate,  /** point of time, when the last perception that contributed to the pose was seen*/
-  (bool)(false) isInOwnHalf,                 /** true, if the pose is probably in the own half */
-  (int)(0) numOfContributingObservations,    /** the number of observations that have been averaged to compute the pose */
+  (Pose2f) pose,                             /**< the pose in 2D (position + rotation) */
+  (bool)(false) isValid,                     /**< true, if the content of pose is valid */
+  (unsigned)(0) timeOfLastPerceptionUpdate,  /**< point of time, when the last perception that contributed to the pose was seen*/
+  (bool)(false) isInOwnHalf,                 /**< true, if the pose is probably in the own half */
+  (int)(0) numOfContributingObservations,    /**< the number of observations that have been averaged to compute the pose */
 });

@@ -1,5 +1,0 @@
-mr FootOffset FootOffsetProvider Motion
-mr JointRequest FootOffsetProvider Motion
-dr module:FootOffsetProvider:start
-dr debugDrawing3d:module:FootOffsetProvider:comInFloor
-echo dr module:FootOffsetProvider:next

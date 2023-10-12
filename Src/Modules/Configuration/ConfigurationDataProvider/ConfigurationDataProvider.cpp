@@ -19,6 +19,7 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theBallSpecification);
   read(theBehaviorParameters);
   read(theCameraCalibration);
+  read(theCameraIntrinsics);
   read(theDamageConfigurationBody);
   read(theDamageConfigurationHead);
   read(theFootOffset);
@@ -32,7 +33,6 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theRelativeFieldColorsParameters);
   read(theRobotDimensions);
   read(theStiffnessSettings);
-  read(theSetupPoses);
   read(theStaticJointPoses);
   read(theWalkModifier);
 }
@@ -75,4 +75,4 @@ void ConfigurationDataProvider::update(RobotDimensions& robotDimensions)
   DEBUG_RESPONSE_ONCE("representation:RobotDimensions:once") OUTPUT(idRobotDimensions, bin, robotDimensions);
 }
 
-MAKE_MODULE(ConfigurationDataProvider, infrastructure);
+MAKE_MODULE(ConfigurationDataProvider);

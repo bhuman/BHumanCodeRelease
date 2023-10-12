@@ -1,14 +1,15 @@
 /**
+ * Defines scan-line regions that segment a scan-line into multiple parts with an assigned color classification.
+ *
+ * @author Lukas Malte Monnerjahn
  * @author Felix
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
-#include "ImageProcessing/PixelTypes.h"
 #include "Streaming/AutoStreamable.h"
-
-using PixelTypes::Color;
+#include "Streaming/Enum.h"
 
 union ScanLineRange
 {
@@ -34,15 +35,47 @@ union ScanLineRange
 
 struct ScanLineRegion : public Streamable
 {
-  ScanLineRegion() = default;
-  ScanLineRegion(const unsigned short from, const unsigned short to, const Color c);
+  ENUM(Color, // color classes for segmentation
+  {,
+    unset, // no color decided yet
+    black,
+    white,
+    field,
+    none,  // any color that is not white or field
+  });
 
-  ScanLineRange range;
-  Color color;
+  ScanLineRegion() = default;
+  ScanLineRegion(unsigned short from, unsigned short to, Color c);
+
+  ScanLineRange range{};
+  Color color = Color::unset;
+
+  /**
+   * Maps this regions ScanLineRegion::Color to a drawable color for debug drawings.
+   * @return associated drawable color for this region
+   */
+  [[nodiscard]] ColorRGBA getDrawColor() const
+  {
+    switch(this->color)
+    {
+      case Color::black:
+        return ColorRGBA::black;
+      case Color::white:
+        return ColorRGBA::white;
+      case Color::field:
+        return ColorRGBA::green;
+      case Color::none:
+        return ColorRGBA::gray;
+
+      case  Color::unset:
+      default:
+        return {0, 0, 0, 96};  // black with transparency
+    }
+  }
 
   static void reg()
   {
-    PUBLISH(reg);
+    PUBLISH(reg)
     REG_CLASS(ScanLineRegion);
     REG(range.from);
     REG(range.to);
@@ -82,7 +115,7 @@ STREAMABLE(ColorScanLineRegionsVertical,
   STREAMABLE(ScanLine,
   {
     ScanLine() = default;
-    ScanLine(const unsigned short x);
+    explicit ScanLine(const unsigned short x);
     ,
     (unsigned short)(0) x,
     (std::vector<ScanLineRegion>) regions,
@@ -98,7 +131,7 @@ STREAMABLE(ColorScanLineRegionsVertical,
 inline ColorScanLineRegionsVertical::ScanLine::ScanLine(const unsigned short x) :
   x(x), regions()
 {
-  regions.reserve(100);
+  regions.reserve(32);
 }
 
 /**
@@ -122,7 +155,7 @@ STREAMABLE(ColorScanLineRegionsHorizontal,
   STREAMABLE(ScanLine,
   {
     ScanLine() = default;
-    ScanLine(const unsigned short y);
+    explicit ScanLine(const unsigned short y);
     ,
     (unsigned short)(0) y,
     (std::vector<ScanLineRegion>) regions,
@@ -136,5 +169,5 @@ STREAMABLE(ColorScanLineRegionsHorizontal,
 inline ColorScanLineRegionsHorizontal::ScanLine::ScanLine(const unsigned short y) :
   y(y), regions()
 {
-  regions.reserve(100);
+  regions.reserve(32);
 }

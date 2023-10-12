@@ -12,7 +12,7 @@
 #include "Tools/BehaviorControl/Strategy/SetPlay.h"
 #include "Tools/BehaviorControl/Strategy/Strategy.h"
 #include "Tools/BehaviorControl/Strategy/Tactic.h"
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/Communication/BHumanMessageParticle.h"
 #include "Streaming/AutoStreamable.h"
 
 STREAMABLE(StrategyStatus, COMMA public BHumanCompressedMessageParticle<StrategyStatus>

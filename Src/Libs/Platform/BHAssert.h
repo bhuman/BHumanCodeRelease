@@ -21,7 +21,7 @@ class Assert
 {
 public:
   /**
-   * Prints a formated message to stdout
+   * Prints a formatted message to stdout
    * @param file The name of the current file (__FILE__)
    * @param line The current file line (__LINE__)
    * @param format The format of the message to be printed

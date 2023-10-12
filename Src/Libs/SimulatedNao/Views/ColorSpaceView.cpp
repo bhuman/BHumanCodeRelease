@@ -231,7 +231,7 @@ private:
       SYNC_WITH(view.console);
       DebugImage* image = nullptr;
 
-      RobotConsole::Images& currentImages = view.console.threadData[view.threadIdentifier].images;
+      RobotConsole::Images& currentImages = view.console.threadData[view.threadName].images;
       RobotConsole::Images::const_iterator i = currentImages.find(view.name);
 
       if(i != currentImages.end())
@@ -292,10 +292,6 @@ private:
                       dest->u = src->u;
                       dest->v = src->v;
                     }
-                    break;
-                  case PixelTypes::Colored:
-                    for(const PixelTypes::BGRAPixel* src = bgraImage[0], *srcEnd = bgraImage[bgraImage.height]; src < srcEnd; src++, dest++)
-                      ColorModelConversions::fromRGBToYUV(src->r, src->g, src->b, dest->y, dest->u, dest->v);
                     break;
                   case PixelTypes::Grayscale:
                     for(const PixelTypes::GrayscaledPixel* src = image->getView<PixelTypes::GrayscaledPixel>()[0], *srcEnd = image->getView<PixelTypes::GrayscaledPixel>()[image->height]; src < srcEnd; src++, dest++)
@@ -437,7 +433,7 @@ private:
       dragStart = event->pos();
       rotation.ry() += diff.x();
       rotation.rx() += diff.y();
-      update();
+      QOpenGLWidget::update();
     }
   }
 
@@ -446,7 +442,7 @@ private:
     QWidget::mouseDoubleClickEvent(event);
 
     rotation = QPointF();
-    update();
+    QOpenGLWidget::update();
   }
 
   void wheelEvent(QWheelEvent* event) override
@@ -455,7 +451,7 @@ private:
     {
       rotation.ry() += event->angleDelta().x() * 0.2f;
       rotation.rx() += event->angleDelta().y() * 0.2f;
-      update();
+      QOpenGLWidget::update();
     }
     else
       QOpenGLWidget::wheelEvent(event);
@@ -472,15 +468,17 @@ private:
   }
 };
 
-ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, const std::string& threadIdentifier) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(c), name(n), colorModel(cm), channel(ch), background(b), threadIdentifier(threadIdentifier)
-{}
+ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, const std::string& threadName) :
+  fullName(fullName), icon(":/Icons/icons8-view-50.png"), console(c), name(n), colorModel(cm), channel(ch), background(b), threadName(threadName)
+{
+  icon.setIsMask(true);
+}
 
 bool ColorSpaceView::needsUpdate() const
 {
   SYNC_WITH(console);
   DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = console.threadData[threadIdentifier].images;
+  RobotConsole::Images& currentImages = console.threadData[threadName].images;
   RobotConsole::Images::const_iterator i = currentImages.find(name);
   if(i != currentImages.end())
     image = i->second.image;

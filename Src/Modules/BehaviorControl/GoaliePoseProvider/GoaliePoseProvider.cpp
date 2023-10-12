@@ -7,11 +7,10 @@
 #include "Framework/Settings.h"
 #include "Math/Geometry.h"
 #include "Math/Pose2f.h"
-#include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/BallPhysics.h"
 #include "Debugging/DebugDrawings.h"
 
-MAKE_MODULE(GoaliePoseProvider, behaviorControl);
+MAKE_MODULE(GoaliePoseProvider);
 
 void GoaliePoseProvider::update(GoaliePose& goaliePose)
 {
@@ -24,14 +23,14 @@ void GoaliePoseProvider::update(GoaliePose& goaliePose)
     goaliePose.goaliePoseField.translation.x() = minXValue;
   ASSERT(goaliePose.goaliePoseField.isFinite());
 
-  goaliePose.goaliePoseRel = theRobotPose.inversePose * goaliePose.goaliePoseField;
+  goaliePose.goaliePoseRel = theRobotPose.inverse() * goaliePose.goaliePoseField;
   ASSERT(goaliePose.goaliePoseRel.isFinite());
 
   {
     const Vector2f leftPost(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
     const Vector2f rightPost(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
-    const Vector2f leftRel = Transformation::fieldToRobot(theRobotPose, leftPost);
-    const Vector2f rightRel = Transformation::fieldToRobot(theRobotPose, rightPost);
+    const Vector2f leftRel = theRobotPose.inverse() * leftPost;
+    const Vector2f rightRel = theRobotPose.inverse() * rightPost;
     const float angleToLeft = leftRel.angle();
     const float angleToRight = rightRel.angle();
     goaliePose.isNearLeftPost =

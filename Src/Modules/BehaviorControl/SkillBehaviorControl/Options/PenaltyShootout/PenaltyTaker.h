@@ -103,9 +103,9 @@ option(PenaltyTaker)
         Pose2f kickPoseOnField(angle, ballPositionOnField);
         kickPoseOnField.rotate(theKickInfo.kicks[kickType].rotationOffset);
         kickPoseOnField.translate(theKickInfo.kicks[kickType].ballOffset);
-        thePenaltyStrikerGoToBallAndKickSkill({ .kickPose = theRobotPose.inversePose * kickPoseOnField,
-                                                .kickType = kickType,
-                                                .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed });
+        thePenaltyStrikerGoToBallAndKickSkill({.kickPose = theRobotPose.inverse() * kickPoseOnField,
+                                               .kickType = kickType,
+                                               .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed});
       }
     }
   }
@@ -125,19 +125,18 @@ option(PenaltyTaker)
         kickType = KickInfo::forwardFastRightLong;
 
       if(theGameState.isPenaltyKick())
-        theGoToBallAndKickSkill({ .targetDirection = Angle::normalize(angle - theRobotPose.rotation),
-                                  .kickType = kickType,
-                                  .alignPrecisely = KickPrecision::precise,
-                                  .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed}
-                                });
+        theGoToBallAndKickSkill({.targetDirection = Angle::normalize(angle - theRobotPose.rotation),
+                                 .kickType = kickType,
+                                 .alignPrecisely = KickPrecision::precise,
+                                 .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed}});
       else
       {
         Pose2f kickPoseOnField(angle, ballPositionOnField);
         kickPoseOnField.rotate(theKickInfo.kicks[kickType].rotationOffset);
         kickPoseOnField.translate(theKickInfo.kicks[kickType].ballOffset);
-        thePenaltyStrikerGoToBallAndKickSkill({ .kickPose = theRobotPose.inversePose * kickPoseOnField,
-                                                .kickType = kickType,
-                                                .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed });
+        thePenaltyStrikerGoToBallAndKickSkill({.kickPose = theRobotPose.inverse() * kickPoseOnField,
+                                               .kickType = kickType,
+                                               .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed});
       }
     }
   }
@@ -163,9 +162,9 @@ option(PenaltyTaker)
     {
       theLookActiveSkill({.withBall = true,
                           .onlyOwnBall = true});
-      const Vector2f target = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentPenaltyMark - 300.f, 0.f);
+      const Vector2f target = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOpponentPenaltyMark - 300.f, 0.f);
       theWalkToPointSkill({.target = {-theRobotPose.rotation, target},
-                           .speed = theBehaviorParameters.penaltyStrikerWalkSpeed,
+                           .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed},
                            .rough = true,
                            .disableObstacleAvoidance = true});
     }

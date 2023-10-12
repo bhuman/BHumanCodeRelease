@@ -8,18 +8,19 @@
 
 #pragma once
 
-#include "Platform/SystemCall.h"
+#include "Libs/Math/Random.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/GoaliePose.h"
 #include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
+#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/RefereeSignal.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/CalibrationRequest.h"
@@ -37,18 +38,18 @@
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
-#include "Representations/Sensing/FallDownState.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
 #include "Representations/Perception/RefereePercept/RefereePercept.h"
 #include "Tools/BehaviorControl/Strategy/PositionRole.h"
 #include "Debugging/Annotation.h"
 #include "Framework/Module.h"
+#include "Platform/SystemCall.h"
 #include <regex> // not needed in header, but would otherwise be broken by CABSL
 
 class SkillBehaviorControl;
@@ -70,7 +71,6 @@ MODULE(SkillBehaviorControl,
   REQUIRES(DamageConfigurationBody),
   REQUIRES(EnhancedKeyStates),
   REQUIRES(ExtendedGameState),
-  REQUIRES(FallDownState),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
@@ -93,8 +93,6 @@ MODULE(SkillBehaviorControl,
   REQUIRES(StrategyStatus),
   REQUIRES(TeamData),
   REQUIRES(TeammatesBallModel),
-  REQUIRES(WalkingEngineOutput),
-  REQUIRES(Whistle),
   PROVIDES(ActivationGraph),
   REQUIRES(ActivationGraph),
   PROVIDES(ArmMotionRequest),
@@ -102,10 +100,13 @@ MODULE(SkillBehaviorControl,
   PROVIDES(CalibrationRequest),
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
+  PROVIDES(OptionalImageRequest),
+  PROVIDES(RefereeSignal),
   LOADS_PARAMETERS(
   {,
     (std::vector<Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options,
     (std::vector<Cabsl<SkillBehaviorControl>::OptionInfos::Option>) playingOptions,
+    (bool) useNewHandleCatchBallBehavior,
   }),
 });
 
@@ -158,6 +159,18 @@ private:
    */
   void update(MotionRequest& motionRequest) override { motionRequest = theMotionRequest; }
 
+  /**
+   * Updates the optional image request.
+   * @param optionalImageRequest The provided optional image request.
+   */
+  void update(OptionalImageRequest& optionalImageRequest) override { optionalImageRequest = theOptionalImageRequest; }
+
+  /**
+   * Updates the referee signal.
+   * @param refereeSignal The provided referee signal.
+   */
+  void update(RefereeSignal& refereeSignal) override { refereeSignal = theRefereeSignal; }
+
   /** Executes the skill request. */
   void executeRequest();
 
@@ -168,23 +181,29 @@ private:
   CalibrationRequest theCalibrationRequest; /**< The camera calibration request that is modified by the behavior. */
   HeadMotionRequest theHeadMotionRequest; /**< The head motion request that is modified by the behavior. */
   MotionRequest theMotionRequest; /**< The motion request that is modified by the behavior. */
+  OptionalImageRequest theOptionalImageRequest; /**< The request that decides whether an optional image should be send or not */
+  RefereeSignal theRefereeSignal; /**< The referee signal that should be sent to the GameController. */
 
   SkillRegistry theSkillRegistry; /**< The manager of all skills. */
 
 #include "Representations/BehaviorControl/SkillStubs.h"
+#include "Options/PlaySoccer.h"
 #include "Options/HandleAnyPlaceDemo.h"
 #include "Options/HandleCatchBall.h"
-#include "Options/HandleCornerKick.h"
+#include "Options/HandleCatchBall2023.h"
 #include "Options/HandleGameState.h"
 #include "Options/HandleGoalkeeperCatchBall.h"
 #include "Options/HandleIllegalAreas.h"
 #include "Options/HandlePenaltyKick.h"
 #include "Options/HandlePenaltyShootout.h"
+#include "Options/HandlePhotoMode.h"
 #include "Options/HandlePhysicalRobot.h"
 #include "Options/HandlePlayerState.h"
-#include "Options/HandleRefereePose.h"
+#include "Options/HandleRefereeSignal.h"
 #include "Options/HandleReplayWalk.h"
 #include "Options/HandleStrikerLostBall.h"
 #include "Options/PenaltyShootout/PenaltyKeeper.h"
 #include "Options/PenaltyShootout/PenaltyTaker.h"
+#include "Options/HandleCameraCalibrationDataCollection.h"
+#include "Options/HandleReturnFromSideline.h"
 };

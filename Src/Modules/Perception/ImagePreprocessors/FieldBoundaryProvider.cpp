@@ -18,7 +18,7 @@
 #include "ImageProcessing/PatchUtilities.h"
 #include "Tools/Math/Transformation.h"
 
-MAKE_MODULE(FieldBoundaryProvider, perception);
+MAKE_MODULE(FieldBoundaryProvider);
 
 FieldBoundaryProvider::FieldBoundaryProvider() :
   network(&Global::getAsmjitRuntime())
@@ -68,7 +68,7 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     }
     else if(theCameraInfo.camera == CameraInfo::lower)
     {
-      if(theOtherFieldBoundary.odd || theOtherFieldBoundary.extrapolated || theOtherFieldBoundary.boundaryInImage.size() == 0)
+      if(theOtherFieldBoundary.odd || theOtherFieldBoundary.extrapolated || theOtherFieldBoundary.boundaryInImage.empty())
       {
         std::vector<Spot> spots;
         predictSpots(spots);
@@ -156,7 +156,7 @@ void FieldBoundaryProvider::predictSpots(std::vector<Spot>& spots)
 
   const unsigned int xScale = theCameraInfo.width / patchSize(0);
   const unsigned int stepSize = network.output(0).rank() == 2 ? 2 : 1;
-  for(int x = 0, idx = 0; x < patchSize(0); ++x, idx += stepSize)
+  for(int x = 0, idx = 0; x < patchSize(0); ++x, idx += static_cast<int>(stepSize))
   {
     const Vector2f spotInImage(x * xScale + xScale / 2, std::max(0.f, std::min(output[idx], 1.f)) * static_cast<float>(theCameraInfo.height - 1));
     DOT("module:FieldBoundaryProvider:prediction", spotInImage.x(), spotInImage.y(), ColorRGBA::orange, ColorRGBA::orange);
@@ -213,13 +213,13 @@ bool FieldBoundaryProvider::boundaryIsOdd(const std::vector<Spot>& spots) const
         continue;
 
       //compute the discrepancy of the middle point to the line between the first and third
-      gradient = ((float) spots[i].inImage.y() - spots[i + 2].inImage.y()) / (spots[i].inImage.x() - spots[i + 2].inImage.x());
+      gradient = static_cast<float>(spots[i].inImage.y() - spots[i + 2].inImage.y()) / static_cast<float>(spots[i].inImage.x() - spots[i + 2].inImage.x());
       sum += std::abs((spots[i].inImage.y() + gradient * (spots[i + 1].inImage.x() - spots[i].inImage.x())) - spots[i + 1].inImage.y());
       LINE("module:FieldBoundaryProvider:prediction", spots[i + 1].inImage.x(), spots[i + 1].inImage.y(), spots[i + 1].inImage.x(), (spots[i].inImage.y() + gradient * (spots[i + 1].inImage.x() - spots[i].inImage.x())), 1, Drawings::solidPen, ColorRGBA::red);
     }
   }
   //if one of the limits is violated
-  if(((float)num / spots.size() < nonTopPoints) || uncertaintySum / num > uncertaintyLimit  || toLowSum / num > maxPointsUnderBorder || sum / num > threshold)
+  if((static_cast<float>(num) / static_cast<float>(spots.size()) < nonTopPoints) || uncertaintySum / static_cast<float>(num) > uncertaintyLimit  || toLowSum / num > maxPointsUnderBorder || sum / static_cast<float>(num) > threshold)
   {
     DEBUG_RESPONSE("module:FieldBoundaryProvider:debugPrints")
     {

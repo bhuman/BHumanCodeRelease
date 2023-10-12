@@ -40,7 +40,7 @@ struct TimingManager::Pimpl
 
 TimingManager::TimingManager() : prvt(new TimingManager::Pimpl)
 {
-  prvt->data.setSize(500000);
+  prvt->data.reserve(500000);
 }
 
 TimingManager::~TimingManager()
@@ -107,7 +107,7 @@ void TimingManager::prepareData()
    * unsigned : timestamp at which the last iteration started.
    * unsigned : frame number of the current frame
    */
-  OutBinaryMessage& out = prvt->data.out.bin;
+  MessageQueue::OutBinary out = prvt->data.bin(idStopwatch);
 
   // every frame we send 3 watch names
   out << static_cast<unsigned short>(3); //number of names to follow
@@ -126,6 +126,6 @@ void TimingManager::prepareData()
   }
   out << prvt->currentThreadStartTime;
   out << prvt->frameNo;
-  if(!prvt->data.out.finishMessage(idStopwatch))
+  if(out.failed())
     OUTPUT_WARNING("TimingManager: queue is full!!!");
 }

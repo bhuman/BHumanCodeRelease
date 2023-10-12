@@ -22,10 +22,10 @@ class PublishMotionImpl : public PublishMotionImplBase
 {
   void execute(const PublishMotion& p) override
   {
-    ASSERT(p.speed >= 0.f);
-    ASSERT(p.speed <= 1.f);
+    ASSERT(p.speed.translation.x() >= 0.f);
+    ASSERT(p.speed.translation.x() <= 1.f);
     theBehaviorStatus.walkingTo = p.target;
-    theBehaviorStatus.speed = p.speed * theWalkingEngineOutput.maxSpeed.translation.x();
+    theBehaviorStatus.speed = p.speed.translation.x() * theWalkingEngineOutput.maxSpeed.translation.x();
   }
 };
 

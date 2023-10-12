@@ -11,26 +11,20 @@
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Tools/Communication/SPLStandardMessageBuffer.h"
+#include "Tools/Communication/RobotStatus.h"
+#include "Tools/Communication/TeamMessageBuffer.h"
 #include "Streaming/AutoStreamable.h"
 
 STREAMABLE(ReceivedTeamMessage,
 {,
   (int)(-1) number,
 
-  (signed char)(0) sequenceNumber,
-  (signed char)(0) returnSequenceNumber,
-
-  (bool)(true) isUpright,
-  (unsigned)(0) timeWhenLastUpright,
-
+  (RobotStatus) theRobotStatus,
   (RobotPose) theRobotPose,
   (BallModel) theBallModel,
   (FrameInfo) theFrameInfo,
-  (ObstacleModel) theObstacleModel,
   (BehaviorStatus) theBehaviorStatus,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(AlternativeRobotPoseProvider, modeling);
+MAKE_MODULE(AlternativeRobotPoseProvider);
 
 void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& alternativeRobotPoseHypothesis)
 {
@@ -30,10 +30,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
   // Buffer new features, if possible:
   if(currentMotionAllowsAcceptanceOfNewFeatures())
   {
-    addFieldFeatureToBuffer(&theMidCircle);
-    addFieldFeatureToBuffer(&theMidCorner, true);
-    addFieldFeatureToBuffer(&theOuterCorner);
-    addFieldFeatureToBuffer(&thePenaltyArea);
+    addFieldFeatureToBuffer(&theCenterCircleWithLine);
     addFieldFeatureToBuffer(&thePenaltyMarkWithPenaltyAreaLine);
   }
 
@@ -51,14 +48,11 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
       bestClusterSize = clusters[i].numOfPoses;
     }
   }
-  if(clusters[bestClusterIdx].numOfPoses != clusters[bestClusterIdx].numOfStupidFarMidCornerPoses)
-  {
-    alternativeRobotPoseHypothesis.pose = clusters[bestClusterIdx].pose;
-    alternativeRobotPoseHypothesis.timeOfLastPerceptionUpdate = clusters[bestClusterIdx].timeOfNewestObservation;
-    alternativeRobotPoseHypothesis.isInOwnHalf = clusters[bestClusterIdx].isInOwnHalf;
-    alternativeRobotPoseHypothesis.numOfContributingObservations = bestClusterSize;
-    alternativeRobotPoseHypothesis.isValid = theFieldDimensions.isInsideCarpet(alternativeRobotPoseHypothesis.pose.translation);
-  }
+  alternativeRobotPoseHypothesis.pose = clusters[bestClusterIdx].pose;
+  alternativeRobotPoseHypothesis.timeOfLastPerceptionUpdate = clusters[bestClusterIdx].timeOfNewestObservation;
+  alternativeRobotPoseHypothesis.isInOwnHalf = clusters[bestClusterIdx].isInOwnHalf;
+  alternativeRobotPoseHypothesis.numOfContributingObservations = bestClusterSize;
+  alternativeRobotPoseHypothesis.isValid = theFieldDimensions.isInsideCarpet(alternativeRobotPoseHypothesis.pose.translation);
 }
 
 bool AlternativeRobotPoseProvider::currentStateOrMotionRuinsOdometry()
@@ -90,7 +84,7 @@ bool AlternativeRobotPoseProvider::currentMotionAllowsAcceptanceOfNewFeatures()
 }
 
 
-void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* ff, bool isMidCorner)
+void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* ff)
 {
   if(ff->isValid)
   {
@@ -100,7 +94,6 @@ void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* f
     newObservation.pose                      = ownSidePose;
     newObservation.timeOfObservation         = theFrameInfo.time;
     newObservation.stillInOwnHalf            = theSideInformation.robotMustBeInOwnHalf;
-    newObservation.basedOnStupidFarMidCorner = isMidCorner && ff->translation.norm() > maxDistanceCloseMidCorner;
     observations.push_front(newObservation);
     if(!newObservation.stillInOwnHalf) // We have to consider the alternative, too
     {
@@ -150,8 +143,6 @@ void AlternativeRobotPoseProvider::clusterObservations()
           c.timeOfNewestObservation = observations[j].timeOfObservation;
         if(observations[j].stillInOwnHalf)
           c.isInOwnHalf = true;
-        if(observations[j].basedOnStupidFarMidCorner)
-          c.numOfStupidFarMidCornerPoses++;
       }
     }
     ASSERT(c.numOfPoses > 0); // Should not happen!

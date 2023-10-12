@@ -8,9 +8,14 @@
 
 #pragma once
 #include "Streaming/AutoStreamable.h"
+#include "Streaming/Function.h"
 
 STREAMABLE(LibTeammates,
-{,
-  (int) teammatesInOpponentPenaltyArea,     /**< How many teammates are in the opponents penalty area */
-  (int) nonKeeperTeammatesInOwnPenaltyArea, /**< How many non keeper teammates are in the own penalty area */
+{
+  /** Returns the ball position estimate of the current striker
+      TODO: Better implementation (current one sucks) or deletion!
+   */
+  FUNCTION(Vector2f()) getStrikerBallPosition,
+
+  (int) nonKeeperTeammatesInOwnGoalArea, /**< How many non keeper teammates are in the own goal area */
 });

@@ -1,6 +1,7 @@
 option(HandleIllegalAreas)
 {
   const Angle margin = 10_deg;
+  const float durationUntilAnticipatedIllegal = (theGameState.timeWhenStateEnds - theGameState.timeWhenStateStarted) * 0.5f;
 
   auto approximateTarget = [&]
   {
@@ -39,10 +40,10 @@ option(HandleIllegalAreas)
   {
     transition
     {
-      if(theIllegalAreas.isPositionIllegal(theRobotPose.translation, 150.f))
+      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 150.f, durationUntilAnticipatedIllegal))
         goto illegal;
-      else if(theIllegalAreas.isPositionIllegal(theRobotPose.translation, 300.f) &&
-              theIllegalAreas.isPositionIllegal(theRobotPose * approximateTarget(), 150.f))
+      else if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal) &&
+              theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateTarget(), 150.f, durationUntilAnticipatedIllegal))
         goto waiting;
     }
   }
@@ -51,9 +52,9 @@ option(HandleIllegalAreas)
   {
     transition
     {
-      if(!theIllegalAreas.isPositionIllegal(theRobotPose.translation, 300.f))
+      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal))
       {
-        if(!theIllegalAreas.isPositionIllegal(theRobotPose * approximateTarget(), 300.f))
+        if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateTarget(), 300.f, durationUntilAnticipatedIllegal))
           goto notIllegal;
         goto waiting;
       }
@@ -63,10 +64,21 @@ option(HandleIllegalAreas)
     {
       theLibCheck.dec(LibCheck::motionRequest);
       theLibCheck.dec(LibCheck::headMotionRequest);
-      theWalkPotentialFieldSkill({.target = theRobotPose.translation,
-                                  .playerNumber = -1,
-                                  .straight = true});
-      theLookActiveSkill({.withBall = lookAtBall()});
+
+      if(theFieldBall.ballWasSeen(7000) || theTeammatesBallModel.isValid)
+      {
+        theWalkPotentialFieldSkill({.target = theRobotPose.translation,
+                                    .playerNumber = -1,
+                                    .straight = true,
+                                    .targetOfInterest = theFieldBall.recentBallPositionRelative()});
+      }
+      else
+      {
+        theWalkPotentialFieldSkill({.target = theRobotPose.translation,
+                                    .playerNumber = -1,
+                                    .straight = true});
+        theLookActiveSkill({.withBall = lookAtBall()});
+      }
     }
   }
 
@@ -74,10 +86,10 @@ option(HandleIllegalAreas)
   {
     transition
     {
-      if(!theIllegalAreas.isPositionIllegal(theRobotPose.translation, 300.f) &&
-         !theIllegalAreas.isPositionIllegal(theRobotPose * approximateTarget(), 300.f))
+      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal) &&
+         !theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateTarget(), 300.f, durationUntilAnticipatedIllegal))
         goto notIllegal;
-      if(theIllegalAreas.isPositionIllegal(theRobotPose.translation, 150.f))
+      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 150.f, durationUntilAnticipatedIllegal))
         goto illegal;
     }
 
@@ -90,7 +102,7 @@ option(HandleIllegalAreas)
         theStandSkill();
       else
         theTurnToPointSkill({.target = targetRelative});
-      theLookActiveSkill();
+      theLookActiveSkill({.withBall = lookAtBall()});
     }
   }
 }

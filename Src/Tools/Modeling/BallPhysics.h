@@ -31,16 +31,6 @@ struct BallPhysics
   static Vector2f getEndPosition(const Vector2f& p, const Vector2f& v, float ballFriction);
 
   /**
-   * Computes the position where a rolling ball is expected to stop rolling regarding the given rotation.
-   * @param p The ball position (in mm)
-   * @param v The ball velocity (in mm/s)
-   * @param rotation The ball rotation
-   * @param ballFriction The ball friction (negative force) (in m/s^2)
-   * @return The position relative to the robot (in mm)
-   */
-  static Vector2f getEndPositionRegardingRotation(const Vector2f& p, const Vector2f& v, const float rotation, float ballFriction);
-
-  /**
    * Computes the position of a rolling ball in t seconds.
    * @param p The ball position (in mm)
    * @param v The ball velocity (in mm/s)
@@ -51,18 +41,6 @@ struct BallPhysics
   static Vector2f propagateBallPosition(const Vector2f& p, const Vector2f& v, float t, float ballFriction);
 
   /**
-   * Computes the position and velocity of a rolling ball in t seconds regarding an observed rotation/spin without propagating the values.
-   * The idea of this calculation is that the values are in their final position and we want the end position for the current state..
-   * @param p The ball position (in mm)   -> updated by this method
-   * @param v The ball velocity (in mm/s) -> updated by this method
-   * @t Time in seconds
-   * @ballFriction The ball friction (negative force)  (in m/s^2)
-   * @rotation The rotation that will be applied on the movement (in radian)
-   * @return The new position (in mm)
-   */
-  static Vector2f propagateBallPositionWithRotation(const Vector2f& p, const Vector2f& v, float t, float ballFriction, const float rotation);
-
-  /**
    * Computes the position and velocity of a rolling ball in t seconds.
    * @param p The ball position (in mm)   -> updated by this method
    * @param v The ball velocity (in mm/s) -> updated by this method
@@ -70,16 +48,6 @@ struct BallPhysics
    * @ballFriction The ball friction (negative force)  (in m/s^2)
    */
   static void propagateBallPositionAndVelocity(Vector2f& p, Vector2f& v, float t, float ballFriction);
-
-  /**
-   * Computes the position and velocity of a rolling ball in t seconds regarding an observed rotation/spin.
-   * @param p The ball position (in mm)   -> updated by this method
-   * @param v The ball velocity (in mm/s) -> updated by this method
-   * @t Time in seconds
-   * @ballFriction The ball friction (negative force)  (in m/s^2)
-   * @rotation The rotation that will be applied on the movement (in radian)
-   */
-  static void propagateBallPositionAndVelocityWithRotation(Vector2f& p, Vector2f& v, float t, float ballFriction, float& rotation);
 
   /**
    * Applies friction to position and velocity of a rolling ball in t seconds.

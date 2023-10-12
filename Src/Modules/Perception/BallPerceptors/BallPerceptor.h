@@ -16,11 +16,11 @@
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "ImageProcessing/PatchUtilities.h"
 #include "Math/Eigen.h"
 #include "Framework/Module.h"
@@ -36,7 +36,7 @@ MODULE(BallPerceptor,
   REQUIRES(ECImage),
   REQUIRES(FieldDimensions),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
+  REQUIRES(MeasurementCovariance),
   REQUIRES(MotionInfo),
   REQUIRES(RobotPose),
   PROVIDES(BallPercept),

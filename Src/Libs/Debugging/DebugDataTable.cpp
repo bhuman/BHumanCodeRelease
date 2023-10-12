@@ -10,7 +10,6 @@
  */
 
 #include "DebugDataTable.h"
-#include "Streaming/InMessage.h"
 
 DebugDataTable::~DebugDataTable()
 {
@@ -18,17 +17,18 @@ DebugDataTable::~DebugDataTable()
     delete[] iter->second;
 }
 
-void DebugDataTable::processChangeRequest(InMessage& in)
+void DebugDataTable::processChangeRequest(MessageQueue::Message message)
 {
   std::string name;
   char change;
-  in.bin >> name >> change;
+  auto stream = message.bin();
+  stream >> name >> change;
   std::unordered_map<std::string, char*>::iterator iter = table.find(name);
   if(change)
   {
-    int size = in.getBytesLeft();
+    size_t size = stream.getSize() - stream.getPosition();
     char* buffer = new char[size];
-    in.bin.read(buffer, size);
+    stream.read(buffer, size);
     if(iter == table.end())
       table[name] = buffer;
     else

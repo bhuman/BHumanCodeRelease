@@ -72,7 +72,7 @@ public:
    * @param symbols The map of known symbols.
    * @param errorMask The kinds of error messages to show if specification does not match.
    */
-  InExprMapFile(const std::string& name, std::unordered_map<std::string, float> symbols, unsigned errorMask = 0u);
+  InExprMapFile(const std::string& name, const std::unordered_map<std::string, float>& symbols, unsigned errorMask = 0u);
 
 protected:
   /**

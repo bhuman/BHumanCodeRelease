@@ -118,9 +118,11 @@ STREAMABLE(SetPlay,
   {
     ENUM(Type,
     {,
+      // The following actions are bound to the active role of playing the ball:
       shot,
       pass,
       wait,
+      // The following actions can never be used by the active role of playing the ball:
       mark,
       position,
     });
@@ -155,8 +157,8 @@ STREAMABLE(SetPlay,
       return type == shot || type == pass || type == wait;
     },
 
-    (Type)(numOfTypes) type, /** The type of action to be performed. */
-    (std::vector<Tactic::Position::Type>) passTarget, /** The potential pass targets for the \c pass action. */
+    (Type)(numOfTypes) type, /**< The type of action to be performed. */
+    (std::vector<Tactic::Position::Type>) passTarget, /**< The potential pass targets for the \c pass action. */
     (Boundaryf)(Rangef(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()), Rangef(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max())) markZone, /**< The zone from which to select an opponent to mark for the \c mark action. */
     (Pose2f) pose, /**< The target pose. */
   });

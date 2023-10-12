@@ -11,7 +11,6 @@
 
 #include "Streaming/Global.h"
 #include "Streaming/Output.h"
-#include "Streaming/OutMessage.h"
 #include "Debugging/DebugRequest.h"
 
 #if defined TARGET_ROBOT && defined NDEBUG

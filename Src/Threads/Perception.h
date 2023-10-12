@@ -8,14 +8,14 @@
 
 #pragma once
 
-#include "Framework/FrameExecutionUnit.h"
+#include "Tools/Framework/BHExecutionUnit.h"
 
 /**
  * @class Perception
  *
  * The execution unit for a perception thread.
  */
-class Perception : public FrameExecutionUnit
+class Perception : public BHExecutionUnit
 {
 public:
   bool beforeFrame() override;

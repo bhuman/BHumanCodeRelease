@@ -5,8 +5,8 @@
  */
 
 #include "RobotModel.h"
-#include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Tools/Motion/ForwardKinematic.h"
 
 RobotModel::RobotModel(const JointAngles& jointAngles, const RobotDimensions& robotDimensions, const MassCalibration& massCalibration)

@@ -18,25 +18,27 @@ void GameControllerRBS::operator>>(BHumanMessage& m) const
 {
   // If any GC packet has been buffered, always use the newest one, otherwise send "nothing".
   // See below for reasons why "the newest one" may not be the best choice.
-  if(gameControllerPacketBuffer.empty())
+  if(gameControllerPacketBuffer.empty() ||
+     gameControllerPacketBuffer.front().timestamp > m.timestamp + timestampOffset ||
+     gameControllerPacketBuffer.front().timestamp + std::numeric_limits<decltype(m.referenceGameControllerPacketTimestampOffset)>::max() <= m.timestamp + timestampOffset)
   {
-    m.theBHumanStandardMessage.referenceGameControllerPacketNumber = 0;
-    m.theBHumanStandardMessage.referenceGameControllerPacketTimestamp = 0;
+    m.referenceGameControllerPacketNumber = 0;
+    m.referenceGameControllerPacketTimestampOffset = std::numeric_limits<decltype(m.referenceGameControllerPacketTimestampOffset)>::max();
   }
   else
   {
-    m.theBHumanStandardMessage.referenceGameControllerPacketNumber = gameControllerPacketBuffer.front().number;
-    m.theBHumanStandardMessage.referenceGameControllerPacketTimestamp = gameControllerPacketBuffer.front().timestamp;
+    m.referenceGameControllerPacketNumber = gameControllerPacketBuffer.front().number;
+    m.referenceGameControllerPacketTimestampOffset = static_cast<decltype(m.referenceGameControllerPacketTimestampOffset)>(m.timestamp + timestampOffset - gameControllerPacketBuffer.front().timestamp);
   }
 }
 
 void GameControllerRBS::operator<<(const BHumanMessage& m)
 {
-  if(m.theBSPLStandardMessage.playerNum < Settings::lowestValidPlayerNumber ||
-     m.theBSPLStandardMessage.playerNum > Settings::highestValidPlayerNumber)
+  if(m.playerNumber < Settings::lowestValidPlayerNumber ||
+     m.playerNumber > Settings::highestValidPlayerNumber)
     return;
 
-  auto& remoteSMB = timeSyncBuffers[m.theBSPLStandardMessage.playerNum - Settings::lowestValidPlayerNumber];
+  auto& remoteSMB = timeSyncBuffers[m.playerNumber - Settings::lowestValidPlayerNumber];
 
   // Invalidate the previous synchronization if it doesn't explain the received message.
   // This is necessary to avoid using an old (and very wrong) offset if the other robot
@@ -46,7 +48,7 @@ void GameControllerRBS::operator<<(const BHumanMessage& m)
   // actual receive time and `maxTeamMessageSendReceiveDelay` contains some buffer for this.
   // (`theFrameInfo.time` is a camera timestamp and can thus be earlier than the actual
   // receive time.)
-  remoteSMB.validate(m.theBHumanStandardMessage.timestamp, Time::getCurrentSystemTime());
+  remoteSMB.validate(m.timestamp, Time::getCurrentSystemTime());
 
   // The following is based on the following considerations:
   // - If the GameController sends a packet with number $i$, each robot will either not receive it or
@@ -93,7 +95,7 @@ void GameControllerRBS::operator<<(const BHumanMessage& m)
   // The sender didn't receive any GameController packet recently. In that case, we cannot
   // calculate a new offset, i.e. we either keep the old offset if there is a valid one or
   // we stay unsynchronized.
-  if(!m.theBHumanStandardMessage.referenceGameControllerPacketTimestamp)
+  if(m.referenceGameControllerPacketTimestampOffset == std::numeric_limits<decltype(m.referenceGameControllerPacketTimestampOffset)>::max())
     return;
 
   const auto lookupGameControllerPacket = [this](unsigned number)
@@ -104,12 +106,12 @@ void GameControllerRBS::operator<<(const BHumanMessage& m)
     return 0u;
   };
 
-  const unsigned ownReferenceGameControllerPacketTimestamp = lookupGameControllerPacket(m.theBHumanStandardMessage.referenceGameControllerPacketNumber);
+  const unsigned ownReferenceGameControllerPacketTimestamp = lookupGameControllerPacket(m.referenceGameControllerPacketNumber);
   if(!ownReferenceGameControllerPacketTimestamp)
     return;
 
   // This offset is *subtracted* from the remote timestamp to get the local timestamp.
-  const int offset = m.theBHumanStandardMessage.referenceGameControllerPacketTimestamp - ownReferenceGameControllerPacketTimestamp;
+  const int offset = m.timestamp + timestampOffset - m.referenceGameControllerPacketTimestampOffset - ownReferenceGameControllerPacketTimestamp;
   remoteSMB.update(offset, ownReferenceGameControllerPacketTimestamp);
 }
 

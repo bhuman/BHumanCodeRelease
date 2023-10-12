@@ -5,7 +5,7 @@
 * a penalty mark and the line of the penalty area that is
 * closest to it (the line between penalty mark and the field's
 * center line) in the current field percepts. This is the combination
-* that this modul is looking for:
+* that this module is looking for:
 *
 *                  (goal)
 *-----------------------------------------
@@ -22,6 +22,7 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/Odometer.h"
+#include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
@@ -33,6 +34,7 @@ MODULE(PenaltyMarkWithPenaltyAreaLinePerceptor,
   REQUIRES(FrameInfo),
   REQUIRES(Odometer),
   REQUIRES(PenaltyMarkPercept),
+  REQUIRES(WorldModelPrediction),
   PROVIDES(PenaltyMarkWithPenaltyAreaLine),
   DEFINES_PARAMETERS(
   {,
@@ -53,7 +55,9 @@ class PenaltyMarkWithPenaltyAreaLinePerceptor : public PenaltyMarkWithPenaltyAre
   float modelDistancePenaltyMarkToLine;      /**< The original distance between penalty mark and line, as defined by the official field model */
   Vector2f lineStart;                        /**< If a line was found, its start position becomes stored here (coordinates on field, relative to robot) */
   Vector2f lineEnd;                          /**< If a line was found, its end position becomes stored here (coordinates on field, relative to robot) */
+  Matrix2f lineCov;                          /**< The covariance of the determined center line, copied from line percept */
   Vector2f penaltyMarkPosition;              /**< Buffered position of penalty mark */
+  Matrix2f penaltyMarkCovariance;            /**< Buffered covariance of penalty mark */
   unsigned timeWhenPenaltyMarkLastSeen;      /**< Point of time when the penalty mark was seen for the last time */
 
   /** Main method of this module
@@ -70,7 +74,7 @@ class PenaltyMarkWithPenaltyAreaLinePerceptor : public PenaltyMarkWithPenaltyAre
   /** Computes a pose based on the penalty mark and the line and fills the representation
    * @param penaltyMarkWithPenaltyAreaLine The representation set by this method.
    */
-  void computePose(PenaltyMarkWithPenaltyAreaLine& penaltyMarkWithPenaltyAreaLine);
+  void computeFeature(PenaltyMarkWithPenaltyAreaLine& penaltyMarkWithPenaltyAreaLine);
 
 public:
   /** Constructor */

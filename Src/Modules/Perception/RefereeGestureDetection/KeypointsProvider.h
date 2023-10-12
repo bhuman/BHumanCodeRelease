@@ -12,22 +12,27 @@
 
 #include "Framework/Module.h"
 #include "Math/Range.h"
-#include "Representations/Infrastructure/CameraImage.h"
-#include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Perception/ImagePreprocessing/OptionalCameraImage.h"
 #include "Representations/Perception/RefereePercept/Keypoints.h"
 #include <CompiledNN2ONNX/CompiledNN.h>
 
 MODULE(KeypointsProvider,
 {,
-  REQUIRES(CameraImage),
-  REQUIRES(CameraInfo),
+  REQUIRES(FieldDimensions),
+  REQUIRES(GameState),
+  REQUIRES(OptionalCameraImage),
+  REQUIRES(RobotPose),
   PROVIDES(Keypoints),
   LOADS_PARAMETERS(
   {,
     (std::string) filename, /**< The network to to load. */
-    (float) maskCenterY, /**< y coordinate of a disc-shaped image area not to mask out. */
-    (float) maskRadius, /**< radius of a disc-shaped image area not to mask out. */
-    (int) maskWidth, /**< Width of a centered column in the image not to mask out. */
+    (float) maskCenterY, /**< y coordinate of a disc-shaped image area not to mask out (for observer distance of 3 m ). */
+    (float) maskRadius, /**< radius of a disc-shaped image area not to mask out (for observer distance of 3 m ). */
+    (int) maskWidth, /**< Width of a centered column in the image not to mask out (for observer distance of 3 m ). */
+    (float) maskRecomputeThreshold, /**< If the robot's position changed more than this threshold, the masks is recomputed (in mm). */
     (float) minConfidence, /**< Minimum confidence required to accept a keypoint as valid. */
   }),
 });
@@ -44,12 +49,16 @@ class KeypointsProvider : public KeypointsProviderBase
 
   NeuralNetworkONNX::CompiledNN detector; /**< The network that detects keypoints. */
   std::vector<Rangei> mask; /**< The x ranges to keep (max exclusive) per network input row. */
+  Vector2f lastRobotPosition = Vector2f::Zero(); /**< The last position of the robot when this module was used. */
 
   /**
    * This method is called when the representation provided needs to be updated.
    * @param theKeypoints The representation updated.
    */
   void update(Keypoints& theKeypoints) override;
+
+  /** Compiles the neural network. */
+  void compileNetwork();
 
   /**
    * Create a mask which parts of the network input should be kept and which

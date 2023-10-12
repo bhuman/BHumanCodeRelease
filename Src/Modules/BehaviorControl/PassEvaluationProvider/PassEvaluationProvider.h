@@ -16,26 +16,22 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Infrastructure/GameState.h"
 
 MODULE(PassEvaluationProvider,
 {,
-  REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(ExpectedGoals),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(ObstacleModel),
-  REQUIRES(RobotPose),
+  REQUIRES(GlobalOpponentsModel),
   REQUIRES(GameState),
   PROVIDES(PassEvaluation),
   DEFINES_PARAMETERS(
   {,
-    (float)(0.01f) minValue, /** < Minimum probability of a successful pass in the worst situation possible. */
+    (float)(0.01f) minValue, /**< Minimum probability of a successful pass in the worst situation possible. */
     (float)(1400.f) opponentDistToTargetThreshold, /**< Distance to the closest opponent for the pass target to be considered free */
     (float)(1000.f) opponentDistToLineThreshold, /**< Distance to the closest opponent for the pass line to be considered free */
     (float)(4000.f) distancePenaltyThresholdPlaying, /**< if the point is further away than this the distance rating is below 1 */

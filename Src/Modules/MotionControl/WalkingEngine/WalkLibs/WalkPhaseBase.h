@@ -8,9 +8,12 @@
 #include "WalkStepAdjustment.h"
 #include "Platform/SystemCall.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/Sensing/RobotStableState.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Tools/Motion/ForwardKinematic.h"
 #include "Tools/Motion/InverseKinematic.h"
+#include "Tools/Motion/JointSpeedRegulator.h"
+#include "Tools/Motion/JointPlayOffsetRegulator.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Tools/Motion/MotionUtilities.h"
 #include "Tools/Motion/WalkKickStep.h"
@@ -19,15 +22,16 @@ class WalkingEngine;
 
 struct WalkPhaseBase : MotionPhase
 {
-  WalkPhaseBase(const WalkingEngine& engine, const WalkKickStep& walkKickStep);
+  WalkPhaseBase(WalkingEngine& engine, const WalkKickStep& walkKickStep);
 
-  std::vector<Vector2f> getTranslationPolygon(const float maxBack, const float maxFront, const float maxSide);
+  std::vector<Vector2f> getTranslationPolygon(const float maxBack, const float maxFront, const float maxSide, const bool useSafeSpace);
 
   struct SupportSwitch
   {
     bool isPredictedSwitch = false;
     bool isNormalSwitch = false;
     bool isAbortSwitch = false;
+    bool isStuckSwitch = false;
     bool isOvertimeSwitch = false;
     bool isFeetStepAbort = false;
     bool isFootSupportSwitch = false;
@@ -51,7 +55,8 @@ protected:
    * Calculate the translation and rotation variables for both feet while walking and standing.
    * @param swingSign Sign of the swing foot. 1 for left foot is the swing foot and -1 for the right foot is the swing foot.
    * @param ratio Current time in the step with slow down time (in s)
-   * @param ratioBase Current time in the step (in s)
+   * @param ratioSide Current time in step (in s) for side translation
+   * @param ratioBase Current time in step (in s)
    * @param duration Planned duration of the step (in s)
    * @param heightDuration Used duration for the step height (in s). Side steps use a longer step duration for the height interpolation.
    * @param forwardSwing0 Start value for the forward position of the swing foot.
@@ -71,7 +76,8 @@ protected:
    * @param useSideSpeed Requested side step size.
    * @param useTurnSpeed Requested turn step size.
    */
-  virtual void calcFootOffsets(const float swingSign, const float ratio, const float ratioBase, const float duration, const float heightDuration,
+  virtual void calcFootOffsets(const float swingSign, const float ratio, const float ratioSide, const float ratioBase,
+                               const float duration, const float heightDuration, const float stepDurationSide,
                                const float forwardSwing0, const float forwardSupport0, float& forwardSwing,
                                float& forwardSupport, const float sideSwing0, const float sideSupport0,
                                float& sideSwing, float& sideSupport, float& footHeightSwing0,
@@ -118,7 +124,7 @@ protected:
    * Apply all balancing based on the gyro measurement.
    * @param jointRequest Requested joint positions.
    */
-  void addGyroBalance(JointRequest& jointRequest);
+  JointAngles addGyroBalance(JointRequest& jointRequest, const JointAngles& lastRequest);
 
   /**
    * Returns values on a parabola with 0% = 100% = 0, currentTime / walkHeightDuration == maxHeightAfterTime / walkDuration = 1
@@ -178,8 +184,11 @@ protected:
    * @param turn z rotation.
    * @param balanceAdjustmentLeft Left foot step adjustment value.
    * @param balanceAdjustmentRight Reft foot step adjustment value.
+   * @param highestAdjustmentX Highest adjustment value in the last step
    */
-  bool isStandingPossible(float forwardL, float forwardR, float sideL, float sideR, float turnRL, float balanceAdjustmentLeft, float balanceAdjustmentRight) const;
+  bool isStandingPossible(const float forwardL, const float forwardR, const float sideL, const float sideR, const float turnRL,
+                          const float balanceAdjustmentLeft, const float balanceAdjustmentRight, const float highestAdjustmentX,
+                          const float sideHipShift) const;
 
   /**
    * Set the joint request for the arms, or use the given values
@@ -203,12 +212,6 @@ protected:
   virtual void compensateArms(Pose3f& leftFoot, Pose3f& rightFoot, JointRequest& jointRequest, const JointRequest& walkArms) = 0;
 
   /**
-   * Checks if theGyroState updated and updates the robotIsNotMoving, so the robot might need to do a emergency step
-   * @param ignoreXGyro if true, the x gyro value is ignored
-   */
-  void checkGyroState(const bool ignoreXGyro);
-
-  /**
    * Apply joint offsets of the current in walk kick
    * @param jointRequest Current joint request.
    * @param time Current time of the step (in s).
@@ -216,27 +219,13 @@ protected:
   void applyWalkKickLongKickOffset(JointRequest& jointRequest, const float time);
 
   /**
-   * Override the feet position parameters based on the measured positions
-   * @param isLeftPhase Is left foot the swing foot.
-   * @param time Current time (in s).
-   * @param duration Planned step duration (in s).
-   * @param walkKickStep Walk kick parameters.
-   */
-  void adjustRequestByMeasuredPosition(const bool isLeftPhase, const float time, const float duration, const WalkKickStep& walkKickStep);
-
-  /**
-   * Detect if the last walking step stepped on the foot of another robot. If so, set stepHeightDuration to 0
-   * and earlySupportSwitchAllowed to true and continue the walk step as normal.
-   * This prevents the swing foot to reduce the height. Otherwise an early foot support change happens and the robot just falls over,
-   * because of new support foot height is a lot lower than the old support foot one.
-   */
-  void detectWalkingOnOpponentFeet();
-
-  /**
    * Calculate the ball position relative to the swing foot zero position
    */
   void calculateBallPosition(const bool isLeftPhase);
 
+  /**
+   * Copy values from last walk phase.
+   */
   void constructorHelperInitVariables();
 
   /**
@@ -247,20 +236,13 @@ protected:
   void constructorHelperInitVariablesLastPhase(const WalkPhaseBase& lastWalkPhaseDummy, const bool resetWalkStepAdjustment);
 
   /**
-   * Init start positions for the feet variables based on the last joint request
-   * @param leftReplace Override the parameters for the left foot
-   * @param rightReplace Override the parameters for the right foot
-   */
-  void constructorHelperOverrideStartPositions(const bool leftReplace, const bool rightReplace);
-
-  /**
    * Last motion phase was a walk phase. Init new walk phase accordingly.
    * @param lastPhase Last motion phase
    * @param useStepTarget The to be executed step target
    * @param lastStepTarget Step target of the previous walk phase
    * @param standRequested Is a stand phase requested
    */
-  void constructorWalkCase(const MotionPhase& lastPhase, Pose2f& useStepTarget, Pose2f& lastStepTarget, const bool standRequested);
+  void constructorWalkCase(const MotionPhase& lastPhase, const Pose2f& useStepTarget, Pose2f& lastStepTarget, const bool standRequested);
 
   /**
    * Last motion phase was a stand phase. Init new walk phase accordingly.
@@ -273,7 +255,7 @@ protected:
   /**
    * Last motion phase was a kick and get up phase. Init new walk phase accordingly.
    */
-  void constructorAfterKickOrGetUpCase();
+  void constructorAfterKickOrGetUpCase(const MotionPhase& lastPhase);
 
   /**
    * Last motion phase was something else (i.e. playDead)
@@ -283,7 +265,7 @@ protected:
   /**
    * Walkstate is not standing. Robot is still walking, so initialize walk parameters.
    */
-  void constructorHelperInitWalkPhase(const Pose2f& useStepTarget, const Pose2f& lastStepTarget, const bool afterKickOrGetUp, const bool standRequested);
+  void constructorHelperInitWalkPhase(const Pose2f& useStepTarget, const Pose2f& lastStepTarget, const bool afterKickOrGetUp, const bool standRequested, const MotionPhase& lastPhase);
 
   /**
    * Handle the weight shift status.
@@ -297,19 +279,16 @@ protected:
    * - high positive delta -> swing foot should get a boosted start forward (more negative hip pitch value)
    * - high negative delta -> support foot should get a boosted start forward (more negative hip pitch value), swing foot a boosted start backward (more positive knee pitch value)
    */
-  void constructorHighDelta();
+  void constructorInitWithJointRequest(const Pose2f& useStepTarget, const WalkKickStep::OverrideFoot left, const WalkKickStep::OverrideFoot right);
 
   /**
    * This method recalculated the walk parameters given the jointRequest and the desired armCompensation value
    * @param jointAngles The desired joint request
    * @param theArmCompensation The desired arm compensation
-   * @param stepDuration The planned last step duration
-   * @param t The duration of the step (how long did it actually take)
-   * @param overrideLeftFoot Override the left foot variables?
-   * @param overrideRightFoot Override the right foot variables?
    */
-  void constructorArmCompensation(const JointAngles& jointAngles, const Angle theArmCompensation, const float stepDuration, const float t,
-                                  const bool overrideLeftFoot, const bool overrideRightFoot);
+  void constructorArmCompensation(const JointAngles& jointAngles, const Angle theArmCompensation);
+
+  void constructorJointSpeedRegulator();
 
   /**
    * When the walkstate is standing, handle the interpolation into standing and high stand.
@@ -323,22 +302,50 @@ protected:
   void calcJointsHelperFootSoleRotations(const JointRequest& jointRequest, const Angle hipRotation);
 
   /**
-   * Some debug drawings
-   * @param The to be executed joint request
+   * In case the robot is standing still and the CoM is relativ in the middle, force a support foot switch
    */
-  void debugDrawingFeetPositions(const JointRequest& jointRequest);
+  bool canForceFootSupportSwitch();
 
-  const WalkingEngine& engine;
+  /**
+   * Apply offset for specific joint for InWalkKicks
+   */
+  JointAngles applyJointSpeedRegulation(JointRequest& jointRequest, const Angle supportSoleRotErrorMeasured);
+
+  /**
+   * Convert positions and rotations to the corresponding joint angles and the 3D poses
+   */
+  bool generateJointRequest(JointRequest& jointRequest, const Pose2f& stepTarget,
+                            const bool convertStepTarget, const bool useIsLeftPhase,
+                            const float ratio, float fL0, float fR0, float fL, float fR,
+                            float sL0, float sR0, float sL, float sR,
+                            float& fLH0, float& fRH0, float fHL, float fHR,
+                            Angle& turn, Pose3f& leftFoot, Pose3f& rightFoot);
+
+  /**
+   * Init the joint speed control with the current max allowed rotational speed
+   */
+  void initMaxRotationSpeedPerMotionStep(const Pose2f& targetStep);
+
+  /**
+   * Converts the step target based on the rotation, to get the corrected step target (which is then executed)
+   * This is due the fact that if the robot turns the swing foot will drift aways (because only one foot has ground contact).
+   * This results in an error in the position
+   */
+  Pose2f convertStep(const Pose2f& step, const Angle turnOffset);
+
+  WalkingEngine& engine;
+
+  SpeedRegulatorParams speedRegulatorParams;
 
   WalkStepAdjustment walkStepAdjustment;
 
-  std::vector<float> supportSwingHeightDifference; /**< Height difference between swing and support foot. */
-  float tWalk = Constants::motionCycleTime; /**< Current time in the step (in s). */
+  float tWalk = Constants::motionCycleTime; /**< Current time in the step (in s) but slowed down for forward translation and rotation. */
+  float tWalkSide = Constants::motionCycleTime; /**< Current time in the step (in s) but slowed down for side translation. */
   float tBase = Constants::motionCycleTime; /**< Current time in the step (in s). */
   float stepDuration = 0.f; /**< Duration of the current step (in s). */
   float stepHeightDuration = 0.f; /**< Duration of the current step (in s). */
+  float stepDurationSide = 0.f; /**< Duration for the side interpolation. Needs to be lower for smaller speed, otherwise swing foot gets stuck. */
   bool isLeftPhase = false; /**< Is the left foot the swing foot? */
-  bool earlySupportSwitchAllowed = false; /**< Allow an early switch of support and swing foot. */
   Pose2f step; /**< The step made in this phase (could be reconstructed from forwardStep, sideStep and turnStep). */
   float standInterpolationDuration; /**< The interpolation duration to interpolate into stand (in ms). */
 
@@ -358,6 +365,9 @@ protected:
   Angle turnStep = 0_deg; /**< Turn speed in radians/step. Anti-clockwise is positive. */
   Angle turnRL = 0_deg; /**< The turn angle for both feet (in radians). */
   Angle turnRL0 = 0_deg; /**< The turn angle for both feet when the support changed (in radians). */
+
+  Angle kneeBalance = 0_deg;
+  bool disableSpeedControl = false;
 
   float maxFootHeight = 0.f; /**< Maximum foot height in current step (in m). */
   float footHL0 = 0.f; /**< Left foot height at the start of the current step (in m). */
@@ -381,9 +391,7 @@ protected:
   Angle currentWalkPhaseKneeHipBalance = 0_deg; /**< Knee and hip pitch balance value from the last motion frame. */
   Angle lastWalkPhaseKneeHipBalance = 0_deg; /**< Knee and hip pitch balance value from the previous step. */
 
-  int robotIsNotMoving = 0; /**< Robot is standing or hanging still. Used to detect when robot is stuck at a goal post. */
   int wrongSupportFootCounter = 0;
-  int stoppingCounter = 0; /**< Number of walk phases the robot executed a stopping walkstate or a really small step. */
 
   unsigned int gyroStateTimestamp = 0; /**< Last update of GyroState. */
   unsigned int timeWhenStandBegan = 0; /**< The timestamp when standing began (only valid if \c standFactor == 0). */
@@ -403,16 +411,29 @@ protected:
   bool wasStandingStillOnce = false; /**< Needs to be true, so standHigh can start */
   bool afterWalkKickPhase = false; /**< Is the current step a motion phase after an inWalkKick phase? */
   bool useSlowSupportFootHeightAfterKickInterpolation = false; /**< Shall the support foot height get interpolated back to 0 with a slower speed? */
+  float sideHipShift = 0.f; /**< How much the hip is shifted to the side in the current walking step. If the feet are moving together, shift the hip in the opposite direction. */
+  bool freezeSideMovement = true; /**< Freeze the sideL and sideR calculation, because of stability reasons? */
 
   Pose3f lastComInFoot; /**< Last COM relativ to the current support foot. */
   int doBalanceSteps = 0; /**< Number of balance steps. Possible step range is replaced by how the COM moved in the last step. */
   int noFastTranslationPolygonSteps = 0; /**< Number of steps before big steps near the target are allowed. */
-  Angle armCompensationTilt = 0_deg; /**< Torso tilt to compensate arm position in high stand. */
+  RingBuffer<Angle, 3> armCompensationTilt; /**< Torso tilt to compensate arm position in high stand. */
 
   JointRequest leftArm; /**< The last left arm request, that was not set by the WalkPhase. */
   JointRequest rightArm; /**< The last right arm request, that was not set by the WalkPhase. */
 
   Vector2f ball; /**< Relative ball position to the swing foot. */
+
+  std::unique_ptr<JointSpeedRegulator> jointSpeedRegulator;
+  std::unique_ptr<JointPlayOffsetRegulator> jointPlayOffsetRegulator;
+
+  float armPitchShift[Legs::numOfLegs] = { 0.f, 0.f };
+
+  JointRequest lastJointRequest;
+
+  // AnklePitch shall not go further positive with the gyro balancing
+  // Two entries needed because when standing both ankles need to be clipped
+  Angle currentMaxAnklePitch[Legs::numOfLegs] = {0_deg, 0_deg};
 
   enum WalkState
   {

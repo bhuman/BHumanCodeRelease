@@ -33,6 +33,7 @@ SKILL_IMPLEMENTATION(HandleBallAtOwnGoalPostImpl,
   CALLS(KeyFrameSingleArm),
   CALLS(LookActive),
   CALLS(WalkToPoint),
+  CALLS(Zweikampf),
   REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
@@ -48,7 +49,7 @@ SKILL_IMPLEMENTATION(HandleBallAtOwnGoalPostImpl,
     (float)(50.f) robotGoalPostTangentOffset, /**< This amount of space should fit between the goal post and the robot. */
     (float)(500.f) hysteresisDecisionPenalty, /**< Changing the decision of the previous frame results in this penalty to the time. */
     (std::vector<KickInfo::KickType>)({KickInfo::walkForwardsLeft, KickInfo::walkForwardsRight,
-                                       KickInfo::walkSidewardsLeftFootToLeft, KickInfo::walkSidewardsRightFootToRight,
+                                       KickInfo::walkForwardsLeftLong, KickInfo::walkForwardsRightLong,
                                        KickInfo::walkTurnLeftFootToRight, KickInfo::walkTurnRightFootToLeft}) availableKicks, /**< The kicks that may be selected. */
   }),
 });
@@ -79,12 +80,12 @@ class HandleBallAtOwnGoalPostImpl : public HandleBallAtOwnGoalPostImplBase
         continue;
 
       const float width = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
-      const float distance = std::sqrt(std::max((obstacleOnField - theFieldBall.endPositionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
+      const float distance = std::sqrt(std::max((obstacleOnField - theFieldBall.interceptedEndPositionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
       if(distance < theBallSpecification.radius)
         continue;
 
       const float radius = std::atan(width / (2.f * distance));
-      const Angle direction = (obstacleOnField - theFieldBall.endPositionOnField).angle();
+      const Angle direction = (obstacleOnField - theFieldBall.interceptedEndPositionOnField).angle();
       const Rangea angleRange(direction - radius, direction + radius);
 
       blueprintWheel.addSector(angleRange, distance, SectorWheel::Sector::obstacle);
@@ -124,8 +125,8 @@ class HandleBallAtOwnGoalPostImpl : public HandleBallAtOwnGoalPostImplBase
         if(sector.type != SectorWheel::Sector::free)
           continue;
 
-        const Pose2f kickPoseRelative = theRobotPose.inversePose * KickSelection::calcOptimalKickPoseForTargetAngleRange(sector.angleRange, theRobotPose, theFieldBall.positionOnField, theKickInfo[kickType].ballOffset, theKickInfo[kickType].rotationOffset);
-        const float ttrp = KickSelection::calcTTRP(kickPoseRelative, theFieldBall.positionRelative, theWalkingEngineOutput.maxSpeed) + theKickInfo[kickType].executionTime + (kickType == lastKickType ? 0.f : hysteresisDecisionPenalty);
+        const Pose2f kickPoseRelative = theRobotPose.inverse() * KickSelection::calcOptimalKickPoseForTargetAngleRange(sector.angleRange, theRobotPose, theFieldBall.positionOnField, theKickInfo[kickType].ballOffset, theKickInfo[kickType].rotationOffset);
+        const float ttrp = KickSelection::calcTTRP(kickPoseRelative, theWalkingEngineOutput.maxSpeed) + theKickInfo[kickType].executionTime + (kickType == lastKickType ? 0.f : hysteresisDecisionPenalty);
         if(ttrp < bestTTRP)
         {
           bestKick = kickType;
@@ -145,12 +146,7 @@ class HandleBallAtOwnGoalPostImpl : public HandleBallAtOwnGoalPostImplBase
     }
     else
     {
-      theLookActiveSkill({.withBall = true});
-      Pose2f blockPose(ballGoalPostTangentAngle, theFieldBall.positionOnField);
-      blockPose.translate(Vector2f(-200.f, isLeft ? -50.f : 50.f));
-      theWalkToPointSkill({.target = theRobotPose.inversePose * blockPose,
-                           .rough = true});
-      p.setState("block");
+      theZweikampfSkill();
     }
   }
 
@@ -174,7 +170,7 @@ class HandleBallAtOwnGoalPostImpl : public HandleBallAtOwnGoalPostImplBase
   void setArm(Arms::Arm arm, const Vector2f& goalPost)
   {
     if((armWasBack[arm] = (theRobotPose.translation - goalPost).squaredNorm() < sqr(armWasBack[arm] ? radiusHandlingArea * hysteresisMultiplierHandlingArea : radiusHandlingArea) &&
-                          (arm == Arms::left ? 1.f : -1.f) * (theRobotPose.inversePose * goalPost).angle() > (armWasBack[arm] ? -20_deg : 0_deg)))
+                          (arm == Arms::left ? 1.f : -1.f) * (theRobotPose.inverse() * goalPost).angle() > (armWasBack[arm] ? -20_deg : 0_deg)))
       theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::back,
                                  .arm = arm});
   }

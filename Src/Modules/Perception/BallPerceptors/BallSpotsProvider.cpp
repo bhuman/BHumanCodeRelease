@@ -50,7 +50,7 @@ void BallSpotsProvider::searchScanLines(BallSpots& ballSpots) const
     int currentLengthNeeded = 0;
     for(const ScanLineRegion& region : theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].regions)
     {
-      if(region.color != PixelTypes::Color::field)
+      if(region.color != ScanLineRegion::field)
       {
         if(currentLengthNeeded == 0)
         {
@@ -284,4 +284,4 @@ float BallSpotsProvider::getNeededLengthFor(const int x, const int y, Geometry::
     return circle.radius + (startPoint - circle.center).norm() * ballSpotDistUsage;
 }
 
-MAKE_MODULE(BallSpotsProvider, perception);
+MAKE_MODULE(BallSpotsProvider);

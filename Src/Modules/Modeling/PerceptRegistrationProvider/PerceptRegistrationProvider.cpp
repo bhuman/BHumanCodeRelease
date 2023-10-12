@@ -17,15 +17,12 @@
  */
 
 #include "PerceptRegistrationProvider.h"
-#include "Tools/Modeling/Measurements.h"
 
-MAKE_MODULE(PerceptRegistrationProvider, modeling);
+
+MAKE_MODULE(PerceptRegistrationProvider);
 
 PerceptRegistrationProvider::PerceptRegistrationProvider()
 {
-  // Initialize time stamps
-  timeOfLastPenaltyMarkCovarianceUpdate = 0;
-
   // Initialize penalty marks
   ownPenaltyMarkWorldModel =      Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f);
   opponentPenaltyMarkWorldModel = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f);
@@ -135,39 +132,17 @@ void PerceptRegistrationProvider::preprocessMeasurements(PerceptRegistration& pe
   perceptRegistration.totalNumberOfAvailableLandmarks = 0;
   perceptRegistration.totalNumberOfAvailableLines = 0;
 
-  // Precompute and initialize stuff:
-  inverseCameraMatrix = theCameraMatrix.inverse();
-  currentRotationDeviation = theMotionInfo.executedPhase == MotionPhase::stand ? robotRotationDeviationInStand : robotRotationDeviation;
-  if(theFieldLineIntersections.intersections.size() > timesOfLastIntersectionCovarianceUpdates.size())
-  {
-    intersectionCovariances.resize(theFieldLineIntersections.intersections.size());
-    timesOfLastIntersectionCovarianceUpdates.resize(theFieldLineIntersections.intersections.size(), 0);
-  }
-  if(theGoalPostsPercept.goalPosts.size() > timesOfLastGoalPostCovarianceUpdates.size())
-  {
-    goalPostsCovariances.resize(theGoalPostsPercept.goalPosts.size());
-    timesOfLastGoalPostCovarianceUpdates.resize(theGoalPostsPercept.goalPosts.size(), 0);
-  }
-  if(theFieldLines.lines.size() > timesOfLastLineCovarianceUpdates.size())
-  {
-    lineCovariances.resize(theFieldLines.lines.size());
-    timesOfLastLineCovarianceUpdates.resize(theFieldLines.lines.size(), 0);
-  }
-
   // Count the number of perceived field elements (needed for computing the validity):
   // --- Field Features:
   if(thePenaltyMarkWithPenaltyAreaLine.isValid)
     perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
-  if(theMidCircle.isValid)
+  if(theCenterCircleWithLine.isValid)
     perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
   // --- Landmarks:
   if(thePenaltyMarkPercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
   if(theCirclePercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
-  for(auto const& goalPost : theGoalPostsPercept.goalPosts)
-    if(goalPost.baseInImage)
-      perceptRegistration.totalNumberOfAvailableLandmarks++;
   perceptRegistration.totalNumberOfAvailableLandmarks += static_cast<int>(theFieldLineIntersections.intersections.size());
   // --- Lines:
   perceptRegistration.totalNumberOfAvailableLines = static_cast<int>(theFieldLines.lines.size());
@@ -176,7 +151,7 @@ void PerceptRegistrationProvider::preprocessMeasurements(PerceptRegistration& pe
 void PerceptRegistrationProvider::registerAbsolutePoseMeasurements(const Pose2f& pose, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements)
 {
   registerSingleAbsolutePoseMeasurement(pose, thePenaltyMarkWithPenaltyAreaLine, absolutePoseMeasurements);
-  registerSingleAbsolutePoseMeasurement(pose, theMidCircle, absolutePoseMeasurements);
+  registerSingleAbsolutePoseMeasurement(pose, theCenterCircleWithLine, absolutePoseMeasurements);
 }
 
 void PerceptRegistrationProvider::registerSingleAbsolutePoseMeasurement(const Pose2f& pose, const FieldFeature& measurement, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements)
@@ -193,6 +168,7 @@ void PerceptRegistrationProvider::registerSingleAbsolutePoseMeasurement(const Po
         if(std::abs(angularDifference) < globalPoseAssociationMaxAngularDeviation)
         {
           newPose.perceivedRelativePose = measurement;
+          newPose.covariance = measurement.covOfAbsoluteRobotPose;
           absolutePoseMeasurements.push_back(newPose);
         }
       }
@@ -234,12 +210,7 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
       RegisteredLandmark newLandmark;
       newLandmark.model = penaltyMarkWorldModel;
       newLandmark.percept = thePenaltyMarkPercept.positionOnField;
-      if(timeOfLastPenaltyMarkCovarianceUpdate != theFrameInfo.time)
-      {
-        penaltyMarkCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLandmark.percept, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        timeOfLastPenaltyMarkCovarianceUpdate = theFrameInfo.time;
-      }
-      newLandmark.covPercept = penaltyMarkCovariance;
+      newLandmark.covPercept = thePenaltyMarkPercept.covarianceOnField;
       landmarks.push_back(newLandmark);
     }
   }
@@ -252,25 +223,7 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
       RegisteredLandmark newLandmark;
       newLandmark.model = Vector2f(0.f, 0.f);
       newLandmark.percept = theCirclePercept.pos;
-      if(timeOfLastCenterCircleCovarianceUpdate != theFrameInfo.time)
-      {
-        // The distance to a perceived center circle center
-        // might be extremely small (which results in an extremely small covariance) as
-        // the center is not perceived directly but is computed based on lines on the circle.
-        // An extreme case would be a robot standing in the center of the center circle.
-        // However, the measurement of the circle is definitely not as precise as
-        // the small covariance might indicate. This could lead to significant localization
-        // errors that rotate the robot in the wrong direction. B-Human will das nicht.
-        // Thus, a minimum is required for the covariance. This is realized by assuming a minimum
-        // distance to the center circle (the covariance computation is based on this distance).
-        const float circleDistance = theCirclePercept.pos.norm();
-        const float minimumCircleDistance = theFieldDimensions.centerCircleRadius * 0.7834f; // Based on optimization.                        Not.
-        centerCircleCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(
-          circleDistance < minimumCircleDistance ? Vector2f(minimumCircleDistance, 0.f) : theCirclePercept.pos,
-          0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        timeOfLastCenterCircleCovarianceUpdate = theFrameInfo.time;
-      }
-      newLandmark.covPercept = centerCircleCovariance;
+      newLandmark.covPercept = theCirclePercept.cov;
       landmarks.push_back(newLandmark);
     }
   }
@@ -286,33 +239,7 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
       RegisteredLandmark newLandmark;
       newLandmark.model = intersectionInWorldModel;
       newLandmark.percept = intersection.pos;
-      if(timesOfLastIntersectionCovarianceUpdates[i] < theFrameInfo.time)
-      {
-        intersectionCovariances[i] = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLandmark.percept, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        timesOfLastIntersectionCovarianceUpdates[i] = theFrameInfo.time;
-      }
-      newLandmark.covPercept = intersectionCovariances[i];
-      landmarks.push_back(newLandmark);
-    }
-  }
-  // Register goal posts: I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I
-  for(unsigned int i = 0; i < theGoalPostsPercept.goalPosts.size(); ++i)
-  {
-    const auto& goalPost = theGoalPostsPercept.goalPosts[i];
-    if(!goalPost.baseInImage)
-      continue;
-    Vector2f goalPostInWorldModel;
-    if(getCorrespondingGoalPost(pose, goalPost.relativePosition, goalPostInWorldModel))
-    {
-      RegisteredLandmark newLandmark;
-      newLandmark.model = goalPostInWorldModel;
-      newLandmark.percept = goalPost.relativePosition;
-      if(timesOfLastGoalPostCovarianceUpdates[i] < theFrameInfo.time)
-      {
-        goalPostsCovariances[i] = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLandmark.percept, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        timesOfLastGoalPostCovarianceUpdates[i] = theFrameInfo.time;
-      }
-      newLandmark.covPercept = goalPostsCovariances[i];
+      newLandmark.covPercept = intersection.cov;
       landmarks.push_back(newLandmark);
     }
   }
@@ -329,19 +256,10 @@ void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<
     const WorldModelFieldLine* fieldLineWorld = getPointerToCorrespondingLineInWorldModel(pose, line.first, line.last, line.length, lineIsOnCenterCircle);
     if(fieldLineWorld != nullptr || lineIsOnCenterCircle)
     {
-      // Compute covariance of point on center of line percept (if not already in buffer)
-      if(timesOfLastLineCovarianceUpdates[i] < theFrameInfo.time)
-      {
-        // TODO: Consider kind of covariance scaling similar to center circle percept.
-        const Vector2f linePerceptCenter = (line.first + line.last) * 0.5f;
-        lineCovariances[i] = Measurements::positionToCovarianceMatrixInRobotCoordinates(linePerceptCenter, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        timesOfLastLineCovarianceUpdates[i] = theFrameInfo.time;
-      }
       // Normal case: Line in the world model was found and pointer references it:
       if(fieldLineWorld != nullptr)
       {
-        RegisteredLine newLine(line.first, line.last, fieldLineWorld->start, fieldLineWorld->end,
-                               lineCovariances[i]);
+        RegisteredLine newLine(line.first, line.last, fieldLineWorld->start, fieldLineWorld->end, line.cov);
         lines.push_back(newLine);
       }
       // Alternative case: Line appears to be a part of the center circle:
@@ -351,8 +269,7 @@ void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<
         // of the perceived line to the center circle.
         const Vector2f fakeLineStartInWorld(pose * ((line.first + line.last) * 0.5f));
         const Vector2f fakeLineEndInWorld(0.f,0.f);
-        RegisteredLine newLine(line.first, line.last, fakeLineStartInWorld, fakeLineEndInWorld,
-                               lineCovariances[i], true);
+        RegisteredLine newLine(line.first, line.last, fakeLineStartInWorld, fakeLineEndInWorld, line.cov, true);
         lines.push_back(newLine);
       }
       // Remaining case: line appears to be on the center circle but should be ignored

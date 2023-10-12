@@ -168,11 +168,13 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
         setEyeColor(ledRequest, false, white, LEDRequest::on);
         break;
       case Tactic::Position::midfielder:
+      case Tactic::Position::midfielderM:
       case Tactic::Position::midfielderL:
       case Tactic::Position::midfielderR:
         setEyeColor(ledRequest, false, green, LEDRequest::on);
         break;
       case Tactic::Position::forward:
+      case Tactic::Position::forwardM:
       case Tactic::Position::forwardL:
       case Tactic::Position::forwardR:
         setEyeColor(ledRequest, false, cyan, LEDRequest::on);
@@ -185,11 +187,22 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
 
 void LEDHandler::setHead(LEDRequest& ledRequest)
 {
-  for(unsigned i = LEDRequest::headRearLeft0; i <= LEDRequest::headMiddleLeft0; i++)
-    ledRequest.ledStates[i] = LEDRequest::off;
-
+  if(theSystemSensorData.batteryCharging)
+  {
+    ++chargingLED %= (LEDRequest::numOfHeadLEDs * chargingLightSlowness);
+    const LEDRequest::LED currentLED = headLEDCircle[chargingLED / chargingLightSlowness];
+    const LEDRequest::LED nextLED = headLEDCircle[(chargingLED / chargingLightSlowness + 1u) % LEDRequest::numOfHeadLEDs];
+    ledRequest.ledStates[currentLED] = LEDRequest::on;
+    ledRequest.ledStates[nextLED] = LEDRequest::on;
+  }
+  //  Show if Robot wwants to make a pass or receive one, maybe add different signs for both situations later on
+  else if(theBehaviorStatus.passTarget > 0 || theBehaviorStatus.passOrigin > 0)
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::on;
+  }
   //Added for Demos, so we know when a robot is in heat and needs a pause
-  if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForLEDFastBlinking)
+  else if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForLEDFastBlinking)
   {
     for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
       ledRequest.ledStates[i] = LEDRequest::fastBlinking;
@@ -201,33 +214,8 @@ void LEDHandler::setHead(LEDRequest& ledRequest)
   }
   else if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForHalfLEDActive)
   {
-    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
-      ledRequest.ledStates[i] = LEDRequest::off;
     for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 2))
       ledRequest.ledStates[i] = LEDRequest::on;
-  }
-
-  if(theSystemSensorData.batteryCharging)
-  {
-    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
-      ledRequest.ledStates[i] = LEDRequest::off;
-
-    ++chargingLED %= (LEDRequest::numOfHeadLEDs * chargingLightSlowness);
-    const LEDRequest::LED currentLED = headLEDCircle[chargingLED / chargingLightSlowness];
-    const LEDRequest::LED nextLED = headLEDCircle[(chargingLED / chargingLightSlowness + 1u) % LEDRequest::numOfHeadLEDs];
-    ledRequest.ledStates[currentLED] = LEDRequest::on;
-    ledRequest.ledStates[nextLED] = LEDRequest::on;
-  }
-//  Show if Robot wwants to make a pass or receive one, maybe add different signs for both situations later on
-  else if(theBehaviorStatus.passTarget > 0 || theBehaviorStatus.passOrigin > 0)
-  {
-      for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
-        ledRequest.ledStates[i] = LEDRequest::on;
-  }
-  else
-  {
-    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
-      ledRequest.ledStates[i] = LEDRequest::off;
   }
 }
 
@@ -255,7 +243,7 @@ void LEDHandler::setChestButton(LEDRequest& ledRequest)
 
 void LEDHandler::setLeftFoot(LEDRequest& ledRequest)
 {
-  switch(theGameState.ownTeam.color)
+  switch(theGameState.color())
   {
     case GameState::Team::Color::orange:
       ledRequest.ledStates[LEDRequest::footLeftGreen] = LEDRequest::half;
@@ -301,4 +289,4 @@ void LEDHandler::setBatteryLevelInEar(LEDRequest& ledRequest, LEDRequest::LED ba
     ledRequest.ledStates[baseLED + i] = LEDRequest::on;
 }
 
-MAKE_MODULE(LEDHandler, behaviorControl);
+MAKE_MODULE(LEDHandler);

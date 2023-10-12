@@ -12,7 +12,7 @@
 #include "Math/RotationMatrix.h"
 #include "Tools/Math/Projection.h"
 
-MAKE_MODULE(CoordinateSystemProvider, perception);
+MAKE_MODULE(CoordinateSystemProvider);
 
 void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSystem)
 {

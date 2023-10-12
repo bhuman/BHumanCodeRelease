@@ -4,7 +4,7 @@
 * Implementation of a module that tries to find the combination of
 * the center circle and the center line crossing the circle.
 * in the current field percepts. This is the combination
-* that this modul is looking for:
+* that this module is looking for:
 *
 *                   _____
 *                  *     *      (ugly, I know)
@@ -41,6 +41,7 @@ void CenterCircleWithLinePerceptor::update(CenterCircleWithLine& centerCircleWit
   if(theCirclePercept.wasSeen)
   {
     centerCirclePosition = theCirclePercept.pos;
+    centerCircleCovariance = theCirclePercept.cov;
     timeWhenCenterCircleLastSeen = theFrameInfo.time;
   }
   // If there is no new center circle, try to update the buffered one by odometry:
@@ -56,10 +57,7 @@ void CenterCircleWithLinePerceptor::update(CenterCircleWithLine& centerCircleWit
   }
   // There seems to be a center circle available, so let's find the center line:
   if(findIntersectingCenterLine())
-  {
-    computePose(centerCircleWithLine);
-    centerCircleWithLine.isValid = true;
-  }
+    computeFeature(centerCircleWithLine);
 }
 
 bool CenterCircleWithLinePerceptor::findIntersectingCenterLine()
@@ -71,24 +69,53 @@ bool CenterCircleWithLinePerceptor::findIntersectingCenterLine()
   {
     if(line.length < minimumLengthOfPerceivedLine) // Line is too short, following lines will be too short, too.
       return false;
-    Vector2f dir = line.last - line.first;
-    dir.normalize();
-    const Geometry::Line geoLine(line.first, dir);
-    if(Geometry::getDistanceToLine(geoLine, centerCirclePosition) < maxLineDeviationFromCenter)
+    if(std::abs(line.alpha) > maxAbsAngleAlpha) // Line is "too vertical", avoid false positives
+      continue;
+
+    float distanceToCenter = 0.f;
+    const Geometry::Line geoLine(line.first, line.last - line.first);
+    if(line.length > maxExtraCheckingLineLength) // "Long" line, can end not so close to the center
+      distanceToCenter = Geometry::getDistanceToLine(geoLine, centerCirclePosition);
+    else // Short line, perform stricter check for edge distance to center circle center
+      distanceToCenter = Geometry::getDistanceToEdge(geoLine, centerCirclePosition);
+
+    if(distanceToCenter < maxLineDeviationFromCenter)
     {
       centerLine = geoLine;
+      centerLineCov = line.cov;
       return true;
     }
   }
   return false;
 }
 
-void CenterCircleWithLinePerceptor::computePose(CenterCircleWithLine& centerCircleWithLine)
+void CenterCircleWithLinePerceptor::computeFeature(CenterCircleWithLine& centerCircleWithLine)
 {
+  // Determine the pose:
   Vector2f lineDirection = centerLine.direction;
   lineDirection.rotateLeft();
   Pose2f perceivedPose(lineDirection.angle(), centerCirclePosition);
   centerCircleWithLine = perceivedPose;
+  // Compute covariance:
+  Pose2f computedRobotPose;
+  centerCircleWithLine.isValid = true;
+  if(centerCircleWithLine.pickMorePlausiblePose(theWorldModelPrediction.robotPose, computedRobotPose))
+  {
+    const float c = std::cos(computedRobotPose.rotation);
+    const float s = std::sin(computedRobotPose.rotation);
+    const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
+    const Matrix2f covXR = angleRotationMatrix * centerLineCov * angleRotationMatrix.transpose();
+    const Matrix2f covY = angleRotationMatrix * centerCircleCovariance * angleRotationMatrix.transpose();
+    const float xVariance = covXR(0, 0); // Depends on line
+    const float yVariance = covY(1, 1);  // Depends on circle center
+    const float sqrLineLength = std::max(sqr(2 * theFieldDimensions.centerCircleRadius), centerLine.direction.squaredNorm());
+    const float angleVariance = sqr(std::atan(std::sqrt (4.f * xVariance / sqrLineLength)));
+    centerCircleWithLine.covOfAbsoluteRobotPose << xVariance, 0.f, 0.f, 0.f, yVariance, 0.f, 0.f, 0.f, angleVariance;
+  }
+  else
+  {
+    centerCircleWithLine.isValid = false;
+  }
 }
 
-MAKE_MODULE(CenterCircleWithLinePerceptor, perception);
+MAKE_MODULE(CenterCircleWithLinePerceptor);

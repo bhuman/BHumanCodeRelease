@@ -8,9 +8,15 @@
 #include "Debugging/Annotation.h"
 #include "Math/Geometry.h"
 #include "Math/Rotation.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include <cmath>
 
-WalkStepAdjustment::WalkStepAdjustment()
+WalkStepAdjustment::WalkStepAdjustment() :
+  swingRotYFilter(0.6f, 0.9f),
+  swingRotXFilter(0.6f, 0.9f),
+  kneeBalanceFilter(0.2f, 1.f)
 {
   lastLeftAdjustmentX = 0.f;
   lastRightAdjustmentX = 0.f;
@@ -27,141 +33,11 @@ WalkStepAdjustment::WalkStepAdjustment()
   reduceWalkingSpeed = 0;
 }
 
-//todo for small movements (like standing), there needs to be some filtering
-RotationMatrix WalkStepAdjustment::predictRotation(RotationMatrix rotationMatrix, const RobotModel& robotModel, const FootOffset& footOffset, const bool isLeftPhase, const bool prediction)
-{
-  // pre calculation. Get current CoM position and init last values. Also calculate the support polygon
-  Vector3f lastComInFoot = lastMeasuredComInFoot;
-  Vector3f lastComInRobot = lastMeasuredCom;
-  lastMeasuredCom = rotationMatrix.inverse() * robotModel.centerOfMass;
-  RotationMatrix lastRotationMatrix = lastMeasuredRotationMatrix;
-  lastMeasuredRotationMatrix = rotationMatrix;
-  calcSupportPolygon(robotModel, footOffset, isLeftPhase);
-  for(int i = 0; i < (prediction ? updateSteps : 1); i++)
-  {
-    // 1. calc current com relative to foot plane
-    if(lastRotationMatrix == RotationMatrix())
-      lastRotationMatrix = rotationMatrix; // robot just started to walk
-    const RotationMatrix currentRotationMatrix = rotationMatrix;
-    const Vector3f currentComInRobot = rotationMatrix.inverse() * robotModel.centerOfMass;
-
-    const Vector3f currentComInFoot = rotationMatrix * (Vector3f() << currentComInRobot.head<2>(), (rotationMatrix.inverse() * (isLeftPhase ? robotModel.soleRight : robotModel.soleLeft).translation).z()).finished();
-    if(i == 0)
-      lastMeasuredComInFoot = currentComInFoot;
-    if(lastComInFoot == Vector3f::Zero()) // robot just started to walk
-      return rotationMatrix;
-    // 2. calc tilting edge
-    Vector3f tiltingEdge;
-    if(!getTiltingPoint(currentComInFoot, lastComInFoot, tiltingEdge))
-      return rotationMatrix;
-
-    // 3. convert into robot coordinates
-    const Vector3f tiltingEdgeInCurrentRobot = rotationMatrix.inverse() * tiltingEdge;
-    const Vector3f tiltingEdgeInOldRobot = lastRotationMatrix.inverse() * tiltingEdge;
-
-    // 4. Calc Angles of the LIPM
-    // cos(angle) = adjacent side / hypo = height / length
-    // THIS IS NOT EVEN REMOTELY A LIPM!!! - A.H. 7.1.2022
-    //calc old angle
-    const Vector3f oldDiff = lastComInRobot - tiltingEdgeInOldRobot;
-    const Vector2a oldAngle(-sgnPos(oldDiff.y()) * std::acos(oldDiff.z() / oldDiff.tail<2>().norm()),
-                            sgnPos(oldDiff.x()) * std::acos(oldDiff.z() / Vector2f(oldDiff.x(), oldDiff.z()).norm()));
-
-    //calc current angle
-    const Vector3f currentDiff = currentComInRobot - tiltingEdgeInCurrentRobot;
-    const Vector2a angle(-sgnPos(currentDiff.y()) * std::acos(currentDiff.z() / currentDiff.tail<2>().norm()),
-                         sgnPos(currentDiff.x()) * std::acos(currentDiff.z() / Vector2f(currentDiff.x(), currentDiff.z()).norm()));
-
-    // 5. calc acc
-    const float length = currentDiff.tail<2>().norm();
-    // THIS IS JUST COMPLETELY WRONG!!! - A.H. 7.1.2022
-    const Vector2a acc(Angle::fromDegrees(-Constants::g / length * angle.x() * Constants::motionCycleTime),
-                       Angle::fromDegrees(-Constants::g / length * angle.y() * Constants::motionCycleTime));
-
-    // 6. calc velocity
-    const Vector2a vel = (angle - oldAngle) - acc;
-
-    // 7. update rotationMatrix
-    rotationMatrix.rotateX(-vel.x());
-    rotationMatrix.rotateY(-vel.y());
-
-    // 8. save values for next iteration
-    lastComInFoot = currentComInFoot;
-    lastComInRobot = currentComInRobot;
-    lastRotationMatrix = currentRotationMatrix;
-  }
-  return rotationMatrix;
-}
-
-bool WalkStepAdjustment::getTiltingPoint(const Vector3f& currentCom, const Vector3f& lastCom, Vector3f& intersection3D)
-{
-  //code copied from FallDownStateProvider. direction is calculated different, rest is the same.
-  const Vector2f direction = (currentCom - lastCom).head<2>();
-  const Geometry::Line fallDirectionLine = Geometry::Line(supportFootCenter, direction.normalized());
-
-  CROSS3D("module:WalkStepAdjustment:footMid", currentCom.x(), currentCom.y(), supportPolygon[0].z(), 3, 3, ColorRGBA::violet);
-  LINE3D("module:WalkStepAdjustment:footMid", currentCom.x(), currentCom.y(), supportPolygon[0].z(), currentCom.x() + 10.f * direction.x(), currentCom.y() + 10.f * direction.y(), supportPolygon[0].z(), 3, ColorRGBA::violet);
-
-  // search for the intersection with the support foot polygon and the line
-  for(size_t i = 0; i < supportPolygon.size(); ++i)
-  {
-    // check if the line intersect a line from the two points of the polygon
-    Vector2f intersection2D;
-    const Vector3f& p1 = supportPolygon[i];
-    const Vector3f& p2 = supportPolygon[(i + 1) % supportPolygon.size()];
-    const Vector2f& base = p1.head<2>();
-    const Vector2f dir = p2.head<2>() - base;
-    const Geometry::Line polygonLine(base, dir.normalized());
-
-    if(Geometry::isPointLeftOfLine(fallDirectionLine.base, fallDirectionLine.base + fallDirectionLine.direction, base)
-       != Geometry::isPointLeftOfLine(fallDirectionLine.base, fallDirectionLine.base + fallDirectionLine.direction, p2.head<2>())
-       && Geometry::getIntersectionOfLines(fallDirectionLine, polygonLine, intersection2D)
-       && (supportFootCenter - intersection2D).norm() > (supportFootCenter + fallDirectionLine.direction - intersection2D).norm())
-    {
-      LINE3D("module:WalkStepAdjustment:footMid", p1.x(), p1.y(), p1.z(), p2.x(), p2.y(), p2.z(), 3, ColorRGBA::blue);
-      const float scalar = (intersection2D - base).norm() / dir.norm();
-      intersection3D = p1 + scalar * (p2 - p1);
-      CROSS3D("module:WalkStepAdjustment:footMid", intersection3D.x(), intersection3D.y(), supportPolygon[0].z(), 3, 3, ColorRGBA::orange);
-
-      return true;
-    }
-    LINE3D("module:WalkStepAdjustment:footMid", p1.x(), p1.y(), p1.z(), p2.x(), p2.y(), p2.z(), 3, ColorRGBA::green);
-  }
-  return false;
-}
-
-void WalkStepAdjustment::calcSupportPolygon(const RobotModel& robotModel, const FootOffset& footOffset, const bool isLeftPhase)
-{
-  supportPolygon = std::vector<Vector3f>();
-  const Pose3f& useFoot = !isLeftPhase ? robotModel.soleLeft : robotModel.soleRight;
-  const float left = !isLeftPhase ? footOffset.leftFoot.left : footOffset.rightFoot.left;
-  const float right = !isLeftPhase ? footOffset.leftFoot.right : footOffset.rightFoot.right;
-  supportPolygon.push_back(((useFoot + Vector3f(footOffset.forward, left, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(-footOffset.backward, left, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(-footOffset.backward, -right, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(footOffset.forward, -right, 0.f))).translation);
-
-  // calculate centroid of the convex, counter-clockwise ordered polygon
-  const size_t size = supportPolygon.size();
-  float area = 0.f, x = 0.f, y = 0.f;
-  for(size_t i = 0, j = size - 1; i < size; j = i++)
-  {
-    const Vector3f& p1 = supportPolygon[i];
-    const Vector3f& p2 = supportPolygon[j];
-    float f = p1.x() * p2.y() - p2.x() * p1.y();
-    area += f;
-    x += (p1.x() + p2.x()) * f;
-    y += (p1.y() + p2.y()) * f;
-  }
-  area *= 3.f;
-  supportFootCenter << x / area, y / area;
-}
-
 void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float stepTime, const Vector2f& com, const FootOffset& footOffset,
                                     const Rangef& clipForwardPosition, const bool isLeftPhase, const FootSupport& footSupport,
                                     const FsrData& fsrData, const FrameInfo& frameInfo, const Angle hipRot, const bool isStepAdjustmentAllowed,
                                     const int reduceWalkingSpeedStepAdjustmentSteps, const Vector2f& ball, const float clipAtBallDistanceX,
-                                    const float& theJointPlayFactor, const bool groundContact, const WalkStepAdjustmentParams& walkStepParams)
+                                    const bool groundContact, const WalkStepAdjustmentParams& walkStepParams)
 {
   // If
   // - the current support foot is not the correct one,
@@ -226,9 +102,22 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
   // change of the swing foot based on the planned walk
   const float plannedChange = (swingFoot.translation.x() - (lastSwingFoot.translation.x() - swingAdjustment));
 
+  const float maxAdjustmentAfterStop = swingAdjustment - plannedChange;
+  const bool hadAdjustmentLastFrame = swingAdjustment != 0.f;
+
   // deltaReduced = delta{hat{w_t-1}}
   const Rangef adjustmentClip(-useMaxVelX - useRemoveSpeedX + std::min(-plannedChange, 0.f), useMaxVelX + useRemoveSpeedX + std::max(-plannedChange, 0.f));
-  const float deltaReduced = -adjustmentClip.limit(swingAdjustment);
+  float deltaReduced = -adjustmentClip.limit(swingAdjustment);
+
+  if(stepTime >= 0.5f)
+  {
+    const Pose3f& lastSupportFoot = !isLeftPhase ? lastLeft : lastRight;
+    const float otherDeltaReduced = (lastSupportFoot.translation.x() - lastSwingFoot.translation.x()) / 1.5f;
+    if(deltaReduced < 0.f)
+      deltaReduced = std::max(-swingAdjustment, std::min(deltaReduced, otherDeltaReduced));
+    else if(deltaReduced > 0.f)
+      deltaReduced = std::min(-swingAdjustment, std::max(deltaReduced, otherDeltaReduced));
+  }
 
   // 2. low pass filter if feet are already adjusted, to reduce damage from noise
   if(std::abs(swingAdjustment + deltaReduced) > 0.1f)
@@ -243,12 +132,28 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
   const float currentPlannedSwingX = lastSwingX + plannedChange + deltaReduced;
 
   // Current feet area
-  const Rangef toleranceSpecification = Rangef((footOffset.backward + footOffset.forward) * walkStepParams.desiredFootArea.min - footOffset.backward, (footOffset.backward + footOffset.forward) * walkStepParams.desiredFootArea.max - footOffset.backward);
+  // For InWalkKicks, the swing foot must contain the CoM at all times to ensure stability
+  const Rangef toleranceSpecificationSupport = Rangef((footOffset.backward + footOffset.forward) * walkStepParams.desiredFootArea.min - footOffset.backward, (footOffset.backward + footOffset.forward) * walkStepParams.desiredFootArea.max - footOffset.backward);
+  //const Rangef toleranceSpecificationSwing = isInWalkKick ? toleranceSpecificationSupport : Rangef(-footOffset.backward, footOffset.forward);
+  const Rangef toleranceSpecificationSwing = Rangef(-footOffset.backward, footOffset.forward);
 
   // toleranceLowerLimit = Delta_min; toleranceUpperLimit = Delta_max;
-  const float toleranceLowerLimit = std::min(currentPlannedSwingX, supportFoot.translation.x() - (swingAdjustment + deltaReduced) / 2.f) + toleranceSpecification.min;
-  const float toleranceUpperLimit = std::max(currentPlannedSwingX, supportFoot.translation.x() - (swingAdjustment + deltaReduced) / 2.f) + toleranceSpecification.max;
-
+  float toleranceLowerLimit = std::min(currentPlannedSwingX, supportFoot.translation.x() - (swingAdjustment + deltaReduced) / 2.f) + toleranceSpecificationSupport.min;
+  float toleranceUpperLimit = std::max(currentPlannedSwingX, supportFoot.translation.x() - (swingAdjustment + deltaReduced) / 2.f) + toleranceSpecificationSupport.max;
+  // toleranceLowerLimit = Delta_min; toleranceUpperLimit = Delta_max;
+  float supportOffset = 0.f;
+  if(currentPlannedSwingX + toleranceSpecificationSwing.min > toleranceLowerLimit)
+  {
+    const float oldLimit = toleranceLowerLimit;
+    toleranceLowerLimit = currentPlannedSwingX + toleranceSpecificationSwing.min;
+    supportOffset = toleranceLowerLimit - oldLimit; // should be a positive sign
+  }
+  if(currentPlannedSwingX + toleranceSpecificationSwing.max < toleranceUpperLimit)
+  {
+    const float oldLimit = toleranceUpperLimit;
+    toleranceUpperLimit = currentPlannedSwingX + toleranceSpecificationSwing.max;
+    supportOffset = oldLimit - toleranceUpperLimit; // should be a negative sign
+  }
   // when the arms are on the back, the upper body is tilted forward.
   // if hipRot == 0, nothing changes
   const float walkHeight = std::max(supportFoot.translation.z(), swingFoot.translation.z());
@@ -259,8 +164,8 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
   delta = isStepAdjustmentAllowed ? std::min(lowPassFilteredComX - deltaMin, 0.f) + std::max(lowPassFilteredComX - deltaMax, 0.f) : 0.f;
 
   // hat{p_max}; hat{p_min}
-  const float pMin = std::min(-useMinVelX, adjustmentClip.min - plannedChange) - std::max(deltaReduced, 0.f);
-  const float pMax = std::max(useMinVelX, adjustmentClip.max - plannedChange) - std::min(deltaReduced, 0.f);
+  const float pMin = std::min(-useMinVelX, adjustmentClip.min - plannedChange) -  std::max(deltaReduced, 0.f);
+  const float pMax = std::max(useMinVelX, adjustmentClip.max - plannedChange) -  std::min(deltaReduced, 0.f);
 
   // 7. Apply adjustment
   // Apply swing foot adjustment
@@ -268,6 +173,24 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
 
   if(std::abs(swingAdjustment) < 0.1f)
     swingAdjustment = 0.f;
+
+  if((stepTime >= 0.5f && highestAdjustmentX != 0.f && hadAdjustmentLastFrame && std::abs(swingAdjustment) < std::abs(maxAdjustmentAfterStop) &&
+      swingAdjustment * maxAdjustmentAfterStop >= 0.f))
+    adjustmentStopCounter++;
+  else if(adjustmentStopCounter > 2)
+    adjustmentResumeCounter++;
+  if(adjustmentResumeCounter > 2)
+  {
+    adjustmentResumeCounter = 0;
+    adjustmentStopCounter = 0;
+  }
+  if(adjustmentStopCounter > 2)
+  {
+    const Rangef swingAdjustmentStopRange(std::min(0.f, maxAdjustmentAfterStop), std::max(0.f, maxAdjustmentAfterStop));
+    swingAdjustment = swingAdjustmentStopRange.limit(swingAdjustment);
+    if(Approx::isZero(swingAdjustment))
+      adjustmentStopCounter = 0;
+  }
 
   swingFoot.translation.x() += swingAdjustment;
 
@@ -277,7 +200,12 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
 
   // Apply support foot adjustment
   supportAdjustment += std::min(-pMin + useRemoveSpeedX, std::max(-pMax - useRemoveSpeedX, -swingAdjustment / 2.f - supportAdjustment));
+  const Rangef supportOffsetClipRange(std::min(0.f, supportOffset), std::max(0.f, supportOffset));
+  supportAdjustment -= supportOffsetClipRange.limit(supportAdjustment);
   supportFoot.translation.x() += supportAdjustment;
+
+  supportFoot.translation.x() = clipForwardPosition.limit(supportFoot.translation.x());
+  supportAdjustment = supportFoot.translation.x() - originalSupport.translation.x();
 
   ////////////////////////////////////////////////////////////////
   // clip to make sure we do not unintentionally touch the ball //
@@ -311,33 +239,55 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
   float smallMax = Vector2f(toleranceLowerLimitSmall, walkHeight).rotate(-hipRot).x();
   float smallMin = Vector2f(toleranceUpperLimitSmall, walkHeight).rotate(-hipRot).x();
   hipBalanceIsSafeBackward = 1.f - Rangef::ZeroOneRange().limit((lowPassFilteredComX - smallMax) / (deltaMax - smallMax));
-  hipBalanceIsSafeForward = Rangef::ZeroOneRange().limit((lowPassFilteredComX - deltaMin) / (smallMin - deltaMin)) * Rangef::ZeroOneRange().limit((ball.x() - clipAtBallDistanceX) / 20.f); // TODO Parameter
+  hipBalanceIsSafeForward = Rangef::ZeroOneRange().limit((lowPassFilteredComX - deltaMin) / (smallMin - deltaMin));//* Rangef::ZeroOneRange().limit((ball.x() - clipAtBallDistanceX) / 20.f); // TODO Parameter
 
-  const Rangef toleranceSide(left.translation.y() - footOffset.leftFoot.right, right.translation.y() + footOffset.leftFoot.left);
-  sideBalanceFactor = Rangef::ZeroOneRange().limit((com.y() - toleranceSide.limit(com.y())) / 50.f * (isLeftPhase ? -1.f : 1.f)); // TODO Parameter/RobotDimensions
+  ///////////////////////////////////////////////////
+  // Really worn out robots need a earlier trigger //
+  ///////////////////////////////////////////////////
 
-  // Really worn out robots need a earlier trigger
-  const float heel = std::min(currentPlannedSwingX - deltaReduced - footOffset.backward, supportFoot.translation.x() + (swingAdjustment + deltaReduced) / 2.f - footOffset.backward);
-  const float toe = std::max(currentPlannedSwingX - deltaReduced + footOffset.forward, supportFoot.translation.x() + (swingAdjustment + deltaReduced) / 2.f + footOffset.forward);
+  // 9. Calculate toe and heel points of individuell feet and both together
+  float heelFeet[Legs::numOfLegs];
+  float toeFeet[Legs::numOfLegs];
+
+  // Calculate toe and heel points for both feet
+  heelFeet[Legs::left] = currentPlannedSwingX - deltaReduced - footOffset.backward;
+  heelFeet[Legs::right] = supportFoot.translation.x() + (swingAdjustment + deltaReduced) / 2.f - footOffset.backward;
+  toeFeet[Legs::left] = currentPlannedSwingX - deltaReduced + footOffset.forward;
+  toeFeet[Legs::right] = supportFoot.translation.x() + (swingAdjustment + deltaReduced) / 2.f + footOffset.forward;
+  // And assign swing and support to correct foot
+  // The correct assignment currently does not matter
+  if(!isLeftPhase)
+  {
+    const float heelLeft = heelFeet[Legs::left];
+    heelFeet[Legs::left] = heelFeet[Legs::right];
+    heelFeet[Legs::right] = heelLeft;
+
+    const float toeLeft = toeFeet[Legs::left];
+    toeFeet[Legs::left] = toeFeet[Legs::right];
+    toeFeet[Legs::right] = toeLeft;
+  }
+  const float heel = std::min(heelFeet[Legs::left], heelFeet[Legs::right]);
+  const float toe = std::max(toeFeet[Legs::left], toeFeet[Legs::right]);
 
   // Dynamic % threshold based on joint play. The higher the play, the less further back the com must be, to start the joint play gyro balancing
   // With this balancing lever a really bad robot should be able to walk as fast as a good robot
-  const float magicBalancingParameter = 0.20f + 0.11f * (1.f - theJointPlayFactor); // TODO move into config and scale with size of (toe - heel)
+  const float magicBalancingParameterBack = 0.20f;
+  const float magicBalancingParameterFront = 0.25f;
   if(highestNegativeAdjustmentX < walkStepParams.unstableBackWalkThreshold ||
-     (toe - heel) * magicBalancingParameter + heel > comX)
+     (toe - heel) * magicBalancingParameterBack + heel > comX)
   {
     kneeHipBalanceCounter = 4;
     isForwardBalance = true;
     forwardBalanceWasActive = false;
     balanceComIsForward = 1.f;
   }
-  else if(toe - (toe - heel) * magicBalancingParameter < comX)
+  else if(toe - (toe - heel) * magicBalancingParameterFront < comX)
   {
     kneeHipBalanceCounter = 4;
     backwardBalanceWasActive = false;
     isBackwardBalance = true;
   }
-  if(swingAdjustment > 0.f)
+  if(swingAdjustment > 0.f)  // I have no idea why I (Philip) added this back in Dec 2021. This sounds like overbalancing
   {
     kneeHipBalanceCounter = 4;
     isForwardBalance = true;
@@ -387,10 +337,15 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
     originRightDrawing.translation.z() = rightOriginShift.y();
 
     // Debug Drawings
-    const Pose3f maxLeft = (leftDrawing + Vector3f(toleranceSpecification.max, 0.f, 0.f));
-    const Pose3f minLeft = (leftDrawing + Vector3f(toleranceSpecification.min, 0.f, 0.f));
-    const Pose3f maxRight = (rightDrawing + Vector3f(toleranceSpecification.max, 0.f, 0.f));
-    const Pose3f minRight = (rightDrawing + Vector3f(toleranceSpecification.min, 0.f, 0.f));
+    const Pose3f maxLeft = (leftDrawing + Vector3f(toleranceSpecificationSupport.max, 0.f, 0.f));
+    const Pose3f minLeft = (leftDrawing + Vector3f(toleranceSpecificationSupport.min, 0.f, 0.f));
+    const Pose3f maxRight = (rightDrawing + Vector3f(toleranceSpecificationSupport.max, 0.f, 0.f));
+    const Pose3f minRight = (rightDrawing + Vector3f(toleranceSpecificationSupport.min, 0.f, 0.f));
+
+    const Pose3f& swingPos = isLeftPhase ? leftDrawing : rightDrawing;
+    const Pose3f& supportPos = !isLeftPhase ? leftDrawing : rightDrawing;
+    const Pose3f maxSwingPose = (swingPos + Vector3f(toleranceSpecificationSwing.max, 0.f, 0.f));
+    const Pose3f minSwingPose = (swingPos + Vector3f(toleranceSpecificationSwing.min, 0.f, 0.f));
 
     const Pose3f maxLeft2 = (leftDrawing + Vector3f(offsetsHipBalance.max, 0.f, 0.f));
     const Pose3f minLeft2 = (leftDrawing + Vector3f(offsetsHipBalance.min, 0.f, 0.f));
@@ -400,6 +355,10 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
     LINE3D("module:WalkStepAdjustment:balance", minLeft.translation.x(), minLeft.translation.y() - 30.f, minLeft.translation.z(), minLeft.translation.x(), minLeft.translation.y() + 30.f, minLeft.translation.z(), 3, ColorRGBA::magenta);
     LINE3D("module:WalkStepAdjustment:balance", maxRight.translation.x(), maxRight.translation.y() - 30.f, maxRight.translation.z(), maxRight.translation.x(), maxRight.translation.y() + 30.f, maxRight.translation.z(), 3, ColorRGBA::magenta);
     LINE3D("module:WalkStepAdjustment:balance", minRight.translation.x(), minRight.translation.y() - 30.f, minRight.translation.z(), minRight.translation.x(), minRight.translation.y() + 30.f, minRight.translation.z(), 3, ColorRGBA::magenta);
+    LINE3D("module:WalkStepAdjustment:balance", maxSwingPose.translation.x(), maxSwingPose.translation.y() - 30.f, maxSwingPose.translation.z(), maxSwingPose.translation.x(), maxSwingPose.translation.y() + 30.f, maxSwingPose.translation.z(), 3, ColorRGBA::cyan);
+    LINE3D("module:WalkStepAdjustment:balance", minSwingPose.translation.x(), minSwingPose.translation.y() - 30.f, minSwingPose.translation.z(), minSwingPose.translation.x(), minSwingPose.translation.y() + 30.f, minSwingPose.translation.z(), 3, ColorRGBA::cyan);
+    LINE3D("module:WalkStepAdjustment:balance", toleranceUpperLimit, swingPos.translation.y() - 30.f, supportPos.translation.z(), toleranceUpperLimit, swingPos.translation.y() + 30.f, supportPos.translation.z(), 3, ColorRGBA::green);
+    LINE3D("module:WalkStepAdjustment:balance", toleranceLowerLimit, swingPos.translation.y() - 30.f, supportPos.translation.z(), toleranceLowerLimit, swingPos.translation.y() + 30.f, supportPos.translation.z(), 3, ColorRGBA::green);
 
     LINE3D("module:WalkStepAdjustment:balance", maxLeft2.translation.x(), maxLeft2.translation.y() - 30.f, maxLeft2.translation.z(), maxLeft2.translation.x(), maxLeft2.translation.y() + 30.f, maxLeft2.translation.z(), 3, ColorRGBA::blue);
     LINE3D("module:WalkStepAdjustment:balance", minLeft2.translation.x(), minLeft2.translation.y() - 30.f, minLeft2.translation.z(), minLeft2.translation.x(), minLeft2.translation.y() + 30.f, minLeft2.translation.z(), 3, ColorRGBA::blue);
@@ -419,10 +378,8 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
 void WalkStepAdjustment::init(const WalkStepAdjustment& walkData, const bool reset, const FrameInfo& frameInfo,
                               const float unstableWalkThreshold)
 {
-  // For the LIPM save values from the last motion frame
-  lastMeasuredCom = walkData.lastMeasuredCom;
-  lastMeasuredComInFoot = walkData.lastMeasuredComInFoot;
-  lastMeasuredRotationMatrix = walkData.lastMeasuredRotationMatrix;
+  swingRotXFilter.clear();
+  swingRotYFilter.clear();
 
   if(reset)
   {
@@ -445,6 +402,13 @@ void WalkStepAdjustment::init(const WalkStepAdjustment& walkData, const bool res
   forwardBalanceWasActive = walkData.forwardBalanceWasActive;
   backwardBalanceWasActive = walkData.backwardBalanceWasActive;
   kneeHipBalanceCounter--;
+
+  if(kneeHipBalanceCounter <= 0)
+  {
+    isForwardBalance = false;
+    isBackwardBalance = false;
+  }
+
   reduceWalkingSpeed--;
   delta = walkData.delta;
 
@@ -464,45 +428,94 @@ void WalkStepAdjustment::init(const WalkStepAdjustment& walkData, const bool res
   forwardsWalkingRotationCompensationFactor *= 0.5f;
 }
 
-void WalkStepAdjustment::modifySwingFootRotation(const Pose3f& supportSole, const Pose3f& requestedSupportSole, Angle& swingRotation, const Angle oldSwingRotation,
-                                                 const Angle torsoRotation, const float stepRatio, const Angle soleRotationOffsetSpeed,
-                                                 const bool useTorsoAngle, const Angle hipRotation,
-                                                 const SoleRotationParameter& soleRotParams, const Pose3f& swingSole)
+void WalkStepAdjustment::modifySwingFootRotation(Angle& swingRotationY, const Angle oldSwingRotationY,
+                                                 Angle& swingRotationX, const Angle oldSwingRotationX, const Angle torsoRotationX,
+                                                 const Angle torsoRotationY, const float stepRatio,
+                                                 const Angle hipRotation, const bool isLeftPhase,
+                                                 const SoleRotationParameter& params, const Pose3f& measuredSwingSole,
+                                                 const float plannedSideStepChange, Angle& kneeBalance, const Angle oldKneeBalance, const Angle yGyro)
 {
-  ASSERT(soleRotParams.minTorsoRotation > 0_deg);
-  ASSERT(soleRotParams.minSoleRotation > 0_deg);
-  forwardsWalkingRotationCompensationFactor = Rangef::ZeroOneRange().limit(swingFootXTranslationChange <= 0.f ? forwardsWalkingRotationCompensationFactor - soleRotParams.soleCompensationReduction : forwardsWalkingRotationCompensationFactor + soleRotParams.soleCompensationIncreasement);
-  backwardsWalkingRotationCompensationFactor = Rangef::ZeroOneRange().limit(swingFootXTranslationChange >= 0.f ? backwardsWalkingRotationCompensationFactor - soleRotParams.soleCompensationReduction : backwardsWalkingRotationCompensationFactor + soleRotParams.soleCompensationIncreasement);
-  const float useBackwardScaling = (1.f - Rangef::ZeroOneRange().limit((requestedSupportSole.translation.x() - (swingSole.translation.x() - 20.f)) / -20.f)) * backwardsWalkingRotationCompensationFactor;
-  const Angle supportSoleRotError = supportSole.rotation.getYAngle() - (requestedSupportSole.rotation.getYAngle() + hipRotation);
-  if(torsoRotation + (hipRotation - std::min(supportSoleRotError, 0_deg)) > 0_deg)
+  RingBuffer<Angle, 3>& swingRoll = isLeftPhase ? lastLeftRollRequest : lastRightRollRequest;
+  RingBuffer<Angle, 3>& swingPitch = isLeftPhase ? lastLeftPitchRequest : lastRightPitchRequest;
+
+  // 0.15 -> about 3 frames, 0.35 -> about 9 frames
+  const float timeErrorFactor = Rangef::ZeroOneRange().limit((stepRatio - params.measuredErrorTimeScaling.min) / (params.measuredErrorTimeScaling.max - params.measuredErrorTimeScaling.min));
+  const Angle rollExecuteError = !swingRoll.full() ? 0 : (swingRoll[swingRoll.size() - 1] - measuredSwingSole.rotation.getXAngle()) * timeErrorFactor;
+  const Angle pitchExecuteError = !swingPitch.full() ? 0 : (swingPitch[swingPitch.size() - 1] - measuredSwingSole.rotation.getYAngle()) * timeErrorFactor;
+
+  const Rangea rollRange(isLeftPhase ? 0_deg : -params.maxRollAdjustment, isLeftPhase ? params.maxRollAdjustment : 0_deg);
+  const Angle rollTarget = rollRange.limit(-torsoRotationX);
+  Angle pitchTarget = -(torsoRotationY + hipRotation);
+
+  const Rangea limitAnkleSpeedPitch(std::min(0.f, oldSwingRotationY - swingRotationY) - params.soleCompensationSpeed.y() * Constants::motionCycleTime, std::max(0.f, oldSwingRotationY - swingRotationY) + params.soleCompensationSpeed.y() * Constants::motionCycleTime); // allowed angular speed
+  const Rangea limitAnkleSpeedRoll(std::min(0.f, oldSwingRotationX - swingRotationX) - params.soleCompensationSpeed.x() * Constants::motionCycleTime, std::max(0.f, oldSwingRotationX - swingRotationY) + params.soleCompensationSpeed.x() * Constants::motionCycleTime); // allowed angular speed
+  const Rangea limitKneeBalance(-params.soleCompensationSpeed.y() * Constants::motionCycleTime, params.soleCompensationSpeed.y() * Constants::motionCycleTime);
+
+  const float timeFactor = Rangef::ZeroOneRange().limit((stepRatio - params.timeScaling.min) / (params.timeScaling.max - params.timeScaling.min));
+  const float timeFactorRoll = Rangef::ZeroOneRange().limit((stepRatio - params.timeScalingRoll.min) / (params.timeScalingRoll.max - params.timeScalingRoll.min));
+  float torsoFactor = (1.f - timeFactor) + timeFactor * params.reductionTimeFactor;
+  float torsoFactorRoll = (1.f - timeFactorRoll) + timeFactorRoll * params.reductionTimeFactor;
+
+  // So far from testing, a correction helps to prevent too much forward swing after a support foot switch
+  // But it should be as minimal as possible, but still exist for backwalking. Otherwise the robot will tilt more and more backward
+  // TODO might need to be even less
+  if(pitchTarget > 0.f)
+    torsoFactor = std::min(torsoFactor, params.soleCompensationBackwardReduction);
+
+  const float reverseTimeFactor = 1.f - timeFactor;
+  pitchTarget -= Rangea(reverseTimeFactor * -3_deg, 0).limit(pitchTarget);
+
+  const float sideFactor = mapToRange(plannedSideStepChange, params.sideSizeXRotationScaling.min, params.sideSizeXRotationScaling.max, 0.f, 1.f);
+
+  const Angle clippedCurrent = std::max(swingRotYFilter.currentValue, 0.f);
+  const Angle offsetDiffAngle = mapToRange(timeErrorFactor, 0.f, 1.f, static_cast<float>(params.tiltErrorDiffOffset.max), static_cast<float>(params.tiltErrorDiffOffset.min));
+  const float tiltErrorDiffFactor = params.tiltErrorDiffScaling - mapToRange(Angle(pitchExecuteError + clippedCurrent), -params.tiltErrorDiffOffset.max, -params.tiltErrorDiffOffset.min, 0_deg, Angle(params.tiltErrorDiffScaling));
+
+  const Angle usePitchDiffError = std::min(0.f, (pitchExecuteError + offsetDiffAngle + clippedCurrent - std::min(0_deg, torsoRotationY)) - offsetDiffAngle * tiltErrorDiffFactor);
+  const Angle targetSolePitch = torsoFactor * pitchTarget + pitchExecuteError * params.measuredErrorFactor + usePitchDiffError * params.tiltErrorDiffScaling * timeFactor;
+  const Angle targetSoleRoll = (torsoFactorRoll * rollTarget + rollExecuteError * params.measuredErrorFactor) * sideFactor;
+
+  const float gyroScaling = mapToRange(yGyro, params.gyroScaling.min, params.gyroScaling.max, 0_deg, Angle(1.f));
+
+  const Angle minGyroThreshold = !lastWasKneeBalance ? params.minGyro : Angle(mapToRange(delta, params.deltaRangeSecondStep.min, params.deltaRangeSecondStep.max, static_cast<float>(params.gyroScalingSecondStep.max), static_cast<float>(params.gyroScalingSecondStep.min)));
+
+  kneeBalanceActive |= stepRatio < mapToRange(1.f - gyroScaling, 0.f, 1.f, params.maxStepRatioToStart.min, params.maxStepRatioToStart.max) && // only able to activate at the beginning of a step, based on the gyro
+                       (lastWasKneeBalance ? true : delta < mapToRange(1.f - gyroScaling, 0.f, 1.f, params.deltaRange.min, params.deltaRange.max)) && // last was also knee balance -> true, else only activate if the step adjustment already needs to adjust backwards
+                       -(torsoRotationY + hipRotation) > mapToRange(gyroScaling, 0.f, 1.f, float(params.torsoRange.min), float(params.torsoRange.max)) && // torso rotation needs to be tilted backwards, based on the gyro
+                       yGyro < minGyroThreshold; // min gyro required
+
+  if(!kneeBalanceActive)
   {
-    const float torsoFactor = Rangef::ZeroOneRange().limit((torsoRotation + hipRotation - std::min(supportSoleRotError, 0_deg)) / soleRotParams. minTorsoRotation); // torso angle clip
-    const Rangea limitAnkleOffsetFast(std::min(0.f, oldSwingRotation - swingRotation) - soleRotationOffsetSpeed * Constants::motionCycleTime * 2.f, soleRotationOffsetSpeed * Constants::motionCycleTime); // allowed angular speed
-    Angle supportSoleRotation = std::min(supportSoleRotError, 0_deg); // y sole rotation error
-    if(useTorsoAngle)  // only use torso, if the robot is fully calibrated
-      supportSoleRotation = std::min(Angle(((torsoRotation + hipRotation)) * -0.5f), supportSoleRotation);
-    supportSoleRotation *= Rangef::ZeroOneRange().limit(sqr(std::min(0.f, supportSoleRotation / soleRotParams.minSoleRotation))); // rotation clip
-    supportSoleRotation *= stepRatio < soleRotParams.soleForwardCompensationReturnZeroRation ? 1.f : 1.f - std::min(1.f, stepRatio); // time scaling
-    supportSoleRotation *= torsoFactor;
-    supportSoleRotation *= forwardsWalkingRotationCompensationFactor;
-    PLOT("module:WalkingEngine:Data:supportSoleRotationY", Angle(supportSole.rotation.getYAngle()).toDegrees());
-    swingRotation += limitAnkleOffsetFast.limit(supportSoleRotation - swingRotation);  // apply correction
+    swingRotYFilter.update(swingRotationY + limitAnkleSpeedPitch.limit(targetSolePitch - swingRotationY));
+    swingRotationY = swingRotYFilter.currentValue;
+    kneeBalanceFilter.update(0_deg);
   }
   else
   {
-    const float torsoFactor = Rangef::ZeroOneRange().limit(sqr((torsoRotation + hipRotation) / -soleRotParams.minTorsoRotation)); // torso angle clip
-    const Rangea limitAnkleOffsetFast(-soleRotationOffsetSpeed * Constants::motionCycleTime * (1.f + torsoFactor * 3.f), std::max(0.f, oldSwingRotation - swingRotation) + soleRotationOffsetSpeed * Constants::motionCycleTime * (2.f + torsoFactor * 4.f));  // allowed angular speed
-    // Use the max rotation error from the torso and the sole
-    Angle torsoAngleCompensation = std::max(supportSoleRotError, 0_deg);
-    if(useTorsoAngle) // only use torso, if the robot is fully calibrated
-      torsoAngleCompensation = std::min((torsoRotation + hipRotation) * -soleRotParams.soleBackwardsCompensationTorsoFactor, soleRotParams.maxBackCompensation + torsoAngleCompensation);
-    torsoAngleCompensation *= stepRatio < soleRotParams.soleBackwardsCompensationReturnZeroRatio ? 1.f : 1.f - std::min(1.f, (stepRatio - soleRotParams.soleBackwardsCompensationReturnZeroRatio) * 2.f); // time scaling
-    torsoAngleCompensation *= torsoFactor;
-    torsoAngleCompensation *= useBackwardScaling;
-    PLOT("module:WalkingEngine:Data:supportSoleRotationY", Angle(supportSole.rotation.getYAngle()).toDegrees());
-    swingRotation += limitAnkleOffsetFast.limit(torsoAngleCompensation - swingRotation);  // apply correction
-  }
+    swingRotYFilter.update(0_deg);
+    const float otherTimeFactor = stepRatio < 0.65f ? 0.9f : (1.f - stepRatio);
+    const Angle targetSolePitch = std::max(otherTimeFactor * (pitchTarget + pitchExecuteError * params.measuredErrorFactor), 0.f);
+    if(targetSolePitch > 0.f)
+    {
+      const float torsoFactor = Rangef::ZeroOneRange().limit(sqr((torsoRotationY + hipRotation) / -5_deg));
+      const Rangea limitAnkleSpeedPitch(std::min(0.f, oldKneeBalance - kneeBalance) - 40_deg * Constants::motionCycleTime * (1.f + 3.f * torsoFactor), std::max(0.f, oldKneeBalance - kneeBalance) + params.soleCompensationSpeed.y() * Constants::motionCycleTime * 3.f); // allowed angular speed
 
-  PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationY", swingRotation.toDegrees());
+      kneeBalanceFilter.update(kneeBalance + limitAnkleSpeedPitch.limit(targetSolePitch - kneeBalance));
+      kneeBalance = kneeBalanceFilter.currentValue;
+    }
+    else
+    {
+      kneeBalanceActive = false;
+      kneeBalanceFilter.update(0_deg);
+    }
+  }
+  PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationY", swingRotationY.toDegrees());
+  PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationX", swingRotationX.toDegrees());
+  swingRotXFilter.update(swingRotationX + limitAnkleSpeedRoll.limit(targetSoleRoll - swingRotationX));
+  swingRotationX = swingRotXFilter.currentValue;
+  lastLeftRollRequest.push_front(0);
+  lastLeftPitchRequest.push_front(hipRotation);
+
+  lastRightRollRequest.push_front(0);
+  lastRightPitchRequest.push_front(hipRotation);
 }

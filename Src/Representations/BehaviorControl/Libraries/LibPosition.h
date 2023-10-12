@@ -7,10 +7,10 @@
  */
 
 #pragma once
-#include "Streaming/Function.h"
+
 #include "Math/Eigen.h"
-#include "Math/Geometry.h"
 #include "Streaming/AutoStreamable.h"
+#include "Streaming/Function.h"
 
 STREAMABLE(LibPosition,
 {
@@ -85,12 +85,5 @@ STREAMABLE(LibPosition,
    * @param position Absolute position on the field
    * @return Whether the position far enough in the field
    */
-  FUNCTION(bool(const Vector2f& position, const float offset)) isOutSideGoalFrame;
-
-  /**
-   * Calculates the circle around an obstacle which occupies my target position.
-   * @param position The potential target position on the field
-   * @return The circle with the obstacle as center or radius 0 if none
-   */
-  FUNCTION(Geometry::Circle(const Vector2f& position)) getObstacleAtMyPositionCircle,
+  FUNCTION(bool(const Vector2f& position, const float offset)) isOutSideGoalFrame,
 });

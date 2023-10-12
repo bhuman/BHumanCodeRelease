@@ -9,7 +9,7 @@
 
 #include "StaticInitialPoseProvider.h"
 
-MAKE_MODULE(StaticInitialPoseProvider, infrastructure);
+MAKE_MODULE(StaticInitialPoseProvider);
 
 void StaticInitialPoseProvider::update(StaticInitialPose& staticInitialPose)
 {

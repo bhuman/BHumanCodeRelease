@@ -18,7 +18,7 @@ STREAMABLE_WITH_BASE(JointRequest, JointAngles,
   /** Returns the mirrored angle of joint. */
   Angle mirror(Joints::Joint joint) const;
 
-  /** Checkes if the JointRequest is valide. */
+  /** Checks if the JointRequest is valid. */
   bool isValid(bool allowUseDefault = true) const,
 
   (StiffnessData) stiffnessData, /**< the stiffness for all joints */

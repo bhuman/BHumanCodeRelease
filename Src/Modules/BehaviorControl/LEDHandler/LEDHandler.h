@@ -7,8 +7,8 @@
 #pragma once
 
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
+#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
-#include "Representations/Communication/TeamData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/LEDRequest.h"
@@ -34,7 +34,6 @@ MODULE(LEDHandler,
   USES(RobotHealth),
   REQUIRES(SystemSensorData),
   REQUIRES(StrategyStatus),
-  REQUIRES(TeamData),
   PROVIDES(LEDRequest),
   DEFINES_PARAMETERS(
   {,

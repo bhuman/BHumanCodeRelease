@@ -10,20 +10,17 @@ dr debugDrawing3d:representation:GameState
 robot all
 
 # Select modules for simulator
-mr CameraImage LogDataProvider Lower
-mr CameraImage LogDataProvider Upper
-mr CameraInfo LogDataProvider Lower
-mr CameraInfo LogDataProvider Upper
-mr FrameInfo LogDataProvider Lower
-mr FrameInfo LogDataProvider Upper
-mr FrameInfo LogDataProvider Motion
-mr FsrSensorData LogDataProvider Motion
-mr InertialSensorData LogDataProvider Motion
-mr JointSensorData LogDataProvider Motion
-mr KeyStates LogDataProvider Motion
-mr GroundTruthWorldState LogDataProvider Cognition
-mr GroundTruthRobotPose OracledWorldModelProvider Cognition
-mr GroundTruthBallModel OracledWorldModelProvider Cognition
+for Lower Upper mr CameraImage LogDataProvider
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr InertialSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
+for Cognition mr GroundTruthBallModel OracledWorldModelProvider
 mr JPEGImage off
 
 call Includes/GameStates

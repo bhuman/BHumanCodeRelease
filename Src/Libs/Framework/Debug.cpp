@@ -22,16 +22,16 @@ Debug::Debug(const Settings& settings, const std::string& robotName, const Confi
   config(config)
 {
 #ifdef TARGET_ROBOT
-  debugSender->setSize(MAX_PACKAGE_SEND_SIZE - 2000);
-  debugReceiver->setSize(MAX_PACKAGE_RECEIVE_SIZE - 2000);
+  debugSender->reserve(MAX_PACKAGE_SEND_SIZE - 2000);
+  debugReceiver->reserve(MAX_PACKAGE_RECEIVE_SIZE - 2000);
 #endif
 }
 
 void Debug::init()
 {
 #ifndef TARGET_ROBOT
-  debugSender->setSize(MAX_PACKAGE_SEND_SIZE - 2000);
-  debugReceiver->setSize(MAX_PACKAGE_RECEIVE_SIZE - 2000);
+  debugSender->reserve(MAX_PACKAGE_SEND_SIZE - 2000);
+  debugReceiver->reserve(MAX_PACKAGE_RECEIVE_SIZE - 2000);
 #endif
 
   for(DebugSender<MessageQueue>& sender : senders)
@@ -41,12 +41,8 @@ void Debug::init()
 
   moduleGraphCreator = std::make_unique<ModuleGraphCreator>(config);
 
-  // read requests.dat
-  InBinaryFile file("requests.dat");
-  if(file.exists() && !file.eof())
-    file >> *debugReceiver;
-
-  debugReceiver->handleAllMessages(*this);
+  for(MessageQueue::Message message : *debugReceiver)
+    handleMessage(message);
   debugReceiver->clear();
 
   // Send initial module config
@@ -61,10 +57,9 @@ void Debug::init()
       for(; i < config().size(); i++)
         if(config()[i].name == sender.receiverThreadName)
           break;
-      sender.out.bin << moduleGraphCreator->getExecutionValues(i);
-      unsigned timestamp = 0xffffffff;
-      sender.out.bin << timestamp;
-      sender.out.finishMessage(idModuleRequest);
+      auto stream = sender.bin(idModuleRequest);
+      stream << moduleGraphCreator->getExecutionValues(i);
+      stream << -1;
     }
   }
 }
@@ -82,10 +77,11 @@ bool Debug::main()
     for(ModuleBase* i = ModuleBase::first; i; i = i->next)
       size++;
 
-    Global::getDebugOut().bin << static_cast<unsigned>(size);
+    auto stream = Global::getDebugOut().bin(idModuleTable);
+    stream << static_cast<unsigned>(size);
     for(ModuleBase* m = ModuleBase::first; m; m = m->next)
     {
-      Global::getDebugOut().bin << m->name << static_cast<unsigned char>(m->category);
+      stream << m->name;
 
       unsigned requirementsSize = 0;
       unsigned providersSize = 0;
@@ -95,19 +91,18 @@ bool Debug::main()
         else
           ++requirementsSize;
 
-      Global::getDebugOut().bin << requirementsSize;
+      stream << requirementsSize;
       for(const ModuleBase::Info& j : m->getModuleInfo())
         if(!j.update)
-          Global::getDebugOut().bin << j.representation;
+          stream << j.representation;
 
-      Global::getDebugOut().bin << providersSize;
+      stream << providersSize;
       for(const ModuleBase::Info& j : m->getModuleInfo())
         if(j.update)
-          Global::getDebugOut().bin << j.representation;
+          stream << j.representation;
     }
 
-    Global::getDebugOut().bin << moduleGraphCreator->config;
-    Global::getDebugOut().finishMessage(idModuleTable);
+    stream << moduleGraphCreator->config;
   }
 
   DEBUG_RESPONSE_ONCE("moduleGraph:moduleOrder")
@@ -145,22 +140,25 @@ bool Debug::main()
   // Move the messages from other threads' debug queues to the outgoing queue
   for(Receiver<MessageQueue>& receiver : receivers)
   {
-    if(!receiver.isEmpty())
-      receiver.moveAllMessages(*debugSender);
+    if(!receiver.empty())
+    {
+      *debugSender << receiver;
+      receiver.clear();
+    }
   }
 
   // If not requested otherwise, send only latest of each type
   DEBUG_RESPONSE_NOT("debug:keepAllMessages")
-    debugSender->removeRepetitions();
+    removeRepetitions();
 
   // Send messages to the threads
 #ifndef TARGET_ROBOT
   for(DebugSender<MessageQueue>& sender : senders)
     sender.send(true);
-  debugSender->send(true);
+  debugSender->send();
 #else
   for(DebugSender<MessageQueue>& sender : senders)
-    sender.send(false);
+    sender.send();
   debugHandler.communicate(true);
 #ifdef NDEBUG
   // Stop debug in release after sending the module configuration
@@ -169,21 +167,116 @@ bool Debug::main()
 #endif // NDEBUG
 #endif // !TARGET_ROBOT
 
-  return true;
+  // If there is still data to be sent, immediately start a new cycle.
+  // Otherwise, wait for the next packet to arrive.
+  if(debugSender->size() > 0)
+  {
+    Thread::yield();
+    return false;
+  }
+  else
+    return true;
 }
 
-bool Debug::handleMessage(InMessage& message)
+void Debug::removeRepetitions()
 {
-  switch(message.getMessageID())
+  std::unordered_map<std::string, std::array<size_t, numOfMessageIDs>> threads;
+  std::string thread = "unknown";
+
+  size_t* messagesPerType = threads[thread].data();
+  for(MessageQueue::Message message : *debugSender)
   {
+    if(message.id() == idFrameBegin)
+    {
+      message.bin() >> thread;
+      messagesPerType = threads[thread].data();
+    }
+    ++messagesPerType[message.id()];
+  }
+
+  messagesPerType = threads["unknown"].data();
+  size_t originalSize = 0;
+  size_t sizeAfterFrameBegin = 0;
+
+  debugSender->filter([&](MessageQueue::const_iterator i)
+  {
+    MessageQueue::Message message = *i;
+    switch(message.id())
+    {
+      case idFrameBegin:
+        originalSize = debugSender->size();
+        message.bin() >> thread;
+        sizeAfterFrameBegin = debugSender->size();
+        messagesPerType = threads[thread].data();
+        return true;
+
+      case idFrameFinished:
+        --messagesPerType[idFrameFinished];
+        if(debugSender->size() == sizeAfterFrameBegin)
+        {
+          debugSender->resize(originalSize);
+          return false;
+        }
+        else
+          return true;
+
+      case idText:
+        return --messagesPerType[idText] <= 20;
+
+      // accept always, thread id is not important
+      case idNumOfDataMessageIDs:
+      case idDebugRequest:
+      case idDebugResponse:
+      case idDebugDataResponse:
+      case idPlot:
+      case idConsole:
+      case idAudioData:
+      case idAnnotation:
+      case idLogResponse:
+      case idThread:
+        return true;
+
+      // only the latest messages for infrastructure
+      default:
+        if(message.id() >= numOfDataMessageIDs)
+          return --messagesPerType[message.id()] == 0;
+        [[fallthrough]];
+
+      // data only from latest frame
+      case idStopwatch:
+      case idDebugImage:
+      case idDebugDrawing:
+      case idDebugDrawing3D:
+        return messagesPerType[idFrameFinished] == 1;
+    }
+  });
+}
+
+
+bool Debug::handleMessage(MessageQueue::Message message)
+{
+  switch(message.id())
+  {
+    case idNumOfDataMessageIDs:
+    {
+      if(SystemCall::getMode() == SystemCall::physicalRobot)
+        Global::getDebugOut().bin(idNumOfDataMessageIDs) << numOfDataMessageIDs;
+      return true;
+    }
     case idText: // loop back to GUI
-      message >> *debugSender;
+      *debugSender << message;
+      return true;
+
+    case idThread:
+      message.bin() >> currentThreadName;
       return true;
 
     case idModuleRequest:
+    {
+      auto stream = message.bin();
       unsigned timestamp;
-      message.bin >> timestamp;
-      if(moduleGraphCreator->update(message.bin))
+      stream >> timestamp;
+      if(moduleGraphCreator->update(stream))
       {
         // Sending the new module configuration if one could be determined
         for(DebugSender<MessageQueue>& sender : senders)
@@ -192,38 +285,46 @@ bool Debug::handleMessage(InMessage& message)
           for(; i < config().size(); i++)
             if(config()[i].name == sender.receiverThreadName)
               break;
-          sender.out.bin << moduleGraphCreator->getExecutionValues(i);
-          sender.out.bin << timestamp; // pass timestamp
-          sender.out.finishMessage(idModuleRequest);
+          sender.bin(idModuleRequest) << moduleGraphCreator->getExecutionValues(i) << timestamp;
         }
       }
       return true;
+    }
 
     // messages to the threads
     case idDebugDataChangeRequest:
+      if(!currentThreadName.empty())
+      {
+        *senderMap[currentThreadName] << message;
+        currentThreadName = "";
+        return true;
+      }
+      [[fallthrough]];
+
     case idTypeInfo:
       for(DebugSender<MessageQueue>& sender : senders)
-        message >> sender;
+        sender << message;
       return true;
 
     // messages to all threads
     case idDebugRequest:
+      if(!currentThreadName.empty())
+      {
+        *senderMap[currentThreadName] << message;
+        currentThreadName = "";
+        return true;
+      }
       for(DebugSender<MessageQueue>& sender : senders)
-        message >> sender;
+        sender << message;
       return ThreadFrame::handleMessage(message);
 
     case idFrameBegin:
-      threadIdentifier = message.readThreadIdentifier();
-      message.resetReadPosition();
+      message.bin() >> threadName;
       [[fallthrough]];
 
     default:
-      message >> *senderMap[threadIdentifier];
-      DEBUG_RESPONSE("legacy")
-      {
-        if((threadIdentifier == "Upper" || threadIdentifier == "Lower"))
-          message >> *senderMap["Cognition"];
-      }
+      *senderMap[currentThreadName.empty() ? threadName : currentThreadName] << message;
+      currentThreadName = "";
       return true;
   }
 }

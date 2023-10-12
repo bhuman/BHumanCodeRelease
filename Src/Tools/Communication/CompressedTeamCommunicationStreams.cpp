@@ -8,7 +8,7 @@
 
 #include "CompressedTeamCommunicationStreams.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanStandardMessage.h"
+#include "Tools/Communication/BHumanMessage.h"
 #include "Math/Angle.h"
 #include "Math/Eigen.h"
 #include "Streaming/OutStreams.h"
@@ -45,7 +45,7 @@ void CompressedTeamCommunication::RecordType::javaInitialize(Out& stream, const 
 
 void CompressedTeamCommunication::RecordType::javaRead(Out& stream, const std::string&, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier + ".read(bitStream, __timestampBase);" << endl;
+  stream << indentation << identifier + ".read(__bitStream, __timestampBase);" << endl;
 }
 
 bool CompressedTeamCommunication::ArrayType::check(const std::string& type) const
@@ -91,7 +91,7 @@ void CompressedTeamCommunication::ArrayType::javaRead(Out& stream, const std::st
   const std::string elementCXXType = cxxType.substr(0, cxxType.back() == '*' ? (cxxType.size() - 1) : cxxType.find_last_of('['));
   if(bits)
   {
-    stream << indentation << "final int _" << identifier << "Size = (int) (bitStream.readBits(" << bits << ")";
+    stream << indentation << "final int _" << identifier << "Size = (int) (__bitStream.readBits(" << bits << ")";
     if(lowerCount)
       stream << " + " << lowerCount;
     stream << ");" << endl;
@@ -125,7 +125,7 @@ void CompressedTeamCommunication::BooleanType::javaType(Out& stream, const std::
 
 void CompressedTeamCommunication::BooleanType::javaRead(Out& stream, const std::string&, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier << " = bitStream.readBoolean();" << endl;
+  stream << indentation << identifier << " = __bitStream.readBoolean();" << endl;
 }
 
 bool CompressedTeamCommunication::IntegerType::check(const std::string& type) const
@@ -147,7 +147,7 @@ void CompressedTeamCommunication::IntegerType::javaType(Out& stream, const std::
 
 void CompressedTeamCommunication::IntegerType::javaRead(Out& stream, const std::string& cxxType, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier << " = bitStream.read";
+  stream << indentation << identifier << " = __bitStream.read";
   if(cxxType == "char")
     stream << "Char";
   else if(cxxType == "signed char")
@@ -177,7 +177,7 @@ void CompressedTeamCommunication::AngleType::javaType(Out& stream, const std::st
 
 void CompressedTeamCommunication::AngleType::javaRead(Out& stream, const std::string&, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier << " = bitStream.readAngle(" << bits << ");" << endl;
+  stream << indentation << identifier << " = __bitStream.readAngle(" << bits << ");" << endl;
 }
 
 bool CompressedTeamCommunication::FloatType::check(const std::string& type) const
@@ -192,7 +192,7 @@ void CompressedTeamCommunication::FloatType::javaType(Out& stream, const std::st
 
 void CompressedTeamCommunication::FloatType::javaRead(Out& stream, const std::string& cxxType, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier << " = bitStream.read";
+  stream << indentation << identifier << " = __bitStream.read";
   stream << (static_cast<char>(cxxType[0] + 'A' - 'a') + cxxType.substr(1));
   stream << "(" << min << ", " << max << ", " << bits << ");" << endl;
 }
@@ -209,7 +209,7 @@ void CompressedTeamCommunication::TimestampType::javaType(Out& stream, const std
 
 void CompressedTeamCommunication::TimestampType::javaRead(Out& stream, const std::string&, const std::string& identifier, const std::string& indentation) const
 {
-  stream << indentation << identifier << " = bitStream.readTimestamp(__timestampBase, " << bits << ", " << shift << ", " <<
+  stream << indentation << identifier << " = __bitStream.readTimestamp(__timestampBase, " << bits << ", " << shift << ", " <<
             (reference == relativePast ? -1 : (reference == relativeFuture ? 1 : 0)) << ", " << (noclip ? "true" : "false") << ");" << endl;
 }
 
@@ -226,7 +226,7 @@ void CompressedTeamCommunication::EnumType::javaType(Out& stream, const std::str
 void CompressedTeamCommunication::EnumType::javaRead(Out& stream, const std::string&, const std::string& identifier, const std::string& indentation) const
 {
   const std::string javaName = transformTypeName(name);
-  stream << indentation << identifier << " = " << javaName << ".values()[Math.min((int) bitStream.readBits(" << (bits ? bits : static_cast<unsigned int>(sizeof(unsigned char) * 8)) << "), " << javaName << ".values().length - 1)];" << endl;
+  stream << indentation << identifier << " = " << javaName << ".values()[Math.min((int) __bitStream.readBits(" << (bits ? bits : static_cast<unsigned int>(sizeof(unsigned char) * 8)) << "), " << javaName << ".values().length - 1)];" << endl;
 }
 
 bool CompressedTeamCommunication::VectorType::check(const std::string& type) const
@@ -500,7 +500,7 @@ void CompressedTeamCommunication::TypeRegistry::compile()
         {
           type->bits = static_cast<unsigned int>(std::stoul(p.second, &end));
           ASSERT(end == p.second.length());
-          ASSERT(type->bits > 0);
+          // A timestamp can have 0 bits.
           ASSERT(type->bits < 32);
         }
         else if(p.first == "shift")
@@ -650,7 +650,7 @@ void CompressedTeamCommunication::TypeRegistry::compile()
 
 void CompressedTeamCommunication::TypeRegistry::generateTCMPluginClass(const std::string& file, const RecordType* type)
 {
-  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 15, "This method is not adjusted for the current message version");
+  static_assert(BHUMAN_MESSAGE_STRUCT_VERSION == 72, "This method is not adjusted for the current message version");
 
   tcmPluginGeneratedRecords.clear();
   tcmPluginGeneratedEnums.clear();
@@ -663,48 +663,50 @@ void CompressedTeamCommunication::TypeRegistry::generateTCMPluginClass(const std
   out << "import bhuman.message.data.Eigen;" << endl;
   out << "import bhuman.message.data.Timestamp;" << endl;
   out << "import java.nio.ByteBuffer;" << endl;
+  out << "import java.nio.ByteOrder;" << endl;
   out << "import java.util.ArrayList;" << endl;
-  out << "import java.util.LinkedList;" << endl;
   out << "import java.util.List;" << endl;
+  out << "import teamcomm.data.AdvancedMessage;" << endl;
   out << "import util.Unsigned;" << endl;
   out << endl;
   out << "/**" << endl;
   out << " * This class was generated automatically. DO NOT EDIT!" << endl;
   out << " */" << endl;
-  out << "public class BHumanStandardMessage {" << endl;
-  out << "    public static final String BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER = \"" BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER "\";" << endl;
-  out << "    public static final short BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION = " << BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION << ";" << endl;
+  out << "public class BHumanMessage extends AdvancedMessage {" << endl;
+  out << "    public static final short BHUMAN_MESSAGE_STRUCT_VERSION = " << BHUMAN_MESSAGE_STRUCT_VERSION << ";" << endl;
   out << endl;
   for(const auto& pair : type->members)
     ensureTypeExists(out, pair.second);
   out << "    public short magicNumber;" << endl;
+  out << "    public short playerNumber;" << endl;
+  out << "    public byte maxJointTemperatureStatus;" << endl;
   out << "    public long timestamp;" << endl;
-  out << "    public long referenceGameControllerPacketTimestamp;" << endl;
+  out << "    public int referenceGameControllerPacketTimestampOffset;" << endl;
   out << "    public short referenceGameControllerPacketNumber;" << endl;
   out << endl;
   generateRecordMemberDeclarations(out, type, "    ");
   out << endl;
-  out << "    public int getStreamedSize(final ByteBuffer stream) {" << endl;
-  out << "        int size = 1 + 4 + 4 + 1 + 2;" << endl;
-  out << "        if (stream.remaining() < size) {" << endl;
-  out << "            return size;" << endl;
-  out << "        }" << endl;
-  out << "        final int compressedSize = Unsigned.toUnsigned(stream.getShort(stream.position() + size - 2));" << endl;
-  out << "        return size + compressedSize;" << endl;
+  out << "    @Override" << endl;
+  out << "    public String[] display() {" << endl;
+  out << "        return new String[]{};" << endl;
   out << "    }" << endl;
   out << endl;
-  out << "    public BHumanStandardMessage read(final ByteBuffer stream, byte playerNumber) {" << endl;
-  out << "        magicNumber = Unsigned.toUnsigned(stream.get());" << endl;
-  out << "        timestamp = Unsigned.toUnsigned(stream.getInt());" << endl;
-  out << "        referenceGameControllerPacketTimestamp = Unsigned.toUnsigned(stream.getInt());" << endl;
-  out << "        referenceGameControllerPacketNumber = Unsigned.toUnsigned(stream.get());" << endl;
-  out << "        final int containerSize = Unsigned.toUnsigned(stream.getShort());" << endl;
-  out << "        final int positionAfterCompressed = stream.position() + containerSize;" << endl;
-  out << "        final BitStream bitStream = new BitStream(stream);" << endl;
+  out << "    @Override" << endl;
+  out << "    public void init() {" << endl;
+  out << "        ByteBuffer __stream = ByteBuffer.wrap(data);" << endl;
+  out << "        __stream.rewind();" << endl;
+  out << "        __stream.order(ByteOrder.LITTLE_ENDIAN);" << endl;
+  out << "        magicNumber = (short) (Unsigned.toUnsigned(__stream.get()) ^ BHUMAN_MESSAGE_STRUCT_VERSION);" << endl;
+  out << "        playerNumber = Unsigned.toUnsigned(__stream.get());" << endl;
+  out << "        maxJointTemperatureStatus = (byte) (playerNumber >> 4 & 3);" << endl;
+  out << "        playerNumber &= 15;" << endl;
+  out << "        timestamp = Unsigned.toUnsigned(__stream.getShort());" << endl;
+  out << "        timestamp |= Unsigned.toUnsigned(__stream.get()) << 16;" << endl;
+  out << "        referenceGameControllerPacketTimestampOffset = Unsigned.toUnsigned(__stream.getShort());" << endl;
+  out << "        referenceGameControllerPacketNumber = Unsigned.toUnsigned(__stream.get());" << endl;
+  out << "        final BitStream __bitStream = new BitStream(__stream);" << endl;
   out << "        final long __timestampBase = timestamp;" << endl;
   generateRecordMemberReading(out, type, "        ");
-  out << "        assert stream.position() == positionAfterCompressed;" << endl;
-  out << "        return this;" << endl;
   out << "    }" << endl;
   out << "}" << endl;
 }
@@ -758,7 +760,7 @@ void CompressedTeamCommunication::TypeRegistry::generateRecord(Out& out, const C
   // The assignment of cols/rows of a matrix generates an "unchecked" warning.
   if(std::any_of(type->members.begin(), type->members.end(), [](const std::pair<std::string, const Type*>& member){ return dynamic_cast<const MatrixType*>(member.second) != nullptr; }))
     out << "        @SuppressWarnings(\"unchecked\")" << endl;
-  out << "        public void read(final BitStream bitStream, final long __timestampBase) {" << endl;
+  out << "        public void read(final BitStream __bitStream, final long __timestampBase) {" << endl;
   generateRecordMemberReading(out, type, "            ");
   out << "        }" << endl;
   out << "    }" << endl;

@@ -13,30 +13,22 @@
 #pragma once
 
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/PerceptRegistration.h"
-#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
-#include "Representations/Perception/FieldFeatures/MidCircle.h"
+#include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
-#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Framework/Module.h"
 
 MODULE(PerceptRegistrationProvider,
 {,
-  REQUIRES(CameraMatrix),
+  REQUIRES(CenterCircleWithLine),
   REQUIRES(CirclePercept),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLineIntersections),
   REQUIRES(FieldLines),
-  REQUIRES(FrameInfo),
-  REQUIRES(GoalPostsPercept),
-  REQUIRES(MidCircle),
-  REQUIRES(MotionInfo),
   REQUIRES(PenaltyMarkPercept),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
   PROVIDES(PerceptRegistration),
@@ -49,8 +41,6 @@ MODULE(PerceptRegistrationProvider,
     (float) lineAssociationCorridor,                  /**< Maximum distance between points on a perceived line and a line in the world model */
     (float) globalPoseAssociationMaxDistanceDeviation,/**< Distance threshold (metric) for associating a computed pose (by field feature) and the currently estimated pose */
     (Angle) globalPoseAssociationMaxAngularDeviation, /**< Angular threshold for associating a computed pose (by field feature) and the currently estimated pose */
-    (Vector2f) robotRotationDeviation,                /**< Deviation of the rotation of the robot's torso */
-    (Vector2f) robotRotationDeviationInStand,         /**< Deviation of the rotation of the robot's torso when it is standing. */
     (bool) useIntersectionDirections,                 /**< If set to false, the directions of intersections are ignored in the matching process. */
   }),
 });
@@ -99,10 +89,6 @@ private:
     bool isCenterLine; /**< True, if the line is the center line. False otherwise. */
   };
 
-
-  Pose3f inverseCameraMatrix;                                 /**< Precomputed matrix that is needed multiple times */
-  Vector2f currentRotationDeviation;                          /**< Set to either robotRotationDeviation or robotRotationDeviationInStand */
-
   Vector2f ownPenaltyMarkWorldModel;                          /**< Original position of own penalty mark (in field coordinates) */
   Vector2f opponentPenaltyMarkWorldModel;                     /**< Original position of opponent penalty mark (in field coordinates) */
   Vector2f ownGoalPostsWorldModel[2];                         /**< The positions of the two posts of our goal. */
@@ -113,17 +99,6 @@ private:
   std::vector<Vector2f> xIntersectionsWorld;                  /**< List of all x intersections in global field coordinates (used when direction checking is off) */
   std::vector<Vector2f> tIntersectionsWorld;                  /**< List of all t intersections in global field coordinates (used when direction checking is off). Contains all x intersections, too. */
   std::vector<Vector2f> lIntersectionsWorld;                  /**< List of all l intersections in global field coordinates (used when direction checking is off). Contains all x and t intersections, too. */
-
-  Matrix2f penaltyMarkCovariance;                             /**< Covariance of last penalty mark perception (saved, as it is needed multiple times in one frame)*/
-  unsigned int timeOfLastPenaltyMarkCovarianceUpdate;         /**< Timestamp of frame in which the penalty mark covariance was computed the last time*/
-  Matrix2f centerCircleCovariance;                            /**< Covariance of last center circle perception (saved, as it is needed multiple times in one frame)*/
-  unsigned int timeOfLastCenterCircleCovarianceUpdate;        /**< Timestamp of frame in which the center circle covariance was computed the last time*/
-  std::vector<Matrix2f> intersectionCovariances;              /**< Covariances of last intersection perceptions (saved, as they are needed multiple times in one frame)*/
-  std::vector<unsigned int> timesOfLastIntersectionCovarianceUpdates; /**< Timestamps of frames in which the intersection perceptions covariances were computed the last time*/
-  std::vector<Matrix2f> goalPostsCovariances;                     /**< Covariances of last goal post perceptions (saved, as they are needed multiple times in one frame)*/
-  std::vector<unsigned int> timesOfLastGoalPostCovarianceUpdates; /**< Timestamps of frames in which the goal post perception covariances were computed the last time*/
-  std::vector<Matrix2f> lineCovariances;                      /**< Covariance of last line perceptions (saved, as they are needed multiple times in one frame)*/
-  std::vector<unsigned int> timesOfLastLineCovarianceUpdates; /**< Timestamps of frames in which the line perceptions covariances were computed the last time*/
 
   float maxCenterCircleDeviation;                             /**< The maximum distance (in mm) between model and perception for registering a center circle percept */
   float maxGoalPostDeviation;                                 /**< The maximum distance (in mm) between model and perception for registering a goal post percept */

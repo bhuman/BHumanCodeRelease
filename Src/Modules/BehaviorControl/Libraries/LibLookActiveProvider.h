@@ -7,14 +7,14 @@
 #include "Framework/Module.h"
 #include "Debugging/Debugging.h"
 #include "Debugging/DebugDrawings.h"
-#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/Libraries/LibLookActive.h"
-#include "Representations/BehaviorControl/Libraries/LibTeam.h"
+#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -30,26 +30,24 @@ MODULE(LibLookActiveProvider,
 {,
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
-  USES(BehaviorStatus),
   USES(CameraCalibration),
   REQUIRES(CameraInfo),
   REQUIRES(FrameInfo),
   REQUIRES(HeadLimits),
   REQUIRES(GameState),
-  USES(HeadMotionRequest),
   REQUIRES(JointAngles),
   REQUIRES(JointRequest),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotPose),
   REQUIRES(TeammatesBallModel),
-  REQUIRES(LibTeam),
+  REQUIRES(LibTeammates),
   REQUIRES(MotionInfo),
   REQUIRES(TorsoMatrix),
   PROVIDES(LibLookActive),
   LOADS_PARAMETERS(
   {,
-    (Angle) defaultSpeed,
+    (Angle) defaultSpeed, // deg/s
     (Angle) minSpeed,
     (Angle) maxSpeed,
     (Angle) largeDefaultPan,
@@ -58,6 +56,7 @@ MODULE(LibLookActiveProvider,
     (Angle) defaultTilt,
     (Angle) minTilt,
     (int) ballPositionUnknownTimeout,
+    (int) ballPositionUnknownTimeoutLowerCamera,
     (float) translationSpeedMinValue,
     (float) translationSpeedMaxValue,
     (Angle) rotationSpeedMinValue,
@@ -66,6 +65,7 @@ MODULE(LibLookActiveProvider,
     (float) maxObstacleDistanceToBeLookedAt,
     (int) maxObstacleAgeToBeLookedAt,
     (Angle) cameraChoiceHysteresis,
+    (float) teammatesBallModelError, /**< estimation of the worst-case TeammatesBallModel error */
   }),
 });
 

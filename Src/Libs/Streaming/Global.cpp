@@ -7,7 +7,7 @@
 #include "Global.h"
 
 thread_local AnnotationManager* Global::theAnnotationManager = nullptr;
-thread_local OutMessage* Global::theDebugOut = nullptr;
+thread_local MessageQueue* Global::theDebugOut = nullptr;
 thread_local Settings* Global::theSettings = nullptr;
 thread_local DebugRequestTable* Global::theDebugRequestTable = nullptr;
 thread_local DebugDataTable* Global::theDebugDataTable = nullptr;

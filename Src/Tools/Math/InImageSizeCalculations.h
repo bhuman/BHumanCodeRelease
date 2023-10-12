@@ -17,22 +17,6 @@
 namespace IISC
 {
   /**
-   * Calculates how much of the ball "is seen" (in percent) of the theoretical in-image-vertical size of the ball
-   * according to the given greenEdge and assuming the given center is the in-image center of the ball.
-   *
-   * @param center, point on image
-   * @param theCameraInfo
-   * @param theCameraMatrix
-   * @param theBallSpecification
-   * @param greenEdge (optional) The greenEdge of the ball (a line at the ball given by an angle offset to the point of ball-ground-intersection: we assume that the part of the ball under this line is not well visible in the image, because of low light conditions and reflecting ground/green)
-   * @return the visible percent of the in image ball size
-   *      error case: -1
-   */
-  float calcBallVisibilityInImageByCenter(const Vector2f& center,
-                                          const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification,
-                                          const Angle greenEdge = 60_deg);
-
-  /**
    * Calculates where a ball in-image would be, assuming the given start point is the lowest middle point of the ball that could be seen.
    *
    * @param start, point in image
@@ -60,20 +44,6 @@ namespace IISC
    */
   float getImageLineDiameterByLowestPoint(const Vector2f& start,
                                           const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions);
-
-  /**
-   * Calculates the in-image-vertical size of the penalty mark according to the given
-   * image point that is used as the lowest point that is seen.
-   *
-   * @param start, point in image (lowest seen PM-point)
-   * @param theCameraInfo
-   * @param theCameraMatrix
-   * @param theFieldDimensions
-   * @return the in-image-size in pixel
-   *     error case: -1
-   */
-  float getImagePenaltyMarkDiameterByLowestPoint(const Vector2f& start,
-      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions);
 
   /**
    * Calculates the in-image-sizes of the penalty mark according to the given

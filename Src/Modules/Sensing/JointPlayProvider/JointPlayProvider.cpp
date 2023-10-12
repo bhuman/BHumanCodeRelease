@@ -5,13 +5,18 @@
  */
 
 #include "JointPlayProvider.h"
+#include "Debugging/Annotation.h"
+#include "Debugging/Plot.h"
+#include "Platform/SystemCall.h"
 
-MAKE_MODULE(JointPlayProvider, sensing);
+MAKE_MODULE(JointPlayProvider);
 
 JointPlayProvider::JointPlayProvider()
 {
-  for(std::size_t i = 0; i < JointPlayTrack::numOfJointPlayTracks; i++)
+  for(std::size_t i = 0; i < Joints::numOfJoints; i++)
   {
+    jointPlayValue[i].push_front(0.f);
+    jointPlayValue[i].push_front(0.f);
     bufferValue[i] = 0.f;
     // TODO is this even needed?
     bufferRequest[i].clear();
@@ -20,6 +25,13 @@ JointPlayProvider::JointPlayProvider()
 
 void JointPlayProvider::update(JointPlay& theJointPlay)
 {
+  // 0. skip very first motion frame
+  if(!skippedFirstFrame)
+  {
+    skippedFirstFrame = true;
+    return;
+  }
+
   // 1. Check the walk state
   const bool isWalkingNow = theMotionRequest.isWalking() && theMotionInfo.isMotion(MotionPhase::walk) && theGroundContactState.contact;
   if((isWalkingNow && !isWalking) || startWalkingTimestamp > theFrameInfo.time)
@@ -34,66 +46,125 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
   const float minSpeedRatio = minForwardSpeed / maxForwardSpeed;
   const float speedRatio = theWalkStepData.stepDuration == 0.f ? 0.f : (theWalkStepData.stepTarget.translation.x() / theWalkStepData.stepDuration) / maxForwardSpeed;
   const Angle jointPlayOffset = (1.f - Rangef::ZeroOneRange().limit((speedRatio - minSpeedRatio) / (1.f - minSpeedRatio))) * jointPlayScalingWalkingSpeed;
+  bool jointAbovePlaySoundValue = false;
+
   // 2. Filter
-  FOREACH_ENUM(JointPlayTrack, joint)
+  FOREACH_ENUM(Joints::Joint, joint)
   {
     // Buffer joint request, because of motion delay
-    bufferRequest[joint].push_front(theJointRequest.angles[getJoint(joint)]);
+    bufferRequest[joint].push_front(theJointRequest.angles[joint]);
     if(!bufferRequest[joint].full())
+    {
+      theJointPlay.jointState[joint].requestBoundary.min = theJointPlay.jointState[joint].requestBoundary.max = theJointRequest.angles[joint];
       continue;
-    if(skipBuffer)
-      continue;
+    }
     // Filter differences
-    // TODO Check if jointPlayList can be deleted. Seems to be just a useless copy
-    const Angle useJointPlayOffset = joint == lap || joint == rap ? jointPlayOffset : 0_deg;
-    bufferValue[joint] = bufferValue[joint] * (1.f - useLowPassFilterFactor) +
-                         (std::abs(theJointAngles.angles[getJoint(joint)] - bufferRequest[joint].back()) - (maxJointPlay[joint] - useJointPlayOffset)) * useLowPassFilterFactor;
-    bufferValueShortTerm[joint] = bufferValueShortTerm[joint] * (1.f - lowpassFilterFactor.max) +
-                                  (std::abs(theJointAngles.angles[getJoint(joint)] - bufferRequest[joint].back()) - (maxJointPlay[joint] - useJointPlayOffset)) * lowpassFilterFactor.max;
+    if(!skipBuffer)
+    {
+      const auto it = std::find_if(jointPlayList.begin(), jointPlayList.end(), [&joint](const JointPlayPair& other)
+      {
+        return other.joint == joint;
+      });
+      const Angle useJointPlayOffset = joint == Joints::lAnklePitch || joint == Joints::rAnklePitch ? jointPlayOffset : 0_deg;
+      const Angle ref = it != jointPlayList.end() ? it->ref : 0_deg;
+      const float ratio = it != jointPlayList.end() ? it->ratio : 0.f;
+      bufferValue[joint] = bufferValue[joint] * (1.f - useLowPassFilterFactor) +
+                           (std::abs(theJointAngles.angles[joint] - bufferRequest[joint].back()) - (ref - useJointPlayOffset)) * useLowPassFilterFactor;
 
-    jointPlayList[joint] = bufferValue[joint];
-    jointPlaySum += std::max(jointPlayList[joint], 0_deg) * maxJointPlayRatio[joint];
+      jointPlaySum += std::max(bufferValue[joint], 0_deg) * ratio;
+    }
+    const Angle clippedJoint = theJointPlay.jointState[joint].requestBoundary.limit(theJointAngles.angles[joint]);
+
+    theJointPlay.jointState[joint].requestBoundary.min = std::min(bufferRequest[joint].back(), clippedJoint);
+    theJointPlay.jointState[joint].requestBoundary.max = std::max(bufferRequest[joint].back(), clippedJoint);
+
+    theJointPlay.jointState[joint].lastExecutedRequest = bufferRequest[joint].back();
+    theJointPlay.jointState[joint].velocity = theJointAngles.angles[joint] - lastJointAngles.angles[joint];
+
+    jointPlayValue[joint].push_front(std::abs(theJointPlay.jointState[joint].requestBoundary.limit(theJointAngles.angles[joint]) - theJointAngles.angles[joint]));
+    if(joint > Joints::firstLegJoint)
+    {
+      const bool hasHighPlay = theMotionInfo.isMotion(MotionPhase::walk) && (std::abs(jointPlayValue[joint].front() - jointPlayValue[joint].back()) > minPlayForSound || jointPlayValue[joint].front() > minPlaySlowForSound);
+      if(hasHighPlay)
+        theJointPlay.jointState[joint].status =
+          static_cast<JointPlay::JointStatus>(std::min(static_cast<unsigned>(JointPlay::numOfJointStatuss) - 1, static_cast<unsigned>(theJointPlay.jointState[joint].status) + 1));
+      else
+        theJointPlay.jointState[joint].status = JointPlay::allFine;
+      if(hasHighPlay)
+      {
+        jointAbovePlaySoundValue |= hasHighPlay;
+      }
+    }
   }
 
-  if(!skipBuffer)
+  bool calcQuality = SystemCall::getMode() != SystemCall::logFileReplay;
+  MODIFY("module:JointPlayProvider:calcQuality", calcQuality);
+  if(!skipBuffer && calcQuality)
+  {
     theJointPlay.qualityOfRobotHardware = 1.f - Rangef::ZeroOneRange().limit((jointPlaySum - jointPlayScaling.min) / jointPlayScaling.max);
-
-  PLOT("module:JointPlayProvider:lhp", jointPlayList[JointPlayTrack::lhp].toDegrees());
-  PLOT("module:JointPlayProvider:lkp", jointPlayList[JointPlayTrack::lkp].toDegrees());
-  PLOT("module:JointPlayProvider:lap", jointPlayList[JointPlayTrack::lap].toDegrees());
-  PLOT("module:JointPlayProvider:rhp", jointPlayList[JointPlayTrack::rhp].toDegrees());
-  PLOT("module:JointPlayProvider:rkp", jointPlayList[JointPlayTrack::rkp].toDegrees());
-  PLOT("module:JointPlayProvider:rap", jointPlayList[JointPlayTrack::rap].toDegrees());
-
-  PLOT("module:JointPlayProvider:lhps", bufferValueShortTerm[JointPlayTrack::lhp].toDegrees());
-  PLOT("module:JointPlayProvider:lkps", bufferValueShortTerm[JointPlayTrack::lkp].toDegrees());
-  PLOT("module:JointPlayProvider:laps", bufferValueShortTerm[JointPlayTrack::lap].toDegrees());
-  PLOT("module:JointPlayProvider:rhps", bufferValueShortTerm[JointPlayTrack::rhp].toDegrees());
-  PLOT("module:JointPlayProvider:rkps", bufferValueShortTerm[JointPlayTrack::rkp].toDegrees());
-  PLOT("module:JointPlayProvider:raps", bufferValueShortTerm[JointPlayTrack::rap].toDegrees());
+    // If the robot did not walk much, assume lower values
+    theJointPlay.qualityOfRobotHardware *= Rangef::ZeroOneRange().limit(timeSpendWalking / interpolateJointPlayValueWalkTime);
+    theJointPlay.isCalibrated |= timeSpendWalking >= interpolateJointPlayValueWalkTime;
+  }
+  PLOT("module:JointPlayProvider:lhp", bufferValue[Joints::lHipPitch].toDegrees());
+  PLOT("module:JointPlayProvider:lkp", bufferValue[Joints::lKneePitch].toDegrees());
+  PLOT("module:JointPlayProvider:lap", bufferValue[Joints::lAnklePitch].toDegrees());
+  PLOT("module:JointPlayProvider:rhp", bufferValue[Joints::rHipPitch].toDegrees());
+  PLOT("module:JointPlayProvider:rkp", bufferValue[Joints::rKneePitch].toDegrees());
+  PLOT("module:JointPlayProvider:rap", bufferValue[Joints::rAnklePitch].toDegrees());
 
   PLOT("module:JointPlayProvider:sum", jointPlaySum.toDegrees());
   PLOT("module:JointPlayProvider:qualityOfRobotHardware", theJointPlay.qualityOfRobotHardware);
-}
 
-Joints::Joint JointPlayProvider::getJoint(JointPlayTrack joint)
-{
-  switch(joint)
+  PLOT("module:JointPlayProvider:play:value:lHipYawPitch", jointPlayValue[Joints::lHipYawPitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:lHipRoll", jointPlayValue[Joints::lHipRoll].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:lHipPitch", jointPlayValue[Joints::lHipPitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:lKneePitch", jointPlayValue[Joints::lKneePitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:lAnklePitch", jointPlayValue[Joints::lAnklePitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:lAnkleRoll", jointPlayValue[Joints::lAnkleRoll].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:rHipRoll", jointPlayValue[Joints::rHipRoll].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:rHipPitch", jointPlayValue[Joints::rHipPitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:rKneePitch", jointPlayValue[Joints::rKneePitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:rAnklePitch", jointPlayValue[Joints::rAnklePitch].front().toDegrees());
+  PLOT("module:JointPlayProvider:play:value:rAnkleRoll", jointPlayValue[Joints::rAnkleRoll].front().toDegrees());
+
+  bool playSound = SystemCall::getMode() == SystemCall::physicalRobot;
+
+  MODIFY("module:JointPlayProvider:sound", playSound);
+
+  if(lastWarningTimestamp > theFrameInfo.time || // Time jumped backwards. Happens when replaying logs
+     (theFrameInfo.time - lastFrameInfoTime) > (Constants::motionCycleTime * 1000.f * 1.5f)) // Time jump is a lot larger than it should be
+    lastWarningTimestamp = theFrameInfo.time;
+
+  if(playSound && theMotionInfo.isMotion(MotionPhase::walk) &&
+     theFrameInfo.getTimeSince(lastWarningTimestamp) > warningSoundWaitTime &&
+     jointAbovePlaySoundValue)
   {
-    case lhp:
-      return Joints::lHipPitch;
-    case lkp:
-      return Joints::lKneePitch;
-    case lap:
-      return Joints::lAnklePitch;
-    case rhp:
-      return Joints::rHipPitch;
-    case rkp:
-      return Joints::rKneePitch;
-    case rap:
-      return Joints::rAnklePitch;
-    default:
-      ASSERT(false);
-      return Joints::headYaw;
+    std::vector<Joints::Joint> damagedJoints = theJointPlay.getJointsWithSensorJump(JointPlay::damaged);
+    std::vector<Joints::Joint> brokenJoints = theJointPlay.getJointsWithSensorJump(JointPlay::broken);
+    std::string joints;
+    for(Joints::Joint joint : damagedJoints)
+    {
+      joints += TypeRegistry::getEnumName(Joints::Joint(joint));
+      joints += " ";
+    }
+    OUTPUT_ERROR("Joints with sensor jump " << joints);
+    ANNOTATION("JointPlayProvider", "Joint with sensor jump " << joints);
+    if(!brokenJoints.empty())
+    {
+      lastWarningTimestamp = theFrameInfo.time;
+      joints = "";
+      for(Joints::Joint joint : brokenJoints)
+      {
+        joints += TypeRegistry::getEnumName(Joints::Joint(joint));
+        joints += " ";
+      }
+      ANNOTATION("JointPlayProvider", "Joint with high play " << joints);
+      SystemCall::playSound("sirene.wav", true);
+      SystemCall::say((std::string("Joints may be broken ") + joints).c_str(), true);
+    }
   }
+
+  lastFrameInfoTime = theFrameInfo.time;
+  lastJointAngles = theJointAngles;
 }

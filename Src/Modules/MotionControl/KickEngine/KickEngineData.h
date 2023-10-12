@@ -17,6 +17,7 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/RobotModel.h"
+#include "Representations/Sensing/RobotStableState.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Math/RingBufferWithSum.h"
@@ -57,6 +58,7 @@ private:
   Vector2f gyroErrorRight = Vector2f::Zero();
   Vector2f lastBody = Vector2f::Zero();
   Vector2f bodyError = Vector2f::Zero();
+  float armCompensation = 0.f;
   bool lElbowFront = false,
        rElbowFront = false;
 
@@ -99,7 +101,7 @@ public:
   void simpleCalcArmJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions, const Vector3f& armPos, const Vector3f& handRotAng);
   void calcLegJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions, const DamageConfigurationBody& theDamageConfigurationBody);
   void mirrorIfNecessary(JointRequest& joints);
-  void addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id);
+  void addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id, const RobotStableState& theRobotStableState);
   void addDynPoint(const DynPoint& dynPoint);
   void ModifyData(JointRequest& kickEngineOutput);
   void calcPhaseState();

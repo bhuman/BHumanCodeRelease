@@ -73,7 +73,7 @@ namespace impl
     UnscentedKalmanFilter(const State& initState);
 
     /**
-     * Initalization function to start the process. Setting the mean, covariance and sigma points.
+     * Initialization function to start the process. Setting the mean, covariance and sigma points.
      * @param initState, the mean to be set
      * @param initNoise, the noise (as a variance) to initialize the covariance
      */
@@ -144,7 +144,7 @@ namespace impl
   }
 
   /**
-   * Initalization function to start the process. Setting the mean, covariance and sigma points.
+   * Initialization function to start the process. Setting the mean, covariance and sigma points.
    * @param initState, the mean to be set
    * @param initNoise, the noise (as a variance) to initialize the covariance
    */
@@ -226,16 +226,16 @@ namespace impl
     sigmaz *= 0.5f;
     sigmaz += measurementNoise;
 
-    MixedCovarianceType simgaxz = MixedCovarianceType::Zero();
+    MixedCovarianceType sigmaxz = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)
     {
       const State& Xi = sigmaPoints[i];
       const MeasurementType& Zi = Z[i];
-      simgaxz += (Xi - mean) * (Zi - z).transpose();
+      sigmaxz += (Xi - mean) * (Zi - z).transpose();
     }
-    simgaxz *= 0.5f;
+    sigmaxz *= 0.5f;
     //The kalman gain
-    const MixedCovarianceType K = simgaxz * sigmaz.inverse();
+    const MixedCovarianceType K = sigmaxz * sigmaz.inverse();
     //Derive the mean and the covariance using the kalman gain
     mean += K * (measurement - z);
     cov -= K * sigmaz * K.transpose();
@@ -275,16 +275,16 @@ namespace impl
     sigmaz *= 0.5f;
     sigmaz += measurementNoise;
 
-    MixedCovarianceType simgaxz = MixedCovarianceType::Zero();
+    MixedCovarianceType sigmaxz = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)
     {
       const State& Xi = sigmaPoints[i];
       const float& Zi = Z[i];
-      simgaxz += (Xi - mean) * (Zi - z);
+      sigmaxz += (Xi - mean) * (Zi - z);
     }
-    simgaxz *= 0.5f;
+    sigmaxz *= 0.5f;
 
-    const MixedCovarianceType K = simgaxz * (1.f / sigmaz);
+    const MixedCovarianceType K = sigmaxz * (1.f / sigmaz);
 
     mean += K * (measurement - z);
     cov -= K * sigmaz * K.transpose();
@@ -421,7 +421,7 @@ namespace impl
 }
 
 /**
- * UKF type for easy acces with and without manifold.
+ * UKF type for easy access with and without manifold.
  */
 template<unsigned DOF>
 using UKF = impl::UnscentedKalmanFilter<Eigen::Matrix<float, DOF, 1>, DOF, false>;

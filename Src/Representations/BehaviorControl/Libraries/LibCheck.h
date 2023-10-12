@@ -19,7 +19,7 @@ STREAMABLE(LibCheck,
   {,
     motionRequest,
     headMotionRequest,
-    activity,
+    calibrationFinished,
     passTarget,
   });
 

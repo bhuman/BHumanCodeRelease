@@ -9,7 +9,7 @@
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 
-MAKE_MODULE(ScanGridProvider, perception);
+MAKE_MODULE(ScanGridProvider);
 
 void ScanGridProvider::update(ScanGrid& scanGrid)
 {

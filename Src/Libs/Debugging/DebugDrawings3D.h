@@ -79,7 +79,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define LINE3D(id, fromX, fromY, fromZ, toX, toY, toZ, size, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              static_cast<char>(Drawings3D::line) << \
@@ -156,6 +156,7 @@ class DrawingManager3D : public DrawingManager {};
         }\
     }\
   while(false)
+
 /**
  * A macro that adds a quadrilateral to a drawing.
  * @param id The drawing to which the line should be added.

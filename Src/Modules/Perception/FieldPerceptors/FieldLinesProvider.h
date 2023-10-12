@@ -12,6 +12,7 @@
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/OdometryData.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
@@ -38,6 +39,7 @@ MODULE(FieldLinesProvider,
   REQUIRES(CirclePercept),
   REQUIRES(IntersectionsPercept),
   REQUIRES(LinesPercept),
+  REQUIRES(MeasurementCovariance),
 
   PROVIDES(FieldLines),
   REQUIRES(FieldLines),
@@ -45,9 +47,10 @@ MODULE(FieldLinesProvider,
   PROVIDES(FieldLineIntersections),
   DEFINES_PARAMETERS(
   {,
-    (float)(1000.f) bigLineThreshold, /**< Internal definition for a long line. TODO: Rethink this! */
+    (float)(1000.f) bigLineThreshold,                        /**< Internal definition for a long line. TODO: Rethink this! */
     (int)(30) maxTimeOffset,
-    (float)(200.f) maxLineDeviationFromAssumedCenterCircle, /**< If the distance of a short line to the center circle is larger than this, it is not considered to be on the circle. */
+    (float)(200.f) maxLineDeviationFromAssumedCenterCircle,  /**< If the distance of a short line to the center circle is larger than this, it is not considered to be on the circle. */
+    (float)(0.4f) centerWeighting,                           /**< Used for computing the covariance of a line by determining the actual point for this computation, must be between 0 (-> closest point on line) and 1 (-> center of line).*/
   }),
 });
 
@@ -63,8 +66,6 @@ private:
     stayed,
   });
   std::vector<SpotLineStatus> spotLineUsage;
-  static const int lostIndex = 5555;
-  std::vector<unsigned> lineIndexTable;
   CirclePercept lastCirclePercept;
   OdometryData lastOdometryData;
   unsigned int lastFrameTime = 1;

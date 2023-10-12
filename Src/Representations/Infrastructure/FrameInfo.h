@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/Communication/BHumanMessageParticle.h"
 #include "Streaming/AutoStreamable.h"
 
 /**

@@ -8,7 +8,7 @@
 #include "RobotParts/Limbs.h"
 #include "Debugging/DebugDrawings3D.h"
 
-MAKE_MODULE(PointAtEngine, motionControl);
+MAKE_MODULE(PointAtEngine);
 
 void PointAtEngine::update(PointAtGenerator& pointAtGenerator)
 {

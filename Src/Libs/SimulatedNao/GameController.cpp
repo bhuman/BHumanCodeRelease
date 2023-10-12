@@ -5,7 +5,7 @@
  * @author Arne Hasselbring
  */
 
-#include "Tools/Communication/SPLMessageHandler.h"
+#include "Tools/Communication/TeamMessageChannel.h"
 #include "GameController.h"
 #include "SimulatedRobot.h"
 #include "Framework/Settings.h"
@@ -19,8 +19,8 @@
 const float GameController::footLength = 120.f;
 const float GameController::dropHeight = 350.f;
 
-GameController::GameController()
-: theSPLMessageHandler(new SPLMessageHandler[2]{{inTeamMessages, outTeamMessage}, {inTeamMessages, outTeamMessage}})
+GameController::GameController() :
+  theTeamMessageChannel(new TeamMessageChannel[2]{{inTeamMessages, outTeamMessage}, {inTeamMessages, outTeamMessage}})
 {
   gameControllerData.packetNumber = 0;
   gameControllerData.competitionPhase = COMPETITION_PHASE_ROUNDROBIN;
@@ -32,7 +32,7 @@ GameController::GameController()
   gameControllerData.kickingTeam = 0; // is initialized in setTeamInfos.
   gameControllerData.secsRemaining = halfTime;
   gameControllerData.secondaryTime = 0;
-  competitionTypeNormal();
+  competitionTypeChampionsCup();
   for(std::size_t i = 0; i < 2; ++i)
     for(std::size_t j = 0; j < MAX_NUM_PLAYERS; ++j)
       robots[i * MAX_NUM_PLAYERS + j].info = &gameControllerData.teams[i].players[j];
@@ -42,18 +42,20 @@ GameController::GameController()
 
 GameController::~GameController()
 {
-  delete[] theSPLMessageHandler;
+  delete[] theTeamMessageChannel;
 }
 
-void GameController::setTeamInfos(const std::array<uint8_t, 2>& teamNumbers, const std::array<Settings::TeamColor, 2>& teamColors)
+void GameController::setTeamInfos(const std::array<TeamInfo, 2>& teamInfos)
 {
-  gameControllerData.teams[0].teamNumber = teamNumbers[0];
-  gameControllerData.teams[0].teamColor = teamColors[0];
-  gameControllerData.teams[1].teamNumber = teamNumbers[1];
-  gameControllerData.teams[1].teamColor = teamColors[1];
-  gameControllerData.kickingTeam = teamNumbers[0];
-  theSPLMessageHandler[0].startLocal(Settings::getPortForTeam(teamNumbers[0]), 12);
-  theSPLMessageHandler[1].startLocal(Settings::getPortForTeam(teamNumbers[1]), 12);
+  gameControllerData.teams[0].teamNumber = teamInfos[0].number;
+  gameControllerData.teams[0].fieldPlayerColor = teamInfos[0].fieldPlayerColor;
+  gameControllerData.teams[0].goalkeeperColor = teamInfos[0].goalkeeperColor;
+  gameControllerData.teams[1].teamNumber = teamInfos[1].number;
+  gameControllerData.teams[1].fieldPlayerColor = teamInfos[1].fieldPlayerColor;
+  gameControllerData.teams[1].goalkeeperColor = teamInfos[1].goalkeeperColor;
+  gameControllerData.kickingTeam = teamInfos[0].number;
+  theTeamMessageChannel[0].startLocal(Settings::getPortForTeam(teamInfos[0].number), 12);
+  theTeamMessageChannel[1].startLocal(Settings::getPortForTeam(teamInfos[1].number), 12);
 }
 
 void GameController::registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot)
@@ -61,7 +63,7 @@ void GameController::registerSimulatedRobot(int robot, SimulatedRobot& simulated
   static_assert(numOfRobots == SimulatedRobot::robotsPerTeam * 2);
   ASSERT(!robots[robot].simulatedRobot);
   robots[robot].simulatedRobot = &simulatedRobot;
-  if(robot % MAX_NUM_PLAYERS < robotsPlaying)
+  if(robot % MAX_NUM_PLAYERS < gameControllerData.playersPerTeam)
     robots[robot].info->penalty = PENALTY_NONE;
   robots[robot].lastPenalty = robots[robot].info->penalty;
   if(fieldDimensions.xPosOwnPenaltyMark == 0.f)
@@ -140,7 +142,7 @@ bool GameController::playing()
   gameControllerData.state = STATE_PLAYING;
 
   whistle.confidenceOfLastWhistleDetection = 2.f;
-  whistle.channelsUsedForWhistleDetection = 4;
+  whistle.channelsUsedForWhistleDetection = 2;
   whistle.lastTimeWhistleDetected = Time::getCurrentSystemTime();
   return true;
 }
@@ -174,21 +176,34 @@ bool GameController::competitionPhaseRoundrobin()
   return true;
 }
 
-bool GameController::competitionTypeNormal()
+bool GameController::competitionTypeChampionsCup()
 {
   if(gameControllerData.state != STATE_INITIAL)
     return false;
   gameControllerData.competitionType = COMPETITION_TYPE_NORMAL;
-  initTeams(6, 5, 1200);
+  initTeams(7, 1200);
   return true;
 }
 
-bool GameController::competitionType7v7()
+bool GameController::competitionTypeChallengeShield()
 {
   if(gameControllerData.state != STATE_INITIAL)
     return false;
-  gameControllerData.competitionType = COMPETITION_TYPE_7V7;
-  initTeams(7, 7, 1680);
+  gameControllerData.competitionType = COMPETITION_TYPE_NORMAL;
+  initTeams(5, 1200);
+  return true;
+}
+
+bool GameController::globalGameStuck(int side)
+{
+  if(gameControllerData.gamePhase != GAME_PHASE_NORMAL)
+    return false;
+  if(!(gameControllerData.state == STATE_PLAYING && gameControllerData.setPlay == SET_PLAY_NONE))
+    return false;
+  kickingTeamBeforeGoal = gameControllerData.kickingTeam;
+  gameControllerData.kickingTeam = gameControllerData.teams[1 - side].teamNumber;
+  kickOffReason = kickOffReasonGlobalGameStuck;
+  VERIFY(ready());
   return true;
 }
 
@@ -437,14 +452,17 @@ void GameController::update()
       if(r.info->penalty == PENALTY_NONE && r.simulatedRobot)
       {
         const bool isFirstTeam = i < numOfRobots / 2;
-        const float yMargin = std::min(r.lastPose.translation.y() - fieldDimensions.yPosRightPenaltyArea + footLength, fieldDimensions.yPosLeftPenaltyArea + footLength - r.lastPose.translation.y());
-        const float xMarginOwn = isFirstTeam ? (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength) : (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x());
-        const float xMarginOpponent = isFirstTeam ? (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x()) : (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength);
-        r.ownPenaltyAreaMargin = std::min(yMargin, xMarginOwn);
-        r.opponentPenaltyAreaMargin = std::min(yMargin, xMarginOpponent);
+        const float yMarginGoalArea = std::min(r.lastPose.translation.y() - fieldDimensions.yPosRightGoalArea + footLength, fieldDimensions.yPosLeftGoalArea + footLength - r.lastPose.translation.y());
+        const float yMarginPenaltyArea = std::min(r.lastPose.translation.y() - fieldDimensions.yPosRightPenaltyArea + footLength, fieldDimensions.yPosLeftPenaltyArea + footLength - r.lastPose.translation.y());
+        const float xMarginOwnGoalArea = isFirstTeam ? (r.lastPose.translation.x() - fieldDimensions.xPosOpponentGoalArea + footLength) : (fieldDimensions.xPosOwnGoalArea + footLength - r.lastPose.translation.x());
+        const float xMarginOwnPenaltyArea = isFirstTeam ? (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength) : (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x());
+        const float xMarginOpponentPenaltyArea = isFirstTeam ? (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x()) : (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength);
+        r.ownGoalAreaMargin = std::min(yMarginGoalArea, xMarginOwnGoalArea);
+        r.ownPenaltyAreaMargin = std::min(yMarginPenaltyArea, xMarginOwnPenaltyArea);
+        r.opponentPenaltyAreaMargin = std::min(yMarginPenaltyArea, xMarginOpponentPenaltyArea);
       }
       else
-        r.ownPenaltyAreaMargin = r.opponentPenaltyAreaMargin = -1.f;
+        r.ownGoalAreaMargin = r.ownPenaltyAreaMargin = r.opponentPenaltyAreaMargin = -1.f;
     }
   }
 
@@ -491,25 +509,18 @@ void GameController::update()
             return true;
         return false;
       };
-      auto inFullPenaltyArea = [&]
+      auto inFullOwnGoalArea = [&]
       {
+        if(gameControllerData.state != STATE_PLAYING)
+          return false;
         const bool isFirstTeam = i < numOfRobots / 2;
-        // Count the number of players which are deeper inside the respective penalty area.
+        // Count the number of players which are deeper inside the own goal area.
         // If more than 3 players are, this player must be illegal.
-        if(r.ownPenaltyAreaMargin >= 0.f)
+        if(r.ownGoalAreaMargin >= 0.f)
         {
           int counter = 0;
           for(int j = isFirstTeam ? 0 : numOfRobots / 2; j < (isFirstTeam ? numOfRobots / 2 : numOfRobots); ++j)
-            if(i != j && (robots[j].ownPenaltyAreaMargin > r.ownPenaltyAreaMargin || (robots[j].ownPenaltyAreaMargin == r.ownPenaltyAreaMargin && j < i)))
-              ++counter;
-          if(counter >= 3)
-            return true;
-        }
-        if(r.opponentPenaltyAreaMargin >= 0.f)
-        {
-          int counter = 0;
-          for(int j = isFirstTeam ? 0 : numOfRobots / 2; j < (isFirstTeam ? numOfRobots / 2 : numOfRobots); ++j)
-            if(i != j && (robots[j].opponentPenaltyAreaMargin > r.opponentPenaltyAreaMargin || (robots[j].opponentPenaltyAreaMargin == r.opponentPenaltyAreaMargin && j < i)))
+            if(i != j && (robots[j].ownGoalAreaMargin > r.ownGoalAreaMargin || (robots[j].ownGoalAreaMargin == r.ownGoalAreaMargin && j < i)))
               ++counter;
           if(counter >= 3)
             return true;
@@ -534,7 +545,7 @@ void GameController::update()
       if(automatic & bit(penalizeLeavingTheField) && !fieldDimensions.isInsideCarpet(r.lastPose.translation))
         VERIFY(penalty(i, leavingTheField));
       else if(automatic & bit(penalizeIllegalPosition) &&
-              (inOpponentHalfBeforeBallIsInPlay() || inPenaltyAreaDuringPenaltyKick() || inFullPenaltyArea() || inFreeKickArea()))
+              (inOpponentHalfBeforeBallIsInPlay() || inPenaltyAreaDuringPenaltyKick() || inFullOwnGoalArea() || inFreeKickArea()))
         VERIFY(penalty(i, illegalPosition));
     }
 
@@ -687,7 +698,7 @@ void GameController::update()
     gameControllerData.secondaryTime = static_cast<int16_t>(penaltyShotTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
   else if(gameControllerData.state == STATE_PLAYING && gameControllerData.setPlay != SET_PLAY_NONE)
     gameControllerData.secondaryTime = static_cast<int16_t>(freeKickTime - Time::getTimeSince(timeWhenSetPlayBegan) / 1000);
-  else if(gameControllerData.state == STATE_PLAYING && gameControllerData.gamePhase != GAME_PHASE_PENALTYSHOOT && kickOffTime >= Time::getTimeSince(timeWhenStateBegan) / 1000)
+  else if((automatic & bit(kickOffDelay)) && gameControllerData.state == STATE_PLAYING && gameControllerData.gamePhase != GAME_PHASE_PENALTYSHOOT && kickOffTime >= Time::getTimeSince(timeWhenStateBegan) / 1000)
     gameControllerData.secondaryTime = static_cast<int16_t>(kickOffTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
   else
     gameControllerData.secondaryTime = 0;
@@ -696,7 +707,7 @@ void GameController::update()
 
   for(int team = 0; team < 2; ++team)
   {
-    theSPLMessageHandler[team].receive();
+    theTeamMessageChannel[team].receive();
     while(!inTeamMessages.empty())
     {
       inTeamMessages.removeFront();
@@ -816,12 +827,12 @@ void GameController::getWhistle(Whistle& whistle)
   whistle = this->whistle;
 }
 
-void GameController::initTeams(const uint8_t teamSize, const int robotsPlaying, const uint16_t messageBudget)
+void GameController::initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget)
 {
-  this->robotsPlaying = robotsPlaying;
-  gameControllerData.playersPerTeam = teamSize;
+  gameControllerData.playersPerTeam = robotsPlaying;
   for(auto& teamInfo : gameControllerData.teams)
   {
+    teamInfo.goalkeeper = 1;
     teamInfo.messageBudget = messageBudget;
     for(int j = 0; j < MAX_NUM_PLAYERS; ++j)
       teamInfo.players[j].penalty = j >= robotsPlaying ? PENALTY_SUBSTITUTE

@@ -17,8 +17,8 @@ MODULE(RobotCameraMatrixProvider,
 {,
   REQUIRES(CameraCalibration),
   REQUIRES(CameraInfo),
-  REQUIRES(JointAngles),
   REQUIRES(RobotDimensions),
+  REQUIRES(RobotModel),
   PROVIDES(RobotCameraMatrix),
 });
 

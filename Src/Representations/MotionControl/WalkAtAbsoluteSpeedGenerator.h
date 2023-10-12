@@ -14,5 +14,5 @@
 
 STREAMABLE_WITH_BASE(WalkAtAbsoluteSpeedGenerator, MotionGenerator,
 {
-  BASE_HAS_FUNCTION,
+  FUNCTION(std::unique_ptr<MotionPhase>(const Pose2f& walkSpeed, const MotionPhase& lastPhase)) createPhaseToTarget,
 });

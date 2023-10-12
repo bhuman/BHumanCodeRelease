@@ -4,12 +4,12 @@
  * @author Florian Scholz
  */
 
-#include "Tools/Motion/InverseKinematic.h"
-#include "Tools/Math/Transformation.h"
 #include "LibLookActiveProvider.h"
+#include "Tools/Motion/InverseKinematic.h"
+#include "Debugging/Plot.h"
 #include "Math/Geometry.h"
 
-MAKE_MODULE(LibLookActiveProvider, behaviorControl);
+MAKE_MODULE(LibLookActiveProvider);
 
 void LibLookActiveProvider::update(LibLookActive& libLookActive)
 {
@@ -45,7 +45,7 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
      && (theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout || theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 1000)
      && theTeammatesBallModel.isValid)
   {
-    theBallPositionRelative = Transformation::fieldToRobot(theRobotPose, theTeammatesBallModel.position);
+    theBallPositionRelative = theRobotPose.inverse() * theTeammatesBallModel.position;
     theBallSpeedRelative = theTeammatesBallModel.velocity.rotated(-theRobotPose.rotation);
 
     teamBallIsUsed = true;
@@ -55,8 +55,11 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
   const bool forceBall = !ignoreBall && !ballPositionUnknown(onlyOwnBall) && (withBall || shouldLookAtBall()) && ballAnglesReachable();
 
   const Angle pan = calculatePan(forceBall);
+  PLOT("module:LibLookActiveProvider:pan", pan.toDegrees());
   const Angle tilt = fixTilt ? Angle(0.38f) : calculateTilt(forceBall, onlyOwnBall);
+  PLOT("module:LibLookActiveProvider:tilt", tilt.toDegrees());
   const Angle speed = calculateSpeed(forceBall, pan);
+  PLOT("module:LibLookActiveProvider:speed", speed.toDegrees());
 
   HeadTarget theTarget;
   theTarget.pan = pan;
@@ -117,7 +120,9 @@ Angle LibLookActiveProvider::calculateTilt(const bool forceBall, const bool only
     Angle tilt = panTiltUpperCam.y();
 
     //if can not use upper camera && upper camera is not near || lower camera is near && can not easily use upper camera
-    if((tilt > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max && std::abs(tilt - oldTilt) > cameraChoiceHysteresis) || (std::abs(panTiltLowerCam.y() - oldTilt) < cameraChoiceHysteresis && tilt + cameraChoiceHysteresis > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max))
+    if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < ballPositionUnknownTimeoutLowerCamera &&
+       ((tilt > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max && std::abs(tilt - oldTilt) > cameraChoiceHysteresis) ||
+        (std::abs(panTiltLowerCam.y() - oldTilt) < cameraChoiceHysteresis && tilt + cameraChoiceHysteresis > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max)))
       tilt = panTiltLowerCam.y();
     return tilt;
   }
@@ -144,7 +149,7 @@ bool LibLookActiveProvider::shouldLookAtBall() const
   if(!theGameState.isPlaying())
     return false;
 
-  const float distanceStrikerBallSquared = theLibTeam.getBallPosition(theLibTeam.strikerPlayerNumber).squaredNorm();
+  const float distanceStrikerBallSquared = theLibTeammates.getStrikerBallPosition().squaredNorm();
 
   return distanceStrikerBallSquared < sqr(200.f)
          || distanceStrikerBallSquared > sqr(1500.f)
@@ -158,20 +163,15 @@ bool LibLookActiveProvider::panReached(const Angle targetPan) const
   return std::abs(currentPan - targetPan) < 5_deg;
 }
 
-float LibLookActiveProvider::getTranslationOffset(float x) const
-{
-  return mapToRange(x, 0.f, 10000.f, pi, theCameraInfo.openingAngleWidth / 3.f);
-}
-
 Angle LibLookActiveProvider::clipPanToBall(const Angle pan) const
 {
-  Angle tolerance = theCameraInfo.openingAngleWidth / 3.f;
+  Angle tolerance = theCameraInfo.openingAngleWidth / 6.f;
   const Angle ballAngle = theBallPositionRelative.angle();
 
   if(teamBallIsUsed)
   {
     const float distance = (theTeammatesBallModel.position - theRobotPose.translation).norm();
-    tolerance += getTranslationOffset(distance);
+    tolerance += std::atan(teammatesBallModelError / distance);
   }
   return Rangea(ballAngle - tolerance, ballAngle + tolerance).limit(pan);
 }

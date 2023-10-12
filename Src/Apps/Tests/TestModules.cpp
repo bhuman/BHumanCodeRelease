@@ -8,18 +8,18 @@
 
 #include "TestModules.h"
 
-MAKE_MODULE(Ac, infrastructure);
-MAKE_MODULE(Bc, infrastructure);
-MAKE_MODULE(Cc, infrastructure);
-MAKE_MODULE(Dc, infrastructure);
-MAKE_MODULE(Ec, infrastructure);
+MAKE_MODULE(Ac);
+MAKE_MODULE(Bc);
+MAKE_MODULE(Cc);
+MAKE_MODULE(Dc);
+MAKE_MODULE(Ec);
 
-MAKE_MODULE(Am, infrastructure);
-MAKE_MODULE(Bm, infrastructure);
-MAKE_MODULE(Cm, infrastructure);
+MAKE_MODULE(Am);
+MAKE_MODULE(Bm);
+MAKE_MODULE(Cm);
 
-MAKE_MODULE(At, infrastructure);
-MAKE_MODULE(Bt, infrastructure);
-MAKE_MODULE(Ct, infrastructure);
-MAKE_MODULE(Dt, infrastructure);
-MAKE_MODULE(Et, infrastructure);
+MAKE_MODULE(At);
+MAKE_MODULE(Bt);
+MAKE_MODULE(Ct);
+MAKE_MODULE(Dt);
+MAKE_MODULE(Et);

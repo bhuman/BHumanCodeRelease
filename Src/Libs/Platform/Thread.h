@@ -64,9 +64,10 @@ public:
   /**
    * The function stops the thread.
    * It first signals its end by setting running to false. If the thread
-   * does not terminate by itself, it will be killed after one second.
+   * does not terminate by itself, it will be killed after a while.
+   * @param timeout How many ms to wait before the thread is killed.
    */
-  void stop();
+  void stop(unsigned timeout = 10000);
 
   /**
    * The function announces that the thread shall terminate.

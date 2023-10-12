@@ -4,13 +4,15 @@
  * This file implements a module that determines which field areas are illegal to enter.
  *
  * @author Arne Hasselbring
+ * @author Fynn Böse
  */
 
 #include "IllegalAreaProvider.h"
+#include "Tools/BehaviorControl/Strategy/Role.h"
 #include "Math/BHMath.h"
 #include <algorithm>
 
-MAKE_MODULE(IllegalAreaProvider, behaviorControl);
+MAKE_MODULE(IllegalAreaProvider);
 
 void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
 {
@@ -35,6 +37,16 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     return isPositionIllegal(illegalAreas.anticipatedIllegal, positionOnField, margin);
   };
 
+  illegalAreas.willPositionBeIllegalIn = [this, &illegalAreas](const Vector2f& positionOnField, float margin, float duration)
+  {
+    if(illegalAreas.anticipatedTimestamp < theFrameInfo.time)
+      return illegalAreas.isPositionIllegal(positionOnField, margin);
+    // without the test this produces an overflow as both are unsigned
+    return illegalAreas.anticipatedTimestamp - theFrameInfo.time <= duration &&
+           (illegalAreas.willPositionBeIllegal(positionOnField, margin) ||
+            illegalAreas.isPositionIllegal(positionOnField, margin));
+  };
+
   illegalAreas.isSameIllegalArea = [this, &illegalAreas](const Vector2f& positionOnField, const Vector2f& targetOnField, float margin)
   {
     return isSameIllegalArea(illegalAreas.illegal, positionOnField, targetOnField, margin);
@@ -50,22 +62,20 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     return;
   }
 
-  // The rules don't make a difference between the goalkeeper and field players, but we want the goalkeeper to always be able to enter the own penalty area.
-  if(!theGameState.isGoalkeeper() && theLibTeammates.nonKeeperTeammatesInOwnPenaltyArea >= 2)
-    illegalAreas.illegal |= bit(IllegalAreas::ownPenaltyArea);
-
-  if(theLibTeammates.teammatesInOpponentPenaltyArea >= 3)
-    illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
+  // The rules don't make a difference between the goalkeeper and field players, but we want the goalkeeper to always be able to enter the own goal area.
+  const bool ownGoalAreaIsFull = !theGameState.isGoalkeeper() && theLibTeammates.nonKeeperTeammatesInOwnGoalArea >= 2;
 
   if(theGameState.isReady())
   {
     illegalAreas.anticipatedTimestamp = theGameState.timeWhenStateEnds;
     illegalAreas.anticipatedIllegal |= bit(IllegalAreas::borderStrip);
+    if(ownGoalAreaIsFull)
+      illegalAreas.anticipatedIllegal |= bit(IllegalAreas::ownGoalArea);
     if(theGameState.isPenaltyKick())
     {
       if(theGameState.isForOwnTeam())
       {
-        if(theLibTeammates.teammatesInOpponentPenaltyArea >= 1)
+        if(!Role::isActiveRole(theStrategyStatus.role))
           illegalAreas.anticipatedIllegal |= bit(IllegalAreas::opponentPenaltyArea);
       }
       else
@@ -81,11 +91,13 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
   else if(theGameState.isSet())
   {
     illegalAreas.illegal |= bit(IllegalAreas::borderStrip);
+    if(ownGoalAreaIsFull)
+      illegalAreas.illegal |= bit(IllegalAreas::ownGoalArea);
     if(theGameState.isPenaltyKick())
     {
       if(theGameState.isForOwnTeam())
       {
-        if(theLibTeammates.teammatesInOpponentPenaltyArea >= 1)
+        if(!Role::isActiveRole(theStrategyStatus.role))
           illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
       }
       else
@@ -100,6 +112,8 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
   }
   else if(theGameState.isPlaying())
   {
+    if(ownGoalAreaIsFull)
+      illegalAreas.illegal |= bit(IllegalAreas::ownGoalArea);
     if(theGameState.isPenaltyKick())
     {
       // "During the Penalty Kick: [...] 3. All robots must be within the field-of-play. That is, robots may not be outside the field lines, but within the field border."
@@ -108,7 +122,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
 
       if(theGameState.isForOwnTeam())
       {
-        if(theLibTeammates.teammatesInOpponentPenaltyArea >= 1)
+        if(!Role::isActiveRole(theStrategyStatus.role))
           illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
       }
       else
@@ -127,13 +141,19 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     }
   }
 
-  draw(illegalAreas.illegal);
+  draw(illegalAreas.illegal, illegalAreas.anticipatedIllegal);
 }
 
 unsigned IllegalAreaProvider::getIllegalAreas(unsigned illegal, const Vector2f& positionOnField, float margin) const
 {
   unsigned illegalAreas = 0u;
   const float halfLineWidth = theFieldDimensions.fieldLinesWidth * 0.5f;
+  if((illegal & bit(IllegalAreas::ownGoalArea)) &&
+     (positionOnField.x() < theFieldDimensions.xPosOwnGoalArea + halfLineWidth + margin &&
+      positionOnField.x() > theFieldDimensions.xPosOwnGroundLine - halfLineWidth - margin &&
+      positionOnField.y() > theFieldDimensions.yPosRightGoalArea - halfLineWidth - margin &&
+      positionOnField.y() < theFieldDimensions.yPosLeftGoalArea + halfLineWidth + margin))
+    illegalAreas |= bit(IllegalAreas::ownGoalArea);
   if((illegal & bit(IllegalAreas::ownPenaltyArea)) &&
      (positionOnField.x() < theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth + margin &&
       positionOnField.x() > theFieldDimensions.xPosOwnGroundLine - halfLineWidth - margin &&
@@ -180,45 +200,62 @@ bool IllegalAreaProvider::isSameIllegalArea(unsigned illegal, const Vector2f& po
   return getIllegalAreas(illegal, positionOnField, margin) & getIllegalAreas(illegal, targetOnField, margin);
 }
 
-void IllegalAreaProvider::draw(unsigned illegal) const
+void IllegalAreaProvider::draw(unsigned illegal, unsigned anticipatedIllegal) const
 {
   COMPLEX_DRAWING("module:IllegalAreaProvider:illegalAreas")
   {
     const float halfLineWidth = theFieldDimensions.fieldLinesWidth * 0.5f;
     const ColorRGBA brushColor(255, 0, 0, 50);
 
-    if(illegal & bit(IllegalAreas::ownPenaltyArea))
+    ColorRGBA color;
+    if (anticipatedIllegal) {
+      color = ColorRGBA::yellow;
+    }
+    else {
+      color = ColorRGBA::red;
+    }
+
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::ownGoalArea))
+    {
+      const std::vector<Vector2f> illegalPolygon = {Vector2f(theFieldDimensions.xPosOwnGoalArea + halfLineWidth, theFieldDimensions.yPosRightGoalArea - halfLineWidth),
+                                                    Vector2f(theFieldDimensions.xPosOwnGoalArea + halfLineWidth, theFieldDimensions.yPosLeftGoalArea + halfLineWidth),
+                                                    Vector2f(theFieldDimensions.xPosOwnGroundLine - halfLineWidth, theFieldDimensions.yPosLeftGoalArea + halfLineWidth),
+                                                    Vector2f(theFieldDimensions.xPosOwnGroundLine - halfLineWidth, theFieldDimensions.yPosRightGoalArea - halfLineWidth)};
+
+      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+    }
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::ownPenaltyArea))
     {
       const std::vector<Vector2f> illegalPolygon = {Vector2f(theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOwnGroundLine - halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOwnGroundLine - halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth)};
-      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, brushColor);
+      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
-    if(illegal & bit(IllegalAreas::opponentPenaltyArea))
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::opponentPenaltyArea))
     {
       const std::vector<Vector2f> illegalPolygon = {Vector2f(theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOpponentGroundLine + halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
                                                     Vector2f(theFieldDimensions.xPosOpponentGroundLine + halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth)};
-      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, brushColor);
+      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
-    if(illegal & bit(IllegalAreas::opponentHalf))
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::opponentHalf))
     {
       // TODO: Exclude center circle + halfLineWidth
       const std::vector<Vector2f> illegalPolygon = {Vector2f(theFieldDimensions.xPosHalfWayLine - halfLineWidth, theFieldDimensions.yPosRightSideline),
                                                     Vector2f(theFieldDimensions.xPosHalfWayLine - halfLineWidth, theFieldDimensions.yPosLeftSideline),
                                                     Vector2f(theFieldDimensions.xPosOpponentGroundLine + halfLineWidth, theFieldDimensions.yPosLeftSideline),
                                                     Vector2f(theFieldDimensions.xPosOpponentGroundLine + halfLineWidth, theFieldDimensions.yPosRightSideline)};
-      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, brushColor);
+      POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
-    if(illegal & bit(IllegalAreas::centerCircle))
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::centerCircle))
     {
-      CIRCLE("module:IllegalAreaProvider:illegalAreas", 0.f, 0.f, theFieldDimensions.centerCircleRadius + halfLineWidth, 40, Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, brushColor);
+      CIRCLE("module:IllegalAreaProvider:illegalAreas", 0.f, 0.f, theFieldDimensions.centerCircleRadius + halfLineWidth, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
-    if(illegal & bit(IllegalAreas::ballArea))
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::ballArea))
     {
-      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldBall.recentBallPositionOnField().x(), theFieldBall.recentBallPositionOnField().y(), freeKickClearAreaRadius, 40, Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, brushColor);
+      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldBall.recentBallPositionOnField().x(), theFieldBall.recentBallPositionOnField().y(), freeKickClearAreaRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
   }
 }

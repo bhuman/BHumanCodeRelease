@@ -26,8 +26,10 @@ public:
    * @param loadAndSaveOutput Whether the view stores and restores its output
    */
   ConsoleView(const QString& fullName, ConsoleRoboCupCtrl& console, bool loadAndSaveOutput = false) :
-    fullName(fullName), icon(":/Icons/textfield.png"), console(console), loadAndSaveOutput(loadAndSaveOutput)
-  {}
+    fullName(fullName), icon(":/Icons/icons8-text-input-form-50.png"), console(console), loadAndSaveOutput(loadAndSaveOutput)
+  {
+    icon.setIsMask(true);
+  }
 
   void clear();
   void printLn(const QString& text);

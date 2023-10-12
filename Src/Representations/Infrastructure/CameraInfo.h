@@ -45,6 +45,12 @@ STREAMABLE(CameraInfo,
 
   void updateFocalLength();
 
+  /**
+   * Returns the name of the thread associated with this camera.
+   * @return The name of the thread.
+   */
+  std::string getThreadName() const;
+
   void draw() const;
 
   void onRead() { updateFocalLength(); },

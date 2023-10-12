@@ -13,22 +13,18 @@
 #include "Representations/BehaviorControl/ExpectedGoals.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Tools/BehaviorControl/SectorWheel.h"
 
 MODULE(ExpectedGoalsProvider,
 {,
   REQUIRES(BallSpecification),
   REQUIRES(FieldDimensions),
-  REQUIRES(FrameInfo),
-  REQUIRES(ObstacleModel),
-  REQUIRES(RobotPose),
+  REQUIRES(GlobalOpponentsModel),
   PROVIDES(ExpectedGoals),
   DEFINES_PARAMETERS(
   {,
-    (float)(0.01f) minValue, /** < Minimum probability of a successful goal shot in the worst situation possible. */
+    (float)(0.01f) minValue, /**< Minimum probability of a successful goal shot in the worst situation possible. */
     (Angle)(0_deg) minOpeningAngle, /**< Opening angle for the goal shot line to be considered blocked */
     (Angle)(30_deg) maxOpeningAngle, /**< Opening angle for the goal shot line to be considered free */
     (float)(100.f) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */

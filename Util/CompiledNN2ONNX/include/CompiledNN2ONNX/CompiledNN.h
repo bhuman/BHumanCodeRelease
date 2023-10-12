@@ -7,11 +7,11 @@
 #pragma once
 
 #include <algorithm>
+#include <span>
 #include <asmjit/asmjit.h>
 #include <onnxruntime_cxx_api.h>
 #ifdef MACOS
 #include <coreml_provider_factory.h>
-#include <span>
 #endif
 #include "Model.h"
 
@@ -34,10 +34,11 @@ namespace NeuralNetworkONNX
   {
     // On Windows, using the global environment deadlocks when ending the Simulator.
     // Therefore, a local environment is used.
-#ifdef WINDOWS
+#if defined WINDOWS || defined TARGET_ROBOT
     std::unique_ptr<Ort::Env> env;
 #endif
-    Ort::Session session{nullptr}; /**< The session for running a neural network. */
+    Ort::Session session {nullptr}; /**< The session for running a neural network. */
+    Ort::AllocatorWithDefaultOptions allocator; /**< The allocator that handles memory. */
     std::vector<const char*> inputNames; /**< The input names required by Ort::Session::Run. */
     std::vector<const char*> outputNames; /**< The input names required by Ort::Session::Run. */
     std::vector<std::vector<int64_t>> inputDims; /**< The dimensions (shapes) required to support Tensor::rank and Tensor::dims for each input. */
@@ -61,6 +62,27 @@ namespace NeuralNetworkONNX
       return environment;
     }
 
+    /** Clear all buffers. */
+    void clear()
+    {
+      for(const char* inputName : inputNames)
+        allocator.Free(const_cast<char*>(inputName));
+      for(unsigned char* uint8Buffer : uint8Buffers)
+        delete[] uint8Buffer;
+      for(const char* outputName : outputNames)
+        allocator.Free(const_cast<char*>(outputName));
+
+      inputNames.clear();
+      inputDims.clear();
+      inputSizes.clear();
+      inputTensors.clear();
+      uint8Buffers.clear();
+      outputNames.clear();
+      outputDims.clear();
+      outputSizes.clear();
+      outputTensors.clear();
+    }
+
   public:
     /**
      * A class that simulates the behavior of tensors returned by the
@@ -68,10 +90,7 @@ namespace NeuralNetworkONNX
      * methods data(), rank(), and dims() as well as array access,
      * iteration, and copying the data from one tensor to another.
      */
-    class Tensor
-#ifdef MACOS
-    : public std::span<float>
-#endif
+    class Tensor : public std::span<float>
     {
       float* tensor; /**< The actual tensor data. */
       const std::vector<int64_t>& dimensions; /**< The dimensions (shape) of the tensor. */
@@ -83,11 +102,9 @@ namespace NeuralNetworkONNX
        * @param dimensions The dimensions (shape) of the tensor.
        */
       Tensor(float* tensor, size_t size, const std::vector<int64_t>& dimensions)
-        :
-#ifdef MACOS
-          span(tensor, size),
-#endif
-          tensor(tensor), dimensions(dimensions) {static_cast<void>(size);}
+        : span(tensor, size),
+
+        tensor(tensor), dimensions(dimensions) {static_cast<void>(size);}
 
     public:
       /**
@@ -109,7 +126,6 @@ namespace NeuralNetworkONNX
        */
       unsigned dims(size_t dimension) const {return static_cast<unsigned>(dimensions[dimension + 1]);}
 
-#ifdef MACOS
       /**
        * Copies the tensor data from another tensor to this one.
        * @param other The other tensor. It must have the same size as this one.
@@ -120,18 +136,16 @@ namespace NeuralNetworkONNX
         std::copy(other.begin(), other.end(), begin());
         return *this;
       }
-#else
-      // Not implemented.
-      Tensor& operator=(const Tensor&) = delete;
-#endif
 
       friend class CompiledNN; /**< CompiledNN calls the private constructor. */
     };
 
     /** Constructor. The parameter is ignored. */
-    explicit CompiledNN(asmjit::JitRuntime* = nullptr) 
+    explicit CompiledNN(asmjit::JitRuntime* = nullptr)
     {
-#ifdef WINDOWS
+#ifdef TARGET_ROBOT
+      env = std::make_unique<Ort::Env>();
+#elif defined WINDOWS
       OrtThreadingOptions* threadingOptions = nullptr;
       Ort::GetApi().CreateThreadingOptions(&threadingOptions);
       env = std::make_unique<Ort::Env>(threadingOptions);
@@ -142,8 +156,7 @@ namespace NeuralNetworkONNX
     /** The destructor frees all buffers. */
     ~CompiledNN()
     {
-      for(unsigned char* uint8Buffer : uint8Buffers)
-        delete[] uint8Buffer;
+      clear();
     }
 
     /**
@@ -154,9 +167,13 @@ namespace NeuralNetworkONNX
      */
     void compile(const Model& model, const CompilationSettings& settings = CompilationSettings())
     {
+      clear();
+
       // Create an ONNX session. Use a global thread pool rather than local pools.
       Ort::SessionOptions sessionOptions;
+#ifndef TARGET_ROBOT
       sessionOptions.DisablePerSessionThreads();
+#endif
 #ifdef MACOS
       if(settings.useCoreML)
         Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CoreML(sessionOptions, 0));
@@ -168,11 +185,11 @@ namespace NeuralNetworkONNX
       std::wstring filename(model.filename.size(), L' ');
       std::copy(model.filename.begin(), model.filename.end(), filename.begin());
       session = Ort::Session(*env, filename.c_str(), sessionOptions);
+#elif defined TARGET_ROBOT
+      session = Ort::Session(*env, model.filename.c_str(), sessionOptions);
 #else
       session = Ort::Session(environment(), model.filename.c_str(), sessionOptions);
 #endif
-      Ort::AllocatorWithDefaultOptions allocator;
-
       // Create the names, tensors, dimensions, sizes, and buffers for all inputs.
       for(size_t i = 0; i < session.GetInputCount(); i++)
       {

@@ -193,8 +193,10 @@ private:
 };
 
 CABSLBehaviorView::CABSLBehaviorView(const QString& fullName, RobotConsole& console, const ActivationGraph& activationGraph, const unsigned& timestamp) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), activationGraph(activationGraph), timestamp(timestamp)
-{}
+  fullName(fullName), icon(":/Icons/icons8-hierarchy-50.png"), console(console), activationGraph(activationGraph), timestamp(timestamp)
+{
+  icon.setIsMask(true);
+}
 
 SimRobot::Widget* CABSLBehaviorView::createWidget()
 {

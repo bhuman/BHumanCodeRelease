@@ -7,9 +7,8 @@
  */
 #pragma once
 
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Streaming/Enum.h"
 #include "Math/Eigen.h"
+#include "Streaming/Enum.h"
 #include "Tools/Modeling/Obstacle.h"
 
 /**
@@ -19,12 +18,8 @@
  * foot bumper contact.
  */
 
-STREAMABLE(ObstacleModel, COMMA public BHumanMessageParticle<idObstacleModel>
+STREAMABLE(ObstacleModel,
 {
-  /** BHumanMessageParticle functions */
-  void operator>>(BHumanMessage& m) const override;
-  void operator<<(const BHumanMessage& m) override;
-
   ObstacleModel() = default;
   void draw() const;
   void verify() const,

@@ -43,6 +43,8 @@ struct Row
 
 TimeWidget::TimeWidget(TimeView& timeView) : timeView(timeView)
 {
+  setFocusPolicy(Qt::StrongFocus);
+
   table = new QTableWidget();
   table->setColumnCount(4);
   QStringList headerNames;
@@ -109,7 +111,7 @@ void TimeWidget::update()
     lastUpdate = Time::getCurrentSystemTime();
 
     // if timing info is lost for more than 1s, clear timing table
-    if(timeView.console.logFile == "" && lastUpdate > lastTimeInfoTimestamp + 1000 && table->rowCount() > 0)
+    if(timeView.console.mode != SystemCall::logFileReplay && lastUpdate > lastTimeInfoTimestamp + 1000 && table->rowCount() > 0)
     {
       table->setRowCount(0);
       items.clear();
@@ -131,14 +133,14 @@ void TimeWidget::update()
 
     table->setUpdatesEnabled(false);
     table->setSortingEnabled(false);//disable sorting while updating to avoid race conditions
-    for(const auto& infoPair : timeView.info.infos)
+    for(const auto& [id, info] : timeView.info.infos)
     {
-      std::string name = timeView.info.getName(infoPair.first);
+      std::string name = timeView.info.getName(id);
       Row* currentRow = nullptr;
-      if(items.find(infoPair.first) != items.end())
+      if(items.find(id) != items.end())
       {
         //already know this one
-        currentRow = items[infoPair.first];
+        currentRow = items[id];
       }
       else
       {
@@ -154,12 +156,12 @@ void TimeWidget::update()
         table->setItem(rowCount, 1, currentRow->min);
         table->setItem(rowCount, 2, currentRow->max);
         table->setItem(rowCount, 3, currentRow->avg);
-        items[infoPair.first] = currentRow;
+        items[id] = currentRow;
       }
       float minTime = -1, maxTime = -1, avgTime = -1;
-      timeView.info.getStatistics(infoPair.second, minTime, maxTime, avgTime);
+      timeView.info.getStatistics(info, minTime, maxTime, avgTime);
       // this row timed out, remove it from the list
-      if(infoPair.second.timestamp + 1000 < lastUpdate)
+      if(info.timestamp + 1000 < lastUpdate)
         maxTime = 0;
       currentRow->avg->setText(QString::number(avgTime));
       currentRow->min->setText(QString::number(minTime));
@@ -192,7 +194,9 @@ QMenu* TimeWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Timing"));
 
-  QAction* copyAction = menu->addAction(QIcon(":/Icons/page_copy.png"), tr("&Copy"));
+  QIcon copyIcon(":/Icons/icons8-copy-to-clipboard-50.png");
+  copyIcon.setIsMask(true);
+  QAction* copyAction = menu->addAction(copyIcon, tr("&Copy"));
   copyAction->setShortcut(QKeySequence(QKeySequence::Copy));
   copyAction->setStatusTip(tr("Copy the timing data to the clipboard"));
   connect(copyAction, &QAction::triggered, this, &TimeWidget::copy);
@@ -211,34 +215,30 @@ void TimeWidget::copy()
     return;
   std::sort(indices.begin(), indices.end());
 
-  QModelIndex previous = indices.first();
-  indices.removeFirst();
-  QString selected_text;
-  QModelIndex current;
-
-  Q_FOREACH(current, indices)
+  const auto first = indices.takeFirst();
+  QString selectedText = table->model()->data(first).toString();
+  auto previousRow = first.row();
+  for(const QModelIndex& current : indices)
   {
-    QVariant data = table->model()->data(previous);
-    QString text = data.toString();
-    selected_text.append(text);
-
-    // Add last character for this element based on row or element change
-    if(current.row() != previous.row())
-      selected_text.append(QLatin1Char('\n'));
+    // Add separator for this element based on row or element change
+    if(current.row() != previousRow)
+    {
+      previousRow = current.row();
+      selectedText.append(QLatin1Char('\n'));
+    }
     else
-      selected_text.append(";");
-    previous = current;
+      selectedText.append(";");
+    selectedText.append(table->model()->data(current).toString());
   }
 
-  // add last element
-  selected_text.append(table->model()->data(current).toString());
-
-  QApplication::clipboard()->setText(selected_text);
+  QApplication::clipboard()->setText(selectedText);
 }
 
 TimeView::TimeView(const QString& fullName, RobotConsole& console, const TimeInfo& info) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), info(info)
-{}
+  fullName(fullName), icon(":/Icons/icons8-stopwatch-50.png"), console(console), info(info)
+{
+  icon.setIsMask(true);
+}
 
 SimRobot::Widget* TimeView::createWidget()
 {

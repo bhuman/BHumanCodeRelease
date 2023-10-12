@@ -74,7 +74,7 @@ ENUM(ConditionVar,
   HYPDifference, // Different of requested and measured HYP value
   FootSupportVal, // Support foot check
   BreakUp, // Motion would be aborted in this motion frames
-  ComOutOfSupportPolygonX, // Negativ values -> inside, Positive values -> outside. Distance in mm to the nearest edge
+  ComOutOfSupportPolygonX, // Negative values -> inside, Positive values -> outside. Distance in mm to the nearest edge
   LyingOnArmsFront,
   TryCounter,
 });
@@ -117,7 +117,7 @@ STREAMABLE(JointCompensationParams,
 {,
   (Joints::Joint)(Joints::headYaw) jointDelta, // The joint that is stuck and needs compensation
   (bool)(false) hipPitchDifferenceCompensation, // Special case compensation, which ignores the other values
-  (Rangea) range, // Scale from minVal to maxVal (even if minVal > maxVal). If both have differnt signs
+  (Rangea) range, // Scale from minVal to maxVal (even if minVal > maxVal). If both have different signs
   // scale from 0 to minVal and from 0 to maxVal and take the higher percent value
   (std::vector<JointPair>) jointPairs, // The joints used for compensation
   (bool)(false) predictJointDiff, // Predict the angle of jointDelta
@@ -170,6 +170,7 @@ namespace KeyframeMotionBlockID
     backTipOver,
     backTipOverReset,
     recover,
+    recoverBackStaticArms,
     recoverFront,
     recoverBack,
     recoverSlow,
@@ -532,7 +533,7 @@ protected:
                lineJointRequest, // joint angles from the config for the current keyframe
                jointRequestOutput; // the generated joint request for the current frame
 
-  RingBuffer<JointAngles, 4> pastJointAnglesAngles;
+  RingBuffer<JointAngles, 4> pastJointAnglesAngles; // TODO reduce to 3 or even 2? Last JointRequest is added in the current frame. The current JointRequest in the next motion frame.
 
   // Which joints were used for balancing from the previous keyframe
   std::vector<Joints::Joint> jointsBalanceY,

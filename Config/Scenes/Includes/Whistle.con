@@ -17,6 +17,4 @@ vpd samples module:WhistleRecognizer:samples3 orange
 echo set module:WhistleRecognizer:select newWhistle
 echo dr module:WhistleRecognizer:record
 get parameters:WhistleRecognizer
-vi module:WhistleRecognizer:spectra Audio spectra
-
-vd representation:Whistle
+for Audio vi module:WhistleRecognizer:spectra spectra

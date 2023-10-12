@@ -9,11 +9,10 @@
 #include "BallDropInLocator.h"
 #include "Debugging/DebugDrawings.h"
 #include "Math/BHMath.h"
-#include "Tools/Math/Transformation.h"
 
 #include <algorithm>
 
-MAKE_MODULE(BallDropInLocator, modeling);
+MAKE_MODULE(BallDropInLocator);
 
 void BallDropInLocator::update(BallDropInModel& ballDropInModel)
 {
@@ -89,7 +88,7 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
   }
   else if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 8000)
   {
-    ballPositionOnField = Transformation::robotToField(theRobotPose, theBallModel.estimate.position);
+    ballPositionOnField = theRobotPose * theBallModel.estimate.position;
     ballVelocityOnField = theBallModel.estimate.velocity;
     ballVelocityOnField.rotate(theRobotPose.rotation);
   }
@@ -118,6 +117,7 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
       const Geometry::Line sideline(Vector2f(0.f, movingToLeft ? (theFieldDimensions.yPosLeftSideline + offset) : (theFieldDimensions.yPosRightSideline - offset)), Vector2f(1.f, 0.f));
       const Geometry::Line groundLine(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGroundLine + offset) : (theFieldDimensions.xPosOwnGroundLine - offset), 0.f), Vector2f(0.f, 1.f));
       const Geometry::Line ballDirection(ballPositionOnField, ballVelocityOnField);
+      ballDropInModel.ballDirection = ballDirection.direction;
       Vector2f intersection;
       if(Geometry::getIntersectionOfLines(ballDirection, sideline, intersection) &&
          intersection.x() >= theFieldDimensions.xPosOwnGroundLine - offset && intersection.x() <= theFieldDimensions.xPosOpponentGroundLine + offset)

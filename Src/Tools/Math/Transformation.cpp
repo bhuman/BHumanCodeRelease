@@ -7,27 +7,11 @@
  */
 
 #include "Transformation.h"
-#include "Math/RotationMatrix.h"
+#include "Math/Pose3f.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 
 static constexpr float MAX_DIST_ON_FIELD = 142127.f; // Human soccer field diagonal
-
-Vector2f Transformation::robotToField(const Pose2f& rp, const Vector2f& relPos)
-{
-  return rp * relPos;
-}
-
-Vector2f Transformation::fieldToRobot(const Pose2f& rp, const Vector2f& fieldCoord)
-{
-  // return rp.inverse * fieldCoord; would be slower
-  const float invRotation = -rp.rotation;
-  const float s = std::sin(invRotation);
-  const float c = std::cos(invRotation);
-  const float x = rp.translation.x();
-  const float y = rp.translation.y();
-  return Vector2f(c * (fieldCoord.x() - x) - s * (fieldCoord.y() - y), s * (fieldCoord.x() - x) + c * (fieldCoord.y() - y));
-}
 
 bool Transformation::imageToRobot(const Vector2f& pointInImage, const CameraMatrix& cameraMatrix,
                                   const CameraInfo& cameraInfo, Vector2f& relativePosition)

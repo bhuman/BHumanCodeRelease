@@ -13,7 +13,7 @@ public:
   AnnotationManager();
   AnnotationManager(const AnnotationManager&) = delete;
 
-  void addAnnotation();
+  MessageQueue::OutBinary add();
   MessageQueue& getOut();
 
 private:

@@ -3,29 +3,14 @@
 
 #include <pthread.h>
 
-#ifdef MACOS
-static struct Helper
-{
-  int basePriority;
-
-  Helper()
-  {
-    int policy;
-    sched_param param;
-    VERIFY(!pthread_getschedparam(pthread_self(), &policy, &param));
-    basePriority = param.sched_priority;
-  }
-} helper;
-#endif
-
 thread_local Thread* Thread::instance = nullptr;
 
-void Thread::stop()
+void Thread::stop(unsigned timeout)
 {
   running = false;
   if(thread && thread->joinable())
   {
-    if(!terminated.wait(10000))
+    if(!terminated.wait(timeout))
       pthread_cancel(thread->native_handle());
     thread->join();
     delete thread;
@@ -77,11 +62,7 @@ void Thread::changePriority()
         VERIFY(!pthread_setschedparam(thread->native_handle(), SCHED_OTHER, &param));
         break;
       default:
-        param.sched_priority = priority
-#ifdef MACOS
-        + helper.basePriority
-#endif
-        ;
+        param.sched_priority = priority;
         VERIFY(!pthread_setschedparam(thread->native_handle(), SCHED_FIFO, &param));
     }
   }
@@ -89,16 +70,8 @@ void Thread::changePriority()
 
 void Thread::nameCurrentThread(const std::string& name)
 {
-#ifdef LINUX
   char cname[16] = "";
-#else
-  char cname[64] = "";
-#endif
   name.copy(cname, sizeof(cname) - 1);
   cname[sizeof(cname) - 1] = '\0';
-#ifdef LINUX
   VERIFY(!pthread_setname_np(pthread_self(), cname));
-#else
-  VERIFY(!pthread_setname_np(cname));
-#endif
 }

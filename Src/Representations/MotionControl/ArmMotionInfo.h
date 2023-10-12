@@ -17,4 +17,5 @@ STREAMABLE_WITH_BASE(ArmMotionInfo, ArmMotionRequest,
   },
 
   (ENUM_INDEXED_ARRAY(bool, Arms::Arm))({false, false}) isFree,
+  (ENUM_INDEXED_ARRAY(bool, Arms::Arm))({false, false}) isFinished,
 });

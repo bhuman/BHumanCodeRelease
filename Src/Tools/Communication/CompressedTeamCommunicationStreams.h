@@ -452,6 +452,8 @@ private:
 
   void select(const char* name, int type, const char* enumType = nullptr) override;
   void deselect() override;
+
+  friend struct BallModel;
 };
 
 class CompressedTeamCommunicationOut : public Out, public CompressedTeamCommunication::Base

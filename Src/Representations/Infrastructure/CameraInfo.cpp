@@ -19,6 +19,13 @@ void CameraInfo::updateFocalLength()
   focalLengthHeightInv = 1.f / focalLengthHeight;
 }
 
+std::string CameraInfo::getThreadName() const
+{
+  std::string name = TypeRegistry::getEnumName(camera);
+  name[0] &= ~0x20;
+  return name;
+}
+
 void CameraInfo::draw() const
 {
   DECLARE_DEBUG_DRAWING3D("FieldOfView", "camera");

@@ -41,7 +41,7 @@ class PenaltyStrikerGoToBallAndKickImpl : public PenaltyStrikerGoToBallAndKickIm
       {
         theLookAtBallSkill();
         theWalkToPointSkill({.target = p.kickPose,
-                             .speed = p.walkSpeed,
+                             .speed = {p.walkSpeed, p.walkSpeed, p.walkSpeed},
                              .rough = true,
                              .disableObstacleAvoidance = true,
                              .disableAligning = true,

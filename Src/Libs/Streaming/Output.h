@@ -39,8 +39,7 @@
   while(false)
 #else
 #include "Streaming/Global.h"
-#include "Streaming/OutMessage.h"
-#include "Streaming/OutStreams.h"
+#include "Streaming/MessageQueue.h"
 
 /**
  * A macro for sending debug messages.
@@ -57,12 +56,7 @@
  * </pre>
  */
 #define OUTPUT(type, format, expression) \
-  do \
-  { \
-    Global::getDebugOut().format << expression; \
-    Global::getDebugOut().finishMessage(type); \
-  } \
-  while(false)
+  Global::getDebugOut().format(type) << expression
 
 /**
  * Shortcut for outputting text messages.

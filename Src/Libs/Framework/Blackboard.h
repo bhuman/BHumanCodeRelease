@@ -92,8 +92,9 @@ public:
       if(HasReadWrite::test(dynamic_cast<T*>(&*entry.data)))
         entry.reset = [](Streamable* data)
       {
-        dynamic_cast<T*>(data)->~T();
-        new(dynamic_cast<T*>(data)) T();
+        T* t = dynamic_cast<T*>(data);
+        t->~T();
+        new(t) T();
       };
       else
         entry.reset = [](Streamable*) {};

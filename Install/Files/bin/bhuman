@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 BINARY="/home/nao/Config/bhuman"
 LOGDIR="/home/nao/logging"
@@ -35,6 +35,15 @@ elif [ $# -ne 0 ]; then
   usage
 fi
 
+if [ -f /home/nao/touchfiles ]; then
+  touch /home/nao/Config/Robots/*/*/cameraCalibration.cfg \
+    /home/nao/Config/Robots/*/Body/footSoleRotationCalibration.cfg \
+    /home/nao/Config/Robots/*/Body/imuCalibration.cfg 2>/dev/null
+  sleep 0.1
+  touch /home/nao/Config/settings.cfg
+  rm /home/nao/touchfiles
+fi
+
 # Remove assertion dumps from previous runs.
 rm -f "${DUMPFILE}"
 
@@ -63,7 +72,8 @@ if [ -f /media/usb/config.json ]; then
   settingsReplacements()
   {
     local SEDFLAGS=""
-    [ ! -z ${COLOR} ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $COLOR;/'"
+    [ ! -z ${FIELDPLAYERCOLOR} ] && SEDFLAGS="$SEDFLAGS -e 's/fieldPlayerColor =.*/fieldPlayerColor = $FIELDPLAYERCOLOR;/'"
+    [ ! -z ${GOALKEEPERCOLOR} ] && SEDFLAGS="$SEDFLAGS -e 's/goalkeeperColor =.*/goalkeeperColor = $GOALKEEPERCOLOR;/'"
     [ ! -z ${PLAYER} ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber =.*/playerNumber = $PLAYER;/'"
     [ ! -z ${TEAM} ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $TEAM;/'"
     [ ! -z ${MAGICNUMBER} ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber =.*/magicNumber = $MAGICNUMBER;/'"
@@ -74,12 +84,15 @@ if [ -f /media/usb/config.json ]; then
   if [ -z ${PLAYER} ]; then
     PLAYER=$(lsblk -ndo label $(mount | grep -o ".* on /media/usb " | tr " " "\n" | head -1) | grep -Eo "[0-9]+$")
   fi
-  COLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['teamColor'])" 2>/dev/null)
+  FIELDPLAYERCOLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['fieldPlayerColor'])" 2>/dev/null)
+  GOALKEEPERCOLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['goalkeeperColor'])" 2>/dev/null)
   TEAM=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['teamNumber'])" 2>/dev/null)
   MAGICNUMBER=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['magicNumber'])" 2>/dev/null)
   SEDFLAGS="$(settingsReplacements)"
   if [ ! -z "${SEDFLAGS}" ]; then
+    touch -r /home/nao/Config/settings.cfg /home/nao/Config/teams.cfg
     bash -c "sed ${SEDFLAGS} -i /home/nao/Config/settings.cfg"
+    touch -r /home/nao/Config/teams.cfg /home/nao/Config/settings.cfg
   fi
 
   IP=$(eval echo $(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['ipAddress'])" 2>/dev/null))
@@ -111,7 +124,11 @@ elif ${BACKGROUND}; then
 else
   "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
 fi
+RESULT=${PIPESTATUS[0]}
 
 # Remove leftovers.
 rm -f "${LOGDIR}"
 umount /media/usb 2>/dev/null
+
+# Exit with result of ${BINARY}.
+exit ${RESULT}

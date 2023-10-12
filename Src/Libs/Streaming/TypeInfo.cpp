@@ -95,18 +95,18 @@ Out& operator<<(Out& out, const TypeInfo& typeInfo)
     out << primitive;
 
   out << static_cast<unsigned>(typeInfo.classes.size());
-  for(const auto& theClass : typeInfo.classes)
+  for(const auto& [name, attributes] : typeInfo.classes)
   {
-    out << theClass.first << static_cast<unsigned>(theClass.second.size());
-    for(const TypeInfo::Attribute& attribute : theClass.second)
+    out << name << static_cast<unsigned>(attributes.size());
+    for(const TypeInfo::Attribute& attribute : attributes)
       out << attribute.name << attribute.type;
   }
 
   out << static_cast<unsigned>(typeInfo.enums.size());
-  for(const auto& theEnum : typeInfo.enums)
+  for(const auto& [name, constants] : typeInfo.enums)
   {
-    out << theEnum.first << static_cast<unsigned>(theEnum.second.size());
-    for(const std::string& constant : theEnum.second)
+    out << name << static_cast<unsigned>(constants.size());
+    for(const std::string& constant : constants)
       out << constant;
   }
 

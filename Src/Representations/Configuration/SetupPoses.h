@@ -25,9 +25,9 @@ STREAMABLE(SetupPoses,
   /** The pose of a robot before entering the field */
   STREAMABLE(SetupPose,
   {,
-    (int) playerNumber,           /*< The player number of the robot */
-    (Vector2f) position,          /*< The position (in global field coordinates) at which the robot is placed */
-    (Vector2f) turnedTowards,     /*< The position (in global field coordinates) at which the robot is turned (looking at) */
+    (int) playerNumber,           /**< The player number of the robot */
+    (Vector2f) position,          /**< The position (in global field coordinates) at which the robot is placed */
+    (Vector2f) turnedTowards,     /**< The position (in global field coordinates) at which the robot is turned (looking at) */
   });
 
   /** Implements a debug request to place a player at its setup pose. */
@@ -42,5 +42,5 @@ STREAMABLE(SetupPoses,
    */
   const SetupPose& getPoseOfRobot(int number) const,
 
-  (std::vector<SetupPose>) poses, /*< A list of all available robot poses, not ordered by number */
+  (std::vector<SetupPose>) poses, /**< A list of all available robot poses, not ordered by number */
 });

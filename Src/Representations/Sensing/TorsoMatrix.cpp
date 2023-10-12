@@ -1,6 +1,6 @@
 #include "TorsoMatrix.h"
-#include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Math/Rotation.h"
 
 void TorsoMatrix::setTorsoMatrix(const InertialData& theInertialData, const RobotModel& theRobotModel, const GroundContactState& theGroundContactState)
@@ -17,6 +17,8 @@ void TorsoMatrix::setTorsoMatrix(const InertialData& theInertialData, const Robo
   // and construct the matrix
   translation << 0.5f * (fromLeftFoot.head<2>() + fromRightFoot.head<2>()), std::max(fromLeftFoot.z(), fromRightFoot.z());
   rotation = torsoRotation;
+
+  covariance << Matrix3f::Zero(), Matrix3f::Zero(), Matrix3f::Zero(), theInertialData.orientation3DCov;
 
   // valid?
   isValid = theGroundContactState.contact;

@@ -10,9 +10,6 @@
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/Configuration/BehaviorParameters.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/Sensing/FallDownState.h"
 #include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
 
 SKILL_IMPLEMENTATION(InterceptBallImpl,
@@ -26,10 +23,7 @@ SKILL_IMPLEMENTATION(InterceptBallImpl,
   CALLS(Stand),
   CALLS(WalkToPoint),
   REQUIRES(BehaviorParameters),
-  REQUIRES(FallDownState),
   REQUIRES(FieldBall),
-  REQUIRES(MotionInfo),
-  USES(MotionRequest),
 });
 
 class InterceptBallImpl : public InterceptBallImplBase

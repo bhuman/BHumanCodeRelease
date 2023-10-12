@@ -8,11 +8,11 @@
  * @author Arne Hasselbring
  * @author Jo Lienhoop
  * @author Sina Schreiber
+ * @author Fynn Böse
  */
 
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/IllegalAreas.h"
-#include "Representations/BehaviorControl/Libraries/LibTeam.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
@@ -32,14 +32,15 @@ SKILL_IMPLEMENTATION(WalkPotentialFieldImpl,
 {,
   IMPLEMENTS(WalkPotentialField),
   CALLS(WalkToPoint),
+  CALLS(LookAtBallAndTarget),
   REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(IllegalAreas),
-  REQUIRES(LibTeam),
   REQUIRES(RobotPose),
   REQUIRES(TeamData),
+  REQUIRES(GameState),
   DEFINES_PARAMETERS(
   {,
     (float)(250.f) alignDistance, /**< If the target is closer than this distance, the robot is completely aligned to the ball or the target rotation. */
@@ -56,9 +57,17 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
 {
   void execute(const WalkPotentialField& p) override
   {
-    const Vector2f potentialTargetRel = getPotentialField(p.target, p.playerNumber);
+    const Vector2f potentialTargetRel = getPotentialField(p.target);
     if(p.straight)
-      theWalkToPointSkill({.target = {0.f, potentialTargetRel}});
+    {
+      theWalkToPointSkill({.target = {0.f, potentialTargetRel},
+                           .reduceWalkingSpeed = false,
+                           .targetOfInterest = p.targetOfInterest});
+      if(p.targetOfInterest)
+        theLookAtBallAndTargetSkill({.startTarget = true,
+                                     .walkingDirection = potentialTargetRel,
+                                     .ballPositionAngle = theFieldBall.recentBallPositionRelative().angle() });
+    }
     else
     {
       const Vector2f ballPositionRel = theFieldBall.recentBallPositionRelative(3000);
@@ -74,8 +83,14 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
       }
 
       theWalkToPointSkill({.target = {walkAngle, potentialTargetRel},
+                           .reduceWalkingSpeed = false,
                            .disableAligning = std::abs(walkAngle) > 10_deg || p.useRotation,
                            .targetOfInterest = p.targetOfInterest });
+
+      if(p.targetOfInterest)
+        theLookAtBallAndTargetSkill({.startTarget = true,
+                                     .walkingDirection = potentialTargetRel,
+                                     .ballPositionAngle = theFieldBall.recentBallPositionRelative().angle() });
     }
   }
 
@@ -83,38 +98,39 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
   {
     DECLARE_DEBUG_DRAWING("skill:WalkPotentialFieldImpl:angles", "drawingOnField");
     DECLARE_DEBUG_DRAWING("skill:WalkPotentialFieldImpl:potentialField", "drawingOnField");
+    // TODO: This should be called every frame, right?
     draw();
   }
 
   void preProcess() override {}
 
-  Vector2f getPotentialField(const Vector2f& target, int player)
+  Vector2f getPotentialField(const Vector2f& target)
   {
-    return calculatePotentialField(theRobotPose.translation, target, player).rotate(-theRobotPose.rotation);
+    return calculatePotentialField(theRobotPose.translation, target).rotate(-theRobotPose.rotation);
   }
 
-  Vector2f calculatePotentialField(const Vector2f& position, const Vector2f& target, int toSupport)
+  Vector2f calculatePotentialField(const Vector2f& position, const Vector2f& target)
   {
+    const float duration = (theGameState.timeWhenStateEnds - theGameState.timeWhenStateStarted) * 0.5f;
+    unsigned illegal = theIllegalAreas.illegal;
+
+    if(theIllegalAreas.willPositionBeIllegalIn(position, 150.0f, duration))
+      illegal = illegal | theIllegalAreas.anticipatedIllegal;
+
     Vector2f result = computeVectorPotentialFieldTarget(position, target);
-
-    if(toSupport >= Settings::lowestValidPlayerNumber && toSupport <= Settings::highestValidPlayerNumber)
-      result += computeVectorPotentialFieldToSupportBallLine(position, toSupport) +
-                computeVectorPotentialFieldBallGoalLine(position, toSupport) +
-                computeVectorPotentialFieldBehindToSupport(position, toSupport);
-
-    if(theIllegalAreas.illegal & bit(IllegalAreas::ownPenaltyArea))
+    if((illegal & bit(IllegalAreas::ownPenaltyArea)))
       result += computeVectorPotentialFieldPenaltyArea(position, true);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::opponentPenaltyArea))
+    if((illegal & bit(IllegalAreas::opponentPenaltyArea)))
       result += computeVectorPotentialFieldPenaltyArea(position, false);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::borderStrip))
+    if((illegal & bit(IllegalAreas::borderStrip)))
       result += computeVectorPotentialFieldBorderStrip(position);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::opponentHalf))
+    if((illegal & bit(IllegalAreas::opponentHalf)))
       result += computeVectorPotentialFieldOpponentHalf(position);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::centerCircle))
+    if((illegal & bit(IllegalAreas::centerCircle)))
       result += computeVectorPotentialFieldCenterCircle(position);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::ballArea))
+    if((illegal & bit(IllegalAreas::ballArea)))
       result += computeVectorPotentialFieldBallArea(position);
-    if(theIllegalAreas.illegal & bit(IllegalAreas::notOwnGoalLine))
+    if((illegal & bit(IllegalAreas::notOwnGoalLine)))
       result += computeVectorPotentialFieldNotOwnGoalLine(position);
     for(auto const& teammate : theTeamData.teammates)
     {
@@ -122,73 +138,6 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
         result += computeVectorPotentialFieldPlayer(position, teammate.getEstimatedPosition(theFrameInfo.time));
     }
     return result;
-  }
-
-  Vector2f computeVectorPotentialFieldToSupportBallLine(const Vector2f& position, int toSupport) const
-  {
-    const float toSupportBallDistance = theLibTeam.getBallPosition(toSupport).norm();
-    const float maxBallDistance = 1200.0f;
-    // toSupport position on the field
-    const Vector2f toSupportPosition = theLibTeam.getTeammatePosition(toSupport);
-    // ball position on the field
-    const Vector2f ballPosition = theFieldBall.recentBallPositionOnField();
-    // construct line from ball to goal
-    Geometry::Line line(toSupportPosition, ballPosition - toSupportPosition);
-    // distance to that line
-    const float distance = Geometry::getDistanceToEdge(line, position);
-    // compute whether we are on the left (positive value) or the right side (negative value) of the line
-    const float side = (ballPosition.x() - toSupportPosition.x()) * (position.y() - toSupportPosition.y()) - (position.x() - toSupportPosition.x()) * (ballPosition.y() - toSupportPosition.y());
-    // rejection is always orthogonal to that line
-    if(side > 0)
-    {
-      line.base = Pose2f(line.direction.angle(), line.base).translate(0.f, 100.f).translation;
-      line.direction.rotateLeft();
-    }
-    else
-    {
-      line.base = Pose2f(line.direction.angle(), line.base).translate(0.f, -100.f).translation;
-      line.direction.rotateRight();
-    }
-    // compute rejection based on distance to the line and ball distance of supported player
-    const float maxDistance = 750.0f;
-    const float rejection = std::max(0.0f, (maxBallDistance - toSupportBallDistance) * 400.0f / maxBallDistance);
-    const float length = std::max(0.0f, rejection - distance * rejection / maxDistance);
-    return line.direction.normalize(length);
-  }
-
-  Vector2f computeVectorPotentialFieldBallGoalLine(const Vector2f& position, int toSupport) const
-  {
-    const float toSupportBallDistance = theLibTeam.getBallPosition(toSupport).norm();
-    const float maxBallDistance = 1200.0f;
-    // ball position on the field
-    Vector2f ballPosition = theFieldBall.recentBallPositionOnField();
-    Vector2f oppGoalPosition(opponentGoalPosition);
-    // construct line from ball to goal
-    Geometry::Line line(ballPosition, oppGoalPosition - ballPosition);
-    // distance to that line
-    const float distance = Geometry::getDistanceToEdge(line, position);
-    // compute whether we are on the left (positive value) or the right side (negative value) of the line
-    const float side = (oppGoalPosition.x() - ballPosition.x()) * (position.y() - ballPosition.y()) - (position.x() - ballPosition.x()) * (oppGoalPosition.y() - ballPosition.y());
-    // rejection is always orthogonal to that line
-    if(side > 0)
-    {
-      ballPosition.y() += 100.f;
-      oppGoalPosition.y() = theFieldDimensions.yPosLeftGoal;
-      line = Geometry::Line(ballPosition, oppGoalPosition - ballPosition);
-      line.direction.rotateLeft();
-    }
-    else
-    {
-      ballPosition.y() -= 100.f;
-      oppGoalPosition.y() = theFieldDimensions.yPosRightGoal;
-      line = Geometry::Line(ballPosition, oppGoalPosition - ballPosition);
-      line.direction.rotateRight();
-    }
-    // compute rejection based on distance to the line and ball distance of supported player
-    const float maxDistance = 1000.0f;
-    const float rejection = std::max(0.0f, (maxBallDistance - toSupportBallDistance) * 400.0f / maxBallDistance);
-    const float length = std::max(0.0f, rejection - distance * rejection / maxDistance);
-    return line.direction.normalize(length);
   }
 
   Vector2f computeVectorPotentialFieldPlayer(const Vector2f& position, const Vector2f& player) const
@@ -204,25 +153,6 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
     return difference.normalize(length);
   }
 
-  Vector2f computeVectorPotentialFieldBehindToSupport(const Vector2f& position, int toSupport) const
-  {
-    const Vector2f supportedPlayerPos = theLibTeam.getTeammatePosition(toSupport);
-    //if the supporter is directly in front of the to be supported player this potential field should be zero
-    if(supportedPlayerPos.x() < position.x() && std::abs(supportedPlayerPos.y() - position.y()) < 100)
-    {
-      return Vector2f::Zero();
-    }
-    // rejection of the supported player
-    const float rejection = 350.0f;
-    // radius of rejection around the supported player in mm
-    const float maxDistance = 800.0f;
-    //vector pointing backwards
-    Vector2f backwards = Vector2f(-1 * std::abs(position.x() - theLibTeam.getTeammatePosition(toSupport).x()), 0);
-    float distToSupportedPlayer = (supportedPlayerPos - position).norm();
-    // rejection is weighted with the distance to the supported player, but limited to maxDistance
-    const float length = std::max(0.0f, rejection - distToSupportedPlayer * rejection / maxDistance);
-    return backwards.normalize(length);
-  }
 
   Vector2f computeVectorPotentialFieldTarget(const Vector2f& position, const Vector2f& target) const
   {
@@ -286,15 +216,19 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
 
   Vector2f computeVectorPotentialFieldBallArea(const Vector2f& position) const
   {
-    return computeVectorPotentialFieldCircle(position, theFieldBall.recentBallPositionOnField(), freeKickClearAreaRadius);
+    return computeVectorPotentialFieldCircle(position, theFieldBall.recentBallPositionOnField(), freeKickClearAreaRadius, Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.0f));
   }
 
-  Vector2f computeVectorPotentialFieldCircle(const Vector2f& position, const Vector2f& center, const float radius) const
+  Vector2f computeVectorPotentialFieldCircle(const Vector2f& position, const Vector2f& center, const float radius, const Vector2f& targetPosition = Vector2f(10000.0f, 0.0f)) const
   {
     // Apply proportional rejection with distance to the circle
     const float distance = std::max((position - center).norm() - radius, 0.0f);
     const float rejection = mapToRange(distance, 0.0f, maxDistance, maxRejection, 0.0f);
-    return (position - center).normalized(rejection);
+    if (targetPosition == Vector2f(10000.0f, 0.0f)) {
+      return (position - center).normalized(rejection);
+    }
+    // calculates the sum of two normalized vectors (own goal vector + shortest way vector) to leave the circle towards the own goal
+    return ((position - center).normalized() + (targetPosition - center).normalized()).normalized(rejection);
   }
 
   Vector2f computeVectorPotentialFieldBorderStrip(const Vector2f& position) const
@@ -338,20 +272,18 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
 
   void draw()
   {
-    int toSupport = -1;
     Vector2f target = Vector2f::Zero();
-    MODIFY("skill:WalkPotentialFieldImpl:toSupport", toSupport);
     MODIFY("skill:WalkPotentialFieldImpl:target", target);
 
     COMPLEX_DRAWING("skill:WalkPotentialFieldImpl:angles")
     {
       const Vector2f rp = theRobotPose.translation;
-      const Vector2f t = theRobotPose.inversePose * target;
+      const Vector2f t = theRobotPose.inverse() * target;
 
-      const Vector2f end(rp + calculatePotentialField(rp, target, toSupport).normalize(t.norm()));
+      const Vector2f end(rp + calculatePotentialField(rp, target).normalize(t.norm()));
       ARROW("skill:WalkPotentialFieldImpl:angles", rp.x(), rp.y(), end.x(), end.y(), 6, Drawings::solidPen, ColorRGBA::yellow);
       ARROW("skill:WalkPotentialFieldImpl:angles", rp.x(), rp.y(), target.x(), target.y(), 6, Drawings::solidPen, ColorRGBA::green);
-      const Vector2f pt = getPotentialField(target, toSupport);
+      const Vector2f pt = getPotentialField(target);
       const float a = toDegrees(std::acos(std::abs(clip<float>((pt.dot(t)) / (pt.norm() * t.norm()), -1.0f, 1.0f))));
       DRAW_TEXT("skill:WalkPotentialFieldImpl:angles", rp.x(), rp.y(), 200, ColorRGBA::white, a);
     }
@@ -363,7 +295,7 @@ class WalkPotentialFieldImpl : public WalkPotentialFieldImplBase
         for(float x = theFieldDimensions.xPosOwnFieldBorder; x <= theFieldDimensions.xPosOpponentFieldBorder; x += gridOffset)
         {
           const Vector2f start(x, y);
-          const Vector2f end(start + calculatePotentialField(start, target, toSupport));
+          const Vector2f end(start + calculatePotentialField(start, target));
           ARROW("skill:WalkPotentialFieldImpl:potentialField", start.x(), start.y(), end.x(), end.y(), arrowWidth, Drawings::solidPen, ColorRGBA::black);
         }
       }

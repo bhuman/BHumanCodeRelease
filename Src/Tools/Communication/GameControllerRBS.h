@@ -14,10 +14,9 @@
 
 #include "Representations/Communication/GameControllerData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/Communication/BHumanMessageParticle.h"
 #include "MathBase/RingBuffer.h"
 #include "Framework/Settings.h"
-#include "Streaming/MessageIDs.h"
 
 /**
  * @class SynchronizationMeasurementsBuffer
@@ -77,7 +76,7 @@ public:
  *
  * Implementation of Reference Broadcast Synchronization using GameController packets.
  */
-class GameControllerRBS : public BHumanMessageParticle<MessageID::undefined>
+class GameControllerRBS : public BHumanMessageParticle
 {
 public:
   /** BHumanMessageParticle functions */
@@ -115,6 +114,13 @@ private:
    * than 500 times the ring buffer size (or make the ring buffer larger than 1/500 than this).
    */
   static constexpr int gameControllerTimeout = 5000;
+
+  /**
+   * This should be the upper bound (in milliseconds) of how much later a GameController packet can be
+   * received than the team message's timestamp when it is still included in that team message. The
+   * receive timestamp of a GameController packet is actually encoded relative to \c (timestamp + timestampOffset).
+   */
+  static constexpr unsigned timestampOffset = 200;
 
   const FrameInfo& theFrameInfo;
   const GameControllerData& theGameControllerData;

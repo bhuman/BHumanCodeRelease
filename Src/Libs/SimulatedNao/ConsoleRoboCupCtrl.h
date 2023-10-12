@@ -26,7 +26,6 @@ class ConsoleRoboCupCtrl : public RoboCupCtrl
 {
 public:
   DECLARE_SYNC;
-  std::unordered_map<std::string, std::string> representationToFile;
   bool calculateImage = true; /**< Decides whether images are calculated by the simulator. */
   unsigned calculateImageFps; /**< Declares the simulated image frame rate. */
   unsigned globalNextImageTimestamp = 0;  /**< The theoretical timestamp of the next image to be calculated shared among all robots to synchronize image calculation. */
@@ -41,7 +40,7 @@ private:
   bool newLine = true; /**< States whether the last line of text was finished by a new line. */
   int nesting = 0; /**< The number of recursion level during the execution of console files. */
   std::set<std::string> completion; /**< A list for command completion. */
-  std::set<std::string>::const_iterator currentCompletionIndex; /** Points to the last string that was used for auto completion */
+  std::set<std::string>::const_iterator currentCompletionIndex; /**< Points to the last string that was used for auto completion */
   const DebugRequestTable* debugRequestTable = nullptr; /**< Points to the debug request table used for tab-completion. */
   const ModuleInfo* moduleInfo = nullptr; /**< Points to the solution info used for tab-completion. */
   const std::unordered_map<std::string, RobotConsole::ThreadData>* threadData = nullptr; /**< Thread data used for tab-completion. */
@@ -131,11 +130,20 @@ public:
   void printStatusText(const QString& text);
 
   /**
-   * The function translates a debug request string into a simplyfied version.
+   * The function translates a debug request string into a simplified version.
    * @param text The text to translate.
    * @return A string that does not contain spaces anymore.
    */
   std::string translate(const std::string& text) const;
+
+  /**
+   * Determines the threads that understand a certain debug request.
+   * @param threadData The data to search the debug request.
+   * @param debugRequest The debug request in translated form, i.e. in camelcase without spaces.
+   * @return The names of the threads that understand the request.
+   */
+  std::vector<std::string> getThreadsFor(const std::unordered_map<std::string, RobotConsole::ThreadData>& threadData,
+                                         const std::string& debugRequest) const;
 
   /**
    * The function sets the DebugRequestTable used by the command completion.

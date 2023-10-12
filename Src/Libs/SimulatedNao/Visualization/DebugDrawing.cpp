@@ -23,7 +23,7 @@ const DebugDrawing& DebugDrawing::operator=(const DebugDrawing& other)
 {
   reset();
   timestamp = other.timestamp;
-  threadIdentifier = other.threadIdentifier;
+  threadName = other.threadName;
   *this += other;
   return *this;
 }
@@ -329,7 +329,7 @@ void DebugDrawing::gridRectangleRGBA(int x, int y, int width, int height, int ce
   write(cells, sizeof(ColorRGBA) * cellsX * cellsY);
 }
 
-bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType shapeType)
+bool DebugDrawing::addShapeFromQueue(In& stream, Drawings::ShapeType shapeType)
 {
   switch(static_cast<Drawings::ShapeType>(shapeType))
   {
@@ -337,14 +337,14 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Ellipse newCircle;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newCircle.center.x();
-      message.bin >> newCircle.center.y();
-      message.bin >> newCircle.radii.x();
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> newCircle.penColor;
-      message.bin >> brushStyle;
-      message.bin >> newCircle.brushColor;
+      stream >> newCircle.center.x();
+      stream >> newCircle.center.y();
+      stream >> newCircle.radii.x();
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> newCircle.penColor;
+      stream >> brushStyle;
+      stream >> newCircle.brushColor;
       newCircle.width = penWidth;
       newCircle.penStyle = static_cast<Drawings::PenStyle>(penStyle);
       newCircle.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
@@ -357,16 +357,16 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Arc newArc;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newArc.center.x();
-      message.bin >> newArc.center.y();
-      message.bin >> newArc.radius;
-      message.bin >> newArc.startAngle;
-      message.bin >> newArc.spanAngle;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> newArc.penColor;
-      message.bin >> brushStyle;
-      message.bin >> newArc.brushColor;
+      stream >> newArc.center.x();
+      stream >> newArc.center.y();
+      stream >> newArc.radius;
+      stream >> newArc.startAngle;
+      stream >> newArc.spanAngle;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> newArc.penColor;
+      stream >> brushStyle;
+      stream >> newArc.brushColor;
       newArc.width = penWidth;
       newArc.penStyle = static_cast<Drawings::PenStyle>(penStyle);
       newArc.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
@@ -377,16 +377,16 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Ellipse newEllipse;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newEllipse.center.x();
-      message.bin >> newEllipse.center.y();
-      message.bin >> newEllipse.radii.x();
-      message.bin >> newEllipse.radii.y();
-      message.bin >> newEllipse.rotation;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> newEllipse.penColor;
-      message.bin >> brushStyle;
-      message.bin >> newEllipse.brushColor;
+      stream >> newEllipse.center.x();
+      stream >> newEllipse.center.y();
+      stream >> newEllipse.radii.x();
+      stream >> newEllipse.radii.y();
+      stream >> newEllipse.rotation;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> newEllipse.penColor;
+      stream >> brushStyle;
+      stream >> newEllipse.brushColor;
       newEllipse.width = penWidth;
       newEllipse.penStyle = static_cast<Drawings::PenStyle>(penStyle);
       newEllipse.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
@@ -397,16 +397,16 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Rectangle newRect;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newRect.topLX;
-      message.bin >> newRect.topLY;
-      message.bin >> newRect.w;
-      message.bin >> newRect.h;
-      message.bin >> newRect.rotation;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> newRect.penColor;
-      message.bin >> brushStyle;
-      message.bin >> newRect.brushColor;
+      stream >> newRect.topLX;
+      stream >> newRect.topLY;
+      stream >> newRect.w;
+      stream >> newRect.h;
+      stream >> newRect.rotation;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> newRect.penColor;
+      stream >> brushStyle;
+      stream >> newRect.brushColor;
       newRect.width = penWidth;
       newRect.penStyle = static_cast<Drawings::PenStyle>(penStyle);
       newRect.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
@@ -417,18 +417,18 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int numberOfPoints;
       std::string buffer;
-      message.bin >> numberOfPoints >> buffer;
-      InTextMemory stream(buffer.c_str(), buffer.size());
+      stream >> numberOfPoints >> buffer;
+      InTextMemory pointStream(buffer.c_str(), buffer.size());
       Vector2i* points = new Vector2i[numberOfPoints];
       for(int i = 0; i < numberOfPoints; ++i)
-        stream >> points[i];
+        pointStream >> points[i];
       char penWidth, penStyle, brushStyle;
       ColorRGBA brushColor, penColor;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> penColor;
-      message.bin >> brushStyle;
-      message.bin >> brushColor;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> penColor;
+      stream >> brushStyle;
+      stream >> brushColor;
       this->polygon(points, numberOfPoints, penWidth,
                     static_cast<Drawings::PenStyle>(penStyle), penColor,
                     static_cast<Drawings::BrushStyle>(brushStyle), brushColor);
@@ -440,13 +440,13 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       float x1, y1, x2, y2, penWidth;
       char penStyle;
       ColorRGBA penColor;
-      message.bin >> x1;
-      message.bin >> y1;
-      message.bin >> x2;
-      message.bin >> y2;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> penColor;
+      stream >> x1;
+      stream >> y1;
+      stream >> x2;
+      stream >> y2;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> penColor;
       this->line(x1, y1, x2, y2, static_cast<Drawings::PenStyle>(penStyle), penWidth, penColor);
       break;
     }
@@ -454,9 +454,9 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int x, y;
       float angle;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> angle;
+      stream >> x;
+      stream >> y;
+      stream >> angle;
       this->origin(x, y, angle);
       break;
     }
@@ -465,13 +465,13 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       float x1, y1, x2, y2, penWidth;
       char penStyle;
       ColorRGBA penColor;
-      message.bin >> x1;
-      message.bin >> y1;
-      message.bin >> x2;
-      message.bin >> y2;
-      message.bin >> penWidth;
-      message.bin >> penStyle;
-      message.bin >> penColor;
+      stream >> x1;
+      stream >> y1;
+      stream >> x2;
+      stream >> y2;
+      stream >> penWidth;
+      stream >> penStyle;
+      stream >> penColor;
       this->arrow(Vector2f(x1, y1), Vector2f(x2, y2),
                   static_cast<Drawings::PenStyle>(penStyle), penWidth, penColor);
       break;
@@ -480,10 +480,10 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int x, y;
       ColorRGBA penColor, brushColor;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> penColor;
-      message.bin >> brushColor;
+      stream >> x;
+      stream >> y;
+      stream >> penColor;
+      stream >> brushColor;
       this->dot(x, y, penColor, brushColor);
       break;
     }
@@ -491,10 +491,10 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int x, y;
       ColorRGBA penColor, brushColor;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> penColor;
-      message.bin >> brushColor;
+      stream >> x;
+      stream >> y;
+      stream >> penColor;
+      stream >> brushColor;
       this->midDot(x, y, penColor, brushColor);
       break;
     }
@@ -502,10 +502,10 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int x, y;
       ColorRGBA penColor, brushColor;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> penColor;
-      message.bin >> brushColor;
+      stream >> x;
+      stream >> y;
+      stream >> penColor;
+      stream >> brushColor;
       this->largeDot(x, y, penColor, brushColor);
       break;
     }
@@ -514,23 +514,23 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       int x, y;
       short fontSize;
       ColorRGBA color;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> fontSize;
-      message.bin >> color;
+      stream >> x;
+      stream >> y;
+      stream >> fontSize;
+      stream >> color;
       std::string text;
-      message.bin >> text;
+      stream >> text;
       this->text(text.c_str(), x, y, fontSize, color);
       break;
     }
     case Drawings::tip:
     {
       int x, y, radius;
-      message.bin >> x;
-      message.bin >> y;
-      message.bin >> radius;
+      stream >> x;
+      stream >> y;
+      stream >> radius;
       std::string text;
-      message.bin >> text;
+      stream >> text;
       this->tip(text.c_str(), x, y, radius);
       break;
     }
@@ -540,13 +540,13 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       Vector2f dirVec, dirHeadVec;
       float alphaRobot;
       ColorRGBA colorBody, colorDirVec, colorDirHeadVec;
-      message.bin >> p;
-      message.bin >> dirVec;
-      message.bin >> dirHeadVec;
-      message.bin >> alphaRobot;
-      message.bin >> colorBody;
-      message.bin >> colorDirVec;
-      message.bin >> colorDirHeadVec;
+      stream >> p;
+      stream >> dirVec;
+      stream >> dirHeadVec;
+      stream >> alphaRobot;
+      stream >> colorBody;
+      stream >> colorDirVec;
+      stream >> colorDirHeadVec;
       this->robot(p, dirVec, dirHeadVec, alphaRobot, colorBody, colorDirVec, colorDirHeadVec);
       break;
     }
@@ -554,44 +554,44 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       int x1, y1, x2, y2;
       std::string action;
-      message.bin >> x1;
-      message.bin >> y1;
-      message.bin >> x2;
-      message.bin >> y2;
-      message.bin >> action;
+      stream >> x1;
+      stream >> y1;
+      stream >> x2;
+      stream >> y2;
+      stream >> action;
       this->spot(action.c_str(), x1, y1, x2, y2);
       break;
     }
     case Drawings::thread:
     {
-      message.bin >> threadIdentifier;
+      stream >> threadName;
       break;
     }
     case Drawings::gridMono:
     {
       int x, y, cellSize, cellsX, cellsY;
       ColorRGBA baseColor;
-      message.bin >> x >> y >> cellSize >> cellsX >> cellsY >> baseColor;
+      stream >> x >> y >> cellSize >> cellsX >> cellsY >> baseColor;
       std::vector<unsigned char> cells(cellsX * cellsY);
-      message.bin.read(cells.data(), cells.size() * sizeof(*cells.data()));
+      stream.read(cells.data(), cells.size() * sizeof(*cells.data()));
       this->gridMono(x, y, cellSize, cellsX, cellsY, baseColor, cells.data());
       break;
     }
     case Drawings::gridRGBA:
     {
       int x, y, cellSize, cellsX, cellsY;
-      message.bin >> x >> y >> cellSize >> cellsX >> cellsY;
+      stream >> x >> y >> cellSize >> cellsX >> cellsY;
       std::vector<ColorRGBA> cells(cellsX * cellsY);
-      message.bin.read(cells.data(), cells.size() * sizeof(*cells.data()));
+      stream.read(cells.data(), cells.size() * sizeof(*cells.data()));
       this->gridRGBA(x, y, cellSize, cellsX, cellsY, cells.data());
       break;
     }
     case Drawings::gridRectangleRGBA:
     {
       int x, y, width, height, cellsX, cellsY;
-      message.bin >> x >> y >> width >> height >> cellsX >> cellsY;
+      stream >> x >> y >> width >> height >> cellsX >> cellsY;
       std::vector<ColorRGBA> cells(cellsX * cellsY);
-      message.bin.read(cells.data(), cells.size() * sizeof(*cells.data()));
+      stream.read(cells.data(), cells.size() * sizeof(*cells.data()));
       this->gridRectangleRGBA(x, y, width, height, cellsX, cellsY, cells.data());
       break;
     }

@@ -18,11 +18,11 @@ else
   &lt;#statements-if-false#&gt;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>324A989C-B8B7-4974-8F12-D4B42F2059BA</string>
+	<string>B-Human_ifelse</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Used for executing code only when a certain condition is true, or different code if the certain condition is true.</string>
+	<string>B-Human: Execute code when a condition is true, or different code if the condition is false.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>If-Else Statement</string>
 	<key>IDECodeSnippetUserSnippet</key>

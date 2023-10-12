@@ -1,6 +1,6 @@
 /**
  * @file Streaming/Enum.h
- * Defines a macro that declares an enum and provides a function to access the names of its elements.
+ * Defines a macro that declares an enum and registers it and its elements at the TypeRegistry.
  * Also defines a macro that allows to enumerate over all these elements.
  *
  * Enums have the following form:
@@ -188,10 +188,9 @@
 #define _ENUM_REG(constant) REG_CONSTANT(constant);
 
 /**
- * Defining an enum and a function getName(<Enum>) that can return
- * the name of each enum element. The enum will automatically
- * contain an element numOf<Enum>s that reflects the number of
- * elements defined.
+ * Defining an enum and registering it and its elements at the
+ * TypeRegistry. The enum will automatically contain an element
+ * numOf<Enum>s that reflects the number of elements defined.
  *
  * WARNING: Assigning values to enum-elements is not allowed with these enums
  * since they are designed for streaming and the type registry expects them to

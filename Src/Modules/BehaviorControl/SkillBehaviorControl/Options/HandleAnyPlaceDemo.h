@@ -4,12 +4,17 @@ option(HandleAnyPlaceDemo)
   {
     switch(theLibDemo.demoGameState)
     {
-      case LibDemo::normal:
-        goto playing;
+      case LibDemo::soccer:
+        if(theFieldBall.ballWasSeen(4000))
+          goto playing;
+        else
+          goto searching;
       case LibDemo::talking:
         goto talking;
       case LibDemo::waving:
         goto waving;
+      case LibDemo::posing:
+        goto posing;
       default:
         FAIL("Unknown demo game state.");
     }
@@ -23,10 +28,15 @@ option(HandleAnyPlaceDemo)
   {
     action
     {
-      if(theFieldBall.ballWasSeen(4000))
-        theDemoGoToBallAndKickSkill();
-      else
-        theDemoSearchForBallSkill();
+      theDemoGoToBallAndKickSkill();
+    }
+  }
+
+  state(searching)
+  {
+    action
+    {
+      theDemoSearchForBallSkill();
     }
   }
 
@@ -43,6 +53,15 @@ option(HandleAnyPlaceDemo)
     action
     {
       theDemoWaveSkill();
+    }
+  }
+
+  state(posing)
+  {
+    action
+    {
+      theOptionalImageRequest.sendImage = true;
+      theDemoPoseSkill();
     }
   }
 }

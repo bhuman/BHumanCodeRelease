@@ -9,16 +9,11 @@
 
 #include "LowerProvider.h"
 
-MAKE_MODULE(LowerProvider, infrastructure);
+MAKE_MODULE(LowerProvider);
 
 void LowerProvider::update(OtherFieldBoundary& theOtherFieldBoundary)
 {
   static_cast<FieldBoundary&>(theOtherFieldBoundary) = theLowerFieldBoundary;
-}
-
-void LowerProvider::update(OtherGoalPostsPercept& theOtherGoalPostsPercept)
-{
-  static_cast<GoalPostsPercept&>(theOtherGoalPostsPercept) = theLowerGoalPostsPercept;
 }
 
 void LowerProvider::update(OtherObstaclesPerceptorData& theOtherObstaclesPerceptorData)

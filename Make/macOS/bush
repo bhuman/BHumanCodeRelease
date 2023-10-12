@@ -1,7 +1,0 @@
-#!/bin/sh
-# Start the version of the bush that was compiled most recently.
-# This script can be launched from the Finder.
-
-cd "$(dirname "$(which "$0")")"
-app=$(ls -1dt $(find ../../Build/macOS/bush/*/bush.app) | head -1 | sed "s%/bush.app.*%/bush\.app%")
-open "$app"

@@ -23,6 +23,26 @@
 #include <stack>
 #include <unordered_map>
 
+class LoggingController
+{
+public:
+  /** Virtual destructor for polymorphism. */
+  virtual ~LoggingController() = default;
+
+  /**
+   * This function determines whether the logger should be currently logging.
+   * @return Whether the logger ...
+   */
+  virtual bool shouldLog() const = 0;
+
+  /**
+   * This function determines a part of the name a log file. It is called by the logger when a new log file
+   * is started.
+   * @return A description for a new log file.
+   */
+  virtual std::string getDescription() const = 0;
+};
+
 STREAMABLE(Logger,
 {
   /** Which representations will be logged for a certain thread? */
@@ -58,11 +78,12 @@ public:
   ~Logger();
 
   /**
-   * Update whether the logger is logging.
-   * @param shouldLog Whether the logger should log now.
-   * @param getDescription A function that creates a description when a new log file is started.
+   * Update the state of the writer thread via special buffers. When logging is started, a new log file name is
+   * created and sent to the writer thread in an \c undefined message. When logging is stopped, a \c nullptr is
+   * submitted as buffer.
+   * @param controller The logging controller.
    */
-  void update(bool shouldLog, const std::function<std::string()>& getDescription);
+  void update(const LoggingController& controller);
 
   /**
    * Execute the logger for this thread.

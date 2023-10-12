@@ -8,7 +8,7 @@
 
 #include "PassEvaluationProvider.h"
 
-MAKE_MODULE(PassEvaluationProvider, behaviorControl);
+MAKE_MODULE(PassEvaluationProvider);
 
 PassEvaluationProvider::PassEvaluationProvider()
 {
@@ -82,15 +82,12 @@ void PassEvaluationProvider::updateParameters()
   ballToRightGoalArea = (rightGoalPost - goalPostShift - ballOnField).angle();
   opponentsOnField.clear();
   // TODO: Replace the ObstacleModel with the GlobalOpponentsModel once implemented
-  for(const Obstacle& obstacle : theObstacleModel.obstacles)
+  for(const auto& obstacle : theGlobalOpponentsModel.opponents)
   {
-    if(obstacle.isGoalpost() ||
-       obstacle.isTeammate())
-      continue;
-    Vector2f obstacleOnField = theRobotPose * obstacle.center;
-    // Assume the opponent is looking at the ball and shift its position to rate pass positions in front of them worse than behind them
-    // TODO: Fixed length for normalization would lead to a shift onto the other side of the ball, when the initial distance between obstacle and ball is smaller than opponentShiftToBall
-    obstacleOnField += (ballOnField - obstacleOnField).normalized(opponentShiftToBall);
+    Vector2f obstacleOnField = obstacle.position;
+    // Assume the opponent is oriented towards the ball and shift its position in an attempt to rate pass positions "in front of them" worse than behind them. The minimum ensures that the obstacle is not shifted onto the other side of the ball when the initial distance is smaller than opponentShiftToBall.
+    const Vector2f obstacleToBall = ballOnField - obstacleOnField;
+    obstacleOnField += obstacleToBall.normalized(std::min(opponentShiftToBall, obstacleToBall.norm()));
     opponentsOnField.emplace_back(obstacleOnField);
   }
 }
@@ -100,9 +97,7 @@ void PassEvaluationProvider::updateMinDistances(const Vector2f& pointOnField, co
   const float distToTarget = (pointOnField - obstacleOnField).norm();
   if(distToTarget < minDistToTarget)
     minDistToTarget = distToTarget;
-  // TODO: Remove the next line, because positions of obstacles were shifted twice (line 103 and line 114)
-  const Vector2f shiftedObstacle = obstacleOnField + (obstacleOnField - ballOnField).normalized(std::max(0.f, opponentDistToLineThreshold - (obstacleOnField - ballOnField).norm()));
-  const float distToLine = Geometry::getDistanceToEdge(Geometry::Line(ballOnField, (pointOnField - ballOnField)), shiftedObstacle);
+  const float distToLine = Geometry::getDistanceToEdge(Geometry::Line(ballOnField, (pointOnField - ballOnField)), obstacleOnField);
   if(distToLine < minDistToLine)
     minDistToLine = distToLine;
 }

@@ -16,7 +16,7 @@
 #include <cerrno>
 #include <filesystem>
 
-MAKE_MODULE(KickEngine, motionControl);
+MAKE_MODULE(KickEngine);
 
 KickEngine::KickEngine()
 {
@@ -91,6 +91,26 @@ KickPhase::KickPhase(KickEngine& kickEngine, const KickRequest& kickRequest, con
   else
     data.lastTrajetoryOffset.fill(0_deg);
   data.currentTrajetoryOffset.fill(0_deg);
+  leftStartSole = engine.theRobotModel.soleLeft;
+  rightStartSole = engine.theRobotModel.soleRight;
+  leftStartSole.translation.z() = -230.f;
+  rightStartSole.translation.z() = -230.f;
+
+  const float hipShiftX = -12.f - (leftStartSole.translation.x() + rightStartSole.translation.x()) / 2.f;
+  leftStartSole.translation.x() += hipShiftX;
+  rightStartSole.translation.x() += hipShiftX;
+
+  float hipShiftY;
+  if(!currentKickRequest.mirror)
+    hipShiftY = (engine.theRobotDimensions.yHipOffset - 2.5f) - leftStartSole.translation.y();
+  else
+    hipShiftY = (-engine.theRobotDimensions.yHipOffset + 2.5f) - rightStartSole.translation.y();
+  hipShiftY = Rangef(-10.f, 10.f).limit(hipShiftY);
+  leftStartSole.translation.y() += hipShiftY;
+  rightStartSole.translation.y() += hipShiftY;
+
+  leftStartSole.rotation = RotationMatrix();
+  rightStartSole.rotation = RotationMatrix();
 }
 
 void KickEngine::update(KickGenerator& kickGenerator)
@@ -98,6 +118,16 @@ void KickEngine::update(KickGenerator& kickGenerator)
   kickGenerator.createPhase = [this](const KickRequest& kickRequest, const MotionPhase& lastPhase)
   {
     return std::make_unique<KickPhase>(*this, kickRequest, lastPhase, theJointRequest);
+  };
+
+  kickGenerator.wasLeftPhase = [this](const MotionPhase& lastPhase)
+  {
+    if(lastPhase.type == MotionPhase::kick)
+    {
+      const auto& lastKickPhaseDummy = static_cast<const KickPhase&>(lastPhase);
+      return lastKickPhaseDummy.currentKickRequest.mirror; // all right kicks are not mirrored, all left ones are
+    }
+    return theFootSupport.support < 0.f;
   };
 
   auto& p = params.back();
@@ -115,14 +145,20 @@ bool KickPhase::isDone(const MotionRequest& motionRequest) const
    */
   // kick finished or the kick was type none
   // to allow an abort for the kicks, the kick must be checked and the phaseNumber must be below the kicking phase (foot moves forward)
+  const Legs::Leg legOfInterest = !currentKickRequest.mirror ? Legs::right : Legs::left;
+  std::vector<unsigned int> timestamps = { engine.theFsrData.legInfo[legOfInterest].backwardPressure,
+                                           engine.theFsrData.legInfo[legOfInterest].forwardPressure,
+                                           engine.theFsrData.legInfo[legOfInterest].leftPressure,
+                                           engine.theFsrData.legInfo[legOfInterest].rightPressure
+                                         };
+  const unsigned int newestPressure = *std::max_element(std::begin(timestamps), std::end(timestamps));
   bool isKickForward = currentKickRequest.kickMotionType == KickRequest::kickForwardFast || currentKickRequest.kickMotionType == KickRequest::kickForwardFastLong;
-  const Legs::Leg legOfInterest = engine.theFootSupport.support > 0.f ? Legs::right : Legs::left;
-  const bool earlyExitAllowed = (engine.theFootSupport.switched && data.phaseNumber >= data.currentParameters.keyframeEarlyExitAllowedSafe && data.currentParameters.keyframeEarlyExitAllowedSafe != -1// safe check
-                                 && ((data.phaseNumber == data.currentParameters.keyframeEarlyExitAllowedSafe && data.phase > 0.8f && currentKickRequest.mirror == (legOfInterest == Legs::left)) || (data.phaseNumber > data.currentParameters.keyframeEarlyExitAllowedSafe))) || // make sure, we do not accept false switches
-                                (data.phaseNumber >= data.currentParameters.keyframeEarlyExitAllowedRisky && data.currentParameters.keyframeEarlyExitAllowedRisky != -1 && data.phase > 0.2f && // risky check
-                                 ((engine.theFsrData.legInfo[legOfInterest].hasPressure != engine.theFsrData.lastUpdateTimestamp && engine.theFsrData.legInfo[legOfInterest].hasPressure >= data.timestamp && engine.theFrameInfo.getTimeSince(engine.theFsrData.legInfo[legOfInterest].hasPressure) < 100) ||
-                                  (engine.theFsrData.legInfo[legOfInterest].hasPressure == engine.theFsrData.lastUpdateTimestamp && engine.theFrameInfo.getTimeSince(engine.theFsrData.legInfo[legOfInterest].hasPressureSince) > 250)));
-  return (earlyExitAllowed && (motionRequest.isWalking() || motionRequest.motion == MotionRequest::stand)) || // forwardFast kick and support switch happend
+  const bool normalEarlyExistAllowed = data.phaseNumber >= data.currentParameters.keyframeEarlyExitAllowedSafe && data.phase > 0.8f && engine.theFootSupport.switched;
+  const bool earlyRiskyExistAllowed = data.phaseNumber >= data.currentParameters.keyframeEarlyExitAllowedRisky && data.currentParameters.keyframeEarlyExitAllowedRisky != -1 && (data.phase > 0.5f || data.phaseNumber > data.currentParameters.keyframeEarlyExitAllowedRisky)  &&
+                                      ((newestPressure != engine.theFsrData.lastUpdateTimestamp && engine.theFrameInfo.getTimeSince(newestPressure) < 100) ||
+                                       (engine.theFsrData.legInfo[legOfInterest].hasPressure == engine.theFsrData.lastUpdateTimestamp));
+
+  return ((normalEarlyExistAllowed || earlyRiskyExistAllowed) && (motionRequest.isWalking() || motionRequest.motion == MotionRequest::stand)) || // forwardFast kick and support switch happend
          (!isKickForward && data.phaseNumber == data.currentParameters.numberOfPhases && (data.currentParameters.numberOfPhases != 0 || currentKickRequest.kickMotionType == KickRequest::none)) || // no fowardFast kick and kick is over
          (isKickForward && data.phaseNumber == data.currentParameters.numberOfPhases && data.currentParameters.numberOfPhases != 0 && engine.theFrameInfo.getTimeSince(bothFeetGroundContactTimestamp) > engine.minFootGroundContactTime); // forwardFast kick and both feet have ground contact
 }
@@ -183,6 +219,8 @@ void KickPhase::update()
         startTime = engine.theFrameInfo.time;
       }
 
+      engine.theRobotStableState.predictRotation(currentKickRequest.mirror, /* No prediction */ false, false);
+
       //Is the current kick id valid, then calculate the jointRequest once for the balanceCom()
       if(data.calcJoints(jointRequestOutput, engine.theRobotDimensions, engine.theDamageConfigurationBody))
       {
@@ -193,7 +231,7 @@ void KickPhase::update()
         data.applyTrajetoryAdjustment(jointRequestOutput, engine.theJointLimits);
         data.calcOdometryOffset(engine.theRobotModel);
       }
-      data.addGyroBalance(jointRequestOutput, engine.theJointLimits, engine.theInertialData);
+      data.addGyroBalance(jointRequestOutput, engine.theJointLimits, engine.theInertialData, engine.theRobotStableState);
     }
   }
   data.ModifyData(jointRequestOutput);
@@ -260,6 +298,8 @@ float KickPhase::calcInterpolationIntoStand(JointRequest& request, JointRequest&
 void KickPhase::interpolationState(JointRequest& jointRequest, JointRequest& prevRequest, const Angle& interpolationSpeedFactor)
 {
   MotionUtilities::walkStand(jointRequest, engine.theRobotDimensions); // for the legs
+  VERIFY(InverseKinematic::calcLegJoints(leftStartSole, rightStartSole, Vector2f::Zero(), jointRequest, engine.theRobotDimensions)); // this verify should never be false!
+
   float ratio = calcInterpolationIntoStand(jointRequest, previousRequest, interpolationSpeedFactor);
   data.startComp = false;
   compensated = true;

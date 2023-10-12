@@ -1,27 +1,19 @@
 /**
  * @file FieldFeatureOverview.h
- * Declaration of a struct gives an overview over the percepted fieldFeature.
+ * Declaration of a struct that gives an overview over the perceived field features.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
 #include "FieldFeature.h"
-#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Streaming/EnumIndexedArray.h"
 
-STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle<idFieldFeatureOverview>
+STREAMABLE(FieldFeatureOverview,
 {
-  /** BHumanMessageParticle functions */
-  void operator>>(BHumanMessage& m) const override;
-  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
-
   ENUM(Feature,
   {,
-    penaltyArea,
-    midCircle,
-    midCorner,
-    outerCorner,
+    centerCircleWithLine,
     penaltyMarkWithPenaltyAreaLine,
   });
 
@@ -39,9 +31,10 @@ STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle
     };
     ,
     (bool)(false) isValid,       //< Seen in current Frame
-    (bool)(false) isRightSided,  //< just for FieldFeatures with a side (like OuterCorner)
     (unsigned)(0) lastSeen,      //< the timestamp, when this pose was valid
   });
+
+  /** Some plots with statistics about the overview */
   void draw() const,
 
   (FieldFeatureStatus) combinedStatus, // Pose will not be set

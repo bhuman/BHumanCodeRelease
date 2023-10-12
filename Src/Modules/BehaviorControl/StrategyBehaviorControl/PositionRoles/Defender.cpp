@@ -11,6 +11,7 @@
 #include "Tools/BehaviorControl/Strategy/Agent.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/Modify.h"
+#include "Debugging/Annotation.h"
 
 void Defender::preProcess()
 {
@@ -27,7 +28,7 @@ Pose2f Defender::position(Side side, const Pose2f& basePose, const std::vector<V
     return basePose;
 
   goalkeeper = teammates.byPosition(Tactic::Position::goalkeeper);
-  if(side == unspecified)
+  if(side == unspecified || side == center)
   {
     otherDefender = nullptr;
     side = calcDefenderRoyaleIsLeft(theRobotPose.translation.y() >= 0.f) ? left : right;
@@ -37,7 +38,13 @@ Pose2f Defender::position(Side side, const Pose2f& basePose, const std::vector<V
   else
     otherDefender = teammates.byPosition(Tactic::Position::defenderL);
 
-  const Vector2f targetOnField = calcDefenderRoyalePosition(side == left);
+  Vector2f targetOnField = calcDefenderRoyalePosition(side == left);
+  if(theFieldDimensions.clipToField(targetOnField) > 0.f && theFrameInfo.getTimeSince(annotationTimestamp) > p.annotationTime)
+  {
+    annotationTimestamp = theFrameInfo.time;
+    ANNOTATION("behavior:role:Defender", "Clipped defender position into field");
+  }
+
   return Pose2f((theFieldBall.recentBallPositionOnField() - targetOnField).angle(), targetOnField);
 }
 

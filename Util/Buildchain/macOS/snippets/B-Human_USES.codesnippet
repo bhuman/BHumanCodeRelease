@@ -11,16 +11,16 @@
 	<key>IDECodeSnippetContents</key>
 	<string>USES(&lt;#Representation#&gt;),</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>3B8BE5FB-29BC-4F09-B743-43F40A501D56</string>
+	<string>B-Human_USES</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Definition of a requirement of a module without dependencies.</string>
+	<string>B-Human: Define a representation a module requires without dependencies.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Loose Requirement Definition</string>
 	<key>IDECodeSnippetUserSnippet</key>
 	<true/>
 	<key>IDECodeSnippetVersion</key>
-	<integer>0</integer>
+	<integer>2</integer>
 </dict>
 </plist>

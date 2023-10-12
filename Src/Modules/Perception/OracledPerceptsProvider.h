@@ -12,8 +12,8 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
+#include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
@@ -21,7 +21,6 @@
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
-#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 
@@ -29,13 +28,12 @@ MODULE(OracledPerceptsProvider,
 {,
   REQUIRES(BallSpecification),
   REQUIRES(GroundTruthWorldState),
-  REQUIRES(FrameInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
   REQUIRES(FieldDimensions),
+  REQUIRES(MeasurementCovariance),
   PROVIDES(BallPercept),
   PROVIDES(CirclePercept),
-  PROVIDES(GoalPostsPercept),
   PROVIDES(LinesPercept),
   PROVIDES(ObstaclesFieldPercept),
   PROVIDES(ObstaclesImagePercept),
@@ -52,7 +50,6 @@ MODULE(OracledPerceptsProvider,
     (float) centerCircleCenterInImageStdDev,         /**< Standard deviation of error in pixels (x as well as y) */
     (float) centerCircleMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
     (float) centerCircleRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
-    (bool)  applyIntersectionNoise,                  /**< Activate / Deactivate noise for intersection percepts */
     (bool)  applyLineNoise,                          /**< Activate / Deactivate noise for line percepts */
     (float) linePosInImageStdDev,                    /**< Standard deviation of error in pixels (x as well as y) */
     (float) lineMaxVisibleDistance,                  /**< Maximum distance until which this object can be seen */
@@ -62,10 +59,6 @@ MODULE(OracledPerceptsProvider,
     (float) playerMaxVisibleDistance,                /**< Maximum distance until which this object can be seen */
     (float) playerRecognitionRate,                   /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (float) playerFalsePositiveRate,                 /**< Likelihood of perceiving a false positive when no player was seen */
-    (bool)  applyNearGoalPostNoise,                  /**< Activate / Deactivate noise for goal post percepts */
-    (float) nearGoalPostPosInImageStdDev,            /**< Standard deviation of error in pixels (x as well as y) */
-    (float) nearGoalPostMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
-    (float) nearGoalPostRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (bool)  applyPenaltyMarkNoise,                   /**< Activate / Deactivate noise for penalty marks */
     (float) penaltyMarkPosInImageStdDev,             /**< Standard deviation of error in pixels (x as well as y) */
     (float) penaltyMarkMaxVisibleDistance,           /**< Maximum distance until which this object can be seen */
@@ -87,13 +80,13 @@ public:
   OracledPerceptsProvider();
 
 private:
-  std::vector<Vector2f> goalPosts;                               /*< The positions of the four goal posts (needed for computing goal percepts)*/
-  std::vector<Vector2f> penaltyMarks;                            /*< The positions of the two penalty marks (needed for computing penalty mark percepts)*/
-  std::vector<Vector2f> ccPoints;                                /*< The positions of five center circle points (needed for computing center circle percept)*/
-  std::vector<IntersectionsPercept::Intersection> intersections; /*< The positions of the intersections on the field (needed for computing intersection percepts) */
-  std::vector<std::pair<Vector2f, Vector2f>> lines;              /*< The lines on the field */
-  std::vector<std::pair<Vector2f, Vector2f>> fieldBoundaryLines; /*< The boundary of the field */
-  Vector2f viewPolygon[4];                                       /*< A polygon that describes the currently visible area */
+  std::vector<Vector2f> goalPosts;                               /**< The positions of the four goal posts (needed for computing goal percepts)*/
+  std::vector<Vector2f> penaltyMarks;                            /**< The positions of the two penalty marks (needed for computing penalty mark percepts)*/
+  std::vector<Vector2f> ccPoints;                                /**< The positions of five center circle points (needed for computing center circle percept)*/
+  std::vector<IntersectionsPercept::Intersection> intersections; /**< The positions of the intersections on the field (needed for computing intersection percepts) */
+  std::vector<std::pair<Vector2f, Vector2f>> lines;              /**< The lines on the field */
+  std::vector<std::pair<Vector2f, Vector2f>> fieldBoundaryLines; /**< The boundary of the field */
+  Vector2f viewPolygon[4];                                       /**< A polygon that describes the currently visible area */
 
   /** One main function, might be called every cycle
    * @param ballPercept The data struct to be filled
@@ -101,11 +94,6 @@ private:
   void update(BallPercept& ballPercept) override;
   void trueBallPercept(BallPercept& ballPercept);
   void falseBallPercept(BallPercept& ballPercept);
-
-  /** One main function, might be called every cycle
-   * @param goalPostsPercept The data struct to be filled
-   */
-  void update(GoalPostsPercept& goalPostsPercept) override;
 
   /** One main function, might be called every cycle
    * @param linesPercept The data struct to be filled

@@ -40,6 +40,7 @@ public:
   class Value
   {
   public:
+    mutable bool accessed = false; /**< Was this value accessed? */
     virtual ~Value() = default;
   };
 

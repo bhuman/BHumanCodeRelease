@@ -9,7 +9,7 @@
 
 #include "KickEngineData.h"
 #include "Representations/Configuration/JointLimits.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "Debugging/Modify.h"
 #include "Math/Pose3f.h"
 #include "Math/RotationMatrix.h"
@@ -210,7 +210,7 @@ void KickEngineData::calcLegJoints(const Joints::Joint& joint, JointRequest& joi
   RotationMatrix footRot = RotationMatrix::aroundX(leg1).rotateY(leg2 + leg3);
   footRot = footRot.inverse() /* * zRot*/ * rotateBecauseOfHip;
 
-  //and add additonal foot rotation (which is probably not flat to the ground)
+  //and add additional foot rotation (which is probably not flat to the ground)
   const float leg4 = std::atan2(footRot(0, 2), footRot(2, 2)) + footRotAng.y();
   const float leg5 = std::asin(-footRot(1, 2)) + footRotAng.x();
 
@@ -293,8 +293,8 @@ void KickEngineData::balanceCOM(JointRequest& joints, const RobotDimensions& rd,
   float height = comRobotModel.centerOfMass.z() - ref.z();
 
   const Vector2f balance(
-    currentParameters.kpy * (actualDiff.x()) + currentParameters.kiy * balanceSum.x() + currentParameters.kdy * ((actualDiff.x() - lastCom.x()) / cycleTime),
-    -currentParameters.kpx * (actualDiff.y()) + -currentParameters.kix * balanceSum.y() + -currentParameters.kdx * ((actualDiff.y() - lastCom.y()) / cycleTime));
+    currentParameters.kpy * (actualDiff.x()) + currentParameters.kiy * balanceSum.x(),
+    -currentParameters.kpx * (actualDiff.y()) + -currentParameters.kix * balanceSum.y());
 
   if(height != 0.f)
   {
@@ -373,7 +373,7 @@ Angle KickEngineData::interpolate(Angle from, Angle to, float currentTime, KickE
   else return 0_deg;
 }
 
-void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id)
+void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id, const RobotStableState& theRobotStableState)
 {
   if(id.gyro.y() != 0 && id.gyro.x() != 0)
   {
@@ -426,7 +426,7 @@ void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimit
 
     bool support = (currentKickRequest.mirror) ? !toLeftSupport : toLeftSupport;
 
-    if(support)   //last support Leg was left
+    if(support)    //last support Leg was left
     {
       //y
       jointRequest.angles[Joints::rHipPitch] += calcVelocity[0] * cycleTime;
@@ -453,6 +453,27 @@ void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimit
       jointRequest.angles[Joints::lAnkleRoll] -= calcVelocity[3] * cycleTime;
       jointRequest.angles[Joints::rAnkleRoll] -= calcVelocity[3] * cycleTime;
     }
+
+    // Arm Balancing in roll direction
+    // Positive -> rShoulderRoll shall go out further
+    // Negative -> lShoulderRoll shall go out further
+    const float armSign = currentKickRequest.mirror ? 1.f : -1.f;
+    const float comInSupportFootX = theRobotStableState.comInFeet[currentKickRequest.mirror ? Legs::right : Legs::left].outerSide;
+
+    // Get ratio to interpolate with
+    const float armBalancingRatioX = currentParameters.getArmCompensationRatio(phaseNumber, phase);
+    const Rangea maxAdjustment(-currentParameters.armBalancing.maxAdjustment, currentParameters.armBalancing.maxAdjustment);
+    const float removeArmBalancingValueX = maxAdjustment.limit(armCompensation);
+    const Rangef& upperRange = currentParameters.armBalancing.upperRange;
+    const Rangef& lowerRange = currentParameters.armBalancing.lowerRange;
+    // Calc current error
+    const float comInSupportFootErrorX = (mapToRange(comInSupportFootX, lowerRange.min, lowerRange.max, static_cast<float>(-currentParameters.armBalancing.maxAdjustment), 0.f) +
+                                          mapToRange(comInSupportFootX, upperRange.min, upperRange.max, 0.f, static_cast<float>(currentParameters.armBalancing.maxAdjustment))) *
+                                         armSign;
+    // Integrate error and apply correction
+    armCompensation = maxAdjustment.limit(armCompensation + (removeArmBalancingValueX * (1.f - armBalancingRatioX) + comInSupportFootErrorX * armBalancingRatioX) * currentParameters.armBalancing.i);
+    jointRequest.angles[armCompensation > 0 ? Joints::lShoulderRoll : Joints::rShoulderRoll] += armCompensation;
+
     gyroErrorLeft += lastGyroLeft;
     gyroErrorRight += lastGyroRight;
     lastBalancedJointRequest = balancedJointRequest;
@@ -642,6 +663,7 @@ void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, con
     bodyError = Vector2f::Zero();
     lastBody = Vector2f::Zero();
     lastCom = Vector3f::Zero();
+    armCompensation = 0.f;
 
     for(int i = 0; i < Joints::numOfJoints; i++)
     {
@@ -659,7 +681,7 @@ void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, con
   lElbowFront = origins[Phase::leftHandRot].x() > pi_4;
   rElbowFront = origins[Phase::rightHandRot].x() < -pi_4;
 
-  if(kr.armsBackFix) //quick hack to not break arms while they are on the back
+  if(kr.armsBackFix)  //quick hack to not break arms while they are on the back
   {
     if(lElbowFront)
       addDynPoint(DynPoint(Phase::leftHandRot, 0, Vector3f(pi_2, -pi_4, 0)));
@@ -690,6 +712,7 @@ bool KickEngineData::sitOutTransitionDisturbance(bool& compensate, bool& compens
       bodyError = Vector2f::Zero();
       lastBody = Vector2f::Zero();
       lastCom = Vector3f::Zero();
+      armCompensation = 0.f;
       motionID = -1;
 
       lastBalancedJointRequest.angles = theJointRequest.angles;

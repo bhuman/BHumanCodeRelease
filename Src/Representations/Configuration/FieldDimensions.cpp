@@ -188,8 +188,8 @@ void FieldDimensions::drawPolygons() const
         ColorRGBA(120, 120, 120)
       };
       static_assert(sizeof(colors) / sizeof(colors[0]) == GameState::Team::Color::numOfTeamColors);
-      const ColorRGBA& own = colors[gameState.ownTeam.color];
-      const ColorRGBA& opp = colors[gameState.opponentTeam.color];
+      const ColorRGBA& own = colors[gameState.ownTeam.fieldPlayerColor];
+      const ColorRGBA& opp = colors[gameState.opponentTeam.fieldPlayerColor];
 
       Vector2f goal[4];
       goal[0] = Vector2f(xPosOwnGroundLine - fieldLinesWidth * 0.5f, yPosLeftGoal);
@@ -211,7 +211,7 @@ void FieldDimensions::drawCorners() const
 {
   DECLARE_DEBUG_DRAWING("field corners", "drawingOnField");
   CornerClass c = xCorner;
-  MODIFY("fieldDimensions:cornerClass", c);
+  MODIFY("representation:FieldDimensions:cornerClass", c);
   COMPLEX_DRAWING("field corners")
   {
     for(auto i = corners[c].begin(); i != corners[c].end(); ++i)

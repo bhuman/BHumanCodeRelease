@@ -21,9 +21,9 @@ DebugHandler::DebugHandler(MessageQueue& in, MessageQueue& out, int maxPacketSen
 
 void DebugHandler::communicate(bool send)
 {
-  if(send && !sendData && !out.isEmpty())
+  if(send && !sendData && !out.empty())
   {
-    sendSize = out.getStreamedSize();
+    sendSize = out.size() + 8;
     OutBinaryMemory memory(sendSize);
     memory << out;
     sendData = reinterpret_cast<unsigned char*>(memory.obtainData());

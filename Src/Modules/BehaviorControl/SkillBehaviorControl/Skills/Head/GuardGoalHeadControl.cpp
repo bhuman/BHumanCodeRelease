@@ -9,10 +9,7 @@
  */
 
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/GoaliePose.h"
 #include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
 
@@ -22,10 +19,7 @@ SKILL_IMPLEMENTATION(GuardGoalHeadControlImpl,
   CALLS(LookActive),
   CALLS(LookAtBall),
   CALLS(LookAtGlobalBall),
-  REQUIRES(BallModel),
   REQUIRES(FieldBall),
-  REQUIRES(FrameInfo),
-  REQUIRES(GoaliePose),
   REQUIRES(TeammatesBallModel),
   DEFINES_PARAMETERS(
   {,

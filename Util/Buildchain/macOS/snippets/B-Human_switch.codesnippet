@@ -19,11 +19,11 @@
     break;
 }</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>DA95C97A-3F49-4A24-AFF7-8ACE73B0C6FA</string>
+	<string>B-Human_switch</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Execute different sections of code when an expression has one of several constant values.</string>
+	<string>B-Human: Execute different sections of code when an expression has one of several constant values.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Switch Statement</string>
 	<key>IDECodeSnippetUserSnippet</key>

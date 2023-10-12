@@ -9,7 +9,6 @@
 
 #include "PerceptionProviders.h"
 #include "Representations/Infrastructure/CameraStatus.h"
-#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
@@ -23,7 +22,7 @@
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 
-MAKE_MODULE(PerceptionImageCoordinateSystemProvider, infrastructure);
+MAKE_MODULE(PerceptionImageCoordinateSystemProvider);
 
 void PerceptionImageCoordinateSystemProvider::update(ImageCoordinateSystem& theImageCoordinateSystem)
 {
@@ -57,7 +56,7 @@ void PerceptionImageCoordinateSystemProvider::update(ImageCoordinateSystem& theI
     } \
   }; \
   \
-  MAKE_MODULE(Perception##Representation##Provider, infrastructure)
+  MAKE_MODULE(Perception##Representation##Provider)
 
 // Also declare alias representations
 #define ALIAS(Representation) \
@@ -75,7 +74,6 @@ ALIAS(CirclePercept);
 ALIAS(FieldBoundary);
 ALIAS(FieldLines);
 ALIAS(FieldLineIntersections);
-ALIAS(GoalPostsPercept);
 ALIAS(IntersectionsPercept);
 ALIAS(LinesPercept);
 ALIAS(ObstaclesFieldPercept);

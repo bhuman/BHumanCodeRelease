@@ -38,11 +38,11 @@ class GoToBallAndDribbleImpl : public GoToBallAndDribbleImplBase
 {
   option(GoToBallAndDribble)
   {
-    Pose2f dribblePose(p.targetDirection, theFieldBall.endPositionRelative);
+    Pose2f dribblePose(p.targetDirection, theFieldBall.interceptedEndPositionRelative);
 
     thePublishMotionSkill({.target = dribblePose.translation});
     if(p.lookActiveWithBall)
-      theLookActiveSkill({ .withBall = true, .onlyOwnBall = true });
+      theLookActiveSkill({.withBall = true, .onlyOwnBall = true});
     else
       theGoToBallHeadControlSkill({.distanceToTarget = dribblePose.translation.norm()});
 

@@ -19,17 +19,16 @@
  */
 
 #include "BallStateEstimator.h"
-#include "Platform/SystemCall.h"
-#include "Debugging/DebugDrawings.h"
+#include "Debugging/Plot.h"
 #include "Math/Random.h"
-#include "Tools/Math/Transformation.h"
+#include "Platform/SystemCall.h"
 #include <algorithm>
 
-MAKE_MODULE(BallStateEstimator, modeling);
+MAKE_MODULE(BallStateEstimator);
 
 bool compareHypothesesWeightings(BallStateEstimate& a, BallStateEstimate& b)
 {
-  return  a.weighting > b.weighting;
+  return a.weighting > b.weighting;
 }
 
 BallStateEstimator::BallStateEstimator(): timeWhenBallFirstDisappeared(0),
@@ -54,6 +53,7 @@ void BallStateEstimator::reset()
   stationaryBalls.reserve(maxNumberOfHypotheses * 2);
   rollingBalls.reserve(maxNumberOfHypotheses * 2);
   bestState = nullptr;
+  bestMovingState = nullptr;
 }
 
 void BallStateEstimator::update(BallModel& ballModel)
@@ -267,13 +267,22 @@ void BallStateEstimator::normalizeMeasurementLikelihoods()
 void BallStateEstimator::findBestState()
 {
   bestState = nullptr;
+  bestMovingState = nullptr;
   float bestWeighting = -1.f;
+  float bestMovingWeighting = -1.f;
   for(auto& state : rollingBalls)
+  {
     if(bestState == nullptr || state.weighting > bestWeighting)
     {
       bestState = &state;
       bestWeighting = state.weighting;
     }
+    if(bestMovingState == nullptr || state.weighting > bestMovingWeighting)
+    {
+      bestMovingState = &state;
+      bestMovingWeighting = state.weighting;
+    }
+  }
   for(auto& state : stationaryBalls)
     if(bestState == nullptr || state.weighting > bestWeighting)
     {
@@ -338,13 +347,29 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     else
       ballModel.estimate.velocity = bestState->getVelocity();
     // <hack-description>This seems to be the best temporary
-    // solution to avoid the generation of quiet high velocities due to noise between two measurements.
+    // solution to avoid the generation of quite high velocities due to noise between two measurements.
     // T.L.
     // </hack-description>
     // </hack>
     ballModel.estimate.covariance = bestState->getPositionCovariance();
     ballModel.estimate.radius = bestState->radius;
-    Covariance::fixCovariance(ballModel.estimate.covariance);
+    Covariance::fixCovariance<2>(ballModel.estimate.covariance);
+  }
+  if(bestMovingState != nullptr &&
+     bestMovingState != bestState &&
+     bestMovingState->numOfMeasurements >= minNumberOfMeasurementsForRollingBalls &&
+     bestMovingState->getVelocity().norm() > minSpeed)
+  {
+    ballModel.riskyMovingEstimateIsValid = true;
+    ballModel.riskyMovingEstimate.position = bestMovingState->getPosition();
+    ballModel.riskyMovingEstimate.velocity = bestMovingState->getVelocity();
+    ballModel.riskyMovingEstimate.covariance = bestMovingState->getPositionCovariance();
+    ballModel.riskyMovingEstimate.radius = bestMovingState->radius;
+    Covariance::fixCovariance<2>(ballModel.riskyMovingEstimate.covariance);
+  }
+  else
+  {
+    ballModel.riskyMovingEstimateIsValid = false;
   }
   if(ballWasSeenInThisFrame)
   {
@@ -385,8 +410,8 @@ bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel
      theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
   {
     const Vector2f relativeBall        = theFilteredBallPercepts.percepts[0].positionOnField;
-    const Vector2f globalBall          = Transformation::robotToField(theWorldModelPrediction.robotPose, relativeBall);
-    const Vector2f relativePenaltyMark = Transformation::fieldToRobot(theWorldModelPrediction.robotPose, Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f));
+    const Vector2f globalBall          = theWorldModelPrediction.robotPose * relativeBall;
+    const Vector2f relativePenaltyMark = theWorldModelPrediction.robotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f);
 
     if(penaltyBallModelingStartTime == 0)
       penaltyBallModelingStartTime = theFrameInfo.time;

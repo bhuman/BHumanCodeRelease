@@ -1,91 +1,78 @@
+RobotPoseCompact
+{
+  rotation: Angle(bits=8)
+  translation: Vector<Float(min=-5120, max=5110, bits=10)>(n=2)
+  quality: Enum(type=RobotPose::LocalizationQuality)
+  covariance: Matrix<Integer(min=-32768, max=32767)>(m=2, n=2, symmetric) // Is actually something like Matrix<float16_t>
+  timestampLastJump: Timestamp(bits=1, shift=10, reference=relativePast, noclip)
+}
+
 RobotStatus
 {
   isUpright: Boolean
   timeWhenLastUpright: Timestamp(bits=8, shift=6, reference=relativePast)
-  sequenceNumbers: Integer(min=-1, max=14)[7]
-}
-
-RobotPose
-{
-  rotation: Angle(bits=8) // Is also present in the SPLStandardMessage.
-  translation: Vector<Float(min=-32768, max=32767, bits=16)>(n=2) // Is also present in the SPLStandardMessage.
-  quality: Enum(type=RobotPose::LocalizationQuality)
-  covariance: Matrix<Float>(m=3, n=3, symmetric)
-  timestampLastJump: Timestamp(bits=8, shift=7, reference=relativePast, noclip)
 }
 
 BallState
 {
-  position: Vector<Float(min=-32768, max=32767, bits=16)>(n=2) // Is also present in the SPLStandardMessage.
-  velocity: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
-  covariance: Matrix<Float>(m=2, n=2, symmetric)
+  position: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)
+  velocity: Vector<Float(min=-8000, max=8000, bits=11)>(n=2)
+  // covariance: Matrix<Float>(m=2, n=2, symmetric) // Unused
 }
 
 BallModel
 {
-  lastPerception: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  // lastPerception: Vector<Float(min=-32768, max=32767, bits=16)>(n=2) // Unused
   estimate: BallState
-  timeWhenLastSeen: Timestamp
-  timeWhenDisappeared: Timestamp
-  seenPercentage: Integer(min=0, max=100)
+  timeWhenDisappeared: Timestamp(bits=9, shift=6, reference=relativePast, noclip)
+  timeWhenLastSeen: Timestamp(bits=11, shift=4, reference=relativePast, noclip)
+  // seenPercentage: Integer(min=0, max=100) // Unused
 }
 
-Whistle
+RecentWhistle
 {
   confidenceOfLastWhistleDetection: Float(min=0, max=2.55, bits=8)
-  channelsUsedForWhistleDetection: Integer(min=0, max=4)
-  lastTimeWhistleDetected: Timestamp(bits=16, reference=relativePast, noclip)
+  lastTimeWhistleDetected: Timestamp(bits=8, shift=4, reference=relativePast, noclip)
+}
+
+WhistleCompact
+{
+  listening: Boolean
+  recentWhistle: RecentWhistle[:1]
 }
 
 BehaviorStatus
 {
-  activity: Enum(type=BehaviorStatus::Activity, uncompressed)
   passTarget: Integer(min=-1, max=14)
-  walkingTo: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
-  speed: Float(min=-500.0, max=500.0, bits=16)
-  shootingTo: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  walkingTo: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)
+  speed: Float(min=0.0, max=310.0, bits=5)
+  shootingTo: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)[:1]
 }
 
 StrategyStatus
 {
-  proposedTactic: Enum(type=Tactic::Type, uncompressed)
-  acceptedTactic: Enum(type=Tactic::Type, uncompressed)
+  proposedTactic: Enum(type=Tactic::Type)
+  acceptedTactic: Enum(type=Tactic::Type)
   proposedMirror: Boolean
   acceptedMirror: Boolean
-  proposedSetPlay: Enum(type=SetPlay::Type, uncompressed)
-  acceptedSetPlay: Enum(type=SetPlay::Type, uncompressed)
+  proposedSetPlay: Enum(type=SetPlay::Type)
+  acceptedSetPlay: Enum(type=SetPlay::Type)
   position: Enum(type=Tactic::Position::Type)
   role: Enum(type=Role::Type)
 }
 
-Obstacle
-{
-  covariance: Matrix<Float>(m=2, n=2, symmetric)
-  center: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
-  left: Vector<Float(min=-32768, max=32767, bits=14)>(n=2)
-  right: Vector<Float(min=-32768, max=32767, bits=14)>(n=2)
-  lastSeen: Timestamp(bits=8, shift=6, reference=relativePast)
-  type: Enum(type=Obstacle::Type)
-}
-
-ObstacleModel
-{
-  obstacles: Obstacle[:7]
-}
-
 FrameInfo
 {
-  time: Timestamp(bits=8, reference=relativePast)
+  time: Timestamp(bits=0, reference=relativePast)
 }
 
 TeamMessage
 {
+  theRobotPose: RobotPoseCompact
   theRobotStatus: RobotStatus
-  theRobotPose: RobotPose
   theFrameInfo: FrameInfo
   theBallModel: BallModel
-  theWhistle: Whistle
+  theWhistle: WhistleCompact
   theBehaviorStatus: BehaviorStatus
   theStrategyStatus: StrategyStatus
-  theObstacleModel: ObstacleModel
 }

@@ -24,7 +24,3 @@ STREAMABLE(JerseyClassifier,
    */
   FUNCTION(void(const ObstaclesImagePercept::Obstacle& obstacleInImage, ObstaclesFieldPercept::Obstacle& obstacleOnField)) detectJersey,
 });
-
-STREAMABLE_WITH_BASE(JerseyClassifierOld, JerseyClassifier,
-{,
-});

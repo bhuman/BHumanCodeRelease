@@ -16,12 +16,11 @@ MODULE(GroundContactDetector,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(FsrData),
-  REQUIRES(InertialSensorData),
   PROVIDES(GroundContactState),
   LOADS_PARAMETERS(
   {,
     (float) minPressurePerFootToRegainContact, /**< Minimum pressure on both feet to regain ground contact in %. */
-    (int) maxTimeWithoutPressure, /**< Maxmimum time allowed without minimum pressure before losing contact in ms. */
+    (int) maxTimeWithoutPressure, /**< Maximum time allowed without minimum pressure before losing contact in ms. */
     (int) minTimeWithPressure, /**< Minimum time required with minimum pressure to regain contact in ms. */
   }),
 });

@@ -36,5 +36,5 @@ bool Motion::afterFrame()
   else
     Thread::sleep(static_cast<unsigned>(Constants::motionCycleTime * 1000.f));
 
-  return FrameExecutionUnit::afterFrame();
+  return BHExecutionUnit::afterFrame();
 }

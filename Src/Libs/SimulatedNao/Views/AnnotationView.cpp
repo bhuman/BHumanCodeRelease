@@ -4,10 +4,14 @@
  */
 
 #include "AnnotationView.h"
+#include "SimulatedNao/LogPlayer.h"
 #include "SimulatedNao/RoboCupCtrl.h"
 #include "SimulatedNao/RobotConsole.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
+#ifdef MACOS
+#include "AppleHelper/Helper.h"
+#endif
 
 #include <algorithm>
 #include <QCheckBox>
@@ -36,6 +40,8 @@ public:
 AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   : view(view), timeOfLastUpdate(0)
 {
+  setFocusPolicy(Qt::StrongFocus);
+
   table = new QTableWidget();
   table->setColumnCount(3);
   QStringList headerNames;
@@ -54,7 +60,11 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   table->setShowGrid(false);
 
   if(mode == SystemCall::Mode::logFileReplay)
-    QObject::connect(table, &QTableWidget::cellDoubleClicked, this, &AnnotationWidget::jumpFrame);
+    QObject::connect(table, &QTableWidget::cellDoubleClicked, [&](int row, int)
+    {
+      NumberTableWidgetItem* item = static_cast<NumberTableWidgetItem*>(table->item(row, 0));
+      view.console.handleConsole(("log goto " + std::to_string(item->number)).c_str());
+    });
 
   QVBoxLayout* layout = new QVBoxLayout(this);
   QHBoxLayout* filterLayout = new QHBoxLayout();
@@ -77,14 +87,22 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   stopCheckBox->setText("Stop on Annotation");
   stopCheckBox->setToolTip("Stops the Simulation if a new Annotation arrives which meets the Filter.");
   stopCheckBox->setChecked(view.stopOnFilter = settings.value("StopCheckBoxState").toBool());
-  QObject::connect(stopCheckBox, &QCheckBox::stateChanged, this, &AnnotationWidget::stopCheckBoxStateChanged);
+  QObject::connect(stopCheckBox, &QCheckBox::stateChanged, [&](int state) {view.stopOnFilter = state == Qt::CheckState::Checked;});
   checkBoxLayout->addWidget(stopCheckBox);
+#ifdef MACOS
+  checkBoxLayout->addSpacing(16);
+#endif
 
   useRegExCheckBox = new QCheckBox(this);
   useRegExCheckBox->setText("Allow Regular Expression");
   useRegExCheckBox->setToolTip("Allows the use of regular expressions in the filter box.");
   useRegExCheckBox->setChecked(view.filterIsRegEx = settings.value("UseRegExCheckBoxState").toBool());
-  QObject::connect(useRegExCheckBox, &QCheckBox::stateChanged, this, &AnnotationWidget::useRegExCheckBoxStateChanged);
+  QObject::connect(useRegExCheckBox, &QCheckBox::stateChanged, [&](int state)
+  {
+    view.filterIsRegEx = state == Qt::CheckState::Checked;
+    SYNC_WITH(view.info);
+    applyFilter();
+  });
   checkBoxLayout->addWidget(useRegExCheckBox);
 
   layout->addSpacing(2);
@@ -93,7 +111,13 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   layout->addWidget(table);
   layout->setContentsMargins(QMargins());
   this->setLayout(layout);
-  QObject::connect(filterEdit, &QLineEdit::textChanged, this, &AnnotationWidget::filterChanged);
+  QObject::connect(filterEdit, &QLineEdit::textChanged, [&](const QString& newFilter)
+  {
+    filter = newFilter.trimmed().toLower();
+    SYNC_WITH(view.info);
+    view.filter = filter;
+    applyFilter();
+  });
   table->horizontalHeader()->restoreState(settings.value("HeaderState").toByteArray());
   table->sortItems(settings.value("SortBy").toInt(), static_cast<Qt::SortOrder>(settings.value("SortOrder").toInt()));
   filter = settings.value("Filter").toString();
@@ -177,10 +201,10 @@ void AnnotationWidget::handleAnnotation(const AnnotationInfo::AnnotationData& da
     {
       QRegularExpression regex(view.filter);
       if(regex.globalMatch(name).hasNext() || regex.globalMatch(annotation).hasNext())
-        view.application->simStop();
+        simStop();
     }
     else if(name.contains(view.filter) || annotation.contains(view.filter))
-      view.application->simStop();
+      simStop();
   }
 }
 
@@ -215,46 +239,20 @@ void AnnotationWidget::applyFilter()
   }
 }
 
-void AnnotationWidget::stopCheckBoxStateChanged(int state)
+void AnnotationWidget::simStop()
 {
-  view.stopOnFilter = state == Qt::CheckState::Checked;
-}
-
-void AnnotationWidget::useRegExCheckBoxStateChanged(int state)
-{
-  view.filterIsRegEx = state == Qt::CheckState::Checked;
-  SYNC_WITH(view.info);
-  applyFilter();
-}
-
-void AnnotationWidget::filterChanged(const QString& newFilter)
-{
-  filter = newFilter.trimmed().toLower();
-  SYNC_WITH(view.info);
-  view.filter = filter;
-  applyFilter();
-}
-
-void AnnotationWidget::jumpFrame(int row, int)
-{
-  NumberTableWidgetItem* item = static_cast<NumberTableWidgetItem*>(table->item(row, 0));
-  int targetFrame = item->number;
-
-  const auto clamp = [](int value, int lo, int hi) { return std::max(std::min(value, hi), lo); };
-  SYNC_WITH(view.console);
-  view.logPlayer.gotoFrame(clamp(targetFrame, 0, view.logPlayer.numberOfFrames - 1));
-
-  // Make sure images are updated as well.
-  view.logPlayer.stepImageBackward();
-  view.logPlayer.stepImageBackward();
-  for(int i = targetFrame - view.logPlayer.currentFrameNumber; i > 0; i--)
-    view.logPlayer.stepForward();
+#ifdef MACOS
+  runInMainThread([=]{view.application->simStop();});
+#else
+  view.application->simStop();
+#endif
 }
 
 AnnotationView::AnnotationView(const QString& fullName, AnnotationInfo& info, RobotConsole& console,LogPlayer& logPlayer,
                                SystemCall::Mode mode, SimRobot::Application* application) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), info(info), console(console), logPlayer(logPlayer), mode(mode), application(application)
+  fullName(fullName), icon(":/Icons/icons8-price-tag-50.png"), info(info), console(console), logPlayer(logPlayer), mode(mode), application(application)
 {
+  icon.setIsMask(true);
 }
 
 SimRobot::Widget* AnnotationView::createWidget()

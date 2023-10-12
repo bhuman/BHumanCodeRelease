@@ -31,25 +31,25 @@ void CenterCircleWithLine::draw() const
 
   if(Blackboard::getInstance().exists("CameraInfo"))
   {
-    std::string thread = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::upper ? "Upper" : "Lower";
+    const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
     DEBUG_DRAWING("representation:CenterCircleWithLine:image", "drawingOnImage")
-      THREAD("representation:CenterCircleWithLine:image", thread);
+      THREAD("representation:CenterCircleWithLine:image", theCameraInfo.getThreadName());
     DEBUG_DRAWING("representation:CenterCircleWithLine:field", "drawingOnField")
-      THREAD("representation:CenterCircleWithLine:field", thread);
+      THREAD("representation:CenterCircleWithLine:field", theCameraInfo.getThreadName());
 
     if(!isValid)
       return;
 
     COMPLEX_DRAWING("representation:CenterCircleWithLine:field")
     {
-      if(Blackboard::getInstance().exists("FieldDimensions") && Blackboard::getInstance().exists("CameraInfo"))
+      if(Blackboard::getInstance().exists("FieldDimensions"))
       {
         //TODO: Set color back to blue later.
         const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-        CIRCLE("representation:CenterCircleWithLine:field", this->translation.x(), this->translation.y(), theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, ColorRGBA::yellow, Drawings::noBrush, ColorRGBA::blue);
-        Vector2f p1 = *this * Vector2f(0, theFieldDimensions.centerCircleRadius);
-        Vector2f p2 = *this * Vector2f(0, -theFieldDimensions.centerCircleRadius);
-        LINE("representation:CenterCircleWithLine:field", p1.x(), p1.y(), p2.x(), p2.y(), 40, Drawings::solidPen, ColorRGBA::yellow);
+        CIRCLE("representation:CenterCircleWithLine:field", this->translation.x(), this->translation.y(), theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, ColorRGBA::blue, Drawings::noBrush, ColorRGBA::blue);
+        Vector2f p1 = *this * Vector2f(0, theFieldDimensions.centerCircleRadius + 200.f);
+        Vector2f p2 = *this * Vector2f(0, -theFieldDimensions.centerCircleRadius - 200.f);
+        LINE("representation:CenterCircleWithLine:field", p1.x(), p1.y(), p2.x(), p2.y(), 40, Drawings::solidPen, ColorRGBA::blue);
       }
     }
 
@@ -59,7 +59,6 @@ void CenterCircleWithLine::draw() const
          && Blackboard::getInstance().exists("ImageCoordinateSystem"))
       {
         const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
-        const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
         const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
         const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
@@ -83,8 +82,8 @@ void CenterCircleWithLine::draw() const
         }
         Vector2f p1;
         Vector2f p2;
-        if(Transformation::robotToImage(*this * Vector2f(0, theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p1) &&
-           Transformation::robotToImage(*this * Vector2f(0, -theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p2))
+        if(Transformation::robotToImage(*this * Vector2f(0, theFieldDimensions.centerCircleRadius + 200.f), theCameraMatrix, theCameraInfo, p1) &&
+           Transformation::robotToImage(*this * Vector2f(0, -theFieldDimensions.centerCircleRadius - 200.f), theCameraMatrix, theCameraInfo, p2))
         {
           p1 = theImageCoordinateSystem.fromCorrected(p1);
           p2 = theImageCoordinateSystem.fromCorrected(p2);

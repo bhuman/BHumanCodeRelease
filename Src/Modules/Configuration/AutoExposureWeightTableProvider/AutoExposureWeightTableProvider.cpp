@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(AutoExposureWeightTableProvider, infrastructure);
+MAKE_MODULE(AutoExposureWeightTableProvider);
 
 void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExposureWeightTable)
 {

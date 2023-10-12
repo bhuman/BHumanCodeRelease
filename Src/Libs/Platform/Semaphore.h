@@ -32,7 +32,7 @@ public:
   void post();
 
   /**
-   * Decrements the semaphore counter. This function returns immediatly if the
+   * Decrements the semaphore counter. This function returns immediately if the
    * counter is greater than zero. Otherwise the wait call blocks until the semaphore
    * counter can be decremented.
    * @return Whether the decrementation was successful.
@@ -40,7 +40,7 @@ public:
   bool wait();
 
   /**
-   * Decrements the semaphore counter. This function returns immediatly if the
+   * Decrements the semaphore counter. This function returns immediately if the
    * counter is greater than zero. Otherwise the wait call blocks until the semaphore
    * counter can be decremented.
    * @param timeout A timeout for the blocking call. (in ms)
@@ -49,7 +49,7 @@ public:
   bool wait(unsigned timeout);
 
   /**
-   * Tries to decrement the semaphore counter. This function returns immediatly.
+   * Tries to decrement the semaphore counter. This function returns immediately.
    * @return Whether the decrementation was successful.
    */
   bool tryWait();

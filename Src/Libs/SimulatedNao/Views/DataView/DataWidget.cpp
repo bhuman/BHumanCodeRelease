@@ -8,23 +8,41 @@
 #include "DataWidget.h"
 #include "SimulatedNao/RoboCupCtrl.h"
 #include <QSettings>
+#include <QStringList>
 
 DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager)
   : theView(view), theEditorFactory(&view), theManager(manager)
 {
   setFocusPolicy(Qt::StrongFocus);
+  setResizeMode(QtTreePropertyBrowser::ResizeToContents);
+  setHeaderVisible(false);
 
-  pSetAction = new QAction(QIcon(":/Icons/upload.png"), tr("&Set"), this);
+  QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
+  settings.beginGroup(theView.getFullName());
+  theView.theAutoSetModeIsEnabled = settings.value("AutoSet", theView.theAutoSetModeIsEnabled).toBool();
+  theView.expandedPaths.clear();
+  for(const QString& path : settings.value("ExpandedPaths", QStringList()).toStringList())
+    theView.expandedPaths.insert(path.toStdString());
+  theView.radiansPaths.clear();
+  for(const QString& path : settings.value("RadiansPaths", QStringList()).toStringList())
+    theView.radiansPaths.insert(path.toStdString());
+  settings.endGroup();
+
+  QIcon setIcon(":/Icons/icons8-upload-50.png");
+  setIcon.setIsMask(true);
+  pSetAction = new QAction(setIcon, tr("&Set"), this);
   pSetAction->setText("Set");
   pSetAction->setToolTip("Overwrite data on robot");
-  pSetAction->setEnabled(false);
-  pUnchangedAction = new QAction(QIcon(":/Icons/arrow_undo.png"), tr("&Unchanged"), this);
-  pUnchangedAction->setToolTip("Switch back to using original data on robot");
-  pUnchangedAction->setEnabled(false);
-  pUnchangedAction->setText("Unchanged");
-  pAutoSetAction = new QAction(QIcon(":/Icons/arrow_refresh.png"), tr("&Auto-set"), this);
+  pSetAction->setEnabled(true);
+  QIcon unchangedIcon(":/Icons/icons8-undo-50.png");
+  unchangedIcon.setIsMask(true);
+  pUnchangedAction = new QAction(unchangedIcon, tr("&Unchanged"), this);
+  setUnchangedEnabled(theView.setWasCalled);
+  QIcon autoSetIcon(":/Icons/icons8-synchronize-50.png");
+  autoSetIcon.setIsMask(true);
+  pAutoSetAction = new QAction(autoSetIcon, tr("&Auto-set"), this);
   pAutoSetAction->setCheckable(true);
-  pAutoSetAction->setChecked(true);
+  pAutoSetAction->setChecked(theView.theAutoSetModeIsEnabled);
   pAutoSetAction->setText("Auto-set");
   pAutoSetAction->setToolTip("Continuously overwrite data on robot");
 
@@ -32,21 +50,25 @@ DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager)
   connect(pUnchangedAction, &QAction::triggered, this, &DataWidget::unchangedPressed);
   connect(pAutoSetAction, &QAction::toggled, this, &DataWidget::autoSetToggled);
   connect(&theManager, &QtVariantPropertyManager::valueChanged, this, &DataWidget::valueChanged);
+  connect(this, &QtTreePropertyBrowser::collapsed, this, &DataWidget::collapsed);
+  connect(this, &QtTreePropertyBrowser::expanded, this, &DataWidget::expanded);
 
   setFactoryForManager(&theManager, &theEditorFactory);
-  setResizeMode(QtTreePropertyBrowser::Interactive);
-
-  QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
-  settings.beginGroup(theView.getFullName());
-  setSplitterPosition(settings.value("HeaderState", 100).toInt());
-  settings.endGroup();
 }
 
 DataWidget::~DataWidget()
 {
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(theView.getFullName());
-  settings.setValue("HeaderState", splitterPosition());
+  settings.setValue("AutoSet", theView.theAutoSetModeIsEnabled);
+  QStringList expandedPaths;
+  for(const std::string& path : theView.expandedPaths)
+    expandedPaths.append(path.c_str());
+  settings.setValue("ExpandedPaths", expandedPaths);
+  QStringList radiansPaths;
+  for(const std::string& path : theView.radiansPaths)
+    radiansPaths.append(path.c_str());
+  settings.setValue("RadiansPaths", radiansPaths);
   settings.endGroup();
 
   //Without a view the widget will stop updating the properties.
@@ -56,9 +78,14 @@ DataWidget::~DataWidget()
 
 void DataWidget::update()
 {
+  // Update properties of the tree.
+  theView.updateTree();
+
+  // Request new data if it is needed.
+  theView.repoll();
+
   //Adding the property to the browser draws the property.
   //Therefore this is done in the gui thread.
-  SYNC_WITH(theView); //without this lock pTheCurrentProperty might be changed while adding it.
 
   if(theRootPropertyHasChanged && nullptr != pTheCurrentProperty)
   {
@@ -75,7 +102,7 @@ void DataWidget::update()
 
     theRootPropertyHasChanged = false;
   }
-};
+}
 
 QMenu* DataWidget::createUserMenu() const
 {
@@ -95,19 +122,23 @@ void DataWidget::setRootProperty(QtProperty* pRootProperty)
   }
 }
 
-void DataWidget::setUnchangedButtonEnabled(bool value)
-{
-  pUnchangedAction->setEnabled(value);
-}
-
-void DataWidget::setSetButtonEnabled(bool value)
+void DataWidget::setSetEnabled(bool value)
 {
   pSetAction->setEnabled(value);
 }
 
-bool DataWidget::isSetButtonEnabled() const
+void DataWidget::setUnchangedEnabled(bool value)
 {
-  return pSetAction->isEnabled();
+  pUnchangedAction->setEnabled(value);
+  pUnchangedAction->setToolTip(theView.setWasCalled || theView.theAutoSetModeIsEnabled
+                               ? "Switch back to using original data on robot"
+                               : "Show data received from robot again");
+  pUnchangedAction->setText(theView.setWasCalled || theView.theAutoSetModeIsEnabled ? "Unchanged" : "Reset");
+}
+
+bool DataWidget::isUnchangedEnabled() const
+{
+  return pUnchangedAction->isEnabled();
 }
 
 void DataWidget::setPressed()
@@ -123,16 +154,27 @@ void DataWidget::autoSetToggled(bool checked)
 void DataWidget::unchangedPressed()
 {
   theView.setUnchanged();
-  setUnchangedButtonEnabled(false);
 }
 
 void DataWidget::itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* precedingItem)
 {
+  theView.updateExpandedPaths = false;
   QtTreePropertyBrowser::itemInserted(insertedItem, precedingItem);
-  setExpanded(insertedItem, !insertedItem->parent());
+  setExpanded(insertedItem, theView.shouldExpand(insertedItem->property()));
+  theView.updateExpandedPaths = true;
 }
 
 void DataWidget::valueChanged(QtProperty*, const QVariant&)
 {
   theView.valueChanged();
+}
+
+void DataWidget::collapsed(QtBrowserItem* item)
+{
+  theView.updateExpansion(item->property(), false);
+}
+
+void DataWidget::expanded(QtBrowserItem* item)
+{
+  theView.updateExpansion(item->property(), true);
 }

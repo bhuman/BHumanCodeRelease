@@ -8,18 +8,6 @@
 #include "Tools/Modeling/Obstacle.h"
 #include "Framework/Blackboard.h"
 
-void ObstacleModel::operator>>(BHumanMessage& m) const
-{
-  std::sort(const_cast<std::vector<Obstacle>&>(obstacles).begin(), const_cast<std::vector<Obstacle>&>(obstacles).end(), [](const Obstacle& a, const Obstacle& b) {return a.center.squaredNorm() < b.center.squaredNorm(); });
-
-  Streaming::streamIt(*m.theBHumanStandardMessage.out, "theObstacleModel",  *this);
-}
-
-void ObstacleModel::operator<<(const BHumanMessage& m)
-{
-  Streaming::streamIt(*m.theBHumanStandardMessage.in, "theObstacleModel",  *this);
-}
-
 void ObstacleModel::verify() const
 {
   DECLARE_DEBUG_RESPONSE("representation:ObstacleModel:verify");
@@ -60,22 +48,19 @@ void ObstacleModel::draw() const
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:fallen", "drawingOnField");
   DECLARE_DEBUG_DRAWING3D("representation:ObstacleModel", "robot");
 
+  // The ObstacleModel does not have a distinction between field players and goalkeepers, so they are all drawn in the field player color.
+
   const ColorRGBA ownColor = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
-      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.color : GameState::Team::Color::black));
+      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.fieldPlayerColor : GameState::Team::Color::black));
 
   const ColorRGBA opponentColor = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
-      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).opponentTeam.color : GameState::Team::Color::red));
+      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).opponentTeam.fieldPlayerColor : GameState::Team::Color::red));
 
   ColorRGBA color;
   for(const auto& obstacle : obstacles)
   {
     switch(obstacle.type)
     {
-      case Obstacle::goalpost:
-      {
-        color = ColorRGBA::white;
-        break;
-      }
       case Obstacle::fallenTeammate:
       case Obstacle::teammate:
       {

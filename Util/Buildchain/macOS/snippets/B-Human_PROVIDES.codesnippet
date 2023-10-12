@@ -11,11 +11,11 @@
 	<key>IDECodeSnippetContents</key>
 	<string>PROVIDES(&lt;#Representation#&gt;),</string>
 	<key>IDECodeSnippetIdentifier</key>
-	<string>52AE0B06-30A1-4C6E-9DD8-1242E159D42A</string>
+	<string>B-Human_PROVIDES</string>
 	<key>IDECodeSnippetLanguage</key>
 	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
 	<key>IDECodeSnippetSummary</key>
-	<string>Definition of a what a module provides.</string>
+	<string>B-Human: Define which representation a module provides.</string>
 	<key>IDECodeSnippetTitle</key>
 	<string>Provision Definition</string>
 	<key>IDECodeSnippetUserSnippet</key>

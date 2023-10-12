@@ -1,0 +1,16 @@
+recursive-include Src *
+recursive-include Make/CMake *
+recursive-include Util/CompiledNN *
+recursive-include Util/CompiledNN2ONNX *
+recursive-include Util/GameController/include *
+recursive-include Util/MD5 *
+recursive-include Util/SimRobot/Make/CMake *
+recursive-include Util/SimRobot/Util/Eigen *
+recursive-include Util/fftw-3.3 *
+recursive-include Util/hdf5 *
+recursive-include Util/libjpeg *
+recursive-include Util/onnxruntime *
+recursive-include Util/pybind11 *
+recursive-include Util/snappy *
+recursive-include Util/sse2neon *
+recursive-include Util/voronoi *

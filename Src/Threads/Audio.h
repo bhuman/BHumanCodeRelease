@@ -9,14 +9,14 @@
 
 #pragma once
 
-#include "Framework/FrameExecutionUnit.h"
+#include "Tools/Framework/BHExecutionUnit.h"
 
 /**
  * @class Audio
  *
  * The execution unit for the audio thread.
  */
-class Audio : public FrameExecutionUnit
+class Audio : public BHExecutionUnit
 {
 public:
   bool beforeFrame() override;

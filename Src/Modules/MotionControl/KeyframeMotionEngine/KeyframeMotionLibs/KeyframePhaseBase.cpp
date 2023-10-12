@@ -7,6 +7,7 @@
  */
 #include "KeyframePhaseBase.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Modules/MotionControl/KeyframeMotionEngine/KeyframeMotionEngine.h"
 
 KeyframePhaseBase::KeyframePhaseBase(KeyframeMotionEngine& engine, const KeyframeMotionRequest& keyframeMotionRequest) :
@@ -65,7 +66,9 @@ void KeyframePhaseBase::waitForFallen()
     // When falling forward
     else
     {
-      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFront], jointRequestOutput, static_cast<Joints::Joint>(0), Joints::numOfJoints);
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFrontGetUp], jointRequestOutput, static_cast<Joints::Joint>(0), Joints::numOfJoints);
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = 20;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = 20;
     }
 
     jointRequestOutput.stiffnessData.stiffnesses[Joints::headYaw] = engine.safeFallParameters.headStiffness;

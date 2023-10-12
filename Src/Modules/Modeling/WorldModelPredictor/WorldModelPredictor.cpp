@@ -10,7 +10,7 @@
 #include "WorldModelPredictor.h"
 #include "Tools/Modeling/BallPhysics.h"
 
-MAKE_MODULE(WorldModelPredictor, modeling);
+MAKE_MODULE(WorldModelPredictor);
 
 void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
 {
@@ -52,7 +52,7 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
     const Vector2f knownBallPosition = theGameState.isForOwnTeam()
       ? Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f)
       : Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f);
-    worldModelPrediction.ballPosition = theRobotPose.inversePose * knownBallPosition;
+    worldModelPrediction.ballPosition = theRobotPose.inverse() * knownBallPosition;
     worldModelPrediction.ballVelocity = Vector2f::Zero();
     worldModelPrediction.ballIsPredictedByRule = true;
   }

@@ -12,10 +12,10 @@
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/GameControllerData.h"
+#include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/FootOffset.h"
-#include "Representations/Configuration/FootSoleRotationCalibration.h"
 #include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/AudioData.h"
@@ -29,10 +29,8 @@
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/Infrastructure/Thumbnail.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/LabelImage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -41,6 +39,7 @@
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -54,7 +53,6 @@
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
-#include "Representations/Perception/RefereePercept/RefereePercept.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
@@ -62,15 +60,20 @@
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
+#include "Representations/Perception/RefereePercept/Keypoints.h"
+#include "Representations/Perception/RefereePercept/RefereePercept.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/GroundContactState.h"
+#include "Representations/Sensing/GyroOffset.h"
+#include "Representations/Sensing/GyroState.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/JointAnglePred.h"
 #include "Representations/Sensing/JointPlay.h"
+#include "Representations/Sensing/RobotStableState.h"
 #include "ImageProcessing/Image.h"
 #include "ImageProcessing/PixelTypes.h"
-#include "Streaming/InMessage.h"
 #include "Streaming/MessageIDs.h"
 #include "Framework/Module.h"
 #include "Framework/ModuleGraphRunner.h"
@@ -107,29 +110,32 @@ MODULE(LogDataProvider,
   PROVIDES(FieldBoundary),
   PROVIDES(FieldLines),
   PROVIDES(FootOffset),
-  PROVIDES(FootSoleRotationCalibration),
   PROVIDES(FootSupport),
   PROVIDES(FrameInfo),
   PROVIDES(FsrData),
   PROVIDES(FsrSensorData),
   PROVIDES(GameControllerData),
   PROVIDES(GameState),
+  PROVIDES(GyroOffset),
+  PROVIDES(GyroState),
   PROVIDES(GroundContactState),
   PROVIDES(GroundTruthOdometryData),
   PROVIDES(GroundTruthRobotPose),
   PROVIDES(GroundTruthWorldState),
+  PROVIDES(HeadMotionRequest),
   PROVIDES(ImageCoordinateSystem),
   PROVIDES(IMUCalibration),
   PROVIDES(InertialData),
   PROVIDES(InertialSensorData),
   PROVIDES(IntersectionsPercept),
+  PROVIDES(JointAnglePred),
   PROVIDES(JointAngles),
   PROVIDES(JointCalibration),
   PROVIDES(JointPlay),
   PROVIDES(JointRequest),
   PROVIDES(JointSensorData),
   PROVIDES(KeyStates),
-  PROVIDES(LabelImage),
+  PROVIDES(Keypoints),
   PROVIDES(LinesPercept),
   PROVIDES(MotionInfo),
   PROVIDES(MotionRequest),
@@ -139,10 +145,13 @@ MODULE(LogDataProvider,
   PROVIDES(Odometer),
   PROVIDES(OdometryData),
   PROVIDES(OdometryDataPreview),
+  PROVIDES(OdometryTranslationRequest),
   PROVIDES(PenaltyMarkPercept),
+  PROVIDES(ReceivedTeamMessages),
   PROVIDES(RefereePercept),
   PROVIDES(RobotHealth),
   PROVIDES(RobotPose),
+  PROVIDES(RobotStableState),
   PROVIDES(SelfLocalizationHypotheses),
   PROVIDES(SideInformation),
   PROVIDES(SkillRequest),
@@ -170,8 +179,7 @@ private:
   std::array<State, numOfDataMessageIDs> states; /**< Should the corresponding message ids be replayed? */
   TypeInfo* logTypeInfo = nullptr; /**< The specifications of all the types from the log file. */
   bool frameDataComplete; /**< Were all messages of the current frame received? */
-  Thumbnail* thumbnail; /**< This will be allocated when a thumbnail was received. */
-  OdometryData lastOdometryData; /** The last odometry data that was provided. Used for computing offset. */
+  OdometryData lastOdometryData; /**< The last odometry data that was provided. Used for computing offset. */
 
   // No-op update stubs
   void update(ActivationGraph&) override {}
@@ -187,32 +195,36 @@ private:
   void update(CameraInfo&) override {}
   void update(CameraMatrix&) override {}
   void update(CirclePercept&) override {}
+  void update(ECImage&) override {}
   void update(FallDownState&) override {}
   void update(FieldBoundary&) override {}
   void update(FieldLines&) override {}
   void update(FootOffset&) override {}
-  void update(FootSoleRotationCalibration&) override {}
   void update(FootSupport&) override {}
   void update(FrameInfo&) override {}
   void update(FsrData&) override {}
   void update(FsrSensorData&) override {}
   void update(GameControllerData&) override {}
   void update(GameState&) override {}
+  void update(GyroOffset&) override {}
+  void update(GyroState&) override {}
   void update(GroundContactState&) override {}
   void update(GroundTruthRobotPose&) override {}
   void update(GroundTruthWorldState&) override {}
+  void update(HeadMotionRequest&) override {}
   void update(ImageCoordinateSystem&) override {}
   void update(IMUCalibration&) override {}
   void update(InertialData&) override {}
   void update(InertialSensorData&) override {}
   void update(IntersectionsPercept&) override {}
+  void update(JointAnglePred&) override {}
   void update(JointAngles&) override {}
   void update(JointCalibration&) override {}
   void update(JointPlay&) override {}
   void update(JointRequest&) override {}
   void update(JointSensorData&) override {}
   void update(KeyStates&) override {}
-  void update(LabelImage&) override {}
+  void update(Keypoints&) override {}
   void update(LinesPercept&) override {}
   void update(MotionInfo&) override {}
   void update(MotionRequest&) override {}
@@ -222,10 +234,13 @@ private:
   void update(Odometer&) override {}
   void update(OdometryData&) override {}
   void update(OdometryDataPreview&) override {}
+  void update(OdometryTranslationRequest&) override {}
   void update(PenaltyMarkPercept&) override {}
+  void update(ReceivedTeamMessages&) override {}
   void update(RefereePercept&) override {}
   void update(RobotHealth&) override {}
   void update(RobotPose&) override {}
+  void update(RobotStableState&) override {}
   void update(SelfLocalizationHypotheses&) override {}
   void update(SideInformation&) override {}
   void update(SkillRequest&) override {}
@@ -239,7 +254,6 @@ private:
 
   // Updates with data
   void update(CameraImage& cameraImage) override;
-  void update(ECImage& ecImage) override;
   void update(GroundTruthOdometryData&) override;
 
   /**
@@ -247,21 +261,21 @@ private:
    * @param message The message to be handled.
    * @return Was the message handled?
    */
-  bool handle(InMessage& message);
+  bool handle(MessageQueue::Message message);
 
   /**
    * Read a representation from a message.
    * @param message The message to read from.
    * @param representation The representation the message is stored in.
    */
-  void readMessage(InMessage& message, Streamable& representation);
+  void readMessage(MessageQueue::Message message, Streamable& representation);
 
   /**
    * The method is called for every incoming debug message by handleMessage.
    * @param message An interface to read the message from the queue.
    * @return Was the message handled?
    */
-  bool handleMessage2(InMessage& message);
+  bool handleMessage2(MessageQueue::Message message);
 
   /**
    * Handle a message that should update a representation, but also involves
@@ -275,7 +289,7 @@ private:
    * @param update A function that received both representations, the
    *        handled one first and the additional one second.
    */
-  template<typename Read, typename Additional> void handle(InMessage& message, const char* read, const char* additional,
+  template<typename Read, typename Additional> void handle(MessageQueue::Message message, const char* read, const char* additional,
                                                            const std::function<void(Read&, Additional&)>& update)
   {
     const bool provided = handle(message);
@@ -309,7 +323,7 @@ public:
    * @param message An interface to read the message from the queue.
    * @return Was the message handled?
    */
-  static bool handleMessage(InMessage& message);
+  static bool handleMessage(MessageQueue::Message message);
 
   /**
    * The method returns whether idFrameFinished was received.

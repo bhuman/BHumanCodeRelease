@@ -32,6 +32,10 @@ while true; do
       FILELIST="$FILELIST$(cat "$1" | tr '\n' '|')"
       CALL="$CALL $(sed <"$1" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
       ;;
+    "-V")
+      libtool -V
+      exit 0
+      ;;
     *)
       CALL="$CALL '$1'"
       ;;

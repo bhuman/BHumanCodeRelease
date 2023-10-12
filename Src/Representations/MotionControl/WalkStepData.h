@@ -20,4 +20,5 @@ STREAMABLE(WalkStepData,
   (Pose2f) stepTarget, //current walk value
   (float) stepDuration, // current step duration
   (int) usedPredictedSwitch, // counter for how many predicted foot support switches were made
+  (int) lastUpdate, // time stamp of last update
 });

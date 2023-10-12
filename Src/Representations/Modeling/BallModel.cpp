@@ -15,30 +15,6 @@
 
 #include <algorithm>
 
-void BallModel::operator>>(BHumanMessage& m) const
-{
-  Streaming::streamIt(*m.theBHumanStandardMessage.out, "theBallModel",  *this);
-
-  m.theBSPLStandardMessage.ball[0] = estimate.position.x();
-  m.theBSPLStandardMessage.ball[1] = estimate.position.y();
-
-  if(timeWhenLastSeen && Blackboard::getInstance().exists("FrameInfo"))
-  {
-    const FrameInfo& theFrameInfo = static_cast<const FrameInfo&>(Blackboard::getInstance()["FrameInfo"]);
-    m.theBSPLStandardMessage.ballAge = theFrameInfo.getTimeSince(timeWhenLastSeen) / 1000.f;
-  }
-  else
-    m.theBSPLStandardMessage.ballAge = -1.f;
-}
-
-void BallModel::operator<<(const BHumanMessage& m)
-{
-  Streaming::streamIt(*m.theBHumanStandardMessage.in, "theBallModel", *this);
-
-  estimate.position.x() = m.theBSPLStandardMessage.ball[0];
-  estimate.position.y() = m.theBSPLStandardMessage.ball[1];
-}
-
 void BallModel::verify() const
 {
   ASSERT(std::isfinite(lastPerception.x()));
@@ -70,6 +46,12 @@ void BallModel::draw() const
            Drawings::solidBrush, ColorRGBA::orange);
     ARROW("representation:BallModel", position.x(), position.y(),
           position.x() + velocity.x(), position.y() + velocity.y(), 5, 1, ColorRGBA::orange);
+    if(riskyMovingEstimateIsValid)
+    {
+      const Vector2f& riskyVelocity(riskyMovingEstimate.velocity);
+      ARROW("representation:BallModel", position.x(), position.y(),
+            position.x() + riskyVelocity.x(), position.y() + riskyVelocity.y(), 5, 1, ColorRGBA::blue);
+    }
   }
 
   DEBUG_DRAWING("representation:BallModel:covariance", "drawingOnField")
@@ -89,6 +71,14 @@ void BallModel::draw() const
              position.x(),  position.y(), 45, 0, // pen width
              Drawings::solidPen, ColorRGBA::black,
              Drawings::solidBrush, violet);
+      if(riskyMovingEstimateIsValid)
+      {
+        position = BallPhysics::getEndPosition(riskyMovingEstimate.position, riskyMovingEstimate.velocity, ballSpecification.friction);
+        CIRCLE("representation:BallModel:endPosition",
+               position.x(), position.y(), 45, 0, // pen width
+               Drawings::solidPen, ColorRGBA::black,
+               Drawings::solidBrush, ColorRGBA::cyan);
+      }
     }
   }
 

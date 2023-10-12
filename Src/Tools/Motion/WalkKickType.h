@@ -16,6 +16,7 @@ namespace WalkKicks
     none,
     forward,
     forwardLong,
+    forwardVeryLong,
     sidewardsOuter,
     turnOut,
     forwardSteal,

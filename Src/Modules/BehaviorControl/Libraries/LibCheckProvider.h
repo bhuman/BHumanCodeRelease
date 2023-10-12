@@ -13,14 +13,12 @@
 #include "Framework/Module.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Streaming/EnumIndexedArray.h"
 
 MODULE(LibCheckProvider,
 {,
   USES(ActivationGraph),
-  REQUIRES(FrameInfo),
   REQUIRES(GameState),
   PROVIDES(LibCheck),
   LOADS_PARAMETERS(
@@ -32,8 +30,8 @@ MODULE(LibCheckProvider,
       abort,
     }),
 
-    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) notSetReaction,       /** Assert that a request has been set at least once */
-    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) multipleSetReaction,  /** Print a warning if an assert has not been set at least once */
+    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) notSetReaction,       /**< Assert that a request has been set at least once */
+    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) multipleSetReaction,  /**< Print a warning if an assert has not been set at least once */
   }),
 });
 

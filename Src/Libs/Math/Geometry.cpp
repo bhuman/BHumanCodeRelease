@@ -1,6 +1,6 @@
 /**
  * @file Geometry.cpp
- * Implemets class Geometry
+ * Implements class Geometry
  *
  * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
  */
@@ -632,4 +632,10 @@ Vector2f Geometry::getOrthogonalProjectionOfPointOnEdge(const Vector2f& base, co
 Vector2f Geometry::getOrthogonalProjectionOfPointOnEdge(const Line& line, const Vector2f& point)
 {
   return getOrthogonalProjectionOfPointOnEdge(line.base, line.direction, point);
+}
+
+bool Geometry::isPointInsideArc(const Vector2f& point, const Vector2f& center, const Rangea& angleRange, const float radius)
+{
+  const Vector2f pointToArc = point - center;
+  return (pointToArc.squaredNorm() <= sqr(radius) && angleRange.isInside(pointToArc.angle()));
 }

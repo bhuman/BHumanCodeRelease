@@ -7,7 +7,7 @@
 #include "GroundContactDetector.h"
 #include "Platform/SystemCall.h"
 
-MAKE_MODULE(GroundContactDetector, sensing);
+MAKE_MODULE(GroundContactDetector);
 
 void GroundContactDetector::update(GroundContactState& groundContactState)
 {

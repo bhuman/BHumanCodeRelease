@@ -13,39 +13,30 @@ robot all
 ci off
 
 # Ground truth modules
-mr GroundTruthWorldState LogDataProvider Cognition
-mr GroundTruthRobotPose OracledWorldModelProvider Cognition
-mr GroundTruthBallModel OracledWorldModelProvider Cognition
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
+for Cognition mr GroundTruthBallModel OracledWorldModelProvider
 
 # Field views need ground truth and some later deactivated modules
 call Includes/FieldViews
 
 # Select modules for simulator
-mr CameraInfo LogDataProvider Lower
-mr CameraInfo LogDataProvider Upper
-mr FrameInfo LogDataProvider Lower
-mr FrameInfo LogDataProvider Upper
-mr FrameInfo LogDataProvider Motion
-mr FsrSensorData LogDataProvider Motion
-mr InertialSensorData LogDataProvider Motion
-mr JointSensorData LogDataProvider Motion
-mr KeyStates LogDataProvider Motion
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr InertialSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
 
 # Switch to percept oracle
-mr BallPercept OracledPerceptsProvider Lower
-mr BallPercept OracledPerceptsProvider Upper
-mr CirclePercept OracledPerceptsProvider Lower
-mr CirclePercept OracledPerceptsProvider Upper
-mr FieldBoundary OracledPerceptsProvider Lower
-mr FieldBoundary OracledPerceptsProvider Upper
-mr LinesPercept OracledPerceptsProvider Lower
-mr LinesPercept OracledPerceptsProvider Upper
-mr ObstaclesFieldPercept OracledPerceptsProvider Lower
-mr ObstaclesFieldPercept OracledPerceptsProvider Upper
-mr ObstaclesImagePercept OracledPerceptsProvider Lower
-mr ObstaclesImagePercept OracledPerceptsProvider Upper
-mr PenaltyMarkPercept OracledPerceptsProvider Lower
-mr PenaltyMarkPercept OracledPerceptsProvider Upper
+for Lower Upper mr BallPercept OracledPerceptsProvider
+for Lower Upper mr CirclePercept OracledPerceptsProvider
+for Lower Upper mr FieldBoundary OracledPerceptsProvider
+for Lower Upper mr LinesPercept OracledPerceptsProvider
+for Lower Upper mr ObstaclesFieldPercept OracledPerceptsProvider
+for Lower Upper mr ObstaclesImagePercept OracledPerceptsProvider
+for Lower Upper mr PenaltyMarkPercept OracledPerceptsProvider
 
 # IntersectionsProvider should not use network
 dr module:IntersectionsProvider:skipClassification
@@ -55,30 +46,29 @@ mr AutoExposureWeightTable off
 mr BallSpots off
 mr CameraImage off
 mr CameraIntrinsics off
-mr CNSImage off
-mr CNSPenaltyMarkRegions off
-mr CNSRegions off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage default
-mr GoalPostsPercept default
 mr JerseyClassifier off
-mr JerseyClassifierOld off
 mr JPEGImage off
 mr ObstaclesPerceptorData off
 mr OptionalECImage default
 mr OtherFieldBoundary off
-mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
 mr OtherOdometryData off
 mr PenaltyMarkRegions off
 mr RelativeFieldColors off
 mr ScanGrid off
+mr SegmentedObstacleImage off
 
 # Representations that are still required
 mr CameraStatus default
 mr FieldFeatureOverview default
 mr RobotHealth default
+mr RefereePercept default
+mr OptionalCameraImage default
+mr Keypoints default
+for Motion mr CameraIntrinsics ConfigurationDataProvider
 
 call Includes/GameStates
 call Includes/DebugResponses

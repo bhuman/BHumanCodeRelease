@@ -19,9 +19,7 @@ bool FieldBall::ballWasSeen(int timeInterval) const
 
 Vector2f FieldBall::recentBallPositionOnField(const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
-  ASSERT(ballSeenTimeout >= 0);
-  if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
     return teamPositionOnField;
   else
     return positionOnField;
@@ -29,9 +27,7 @@ Vector2f FieldBall::recentBallPositionOnField(const int ballSeenTimeout, const i
 
 Vector2f FieldBall::recentBallPositionRelative(const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
-  ASSERT(ballSeenTimeout >= 0);
-  if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
     return teamPositionRelative;
   else
     return positionRelative;
@@ -39,9 +35,7 @@ Vector2f FieldBall::recentBallPositionRelative(const int ballSeenTimeout, const 
 
 Vector2f FieldBall::recentBallEndPositionOnField(const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
-  ASSERT(ballSeenTimeout >= 0);
-  if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
     return teamEndPositionOnField;
   else
     return endPositionOnField;
@@ -49,9 +43,7 @@ Vector2f FieldBall::recentBallEndPositionOnField(const int ballSeenTimeout, cons
 
 Vector2f FieldBall::recentBallEndPositionRelative(const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
-  ASSERT(ballSeenTimeout >= 0);
-  if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
     return teamEndPositionRelative;
   else
     return endPositionRelative;
@@ -59,9 +51,7 @@ Vector2f FieldBall::recentBallEndPositionRelative(const int ballSeenTimeout, con
 
 void FieldBall::recentBallPositions(Vector2f& ballPositionOnField, Vector2f& ballPositionRelative, const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
-  ASSERT(ballSeenTimeout >= 0);
-  if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
   {
     ballPositionOnField = teamPositionOnField;
     ballPositionRelative = teamPositionRelative;
@@ -87,6 +77,21 @@ void FieldBall::recentBallEndPositions(Vector2f& ballEndPositionOnField, Vector2
     ballEndPositionOnField = endPositionOnField;
     ballEndPositionRelative = endPositionRelative;
   }
+}
+
+bool FieldBall::isBallPositionConsistentWithGameState(const int ballSeenTimeout, const int ballDisappearedTimeout) const
+{
+  if(useTeammatesBall(ballSeenTimeout, ballDisappearedTimeout))
+    return teamBallPositionConsistentWithGameState;
+  else
+    return ballPositionConsistentWithGameState;
+}
+
+bool FieldBall::useTeammatesBall(const int ballSeenTimeout, const int ballDisappearedTimeout) const
+{
+  ASSERT(ballSeenTimeout >= 0);
+  return (timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
+         && teammatesBallIsValid && teammatesBallNewerThanOwnBall;
 }
 
 void FieldBall::draw() const

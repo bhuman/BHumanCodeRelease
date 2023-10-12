@@ -22,7 +22,7 @@ PLAT_TO_CMAKE = {
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.join(os.path.abspath(sourcedir), "..", "CMake")
+        self.sourcedir = os.path.join(os.path.abspath(sourcedir), "Make", "CMake")
 
 
 class CMakeBuild(build_ext):
@@ -39,14 +39,12 @@ class CMakeBuild(build_ext):
         # Can be set with Conda-Build, for example.
         cmake_generator = os.environ.get('CMAKE_GENERATOR', '')
 
-        # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
-        # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
-        # from Python.
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
-            f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DREAL_VERSION_INFO={self.distribution.get_version()}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
+            f"-DPYTHON_ONLY=TRUE",
+            f"-DPython3_ROOT_DIR={sys.base_prefix}"
         ]
         build_args = []
 
@@ -96,7 +94,7 @@ class CMakeBuild(build_ext):
             ['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp
         )
         subprocess.check_call(
-            ['cmake', '--build', '.', '--target', 'PythonLogs'] + build_args, cwd=self.build_temp
+            ['cmake', '--build', '.', '--target', 'PythonLogs', 'PythonController'] + build_args, cwd=self.build_temp
         )
 
 
@@ -104,8 +102,10 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name='pybh',
-    version='0.2.0',
+    version='0.3.5',
     author='B-Human',
+    author_email='b-human@uni-bremen.de',
+    url='https://b-human.de',
     description='Python bindings for B-Human.',
     ext_modules=[CMakeExtension('pybh.')],  # . to create a folder for the libs
     cmdclass={'build_ext': CMakeBuild},

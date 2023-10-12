@@ -14,8 +14,6 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/RobotModel.h"
@@ -29,14 +27,13 @@ MODULE(FootSupportProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(FsrData),
-  USES(MotionInfo),
-  REQUIRES(RobotDimensions),
   PROVIDES(FootSupport),
   LOADS_PARAMETERS(
   {,
-    (float) maxPressure, /**< Maximum pressure assumed. */
     (float) outerWeight, /**< Weights for outer FSRs. */
     (float) innerWeight, /**< Weights for inner FSRs. */
+    (float) currentSupportMaxPressure, /**< Max support % weight to allow a support switch prediction. */
+    (float) currentSwingMinPressure, /**< Min swing % weight to allow a support switch prediction. */
   }),
 });
 

@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "Network/RoboCupGameControlData.h"
 #include "Streaming/Function.h"
 #include "Streaming/AutoStreamable.h"
 #include "Tools/Communication/BHumanMessage.h"

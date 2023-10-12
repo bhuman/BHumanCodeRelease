@@ -12,9 +12,8 @@
 #include "Math/BHMath.h"
 #include "ImageProcessing/AVX.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Math/InImageSizeCalculations.h"
 
-MAKE_MODULE(CNSImageProvider, perception);
+MAKE_MODULE(CNSImageProvider);
 
 ///////////////////////////////////////////////////////////////////////////
 // Local helpers

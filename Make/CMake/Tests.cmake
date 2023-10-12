@@ -1,10 +1,10 @@
 set(TESTS_ROOT_DIR "${BHUMAN_PREFIX}/Src/Apps/Tests")
-set(TESTS_OUTPUT_DIR "${OUTPUT_PREFIX}/Build/${OS}/Tests/$<CONFIG>")
+set(TESTS_OUTPUT_DIR "${OUTPUT_PREFIX}/Build/${PLATFORM}/Tests/$<CONFIG>")
 
 file(GLOB_RECURSE TESTS_SOURCES CONFIGURE_DEPENDS
     "${TESTS_ROOT_DIR}/*.cpp" "${TESTS_ROOT_DIR}/*.h")
 
-if(APPLE)
+if(MACOS)
   list(REMOVE_ITEM TESTS_SOURCES "${TESTS_ROOT_DIR}/Test.cpp")
   list(APPEND TESTS_SOURCES "${TESTS_ROOT_DIR}/Test.mm")
 endif()
@@ -14,13 +14,12 @@ add_executable(Tests MACOSX_BUNDLE ${TESTS_SOURCES})
 set_property(TARGET Tests PROPERTY RUNTIME_OUTPUT_DIRECTORY "${TESTS_OUTPUT_DIR}")
 set_property(TARGET Tests PROPERTY FOLDER Apps)
 set_property(TARGET Tests PROPERTY MACOSX_BUNDLE_INFO_PLIST "${TESTS_ROOT_DIR}/Info.plist")
-set_property(TARGET Tests PROPERTY XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
 set_property(TARGET Tests PROPERTY XCODE_GENERATE_SCHEME ON)
 set_property(TARGET Tests PROPERTY XCODE_PRODUCT_TYPE "com.apple.product-type.bundle.unit-test")
 
 target_include_directories(Tests PRIVATE "${TESTS_ROOT_DIR}")
 
-if(APPLE)
+if(MACOS)
   target_link_libraries(Tests PRIVATE ${APP_KIT_FRAMEWORK})
 endif()
 

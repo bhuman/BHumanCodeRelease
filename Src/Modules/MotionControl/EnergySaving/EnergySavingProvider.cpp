@@ -6,7 +6,7 @@
 #include "EnergySavingProvider.h"
 #include <cmath>
 
-MAKE_MODULE(EnergySavingProvider, motionControl);
+MAKE_MODULE(EnergySavingProvider);
 
 EnergySavingProvider::EnergySavingProvider()
 {
@@ -41,11 +41,9 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
     energySaving.state = EnergyState::resetState;
   };
 
-  energySaving.applyHeatAdjustment = [this, &energySaving](JointRequest& request, const bool adjustLegs, const bool adjustArms, const bool standHigh, const bool accuratePositions)
+  energySaving.applyHeatAdjustment = [this, &energySaving](JointRequest& request, bool adjustLeftLeg, bool adjustRightLeg, bool adjustLeftArm, bool adjustRightArm, const bool standHigh, const bool accuratePositions)
   {
     usedResetInterpolation = theMotionInfo.isMotion(MotionPhase::stand) ? resetTimeNormal : resetTimeSlow;
-    bool adjustLeftArm = adjustArms;
-    bool adjustRightArm = adjustArms;
     adjustLeftArm &= theArmMotionInfo.isKeyframeMotion(Arms::left, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::left] == ArmMotionRequest::none;
     adjustRightArm &= theArmMotionInfo.isKeyframeMotion(Arms::right, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::right] == ArmMotionRequest::none;
     auto setInitialOffset = [&]
@@ -124,17 +122,17 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
     {
       int offsetCapCounter = 0;
       int offsetSingleCap = 0;
-      for(size_t i = Joints::firstLegJoint; i < energySaving.offsets.size(); i++)   //Only reset and cap based on legs
+      for(std::size_t joint = 0; joint < energySaving.offsets.size(); joint++)
       {
-        if(i == Joints::rHipYawPitch)   //skip rHipYawPitch
+        if(joint == Joints::rHipYawPitch) // skip rHipYawPitch
           continue;
-        Angle capOffset = energySaving.offsets[i] > 0 ? std::min(energySaving.offsets[i], maxAngleMultipleJoints) : std::max(energySaving.offsets[i], -maxAngleMultipleJoints);
-        if(capOffset != energySaving.offsets[i])
+        Angle capOffset = energySaving.offsets[joint] > 0 ? std::min(energySaving.offsets[joint], maxAngleMultipleJoints) : std::max(energySaving.offsets[joint], -maxAngleMultipleJoints);
+        if(capOffset != energySaving.offsets[joint] && joint > Joints::firstLegJoint) // Only reset and cap based on legs
           offsetCapCounter++;
-        capOffset = energySaving.offsets[i] > 0 ? std::min(energySaving.offsets[i], maxAngleOneJoint) : std::max(energySaving.offsets[i], -maxAngleOneJoint);
-        if(capOffset != energySaving.offsets[i])
+        capOffset = energySaving.offsets[joint] > 0 ? std::min(energySaving.offsets[joint], maxAngleOneJoint) : std::max(energySaving.offsets[joint], -maxAngleOneJoint);
+        if(capOffset != energySaving.offsets[joint]) // Only reset and cap based on legs
           offsetSingleCap++;
-        energySaving.offsets[i] = capOffset;
+        energySaving.offsets[joint] = capOffset;
       }
       if((offsetCapCounter >= minNumberForHeatAdjustmentReset || offsetSingleCap != 0) && !isComStable(standHigh))
       {
@@ -184,10 +182,10 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
             std::size_t lastJoint = !adjustOnlyOneLegJoint ? Joints::numOfJoints : Joints::firstLeftLegJoint;
             // Only adjust the leg joint with the highest current
             if(adjustOnlyOneLegJoint)
-              applyJointEnergySaving(theFilteredCurrent.legJointWithHighestCurrent, energySaving, request, adjustLegs, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
+              applyJointEnergySaving(theFilteredCurrent.legJointWithHighestCurrent, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
             for(std::size_t i = 0; i < lastJoint; i++)
             {
-              applyJointEnergySaving(i, energySaving, request, adjustLegs, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
+              applyJointEnergySaving(i, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
             }
             //cap the offsets and count how many offsets are capped. If too many are capped, reset the offsets
             workingPostFunc();
@@ -277,7 +275,8 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
 
 void EnergySavingProvider::applyJointEnergySaving(const std::size_t& joint,
                                                   EnergySaving& energySaving, JointRequest& request,
-                                                  const bool adjustLegs, const bool adjustLeftArm, const bool adjustRightArm,
+                                                  const bool adjustLeftLeg, const bool adjustRightLeg,
+                                                  const bool adjustLeftArm, const bool adjustRightArm,
                                                   const bool standHigh, std::vector<Angle>& jointDiffs)
 {
   //skip joint that can not be effectively adjusted
@@ -289,8 +288,9 @@ void EnergySavingProvider::applyJointEnergySaving(const std::size_t& joint,
     return;
   jointDiffs[joint] = theJointAngles.angles[joint] - request.angles[joint];
   const bool adjustThisArm = joint < Joints::firstRightArmJoint ? adjustLeftArm : adjustRightArm;
+  const bool adjustThisLeg = joint < Joints::firstRightLegJoint ? adjustLeftLeg : adjustRightLeg;
   const int& useLegCurrentThreshold = std::abs(energySaving.offsets[joint]) < maxAngleOneJoint / 2.f ? currentThresholdLegs : currentThresholdLegsHighOffset;
-  if((joint >= Joints::firstLegJoint && theFilteredCurrent.currents[joint] > useLegCurrentThreshold && adjustLegs)
+  if((joint >= Joints::firstLegJoint && theFilteredCurrent.currents[joint] > useLegCurrentThreshold && adjustThisLeg)
      || (joint < Joints::firstLegJoint && theFilteredCurrent.currents[joint] > currentThresholdArms && adjustThisArm)) //if current is above the threshold, change the offset
   {
     //It can happen, that the offset changes around the current measured joint value.
@@ -315,6 +315,10 @@ void EnergySavingProvider::applyJointEnergySaving(const std::size_t& joint,
       energySaving.offsets[joint] += (jointDiffs[joint] > 0 ? 1 : -1) * step;
     }
   }
+  // TODO test if this has side effects!
+  else if((joint >= Joints::firstLegJoint && !adjustThisLeg)
+          || (joint < Joints::firstLegJoint && !adjustThisArm))
+    energySaving.offsets[joint] = 0;
 }
 
 bool EnergySavingProvider::isComStable(const bool& isStandHigh)

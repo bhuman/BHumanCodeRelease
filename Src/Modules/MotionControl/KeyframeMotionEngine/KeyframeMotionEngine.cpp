@@ -7,6 +7,7 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 
 KeyframeMotionEngine::KeyframeMotionEngine()
 {
@@ -172,7 +173,8 @@ bool KeyframePhase::isDone(const MotionRequest& motionRequest) const
   };
   return ((sitDownWaitForRequest || isSitDownBreakUp) && !isMotionCompatibleWithRequest()) // (Motion is done OR sitDown special) cases AND request changed
          || (state == EngineState::balanceOut && motionRequest.isWalking() && type == MotionPhase::getUp && engine.theGroundContactState.contact) // Early switch to walkPhase
-         || (state == EngineState::breakUp && engine.theFrameInfo.getTimeSince(breakUpTimestamp) > 1000 && type == MotionPhase::keyframeMotion && ((motionRequest.motion != MotionRequest::dive && motionRequest.motion != MotionRequest::special) || (engine.safeUprightParameters.pitchDirection.isInside(engine.theInertialData.angle.y()) && engine.safeUprightParameters.rollDirection.isInside(engine.theInertialData.angle.x()))));
+         || (state == EngineState::breakUp && engine.theFrameInfo.getTimeSince(breakUpTimestamp) > 1000 && type == MotionPhase::keyframeMotion && ((motionRequest.motion != MotionRequest::dive && motionRequest.motion != MotionRequest::special) || (engine.safeUprightParameters.pitchDirection.isInside(engine.theInertialData.angle.y()) && engine.safeUprightParameters.rollDirection.isInside(engine.theInertialData.angle.x()))))
+         || (currentKeyframeMotionRequest.keyframeMotion == KeyframeMotionID::sitDownKeeper && state == EngineState::working && (motionRequest.diveRequest == MotionRequest::Dive::jumpLeft || motionRequest.diveRequest == MotionRequest::Dive::jumpRight));
 }
 
 void KeyframePhase::calcJoints(const MotionRequest&, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo)
@@ -212,7 +214,7 @@ std::unique_ptr<MotionPhase> KeyframePhase::createNextPhase(const MotionPhase& d
   }
   else if(defaultPhase.type != MotionPhase::walk &&
           currentKeyframeMotionRequest.keyframeMotion == KeyframeMotionID::decideAutomatic)
-    return engine.theWalkGenerator.createPhase(Pose2f(0, 0.1f, 0.f), *this);
+    return engine.theWalkGenerator.createPhase(Pose2f(0, 0.1f, 0.f), *this, 0.f);
   return std::unique_ptr<MotionPhase>();
 }
 
@@ -296,7 +298,7 @@ void KeyframePhase::update()
   }
   if(state == EngineState::finished)
     checkFinishedState();
-  // We have no get up trys left.
+  // We have no get up tries left.
   if(state == EngineState::helpMeState)
     doHelpMeStuff();
   FOREACH_ENUM(Joints::Joint, joint)
@@ -311,7 +313,7 @@ void KeyframePhase::update()
   if(engine.theEnergySaving.state == EnergySaving::EnergyState::resetState ||
      (energySavingLeg || energySavingArms))
   {
-    engine.theEnergySaving.applyHeatAdjustment(jointRequestOutput, energySavingLeg, energySavingArms,
+    engine.theEnergySaving.applyHeatAdjustment(jointRequestOutput, energySavingLeg, energySavingLeg, energySavingArms, energySavingArms,
                                                currentMotion.keyframeEndRequest.isStandHigh, false);
   }
 
@@ -357,4 +359,4 @@ void KeyframeMotionEngine::setUpDebugCommands(KeyframeMotionGenerator&)
 #endif
 }
 
-MAKE_MODULE(KeyframeMotionEngine, motionControl);
+MAKE_MODULE(KeyframeMotionEngine);

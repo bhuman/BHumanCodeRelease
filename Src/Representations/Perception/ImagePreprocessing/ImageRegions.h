@@ -57,15 +57,3 @@ STREAMABLE_WITH_BASE(PenaltyMarkRegions, ImageRegions,
                   region.x.max, region.y.max, 1, Drawings::solidPen, ColorRGBA::magenta);
   },
 });
-
-/** The regions that the CNS must be calculated of to search for a penalty mark. */
-STREAMABLE_WITH_BASE(CNSPenaltyMarkRegions, ImageRegions,
-{
-  void draw() const
-  {
-    DEBUG_DRAWING("representation:CNSPenaltyMarkRegions", "drawingOnImage")
-      for(const Boundaryi& region : regions)
-        RECTANGLE("representation:CNSPenaltyMarkRegions", region.x.min, region.y.min,
-                  region.x.max, region.y.max, 1, Drawings::solidPen, ColorRGBA::blue);
-  },
-});

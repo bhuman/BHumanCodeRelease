@@ -11,7 +11,6 @@
 #include "Representations/Configuration/KickInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
 #include <algorithm>
@@ -36,7 +35,6 @@ SKILL_IMPLEMENTATION(DemoGoToBallAndKickImpl,
   REQUIRES(BallModel),
   REQUIRES(FrameInfo),
   REQUIRES(KickInfo),
-  REQUIRES(RobotPose),
   REQUIRES(MotionInfo),
   LOADS_PARAMETERS(
   {,

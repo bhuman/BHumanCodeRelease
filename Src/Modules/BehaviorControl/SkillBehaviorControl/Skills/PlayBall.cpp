@@ -121,8 +121,6 @@ class PlayBallImpl : public PlayBallImplBase
       Vector2f nearestObstacle;
       for(const auto& o : theObstacleModel.obstacles)
       {
-        if(o.type == Obstacle::goalpost)
-          continue;
         const float d = (o.center - theFieldBall.positionRelative).squaredNorm();
         if(d < x)
         {
@@ -159,14 +157,11 @@ class PlayBallImpl : public PlayBallImplBase
 
     for(const Obstacle& omo : theObstacleModel.obstacles)
     {
-      if(omo.type != Obstacle::Type::goalpost)
-      {
-        const float distanceToObstacle = omo.center.norm();
-        const float angleToObstacle = std::abs(omo.center.angle());
+      const float distanceToObstacle = (omo.center - theFieldBall.positionRelative).norm();
+      const float angleToObstacle = std::abs(omo.center.angle());
 
-        if(distanceToObstacle < (duelMinDistanceToClosest * 1.2f * (1.f - (std::abs(angleToObstacle) / pi / 2.f))))
-          return false;
-      }
+      if(distanceToObstacle < (duelMinDistanceToClosest * 1.2f * (1.f - (std::abs(angleToObstacle) / pi / 2.f))))
+        return false;
     }
     return true;
   };
