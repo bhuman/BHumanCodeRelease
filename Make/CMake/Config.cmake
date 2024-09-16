@@ -4,7 +4,8 @@ file(GLOB_RECURSE CONFIG_FILES
     "${CONFIG_ROOT_DIR}/KickEngine/*.kmc")
 file(GLOB_RECURSE CONFIG_FILES_DEFAULT
     "${CONFIG_ROOT_DIR}/*/Default/*.cfg"
-    "${CONFIG_ROOT_DIR}/*/Default/*.def")
+    "${CONFIG_ROOT_DIR}/*/Default/*.def"
+    "${CONFIG_ROOT_DIR}/NeuralNets/*.cfg")
 file(GLOB_RECURSE CONFIG_FILES_ALL
     "${CONFIG_ROOT_DIR}/*.cfg"
     "${CONFIG_ROOT_DIR}/*.def"

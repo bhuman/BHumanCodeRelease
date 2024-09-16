@@ -12,6 +12,7 @@
 #include "Framework/Settings.h"
 #include "Streaming/AutoStreamable.h"
 #include "Streaming/Enum.h"
+#include <algorithm>
 #include <array>
 
 STREAMABLE(GameState,
@@ -19,6 +20,7 @@ STREAMABLE(GameState,
   ENUM(State,
   {,
     beforeHalf, /**< The half hasn't started yet. */
+    standby, /**< Wait for the signal to walk in from the touchlines. */
     afterHalf, /**< The half is over. */
     timeout, /**< A team or the referee has taken a timeout. */
 
@@ -68,16 +70,17 @@ STREAMABLE(GameState,
     unstiff, /**< The robot is unstiff. */
     calibration, /**< The robot is in calibration mode. */
     penalizedManual, /**< The robot has been penalized using the chest button (no GameController is active). */
-    penalizedIllegalBallContact, /**< The robot is penalized for an illegal ball contact (at the sideline, at least 45s). */
-    penalizedPlayerPushing, /**< The robot is penalized for pushing (at the sideline, at least 45s). */
+    penalizedIllegalBallContact, /**< The robot is penalized for an illegal ball contact (at the touchline, at least 45s). */
+    penalizedPlayerPushing, /**< The robot is penalized for pushing (at the touchline, at least 45s). */
     penalizedIllegalMotionInSet, /**< The robot is penalized for illegal motion in set (in place, 15s). */
-    penalizedInactivePlayer, /**< The robot is penalized for being inactive / fallen (at the sideline, 45s). */
-    penalizedIllegalPosition, /**< The robot is penalized for being in an illegal position (at the sideline, at least 45s). */
-    penalizedLeavingTheField, /**< The robot is penalized for leaving the field (at the sideline, at least 45s). */
+    penalizedInactivePlayer, /**< The robot is penalized for being inactive / fallen (at the touchline, 45s). */
+    penalizedIllegalPosition, /**< The robot is penalized for being in an illegal position (at the touchline, at least 45s). */
+    penalizedLeavingTheField, /**< The robot is penalized for leaving the field (at the touchline, at least 45s). */
     penalizedRequestForPickup, /**< The robot is picked up. */
-    penalizedLocalGameStuck, /**< The robot is penalized for causing a local game stuck (at the sideline, 45s). */
-    penalizedIllegalPositionInSet, /**< The robot is penalized for an illegal position in set (at the sideline, 15s). */
-    penalizedPlayerStance, /**< The robot is penalized for an illegal stance (at the sideline, at least 45s). */
+    penalizedLocalGameStuck, /**< The robot is penalized for causing a local game stuck (at the touchline, 45s). */
+    penalizedIllegalPositionInSet, /**< The robot is penalized for an illegal position in set (at the touchline, 15s). */
+    penalizedPlayerStance, /**< The robot is penalized for an illegal stance (at the touchline, at least 45s). */
+    penalizedIllegalMotionInStandby, /**< The robot is penalized for illegal motion in standby (in place, 15s). */
     substitute, /**< The robot is a substitute. */
     active, /**< The robot is playing according to the global game state. */
   });
@@ -100,6 +103,15 @@ STREAMABLE(GameState,
     bool isGoalkeeper(int playerNumber) const
     {
       return playerNumber == goalkeeperNumber;
+    }
+
+    /**
+     * Returns the number of players on the team that are active.
+     * @return The number of players ...
+     */
+    unsigned int numOfActivePlayers() const
+    {
+      return static_cast<unsigned int>(std::count_if(playerStates.begin(), playerStates.end(), [](const PlayerState playerState){return playerState == active;}));
     }
 
     /**
@@ -127,16 +139,17 @@ STREAMABLE(GameState,
   /** Draw the representation. */
   void draw() const;
 
-  static bool isInitial(State state)
+  static bool isInitial(State state, bool orStandby = true)
   {
     return state == beforeHalf ||
+           (orStandby && state == standby) ||
            state == timeout ||
            state == beforePenaltyShootout;
   }
 
-  bool isInitial() const
+  bool isInitial(bool orStandby = true) const
   {
-    return isInitial(state);
+    return isInitial(state, orStandby);
   }
 
   static bool isReady(State state)
@@ -206,6 +219,7 @@ STREAMABLE(GameState,
   static bool isStopped(State state)
   {
     return state == beforeHalf ||
+           state == standby ||
            state == afterHalf ||
            state == timeout ||
            state == beforePenaltyShootout ||
@@ -381,6 +395,7 @@ STREAMABLE(GameState,
            state == penalizedRequestForPickup ||
            state == penalizedLocalGameStuck ||
            state == penalizedIllegalPositionInSet ||
+           state == penalizedIllegalMotionInStandby ||
            state == penalizedPlayerStance ||
            state == substitute;
   }
@@ -405,23 +420,24 @@ STREAMABLE(GameState,
   (State)(beforeHalf) state, /**< The current state of the game. */
   (unsigned)(0) timeWhenStateStarted, /**< Time when the current state started. */
   (unsigned)(0) timeWhenStateEnds, /**< Time when the current state is expected to end. Only valid for some states! */
-  (bool)(false) kickOffSetupFromSidelines, /**< During a kick-off setup: Is it from the sidelines (i.e. start of half / after timeout as opposed to after a goal / global game stuck)? */
+  (bool)(false) kickOffSetupFromTouchlines, /**< During a kick-off setup: Is it from the touchlines (i.e. start of half / after timeout as opposed to after a goal / global game stuck)? */
   (Team) ownTeam, /**< The state of the own team. */
   (Team) opponentTeam, /**< The state of the opponent team. */
   (int)(0) playerNumber, /**< The jersey number of this player. */
   (PlayerState)(unstiff) playerState, /**< The current state of this player. */
   (unsigned)(0) timeWhenPlayerStateStarted, /**< Time when the current player state started. */
   (bool)(false) gameControllerActive, /**< Whether a GameController is active. */
-  (bool)(true) leftHandTeam, /**< Whether the own team plays on the left side from the GameController PoV*/
+  (bool)(true) leftHandTeam, /**< Whether the own team defends the left goal from the GameController's PoV. */
   (CompetitionPhase)(roundRobin) competitionPhase, /**< The phase of the tournament we are in. */
   (bool)(false) whistled, /**< State was switched due to a whistle. */
+  (unsigned)(0) timeWhenPenaltyEnds, /**< Time when the own penalty is expected to end (0 -> not penalized). */
 });
 
 STREAMABLE(ExtendedGameState,
 {
-  bool wasInitial() const
+  bool wasInitial(bool orStandby = true) const
   {
-    return GameState::isInitial(stateLastFrame);
+    return GameState::isInitial(stateLastFrame, orStandby);
   }
 
   bool wasReady() const

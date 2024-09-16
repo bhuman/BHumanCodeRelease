@@ -1,6 +1,11 @@
-find_package(Python3 COMPONENTS Development QUIET)
+if(PYTHON_ONLY)
+  find_package(Python3 ${PYTHON_VERSION} COMPONENTS Development REQUIRED ${FIND_PYTHON_EXTRA_ARGS})
+else()
+  find_package(Python3 ${PYTHON_VERSION} COMPONENTS Development QUIET ${FIND_PYTHON_EXTRA_ARGS})
+endif()
 
 if(Python3_FOUND)
+  message(STATUS "Found Python version ${Python3_VERSION}")
   set(PYTHON_ROOT_DIR "${BHUMAN_PREFIX}/Src/Libs/Python")
   set(PYTHON_OUTPUT_DIR "${OUTPUT_PREFIX}/Build/${PLATFORM}/Python/$<CONFIG>")
 
@@ -33,31 +38,4 @@ if(Python3_FOUND)
   target_include_directories(PythonLogs SYSTEM PRIVATE "${BHUMAN_PREFIX}/Util/pybind11/include")
   target_include_directories(PythonLogs PRIVATE "${PYTHON_ROOT_DIR}/..")
   source_group(TREE "${PYTHON_ROOT_DIR}/Logs" FILES ${PYTHON_LOGS_SOURCES})
-
-  set(PYTHON_CONTROLLER_SOURCES
-      "${PYTHON_ROOT_DIR}/Controller/Controller.cpp"
-      "${PYTHON_ROOT_DIR}/Controller/Controller.h"
-      "${PYTHON_ROOT_DIR}/Controller/Module.cpp"
-      "${PYTHON_ROOT_DIR}/Controller/PythonConsole.cpp"
-      "${PYTHON_ROOT_DIR}/Controller/PythonConsole.h"
-      "${PYTHON_ROOT_DIR}/Controller/PythonRobot.h")
-
-  Python3_add_library(PythonController MODULE WITH_SOABI ${PYTHON_CONTROLLER_SOURCES})
-  set_property(TARGET PythonController PROPERTY FOLDER Libs)
-  set_property(TARGET PythonController PROPERTY LIBRARY_OUTPUT_NAME controller)
-  if(DEFINED REAL_VERSION_INFO)
-    # We are in a pip build.
-    target_compile_definitions(PythonController PRIVATE VERSION_INFO=${REAL_VERSION_INFO})
-  else()
-    set_property(TARGET PythonController PROPERTY LIBRARY_OUTPUT_DIRECTORY "${PYTHON_OUTPUT_DIR}")
-    set_property(TARGET PythonController PROPERTY PDB_OUTPUT_DIRECTORY "${PYTHON_OUTPUT_DIR}")
-  endif()
-  set_property(TARGET PythonController PROPERTY EXCLUDE_FROM_ALL TRUE)
-  target_link_libraries(PythonController PRIVATE B-Human)
-  target_link_libraries(PythonController PRIVATE Framework)
-  target_link_libraries(PythonController PRIVATE Platform)
-  target_link_libraries(PythonController PRIVATE Streaming)
-  target_include_directories(PythonController SYSTEM PRIVATE "${BHUMAN_PREFIX}/Util/pybind11/include")
-  target_include_directories(PythonController PRIVATE "${PYTHON_ROOT_DIR}/..")
-  source_group(TREE "${PYTHON_ROOT_DIR}/Controller" FILES ${PYTHON_CONTROLLER_SOURCES})
 endif()

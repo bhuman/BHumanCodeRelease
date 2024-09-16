@@ -34,6 +34,8 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
   headMotionGenerator.calcJoints = [this](bool setJoints, JointRequest& jointRequest, HeadMotionInfo& headMotionInfo,
                                           const MotionRequest& motionRequest, const OdometryData& odometry)
   {
+    ASSERT(theHeadAngleRequest.pan != JointAngles::ignore);
+    ASSERT(theHeadAngleRequest.tilt != JointAngles::ignore);
     if(!setJoints)
     {
       // Do not write anything to the joint request.
@@ -132,6 +134,11 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
     headAngleRequest.speed = theHeadMotionRequest.speed;
     // Do not clip angles.
     headAngleRequest.disableClippingAndInterpolation = true;
+    // Handle ignore
+    if(theHeadMotionRequest.tilt == JointAngles::ignore)
+      headAngleRequest.tilt = theJointRequest.angles[Joints::headPitch];
+    if(theHeadMotionRequest.pan == JointAngles::ignore)
+      headAngleRequest.pan = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
     return;
   }
   else
@@ -143,6 +150,16 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
     panTiltUpperCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(false);
     panTiltLowerCam.x() = theHeadMotionRequest.pan;
     panTiltLowerCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(true);
+
+    if(theHeadMotionRequest.tilt == JointAngles::off || theHeadMotionRequest.tilt == JointAngles::ignore)
+      panTiltUpperCam.y() = theJointRequest.angles[Joints::headPitch];
+    if(theHeadMotionRequest.tilt == JointAngles::off || theHeadMotionRequest.tilt == JointAngles::ignore)
+      panTiltLowerCam.y() = theJointRequest.angles[Joints::headPitch];
+
+    if(theHeadMotionRequest.pan == JointAngles::off || theHeadMotionRequest.pan == JointAngles::ignore)
+      panTiltUpperCam.x() = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
+    if(theHeadMotionRequest.pan == JointAngles::off || theHeadMotionRequest.pan == JointAngles::ignore)
+      panTiltLowerCam.x() = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
   }
   else
   {

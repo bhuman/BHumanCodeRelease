@@ -30,10 +30,13 @@ BHLoggingController::~BHLoggingController()
   Blackboard::getInstance().free("GameState");
 }
 
-bool BHLoggingController::shouldLog() const
+bool BHLoggingController::shouldLog(bool wasLogging) const
 {
-  return !gameState.isInitial()
-         && (!gameState.isFinished() || Time::getTimeSince(gameState.timeWhenStateStarted) < 15000);
+  // We want to log in most states, but there are exceptions:
+  // - The INITIAL state is excluded.
+  // - The FINISHED state is excluded, except for the first 10s if we have been logging before.
+  return !(gameState.isInitial(/* orStandby: */ false)
+           || (gameState.isFinished() && !(wasLogging && Time::getTimeSince(gameState.timeWhenStateStarted) < 10000)));
 }
 
 std::string BHLoggingController::getDescription() const

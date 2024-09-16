@@ -25,7 +25,7 @@
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Representations/Configuration/SetupPoses.h"
 #include "Representations/Configuration/StaticInitialPose.h"
 #include "Tools/Modeling/SampleSet.h"
@@ -39,7 +39,7 @@ MODULE(SelfLocator,
   REQUIRES(OdometryData),
   REQUIRES(FallDownState),
   REQUIRES(GameState),
-  REQUIRES(GyroState),
+  REQUIRES(IMUValueState),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(LibDemo),
@@ -84,9 +84,13 @@ MODULE(SelfLocator,
     (float)  translationalDeviationForResetting,     /**< To insert a new particle, the current alternative pose must be farther away from the current robot pose than this threshold. */
     (float)  rotationalDeviationForResetting,        /**< To insert a new particle, the current alternative pose rotation must be more different from the current robot pose rotation than this threshold. */
     (float)  returnFromPenaltyMaxXOffset,            /**< When poses are generated after returning from a penalty, a random x offset is added to each pose. The absolute value of this offset is defined by this parameter. */
-    (bool)   demoUseCustomReturnFromPenaltyPoses,       /**< Flag to use the two following poses when localization is restarted after a penalty. This is only useful for certain demos on special fields. */
-    (Pose2f) demoCustomReturnFromPenaltyPoseGoalie,     /**< Goalie pose is set to this pose after a penalty. */
-    (Pose2f) demoCustomReturnFromPenaltyPoseFieldPlayer,/**< Field player pose is set to this pose after a penalty. */
+    (bool)   demoUseCustomReturnFromPenaltyPoses,             /**< Flag to use the two following poses when localization is restarted after a penalty. This is only useful for certain demos on special fields. */
+    (Pose2f) demoCustomReturnFromPenaltyPoseGoalie,           /**< Goalie pose is set to this pose after a penalty. */
+    (Pose2f) demoCustomReturnFromPenaltyPoseFieldPlayer,      /**< Field player pose is set to this pose after a penalty. */
+    (int)    timeoutForResamplingAfterReturnFromPenalty,      /**< Do not perform any resampling step after returning from a penalty for this time (in milliseconds).*/
+    (int)    timeoutForSensorResettingAfterReturnFromPenalty, /**< Do not perform sensor resetting after returning from a penalty for this time (in milliseconds).*/
+    (int)    timeoutBetweenTwoJumpSounds,                     /**< Make a pause between playing two "Jump!" sounds for this time (in milliseconds).*/
+    (int)    timeoutForJumpAnnotationAfterReturnFromPenalty,  /**< If the robot pose jumps within this time (in milliseconds) after returning from a penalty, a different annotation will be written.*/
   }),
 });
 

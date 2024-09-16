@@ -4,74 +4,74 @@ echo vp PlayBorderLHYP 100 -30 10
 vpd PlayBorderLHYP representation:JointPlay:play:upper:lHipYawPitch red
 vpd PlayBorderLHYP representation:JointPlay:play:lower:lHipYawPitch blue
 vpd PlayBorderLHYP representation:JointAngles:lHipYawPitch
-vpd PlayBorderLHYP representation:JointAnglesPred:lHipYawPitch green
+vpd PlayBorderLHYP representation:JointAnglePred:hipYawPitch green
 
 vp PlayBorderLHR 100 -5 20
 echo vp PlayBorderLHR 100 -5 20
 vpd PlayBorderLHR representation:JointPlay:play:upper:lHipRoll red
 vpd PlayBorderLHR representation:JointPlay:play:lower:lHipRoll blue
 vpd PlayBorderLHR representation:JointAngles:lHipRoll
-vpd PlayBorderLHR representation:JointAnglesPred:lHipRoll green
+vpd PlayBorderLHR representation:JointAnglePred:lHipRoll green
 
 vp PlayBorderLHP 100 -35 0
 echo vp PlayBorderLHP 100 -35 0
 vpd PlayBorderLHP representation:JointPlay:play:upper:lHipPitch red
 vpd PlayBorderLHP representation:JointPlay:play:lower:lHipPitch blue
 vpd PlayBorderLHP representation:JointAngles:lHipPitch
-vpd PlayBorderLHP representation:JointAnglesPred:lHipPitch green
+vpd PlayBorderLHP representation:JointAnglePred:lHipPitch green
 
 vp PlayBorderLKP 100 40 65
 echo vp PlayBorderLKP 100 40 65
 vpd PlayBorderLKP representation:JointPlay:play:upper:lKneePitch red
 vpd PlayBorderLKP representation:JointPlay:play:lower:lKneePitch blue
 vpd PlayBorderLKP representation:JointAngles:lKneePitch
-vpd PlayBorderLKP representation:JointAnglesPred:lKneePitch green
+vpd PlayBorderLKP representation:JointAnglePred:lKneePitch green
 
 vp PlayBorderLAP 100 -43 -10
 echo vp PlayBorderLAP 100 -43 -10
 vpd PlayBorderLAP representation:JointPlay:play:upper:lAnklePitch red
 vpd PlayBorderLAP representation:JointPlay:play:lower:lAnklePitch blue
 vpd PlayBorderLAP representation:JointAngles:lAnklePitch
-vpd PlayBorderLAP representation:JointAnglesPred:lAnklePitch green
+vpd PlayBorderLAP representation:JointAnglePred:lAnklePitch green
 
 vp PlayBorderLAR 100 -20 5
 echo vp PlayBorderLAR 100 -10 10
 vpd PlayBorderLAR representation:JointPlay:play:upper:lAnkleRoll red
 vpd PlayBorderLAR representation:JointPlay:play:lower:lAnkleRoll blue
 vpd PlayBorderLAR representation:JointAngles:lAnkleRoll
-vpd PlayBorderLAR representation:JointAnglesPred:lAnkleRoll green
+vpd PlayBorderLAR representation:JointAnglePred:lAnkleRoll green
 
 vp PlayBorderRHR 100 -20 5
 echo vp PlayBorderRHR 100 -10 10
 vpd PlayBorderRHR representation:JointPlay:play:upper:rHipRoll red
 vpd PlayBorderRHR representation:JointPlay:play:lower:rHipRoll blue
 vpd PlayBorderRHR representation:JointAngles:rHipRoll
-vpd PlayBorderRHR representation:JointAnglesPred:rHipRoll green
+vpd PlayBorderRHR representation:JointAnglePred:rHipRoll green
 
 vp PlayBorderRHP 100 -35 0
 echo vp PlayBorderRHP 100 -35 0
 vpd PlayBorderRHP representation:JointPlay:play:upper:rHipPitch red
 vpd PlayBorderRHP representation:JointPlay:play:lower:rHipPitch blue
 vpd PlayBorderRHP representation:JointAngles:rHipPitch
-vpd PlayBorderRHP representation:JointAnglesPred:rHipPitch green
+vpd PlayBorderRHP representation:JointAnglePred:rHipPitch green
 
 vp PlayBorderRKP 100 40 65
 echo vp PlayBorderRKP 100 40 65
 vpd PlayBorderRKP representation:JointPlay:play:upper:rKneePitch red
 vpd PlayBorderRKP representation:JointPlay:play:lower:rKneePitch blue
 vpd PlayBorderRKP representation:JointAngles:rKneePitch
-vpd PlayBorderRKP representation:JointAnglesPred:rKneePitch green
+vpd PlayBorderRKP representation:JointAnglePred:rKneePitch green
 
 vp PlayBorderRAP 100 -43 -10
 echo vp PlayBorderRAP 100 -43 -10
 vpd PlayBorderRAP representation:JointPlay:play:upper:rAnklePitch red
 vpd PlayBorderRAP representation:JointPlay:play:lower:rAnklePitch blue
 vpd PlayBorderRAP representation:JointAngles:rAnklePitch
-vpd PlayBorderRAP representation:JointAnglesPred:rAnklePitch green
+vpd PlayBorderRAP representation:JointAnglePred:rAnklePitch green
 
 vp PlayBorderRAR 100 -5 20
 echo vp PlayBorderRAR 100 -10 10
 vpd PlayBorderRAR representation:JointPlay:play:upper:rAnkleRoll red
 vpd PlayBorderRAR representation:JointPlay:play:lower:rAnkleRoll blue
 vpd PlayBorderRAR representation:JointAngles:rAnkleRoll
-vpd PlayBorderRAR representation:JointAnglesPred:rAnkleRoll green
+vpd PlayBorderRAR representation:JointAnglePred:rAnkleRoll green

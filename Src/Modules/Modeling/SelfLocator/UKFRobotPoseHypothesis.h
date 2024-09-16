@@ -76,7 +76,7 @@ public:
   void updateByLineOnCenterCircle(const RegisteredLine& line, float centerCircleRadius);
 
   /** Update the estimate based on a virtual direct measurement of the own pose,
-   *  which can be computed by complex field elements such as a center circle together with the center line.
+   *  which can be computed by complex field elements such as a center circle together with the halfway line.
    * @param pose The computed pose
    */
   void updateByPose(const RegisteredAbsolutePoseMeasurement& pose);

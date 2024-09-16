@@ -363,7 +363,7 @@ bool ObjectCNSStereoDetector::refine1Dimension(const Image<CNSResponse>& cns,
 {
   Eigen::Isometry3d newObject2Object = searchStepNewObject2Object(object2World, stepInPixel, dimension);
 
-  // [1+lambda][8+x][8+y] referes to \c object2World shift by x/y in the image and with c newObject2Object^lambda in the pose
+  // [1+lambda][8+x][8+y] refers to \c object2World shift by x/y in the image and with c newObject2Object^lambda in the pose
   alignas(16) signed short response[3][16][16];
   responseX16Y16(response[0], cns, object2World * newObject2Object.inverse());
   responseX16Y16(response[1], cns, object2World);

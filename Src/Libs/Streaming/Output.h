@@ -104,7 +104,7 @@ namespace Output
 {
   /**
    * Prints a message to stderr.
-   * @parma message The error to print.
+   * @param message The error to print.
    */
   void print(const char* message);
 }

@@ -13,12 +13,14 @@
 
 #include "GlobalOpponentsHypothesis.h"
 
-#include "Modules/Modeling/SelfLocator/SelfLocator.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/GlobalOpponentsModel.h"
+#include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
@@ -27,6 +29,7 @@
 #include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
+#include "Math/BHMath.h"
 #include "Math/Geometry.h"
 
 MODULE(GlobalOpponentsTracker,
@@ -51,47 +54,47 @@ MODULE(GlobalOpponentsTracker,
   PROVIDES(GlobalOpponentsModel),
   LOADS_PARAMETERS(
   {,
-    (unsigned)maxDistance,                    /**< Maximal distance to an obstacle. */
-    (unsigned)minPercepts,                    /**< Minimal amount of percepts to become an obstacle. */
-    (bool)debug,                              /**< Flag for some debug stuff. */
+    (float) maxOpponentDistance,               /**< Maximal distance to tracked objects (in mm). Everything that is farther away becomes deleted. */
+    (unsigned) minPercepts,                    /**< Minimal amount of percepts to become an obstacle. */
     // deleteObstacles()
-    (unsigned)notSeenThreshold,               /**< How many times an obstacle should be seen. If that threshold is reached an obstacle will be removed. */
+    (unsigned) notSeenThreshold,               /**< How many times an obstacle should be seen. If that threshold is reached an obstacle will be removed. */
     (int)deleteAfter,                         /**< Delete obstacles that are not seen for deleteAfter amount of milliseconds. */
     // dynamic()
-    (float)pNp,                               /**< Process noise for position vector. */
-    (Vector2f)odoDeviation,                   /**< Percentage inaccuracy of the odometry. */
+    (float) pNp,                               /**< Process noise for position vector. */
+    (Vector2f) odoDeviation,                   /**< Percentage inaccuracy of the odometry. */
     // addArmContacts()
-    (bool)useArmContactModel,
-    (Matrix2f)armCov,                         /**< 50mm standard deviation. */
-    (int)maxContactTime,                      /**< Maximum time of a body contact. */
+    (bool) useArmContactModel,
+    (Matrix2f) armCov,                         /**< 50mm standard deviation. */
+    (int) maxContactTime,                      /**< Maximum time of a body contact. */
     // addFootContacts()
-    (bool)useFootBumperState,
-    (Matrix2f)feetCov,                        /**< 30mm standard deviation and 80mm standard deviation. */
-    (unsigned)distJointToToe,                 /**< The distance from the joint to the toe. */
-    (unsigned)distToeToBumper,                /**< The distance between the bumper and the toe. */
+    (bool) useFootBumperState,
+    (Matrix2f) feetCov,                        /**< 30mm standard deviation and 80mm standard deviation. */
+    (float) distJointToToe,                    /**< The distance from the joint to the toe. */
+    (float) distToeToBumper,                   /**< The distance between the bumper and the toe. */
     // addPlayerPercepts()
     // tryToMerge()
-    (float)weightedSum,                       /**< Factor for weighted sum for calculation of width of an obstacle. */
-    (unsigned)maxMergeRadius,                 /**< Maximal radius of an obstacle to be considered as nearby. */
+    (float) modelWidthWeighting,               /**< Factor for weighted sum for calculating the width of an obstacle. Currently modeled width is weighted by this factor, measured width is weighted with 1. */
+    (float) maxMergeRadius,                    /**< Maximal radius of an obstacle to be considered as nearby. */
     // mergeOverlapping()
-    (unsigned)mergeOverlapTimeDiff,           /**< Merge overlapping models if they are measured. Avoid merging of oscillating obstacles. */
-    (float)minMahalanobisDistance,            /**< The minimum Mahalanobis distance to merge obstacles. */
+    (unsigned) mergeOverlapTimeDiff,           /**< Merge overlapping models if they are measured. Avoid merging of oscillating obstacles. */
+    (float) minMahalanobisDistance,            /**< The minimum Mahalanobis distance to merge obstacles. */
     // shouldBeSeen()
-    (float)cameraAngleFactor,                 /**< Factor for opening angle of the camera. */
-    (int)recentlySeenTime,                    /**< Obstacle was seen in the last 300ms. */
+    (float) cameraAngleFactor,                 /**< Factor for opening angle of the camera. */
+    (int) recentlySeenTime,                    /**< Obstacle was seen in the last 300ms. */
     // calculateMergeRadius()
-    (float)mergeDistance,                     /**< Distance to merge obstacles. */
-    (unsigned)minMergeDistance,               /**< Distance of an obstacle until it has a constant radius. */
-    // GlobalOpponentsHypothesis::considerType
-    (int)teamThreshold,                       /**< Only switch team if this threshold is reached. */
-    (int)uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
-    (float)goalAreaIgnoreTolerance,           /**< Tolerance around the goal area in mm for ignoring obstacles while the goalkeeper walks in at the beginning of the half. 0 turns it off. */
+    (float) defaultMergeRadius,                /**< Default distance between two obstacles to merge them (in mm). */
+    (float) rangeForDefaultMergeRadius,        /**< Up to this distance (in mm), the defaultMergeRadius applies. For farther objects, a larger radius might be applied. */
+    // GlobalOpponentsHypothesis::determineAndSetType
+    (int) teamThreshold,                       /**< Only switch team if this threshold is reached. */
+    (int) uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
+    (float) goalAreaIgnoreTolerance,           /**< Tolerance around the goal area in mm for ignoring obstacles while the goalkeeper walks in at the beginning of the half. 0 turns it off. */
   }),
 });
 
 /**
  * @class GlobalOpponentsTracker
- * A combined world model
+ *
+ * An implementation that aims to keep track of the opponent robots that are currently on the pitch.
  */
 class GlobalOpponentsTracker : public GlobalOpponentsTrackerBase
 {
@@ -111,8 +114,6 @@ private:
   std::vector<Geometry::Rect> penalizedRobotZonesOpponentTeam;     /**< The areas in which penalized robots of the opponent team are placed during the penalty */
   std::vector<Geometry::Rect> returnFromPenaltyZonesOpponentTeam;  /**< The areas in which unpenalized robots of the opponent team are placed to return to the game */
 
-  SelfLocator::Parameters selfLocatorParameters;       /**< Access self locator parameters to avoid duplicated configuration elements */
-
   /**
    * Fills the representation provided by this module. Some computations are done by
    * the other update method, which provides the GlobalTeammatesModel first.
@@ -126,8 +127,8 @@ private:
   */
   void fillModel(GlobalOpponentsModel& globalOpponentsModel);
 
-  /** Updates internal representations based on GameController and teammate information */
-  void updateGameAndTeammateInfo();
+  /** Updates internal representations based on GameController information */
+  void updateGameInfo();
 
   /** Draws internal data */
   void draw();
@@ -165,7 +166,6 @@ private:
   /** The function increases the attribute notSeenButShouldSeenCount of obstacles that should be seen but wasn't seen recently. */
   void shouldBeSeen();
 
-
   /**
    * The function checks if any other obstacle is in the shadow of the obstacle closer.
    * @param closer The obstacle that may shadow other obstacles.
@@ -175,15 +175,20 @@ private:
    */
   bool isAnyObstacleInShadow(GlobalOpponentsHypothesis* closer, const std::size_t i, const float cameraAngleLeft, const float cameraAngleRight);
 
-  float calculateMergeRadius(const Vector2f center, const unsigned maxRadius) const
+  /**
+   * Computes a merge radius for a given measurement. The farther the measurement, the higher the radius.
+   * @param measurement A position in 2D that denotes a mearuement of an opponent
+   * @return A radius (in mm)
+   */
+  float calculateMergeRadius(const Vector2f& measurement) const
   {
-    const float measurementDistance = center.norm() - minMergeDistance;
-    return mergeDistance + (measurementDistance < 0 ? 0.f : measurementDistance * maxRadius / maxDistance);
-  }
-
-  bool isObstacle(const GlobalOpponentsHypothesis& obstacle)
-  {
-    return obstacle.seenCount >= minPercepts || debug;
+    const float distance = measurement.norm();
+    // If the measurement is not too far away, the default merging distance is applied:
+    if(distance < rangeForDefaultMergeRadius)
+      return defaultMergeRadius;
+    // Otherwise, the radius grows linearly to up to maxMergeRadius
+    else
+      return mapToRange(distance, rangeForDefaultMergeRadius, maxOpponentDistance, defaultMergeRadius, maxMergeRadius);
   }
 
   /**

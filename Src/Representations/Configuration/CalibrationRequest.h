@@ -18,9 +18,9 @@ ENUM(SampleType,
 {,
   cornerAngle, /**< An angle in the penalty area that must be 90 degrees. */
   parallelAngle, /**< An angle in the penalty area that must be 180 degrees. */
-  parallelLinesDistance, /**< The (known) distance between the ground line and the front goal area line. */
+  parallelLinesDistance, /**< The (known) distance between the goal line and the front goal area line. */
   goalAreaDistance, /**< The (known) distance between the penalty mark and the front goal area line. */
-  groundLineDistance, /**< The (known) distance between the penalty mark and the ground line. */
+  goalLineDistance, /**< The (known) distance between the penalty mark and the goal line. */
 });
 
 STREAMABLE(SampleConfigurationRequest,

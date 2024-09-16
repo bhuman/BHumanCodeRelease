@@ -207,7 +207,7 @@ bool FieldBoundaryProvider::boundaryIsOdd(const std::vector<Spot>& spots) const
       if(spots[i].inImage.y() > yMaxBorder)
         toLowSum += spots[i].inImage.y() - yMaxBorder;
 
-      uncertaintySum += spots[i].uncertanty;
+      uncertaintySum += spots[i].uncertainty;
 
       if(i + 2 >= spots.size())
         continue;
@@ -225,8 +225,8 @@ bool FieldBoundaryProvider::boundaryIsOdd(const std::vector<Spot>& spots) const
     {
       if(num)
       {
-        OUTPUT_TEXT(((float)num / spots.size() < nonTopPoints) << ", " << (uncertaintySum / num > uncertaintyLimit) << ", " << (toLowSum / num > maxPointsUnderBorder) << ", " << (sum / num > threshold));
-        OUTPUT_TEXT((float)num / spots.size() << ", " << uncertaintySum / num <<  ", " << toLowSum / num << ", " << sum / num);
+        OUTPUT_TEXT((static_cast<float>(num) / spots.size() < nonTopPoints) << ", " << (uncertaintySum / num > uncertaintyLimit) << ", " << (toLowSum / num > maxPointsUnderBorder) << ", " << (sum / num > threshold));
+        OUTPUT_TEXT(static_cast<float>(num) / spots.size() << ", " << uncertaintySum / num <<  ", " << toLowSum / num << ", " << sum / num);
       }
       else
         OUTPUT_TEXT("num = " << num);

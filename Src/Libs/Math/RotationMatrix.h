@@ -10,6 +10,8 @@
 #pragma once
 
 #include "Math/Eigen.h"
+#include <cmath>
+#include <limits>
 
 /**
  * Representation for 3x3 RotationMatrices
@@ -102,7 +104,12 @@ public:
 
   RotationMatrix normalized() const
   {
-    return Quaternionf(*this).normalized();
+    RotationMatrix out = Quaternionf(*this).normalized();
+    ASSERT(std::abs(out.determinant() - 1.f) <= 10.f * std::numeric_limits<float>::epsilon());
+    ASSERT(std::abs(out.row(0) * out.row(1).transpose()) <= 10.f * std::numeric_limits<float>::epsilon());
+    ASSERT(std::abs(out.row(0) * out.row(2).transpose()) <= 10.f * std::numeric_limits<float>::epsilon());
+    ASSERT(std::abs(out.row(1) * out.row(2).transpose()) <= 10.f * std::numeric_limits<float>::epsilon());
+    return out;
   }
 
   /**

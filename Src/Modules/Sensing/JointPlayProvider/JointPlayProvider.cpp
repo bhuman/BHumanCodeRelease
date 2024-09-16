@@ -154,14 +154,21 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
     {
       lastWarningTimestamp = theFrameInfo.time;
       joints = "";
+      bool playSound = false;
       for(Joints::Joint joint : brokenJoints)
       {
         joints += TypeRegistry::getEnumName(Joints::Joint(joint));
         joints += " ";
+        if(std::find(theDamageConfigurationBody.jointsToMuteSirenes.cbegin(), theDamageConfigurationBody.jointsToMuteSirenes.cend(), joint) == theDamageConfigurationBody.jointsToMuteSirenes.cend())
+          playSound = true;
       }
       ANNOTATION("JointPlayProvider", "Joint with high play " << joints);
-      SystemCall::playSound("sirene.wav", true);
-      SystemCall::say((std::string("Joints may be broken ") + joints).c_str(), true);
+
+      if(playSound)
+      {
+        SystemCall::playSound("sirene.wav", true);
+        SystemCall::say((std::string("Joints may be broken ") + joints).c_str(), true);
+      }
     }
   }
 

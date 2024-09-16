@@ -1,0 +1,49 @@
+# activate simulation time
+st on
+
+# activate speech output
+dr unmute
+
+# Select modules for simulator
+for Lower Upper mr CameraImage LogDataProvider
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+mr JPEGImage off
+
+dr module:GameStateProvider:active
+
+call Includes/DebugResponses
+
+# Press head front button (Shift+Ctrl+F)
+jc press 6 set representation:KeyStates pressed = { headFront = true; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Release head front button (Shift+Ctrl+F)
+jc release 6 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Press head middle button (Shift+Ctrl+M)
+jc press 13 set representation:KeyStates pressed = { headFront = false; headMiddle = true; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Release head middle button (Shift+Ctrl+M)
+jc release 13 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Press head rear button (Shift+Ctrl+R)
+jc press 18 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = true; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Release head front button (Shift+Ctrl+R)
+jc release 18 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Press head front and rear button (Shift+Ctrl+S)
+jc press 19 set representation:KeyStates pressed = { headFront = true; headMiddle = false; headRear = true; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Release head front and rear button (Shift+Ctrl+S)
+jc release 19 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+echo Shift+Ctrl+F: Front head button
+echo Shift+Ctrl+M: Middle head button
+echo Shift+Ctrl+R: Rear head button
+echo Shift+Ctrl+S: Front and rear head button

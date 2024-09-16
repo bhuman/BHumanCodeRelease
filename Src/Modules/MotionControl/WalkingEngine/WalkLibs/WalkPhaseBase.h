@@ -185,16 +185,17 @@ protected:
    * @param balanceAdjustmentLeft Left foot step adjustment value.
    * @param balanceAdjustmentRight Reft foot step adjustment value.
    * @param highestAdjustmentX Highest adjustment value in the last step
+   * @param isDive Is a dive motion requested?
    */
   bool isStandingPossible(const float forwardL, const float forwardR, const float sideL, const float sideR, const float turnRL,
                           const float balanceAdjustmentLeft, const float balanceAdjustmentRight, const float highestAdjustmentX,
-                          const float sideHipShift) const;
+                          const float sideHipShift, const bool isDive) const;
 
   /**
    * Set the joint request for the arms, or use the given values
    * @param leftFoot Left foot pose.
    * @param rightFoot Right foot pose.
-   * @param jointRequest The given arm positions, which may be overriden bei walkArms if they should be ignored.
+   * @param jointRequest The given arm positions, which may be overridden bei walkArms if they should be ignored.
    * @param walkArms The arm positions based on the current walk.
    */
   virtual void setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointRequest, JointRequest& walkArms) = 0;
@@ -274,7 +275,7 @@ protected:
 
   /**
    * The robot had a support switch while the step adjustment still has a high delta.
-   * Initilize the swing/support foot to prevent that the feet move delayed the the last requested position.
+   * Initialize the swing/support foot to prevent that the feet move delayed the the last requested position.
    * Goal:
    * - high positive delta -> swing foot should get a boosted start forward (more negative hip pitch value)
    * - high negative delta -> support foot should get a boosted start forward (more negative hip pitch value), swing foot a boosted start backward (more positive knee pitch value)
@@ -302,7 +303,7 @@ protected:
   void calcJointsHelperFootSoleRotations(const JointRequest& jointRequest, const Angle hipRotation);
 
   /**
-   * In case the robot is standing still and the CoM is relativ in the middle, force a support foot switch
+   * In case the robot is standing still and the CoM is relative in the middle, force a support foot switch
    */
   bool canForceFootSupportSwitch();
 
@@ -328,10 +329,15 @@ protected:
 
   /**
    * Converts the step target based on the rotation, to get the corrected step target (which is then executed)
-   * This is due the fact that if the robot turns the swing foot will drift aways (because only one foot has ground contact).
+   * This is due the fact that if the robot turns the swing foot will drift away (because only one foot has ground contact).
    * This results in an error in the position
    */
   Pose2f convertStep(const Pose2f& step, const Angle turnOffset);
+
+  /**
+   * To reduce the time of overheating, shift the soles depending on the temperatures of the knee and ankle pitch.
+   */
+  float temperatureShiftHandling(const Pose2f& stepSizeRequest);
 
   WalkingEngine& engine;
 
@@ -347,6 +353,7 @@ protected:
   float stepDurationSide = 0.f; /**< Duration for the side interpolation. Needs to be lower for smaller speed, otherwise swing foot gets stuck. */
   bool isLeftPhase = false; /**< Is the left foot the swing foot? */
   Pose2f step; /**< The step made in this phase (could be reconstructed from forwardStep, sideStep and turnStep). */
+  Pose2f originalStep; /**< The original values of step. */
   float standInterpolationDuration; /**< The interpolation duration to interpolate into stand (in ms). */
 
   float forwardStep = 0.f; /**< Forward speed in m/step. Forward is positive. */
@@ -361,6 +368,11 @@ protected:
   float sideR = 0.f; /**< The sideways offset of the right foot (in m). */
   float sideL0 = 0.f; /**< Recovery offset for side stepping of left foot (in m). */
   float sideR0 = 0.f; /**< Recovery offset for side stepping of right foot (in m). */
+
+  float measuredSideL0 = 0.f;
+  float measuredSideR0 = 0.f;
+
+  float sideAcc = 0.f; /**< When dynamically changing the step for intercepting the ball, change the side direction with this acceleration. */
 
   Angle turnStep = 0_deg; /**< Turn speed in radians/step. Anti-clockwise is positive. */
   Angle turnRL = 0_deg; /**< The turn angle for both feet (in radians). */
@@ -414,7 +426,8 @@ protected:
   float sideHipShift = 0.f; /**< How much the hip is shifted to the side in the current walking step. If the feet are moving together, shift the hip in the opposite direction. */
   bool freezeSideMovement = true; /**< Freeze the sideL and sideR calculation, because of stability reasons? */
 
-  Pose3f lastComInFoot; /**< Last COM relativ to the current support foot. */
+  bool increaseInverseKinematicClipThreshold = false; /**< After special movements like kicks we allow for some clipping. */
+
   int doBalanceSteps = 0; /**< Number of balance steps. Possible step range is replaced by how the COM moved in the last step. */
   int noFastTranslationPolygonSteps = 0; /**< Number of steps before big steps near the target are allowed. */
   RingBuffer<Angle, 3> armCompensationTilt; /**< Torso tilt to compensate arm position in high stand. */
@@ -431,9 +444,13 @@ protected:
 
   JointRequest lastJointRequest;
 
+  float torsoShift = 0.f;
+
   // AnklePitch shall not go further positive with the gyro balancing
   // Two entries needed because when standing both ankles need to be clipped
   Angle currentMaxAnklePitch[Legs::numOfLegs] = {0_deg, 0_deg};
+
+  std::vector<Vector2f> previousInterceptTranslationPolygon; /**< The polygon that defines the max allowed translation for the step size from the previous walk phase. */
 
   enum WalkState
   {

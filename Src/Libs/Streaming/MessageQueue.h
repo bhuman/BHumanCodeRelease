@@ -302,7 +302,7 @@ public:
 
   /**
    * Changes the size of the queue.
-   * @param size The new size of the queue. Must smaller or equal to the
+   * @param size The new size of the queue. Must be smaller or equal to the
    *             current size and must also be at the end of a message.
    */
   void resize(size_t size);
@@ -324,13 +324,23 @@ public:
   void reserve(size_t capacity, size_t protectedCapacity = 0);
 
   /**
-   * Sets an external (read-only) message buffer. Will free the previous buffer
+   * Sets an external read-only message buffer. Will free the previous buffer
    * if it was managed by the queue.
    * @param buffer The external buffer. The queue does not take ownership of
    *               that buffer, i.e. it will not free it.
    * @param size The size of the external buffer.
    */
   void setBuffer(const char* buffer, size_t size);
+
+  /**
+   * Sets an external writable message buffer. Will free the previous buffer
+   * if it was managed by the queue.
+   * @param buffer The external buffer. The queue does not take ownership of
+   *               that buffer, i.e. it will not free it.
+   * @param size The size already used in the external buffer.
+   * @param capacity The capacity of the external buffer.
+   */
+  void setBuffer(char* buffer, size_t size, size_t capacity);
 
   /**
    * Appends the messages of the queue to a stream. In contrast to the

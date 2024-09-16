@@ -39,7 +39,7 @@ public:
 
   /**
    * Copies the contents of another drawing into this one.
-   * @param other Ther other drawing.
+   * @param other The other drawing.
    */
   void copyFrom(const DebugDrawing3D& other);
 

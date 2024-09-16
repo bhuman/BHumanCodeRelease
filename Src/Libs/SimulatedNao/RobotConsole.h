@@ -20,14 +20,17 @@
 #include "Platform/Joystick.h"
 #include "Representations/AnnotationInfo.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
+#include "Representations/BehaviorControl/JoystickState.h"
+#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/ModuleInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/TimeInfo.h"
 #include "Streaming/OutStreams.h"
+#include "Tools/Communication/SharedAutonomyChannel.h"
 #include "Views/DataView/DataView.h"
 #include "Visualization/DebugDrawing.h"
 #include "Visualization/DebugDrawing3D.h"
@@ -40,6 +43,7 @@
 class ConsoleRoboCupCtrl;
 class ImageView;
 class SimulatedRobot;
+class SACControlWidget;
 
 /**
  * @class RobotConsole
@@ -48,6 +52,7 @@ class SimulatedRobot;
  */
 class RobotConsole : public ThreadFrame
 {
+  friend class SACControlWidget;
 private:
   /** A console command based on the joystick's axes that is executed when no button is pressed. */
   struct JoystickMotionCommand
@@ -166,6 +171,8 @@ public:
   ModuleInfo moduleInfo; /**< The current state of all solution requests. */
   DebugImageConverter debugImageConverter; /**< Helper for all image view to convert debug images. */
   ConsoleRoboCupCtrl* ctrl; /**< A pointer to the controller object. */
+  SharedAutonomyRequest sharedAutonomyRequest; /**< The command sent to the robot */
+  unsigned timeSharedAutonomyRequestSent = 0; /**< When was the command sent? Set to 0 to force sending immediately. */
 
 protected:
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
@@ -176,9 +183,9 @@ protected:
   // Representations received
   JointCalibration jointCalibration; /**< The new joint calibration angles received from the robot code. */
   JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
-  InertialSensorData inertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
   JointRequest jointRequest; /**< The joint angles request received from the robot code. */
   MotionRequest motionRequest; /**< The motion request received from the robot code. */
+  RawInertialSensorData rawInertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
 
 private:
   TypeInfo typeInfo; /**< Information about all data types used by the connected robot. */
@@ -219,7 +226,7 @@ private:
   unsigned activationGraphReceived = 0; /**< When was the last activation graph received? */
 
   //Joystick
-  Joystick joystick; /**< The joystick interface. */
+  std::unique_ptr<Joystick> joystick; /**< The joystick interface. */
   bool joystickTrace = false; /**< Display joystick commands when executed. */
   float joystickAxisMaxSpeeds[Joystick::numOfAxes]; /**< The maximum speeds in dimensions x, y, and rotation. */
   float joystickAxisThresholds[Joystick::numOfAxes]; /**< The thresholds below which joystick commands are suppressed. */
@@ -231,6 +238,9 @@ private:
   std::vector<char> joystickCommandBuffer; /**< Reusable buffer for calculating the joystick command. */
   std::string joystickButtonPressCommand[Joystick::numOfButtons]; /**< Command for each button press. */
   std::string joystickButtonReleaseCommand[Joystick::numOfButtons]; /**< Command for each button release. */
+  JoystickState joystickState; /**< The last joystick state measured. */
+
+  std::unique_ptr<SharedAutonomyChannel> sharedAutonomyChannel; /**< Channel to remote robot in shared autonomy challenge. */
 
 public:
   /**
@@ -348,6 +358,9 @@ private:
   bool handleForCommands(const std::string& command, In& stream,
                          const std::string& threadName, bool& result);
 
+  /** Initialize joystick if it has not been yet. */
+  void initJoystick();
+
   /** The function handles the joystick. */
   void handleJoystick();
 
@@ -357,6 +370,9 @@ private:
    * @return Was the command executed (vs. was it empty)?
    */
   bool handleJoystickCommand(const std::string& cmd);
+
+  /** Handle messages from remote robot in the shared autonomy challenge. */
+  void handleSharedAutonomyMessages();
 
   /**
    * Poll information of a certain kind if it needs updated.
@@ -411,7 +427,9 @@ private:
   bool penalizeRobot(In&);
   bool repoll(In&);
   bool saveImage(In&, std::string threadName);
+  bool sensorNoise(In&);
   bool set(In&, const std::string& threadName);
+  bool sharedAutonomyChallenge(In&);
   bool viewDrawing(In&, Views& views, const char* type);
   bool viewField(In&, const std::string& threadName);
   bool viewImage(In&, std::string threadName);

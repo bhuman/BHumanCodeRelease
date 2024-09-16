@@ -21,7 +21,7 @@
  * Bm: B -> A
  * Cm: A,C -> A,B
  *
- * It is assumed that the module graoh creator behaves in the same way for each thread.
+ * It is assumed that the module graph creator behaves in the same way for each thread.
  */
 
 // Test shared

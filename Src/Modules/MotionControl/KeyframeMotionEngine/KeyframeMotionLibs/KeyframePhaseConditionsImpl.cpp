@@ -124,7 +124,7 @@ bool KeyframePhaseBase::checkOptionalLine()
   {
     if(!branch.preCondition.conditions.empty() && checkConditions(branch.preCondition.conditions, branch.preCondition.isAnd))
     {
-      // make method ouf ot it
+      // make method ouf of it
       if(branch.motionID && (branch.maxNumberOfLoopsMotionID < 0 || branch.maxNumberOfLoopsMotionID > motionListIDLoops[branch.motionID.value()]))
       {
         currentMotion = engine.motions[branch.motionID.value()];
@@ -165,7 +165,7 @@ bool KeyframePhaseBase::checkEarlyBranch()
     if(branch.useEarlyEntrance && checkConditions(branch.earlyEntranceCondition.conditions, branch.earlyEntranceCondition.isAnd))
     {
       bool setBaseStiffness = false;
-      // make method ouf ot it
+      // make method ouf of it
       if(branch.motionID && (branch.maxNumberOfLoopsMotionID < 0 || branch.maxNumberOfLoopsMotionID > motionListIDLoops[branch.motionID.value()]))
       {
         currentMotion = engine.motions[branch.motionID.value()];

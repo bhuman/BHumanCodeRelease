@@ -13,18 +13,19 @@ FsrDataProvider::FsrDataProvider()
 {
   FOREACH_ENUM(Legs::Leg, leg)
   {
-    highestLegSumPressure[leg] = minPressure;
-    newHighestLegSumPressure[leg] = minPressure;
+    highestLegSumPressure[leg] = minPressure.max;
+    newHighestLegSumPressure[leg] = minPressure.max;
     FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
     {
-      highestPressure[leg][sensor] = minPressure;
-      newHighestPressure[leg][sensor] = minPressure;
+      highestPressure[leg][sensor] = minPressure.max;
+      newHighestPressure[leg][sensor] = minPressure.max;
       newLowestPressure[leg][sensor] = maxPressure;
       lowestPressure[leg][sensor] = 0.f;
     }
+    originalHasPressure[leg] = 0;
   }
 
-  maxFootPressureCurrent = minPressure;
+  maxFootPressureCurrent = minPressure.max;
 }
 
 void FsrDataProvider::update(FsrData& theFsrData)
@@ -79,15 +80,19 @@ void FsrDataProvider::update(FsrData& theFsrData)
     theFsrData.legInfo[leg].totals = footPressure / highestLegSumPressure[leg];
 
     // Update last pressure time stamps
-    const unsigned lastHasPressure = theFsrData.legInfo[leg].hasPressure;
-    theFsrData.legInfo[leg].hasPressure = footPressure > minPressure ? theFrameInfo.time : theFsrData.legInfo[leg].hasPressure;
-    theFsrData.legInfo[leg].backwardPressure = backwardPressure > minPressure * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].backwardPressure;
-    theFsrData.legInfo[leg].forwardPressure = forwardPressure > minPressure * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].forwardPressure;
-    theFsrData.legInfo[leg].leftPressure = leftPressure > minPressure * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].leftPressure;
-    theFsrData.legInfo[leg].rightPressure = rightPressure > minPressure * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].rightPressure;
-    theFsrData.legInfo[leg].hasPressureSince = theFsrData.legInfo[leg].hasPressure == theFrameInfo.time && lastHasPressure != theFsrData.lastUpdateTimestamp ? theFsrData.legInfo[leg].hasPressure : theFsrData.legInfo[leg].hasPressureSince;
+    theFsrData.legInfo[leg].hasPressure = footPressure > minPressure.max ? theFrameInfo.time : originalHasPressure[leg];
+    originalHasPressure[leg] = theFsrData.legInfo[leg].hasPressure;
+    theFsrData.legInfo[leg].backwardPressure = backwardPressure > minPressure.max * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].backwardPressure;
+    theFsrData.legInfo[leg].forwardPressure = forwardPressure > minPressure.max * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].forwardPressure;
+    theFsrData.legInfo[leg].leftPressure = leftPressure > minPressure.max * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].leftPressure;
+    theFsrData.legInfo[leg].rightPressure = rightPressure > minPressure.max * minSingleFSRPressureForPredictedSwitchFactor ? theFrameInfo.time : theFsrData.legInfo[leg].rightPressure;
+    theFsrData.legInfo[leg].hasPressureSince = theFsrData.legInfo[leg].hasPressure == theFrameInfo.time && originalHasPressure[leg] != theFsrData.lastUpdateTimestamp ? theFsrData.legInfo[leg].hasPressure : theFsrData.legInfo[leg].hasPressureSince;
     theFsrData.legInfo[leg].sagittalRatio = backwardPressure + forwardPressure > 0.f ? forwardPressure / (backwardPressure + forwardPressure) : 0.f;
     theFsrData.legInfo[leg].lateralRatio = leftPressure + rightPressure > 0.f ? leftPressure / (leftPressure + rightPressure) : 0.f;
+
+    // Handling in case FSRs might need a new calibration
+    if(theFsrData.legInfo[leg].hasPressure != theFrameInfo.time)
+      theFsrData.legInfo[leg].hasPressure = footPressure > mapToRange(static_cast<float>(theFrameInfo.getTimeSince(theFsrData.legInfo[leg].hasPressureSince)), badMinPressureTimewindow.min, badMinPressureTimewindow.max, minPressure.max, minPressure.min) ? theFrameInfo.time : theFsrData.legInfo[leg].hasPressure;
   }
 
   if(!theMotionInfo.isMotion(MotionPhase::walk)
@@ -95,18 +100,18 @@ void FsrDataProvider::update(FsrData& theFsrData)
      || theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::right].hasPressure) > maxTimeLegNoPressureForCalibration)
     updatePressureTimestamp = theFrameInfo.time;
 
-  // Update the heighest pressures
+  // Update the highest pressures
   if(theFrameInfo.getTimeSince(updatePressureTimestamp) > highestPressureUpdateTime && theFootSupport.switched)
   {
     updatePressureTimestamp = theFrameInfo.time;
     FOREACH_ENUM(Legs::Leg, leg)
     {
       highestLegSumPressure[leg] = newHighestLegSumPressure[leg];
-      newHighestLegSumPressure[leg] = minPressure;
+      newHighestLegSumPressure[leg] = minPressure.max;
       FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
       {
         highestPressure[leg][sensor] = newHighestPressure[leg][sensor];
-        newHighestPressure[leg][sensor] = minPressure;
+        newHighestPressure[leg][sensor] = minPressure.max;
       }
     }
   }
@@ -141,8 +146,8 @@ void FsrDataProvider::update(FsrData& theFsrData)
 
     maxFootSumPressure /= supportSwitchCounter;
     const float factor = Rangef::ZeroOneRange().limit((maxFootSumPressure - minPressureInterpolationValues.min) / (minPressureInterpolationValues.max - minPressureInterpolationValues.min));
-    minPressure = (minPressureRange.max - minPressureRange.min) * factor + minPressureRange.min;
-    minPressurePercent = minPressure / maxFootSumPressure;
+    minPressure.max = (minPressureRange.max - minPressureRange.min) * factor + minPressureRange.min;
+    minPressurePercent = minPressure.max / maxFootSumPressure;
     theFsrData.minPressure = minPressurePercent;
     supportSwitchCounter = 0;
     maxFootSumPressure = 0;

@@ -15,7 +15,7 @@
  *   DEFINES_PARAMETERS(                      // Has parameters that must have an initial value. If LOADS_PARAMETERS is used instead,
  *   {,                                       // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
  *     (float)(42.0f) focalLen,               // Has a parameter named focalLen of type float. By default it has the value 42.0f.
- *     (int)(21) resWidth,                    // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
+ *     (int)(21) resWidth,                    // All attributes are streamed and can be accessed by requesting 'module:MyImageProcessor'
  *   }),
  * });
  *
@@ -360,7 +360,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_ATTR_LAST_57(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, x) x
 #define _MODULE_ATTR_LAST_58(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, x) x
 #define _MODULE_ATTR_LAST_59(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, x) x
-#define _MODULE_ATTR_LAST_60(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, x)x
+#define _MODULE_ATTR_LAST_60(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, x) x
 #define _MODULE_ATTR_LAST_61(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, x) x
 #define _MODULE_ATTR_LAST_62(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, x) x
 #define _MODULE_ATTR_LAST_63(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, x) x
@@ -541,9 +541,9 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
     { \
       if(sizeof(NoParameters) < sizeof(theName##Module::Parameters)) \
       { \
-        Global::getDebugDataTable().updateObject("parameters:" #theName, *this, false); \
-        DEBUG_RESPONSE_ONCE("debug data:parameters:" #theName) \
-          OUTPUT(idDebugDataResponse, bin, "parameters:" #theName << TypeRegistry::demangle(typeid(theName##Module::Parameters).name()) << *this); \
+        Global::getDebugDataTable().updateObject("module:" #theName, *this, false); \
+        DEBUG_RESPONSE_ONCE("debug data:module:" #theName) \
+          OUTPUT(idDebugDataResponse, bin, "module:" #theName << TypeRegistry::demangle(typeid(theName##Module::Parameters).name()) << *this); \
       } \
     } \
   public: \

@@ -17,6 +17,8 @@ PositionRole::Type PositionRole::fromPosition(Tactic::Position::Type type)
   {
     case Tactic::Position::goalkeeper:
       return goalkeeper;
+    case Tactic::Position::attackingGoalkeeper:
+      return attackingGoalkeeper;
     case Tactic::Position::defender:
     case Tactic::Position::defenderL:
     case Tactic::Position::defenderR:
@@ -31,6 +33,8 @@ PositionRole::Type PositionRole::fromPosition(Tactic::Position::Type type)
     case Tactic::Position::forwardL:
     case Tactic::Position::forwardR:
       return forward;
+    case Tactic::Position::sacPasser:
+      return sacPasser;
   }
   FAIL("Unknown position.");
   return PositionRole::midfielder;
@@ -41,9 +45,11 @@ PositionRole::Side PositionRole::sideFromPosition(Tactic::Position::Type type)
   switch(type)
   {
     case Tactic::Position::goalkeeper:
+    case Tactic::Position::attackingGoalkeeper:
     case Tactic::Position::defender:
     case Tactic::Position::midfielder:
     case Tactic::Position::forward:
+    case Tactic::Position::sacPasser:
       return unspecified;
     case Tactic::Position::midfielderM:
     case Tactic::Position::forwardM:
@@ -61,7 +67,7 @@ PositionRole::Side PositionRole::sideFromPosition(Tactic::Position::Type type)
   return unspecified;
 }
 
-Pose2f PositionRole::position(Side, const Pose2f& basePose, const std::vector<Vector2f>&, const Agents&)
+Pose2f PositionRole::position(Side, const Pose2f& basePose, const std::vector<Vector2f>&, const Agent&, const Agents&)
 {
   return basePose;
 }
@@ -87,7 +93,11 @@ bool PositionRole::shouldStop(const Pose2f&) const
 
 SkillRequest PositionRole::execute(const Agent& self, const Agents& teammates)
 {
-  Pose2f target = position(sideFromPosition(self.position), self.basePose, self.baseArea, teammates);
+  Pose2f target = position(sideFromPosition(self.position), self.basePose, self.baseArea, self, teammates);
+  if(theGameState.isKickOff() && self.acceptedSetPlay != SetPlay::none)
+    target = self.basePose;
+
+  // Theoretically we should use shouldStop and shouldStart of the base class when the base pose is used
   if(theMotionInfo.executedPhase != MotionPhase::stand ? !shouldStop(target) : shouldStart(target))
     return SkillRequest::Builder::walkTo(target);
   else

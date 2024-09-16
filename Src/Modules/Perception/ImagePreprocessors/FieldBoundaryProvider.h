@@ -68,10 +68,10 @@ private:
   {
     Vector2i inImage; /**< The spot in image coordinates. */
     Vector2f onField; /**< The spot in robot-relative field coordinates. */
-    float uncertanty; /**<uncertainty of the network for this spot 0 if the network do not provide it */
+    float uncertainty; /**<uncertainty of the network for this spot 0 if the network do not provide it */
 
     Spot() = default;
-    Spot(const Vector2i& inImage, const Vector2f& onField, const float u) : inImage(inImage), onField(onField), uncertanty(u) {}
+    Spot(const Vector2i& inImage, const Vector2f& onField, const float u) : inImage(inImage), onField(onField), uncertainty(u) {}
   };
 
   struct LineCandidate

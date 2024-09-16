@@ -1,7 +1,7 @@
 /**
  * @file TurnAngle.cpp
  *
- * This file implements an implementation of the TurnAngle skill
+ * This file implements the TurnAngle skill
  * that uses the OdometryData to keep track of the orientation
  * (instead of the RobotPose, which means that localization jumps
  * do not affect this skill).
@@ -9,37 +9,34 @@
  * @author Arne Hasselbring (the actual behavior is older)
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/OdometryData.h"
-#include "Math/Angle.h"
+#include "SkillBehaviorControl.h"
 #include <cmath>
 
-SKILL_IMPLEMENTATION(TurnAngleImpl,
-{,
-  IMPLEMENTS(TurnAngle),
-  CALLS(WalkToPoint),
-  REQUIRES(OdometryData),
-});
-
-class TurnAngleImpl : public TurnAngleImplBase
+option((SkillBehaviorControl) TurnAngle,
+       args((Angle) angle,
+            (Angle) margin),
+       vars((Angle)(theOdometryData.rotation) startRotation)) /**< The global rotation of the robot when the turn started. */
 {
-  void execute(const TurnAngle& p) override
+  initial_state(execute)
   {
-    const Pose2f targetRel = Pose2f(Angle::normalize(startRotation + p.angle - theOdometryData.rotation));
-    theWalkToPointSkill({.target = targetRel, .reduceWalkingSpeed = false});
+    transition
+    {
+      if(std::abs(Angle::normalize(startRotation + angle - theOdometryData.rotation)) < margin)
+        goto done;
+    }
+    action
+    {
+      WalkToPoint({.target = {Angle::normalize(startRotation + angle - theOdometryData.rotation)},
+                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange});
+    }
   }
 
-  void reset(const TurnAngle&) override
+  target_state(done)
   {
-    startRotation = theOdometryData.rotation;
+    action
+    {
+      WalkToPoint({.target = {Angle::normalize(startRotation + angle - theOdometryData.rotation)},
+                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange});
+    }
   }
-
-  bool isDone(const TurnAngle& p) const override
-  {
-    return std::abs(Angle::normalize(startRotation + p.angle - theOdometryData.rotation)) < p.margin;
-  }
-
-  Angle startRotation; /**< The global rotation of the robot when the turn started. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(TurnAngleImpl);
+}

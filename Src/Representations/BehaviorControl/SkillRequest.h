@@ -14,6 +14,12 @@
 
 STREAMABLE(SkillRequest,
 {
+  /** When adding a type for playing the ball, add them to
+   * - HandlePenaltyKick
+   * - HandleStrikerLostBall
+   * - SkillBehaviorControl
+   * - PlayBall
+   */
   ENUM(Type,
   {,
     none,
@@ -25,6 +31,7 @@ STREAMABLE(SkillRequest,
     block,
     mark,
     observe,
+    clear,
   });
 
   struct Builder
@@ -39,6 +46,7 @@ STREAMABLE(SkillRequest,
     static SkillRequest block(const Vector2f& player);
     static SkillRequest mark(const Vector2f& player);
     static SkillRequest observe(const Vector2f& point);
+    static SkillRequest clear();
   },
 
   (Type)(none) skill, /**< The skill that shall run. */

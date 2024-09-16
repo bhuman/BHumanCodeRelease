@@ -1,6 +1,5 @@
-call Includes/Views
-vfd worldState skill:PassToTeammate:target
-echo vfd worldState skill:PassToTeammate:target
-echo vfd worldState skill:PassToTeammate:evaluation
-echo vfd worldState skill:PassToTeammate:precision
-echo vfd worldState skill:PassToTeammate:wheel
+vfd worldState option:PassToTeammate:target
+echo vfd worldState option:PassToTeammate:target
+echo vfd worldState option:PassToTeammate:evaluation
+echo vfd worldState option:PassToTeammate:precision
+echo vfd worldState option:PassToTeammate:wheel

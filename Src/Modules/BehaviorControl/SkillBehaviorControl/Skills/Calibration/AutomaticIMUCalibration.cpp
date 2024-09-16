@@ -5,52 +5,55 @@
  * @author Philip Reichenberg
  */
 
-#include "Platform/File.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Configuration/CalibrationRequest.h"
-#include "Representations/Configuration/IMUCalibration.h"
-#include "Representations/Infrastructure/FrameInfo.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(AutomaticIMUCalibrationImpl,
-{,
-  IMPLEMENTS(AutomaticIMUCalibration),
-  CALLS(CalibrateRobot),
-  CALLS(LookAtAngles),
-  CALLS(Say),
-  CALLS(Stand),
-  USES(CalibrationRequest),
-  REQUIRES(FrameInfo),
-  USES(IMUCalibration),
-});
-
-class AutomaticIMUCalibrationImpl : public AutomaticIMUCalibrationImplBase
+option((SkillBehaviorControl) AutomaticIMUCalibration)
 {
-  void reset(const AutomaticIMUCalibration&) override
+  initial_state(initial)
   {
-    startTimestamp = theFrameInfo.time;
-  }
-
-  void execute(const AutomaticIMUCalibration&) override
-  {
-    theStandSkill();
-    theLookAtAnglesSkill({.pan = 0_deg,
-                          .tilt = 0_deg});
-    if(theFrameInfo.getTimeSince(startTimestamp) == 0)
+    transition
     {
-      theSaySkill({.text = "calibrating i m u"});
+      if(state_time)
+        goto waiting;
+    }
+    action
+    {
+      Stand();
+      LookAtAngles({.pan = 0_deg,
+                    .tilt = 0_deg});
+      Say({.text = "calibrating i m u"});
       CalibrationRequest calibrationRequest = theCalibrationRequest;
+      calibrationRequest.preciseJointPositions = true;
       calibrationRequest.serialNumberIMUCalibration = theIMUCalibration.serialNumberIMUCalibration + 1;
-      theCalibrateRobotSkill({.request = calibrationRequest});
+      CalibrateRobot({.request = calibrationRequest});
     }
   }
 
-  bool isDone(const AutomaticIMUCalibration&) const override
+  state(waiting)
   {
-    return theIMUCalibration.isCalibrated &&
-           theIMUCalibration.serialNumberIMUCalibration == theCalibrationRequest.serialNumberIMUCalibration;
+    transition
+    {
+      if(theIMUCalibration.isCalibrated &&
+         theIMUCalibration.serialNumberIMUCalibration == theCalibrationRequest.serialNumberIMUCalibration)
+        goto done;
+    }
+    action
+    {
+      Stand();
+      LookAtAngles({.pan = 0_deg,
+                    .tilt = 0_deg});
+    }
   }
 
-  unsigned startTimestamp = 0;
-};
+  target_state(done)
+  {
+    action
+    {
+      Stand();
+      LookAtAngles({.pan = 0_deg,
+                    .tilt = 0_deg});
 
-MAKE_SKILL_IMPLEMENTATION(AutomaticIMUCalibrationImpl);
+      CalibrateRobot({.request = CalibrationRequest()});
+    }
+  }
+}

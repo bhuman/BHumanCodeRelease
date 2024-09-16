@@ -1,38 +1,28 @@
 /**
  * @file ReplayWalk.cpp
  *
- * This file implements the implementation of the ReplayWalk skill.
+ * This file implements the ReplayWalk skill.
  *
  * @author Philip Reichenberg
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(ReplayWalkImpl,
-{,
-  IMPLEMENTS(ReplayWalk),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class ReplayWalkImpl : public ReplayWalkImplBase
+option((SkillBehaviorControl) ReplayWalk)
 {
-  void execute(const ReplayWalk&) override
+  theMotionRequest.motion = MotionRequest::replayWalk;
+  theMotionRequest.standHigh = false;
+  theMotionRequest.ballEstimate.position.x() = 1000.f; // To make sure the walk step adjustment ignores the ball position
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::replayWalk;
-    theMotionRequest.standHigh = false;
-    theMotionRequest.ballEstimate.position.x() = 1000.f; // To make sure the walk step adjustment ignores the ball position
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::replayWalk)
+        goto done;
+    }
   }
 
-  bool isDone(const ReplayWalk&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::replayWalk;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(ReplayWalkImpl);
+  target_state(done) {}
+}

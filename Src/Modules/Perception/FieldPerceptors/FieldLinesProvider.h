@@ -72,7 +72,7 @@ private:
   std::vector<FieldLines::Line> internalListOfLines;  /**< Unsorted list of computed field lines. */
 
 public:
-  SpotLine* midLine;
+  const SpotLine* midLine;
   bool isPointInSegment(const SpotLine& line, const Vector2f& point) const;
   void update(FieldLines& fieldLines) override;
   void update(FieldLineIntersections& fieldLineIntersections) override;

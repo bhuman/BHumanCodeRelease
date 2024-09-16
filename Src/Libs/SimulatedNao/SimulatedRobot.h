@@ -15,7 +15,6 @@ struct CameraImage;
 struct CameraInfo;
 struct FsrSensorData;
 struct GroundTruthWorldState;
-struct InertialSensorData;
 struct JointCalibration;
 struct JointRequest;
 struct JointSensorData;
@@ -24,6 +23,7 @@ struct MotionRequest;
 struct OdometryData;
 struct Pose2f;
 struct Pose3f;
+struct RawInertialSensorData;
 
 /**
  * An interface to a simulated robot (and its ball).
@@ -118,9 +118,9 @@ public:
   /**
    * Determines the sensor data of the simulated robot.
    * @param fsrSensorData The determined FSR sensor data.
-   * @param inertialSensorData The determined inertial sensor data.
+   * @param rawInertialSensorData The determined inertial sensor data.
    */
-  virtual void getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData) = 0;
+  virtual void getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& inertialSensorData) = 0;
 
   /**
    * Does the abstract motion emulation.
@@ -134,8 +134,9 @@ public:
    * @param pos The position to move the robot to
    * @param rot The target rotation (as euler angles; in radian)
    * @param changeRotation Whether the rotation of the robot should be changed or not
+   * @param resetDynamics Reset dynamics of object after moving.
    */
-  virtual void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation) = 0;
+  virtual void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics = false) = 0;
 
   /**
    * Enables or disables the physics simulation of the body
@@ -144,12 +145,37 @@ public:
   virtual void enablePhysics(bool enable) = 0;
 
   /**
+   * Enables or disables the gravity for the body
+   * @param enable Whether to enable or disable gravity
+   */
+  virtual void enableGravity(bool enable) = 0;
+
+  /**
+ * Enables or disables the simulation white noise
+ * @param enable Whether to enable or disable white noise
+ */
+  virtual void enableSensorWhiteNoise(const bool enable) = 0;
+
+  /**
+ * Enables or disables the simulation sensor delay
+ * @param enable Whether to enable or disable sensor delay
+ */
+  virtual void enableSensorDelay(const bool enable) = 0;
+
+  /**
+ * Enables or disables the simulation discretization af sensor values
+ * @param enable Whether to enable or disable discretization
+ */
+  virtual void enableSensorDiscretization(const bool enable) = 0;
+
+  /**
    * Moves and rotates the robot to an pose within the coordinate system of its team
    * @param pos The position to move the robot to
    * @param rot The target rotation (as euler angles; in radian)
    * @param changeRotation Whether the rotation of the robot should be changed or not
+   * @param resetDynamics Reset dynamics of object after moving.
    */
-  void moveRobotPerTeam(const Vector3f& pos, const Vector3f& rot, bool changeRotation);
+  void moveRobotPerTeam(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics = false);
 
   /**
    * Moves the ball to the given position within the coordinate system of the robot's team
@@ -177,6 +203,11 @@ public:
    * @param obj The object of which the position will be determined.
    */
   static Vector2f getPosition(const SimRobot::Object* obj);
+
+  /**
+   * Determines the two-dimensional position of this robot without team color rotation.
+   */
+  Vector2f getPosition() const {return getPosition(robot);}
 
   /**
    * Determines the three-dimensional position of a SimRobot object without team color rotation.

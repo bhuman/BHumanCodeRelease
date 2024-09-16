@@ -1,7 +1,7 @@
 /**
  * @file OptionalImageRequest.h
  *
- * This file defines a representation that represents the request whether an optional image should be send or not
+ * This file defines a representation that represents the request whether an optional image should be send to the referee thread or not.
  *
  * @author Ayleen Lührsen
  */
@@ -12,5 +12,5 @@
 
 STREAMABLE(OptionalImageRequest,
 {,
-  (bool)(false) sendImage,
+  (bool)(false) sendImage, /**< If true, send an image to the referee thread and disable some of the regular image processing. */
 });

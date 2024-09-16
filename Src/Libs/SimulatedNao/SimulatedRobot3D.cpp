@@ -14,8 +14,8 @@
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "ImageProcessing/ColorModelConversions.h"
 #include "ImageProcessing/AVX.h"
 #include "Math/Pose2f.h"
@@ -281,8 +281,8 @@ void SimulatedRobot3D::getAndSetJointData(const JointRequest& jointRequest, Join
     // Get angles
     if(jointSensors[i])
     {
-      jointSensorData.angles[i] = static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue - jointCalibration.offsets[i];
-      jointSensorData.variance[i] = jointVariance;
+      jointSensorData.angles[i] = applyDiscretization(
+          static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue, jointDiscretizationStep);
     }
 
     // Set angles
@@ -309,7 +309,7 @@ void SimulatedRobot3D::setJointRequest(const JointRequest& jointRequest) const
   }
 }
 
-void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData)
+void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& rawInertialSensorData)
 {
   ASSERT(robot);
 
@@ -335,25 +335,38 @@ void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, InertialSenso
     }
   }
 
-  // Gyro
-  const float* floatArray = reinterpret_cast<SimRobotCore2::SensorPort*>(gyroSensor)->getValue().floatArray;
-  inertialSensorData.gyro.x() = floatArray[0];
-  inertialSensorData.gyro.y() = floatArray[1];
-  inertialSensorData.gyro.z() = floatArray[2];
+  const float* accArray = reinterpret_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
+  const float* gyroArray = reinterpret_cast<SimRobotCore2::SensorPort*>(gyroSensor)->getValue().floatArray;
 
-  inertialSensorData.gyroVariance.x() = gyroVariance;
-  inertialSensorData.gyroVariance.y() = gyroVariance;
-  inertialSensorData.gyroVariance.z() = gyroVariance;
+  if(!newGyroMeasurement || !useTimeDelay)
+  {
+    //save data from the gyro
+    lastInertialData.gyro.x() = gyroArray[0];
+    lastInertialData.gyro.y() = gyroArray[1];
+    lastInertialData.gyro.z() = gyroArray[2];
+  }
+
+  // Gyro
+  if(newGyroMeasurement || !useTimeDelay)
+  {
+    rawInertialSensorData.gyro.x() = applyWhiteNoise((gyroArray[0] + lastInertialData.gyro.x()) / 2, gyroVariance);
+    rawInertialSensorData.gyro.y() = applyWhiteNoise((gyroArray[1] + lastInertialData.gyro.y()) / 2, gyroVariance);
+    rawInertialSensorData.gyro.z() = applyWhiteNoise((gyroArray[2] + lastInertialData.gyro.z()) / 2, gyroVariance);
+
+    // save data from the acc
+    lastInertialData.acc.x() = accArray[0];
+    lastInertialData.acc.y() = accArray[1];
+    lastInertialData.acc.z() = accArray[2];
+  }
 
   // Acc
-  floatArray = reinterpret_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
-  inertialSensorData.acc.x() = floatArray[0];
-  inertialSensorData.acc.y() = floatArray[1];
-  inertialSensorData.acc.z() = floatArray[2];
-
-  inertialSensorData.accVariance.x() = accVariance;
-  inertialSensorData.accVariance.y() = accVariance;
-  inertialSensorData.accVariance.z() = accVariance;
+  if(!newGyroMeasurement || !useTimeDelay)
+  {
+    rawInertialSensorData.acc.x() = applyWhiteNoise((accArray[0] + lastInertialData.acc.x()) / 2, accVariance);
+    rawInertialSensorData.acc.y() = applyWhiteNoise((accArray[1] + lastInertialData.acc.y()) / 2, accVariance);
+    rawInertialSensorData.acc.z() = applyWhiteNoise((accArray[2] + lastInertialData.acc.z()) / 2, accVariance);
+  }
+  newGyroMeasurement = !newGyroMeasurement;
 
   // angle
   float position[3];
@@ -364,21 +377,21 @@ void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, InertialSenso
   const float axisLength = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
   if(axisLength == 0.0f)
   {
-    inertialSensorData.angle.x() = 0.0f;
-    inertialSensorData.angle.y() = 0.0f;
+    rawInertialSensorData.angle.x() = 0.0f;
+    rawInertialSensorData.angle.y() = 0.0f;
   }
   else
   {
     const float w = std::atan2(axisLength, world2robot[2][2]) / axisLength;
-    inertialSensorData.angle.x() = axis[0] * w;
-    inertialSensorData.angle.y() = axis[1] * w;
+    rawInertialSensorData.angle.x() = axis[0] * w;
+    rawInertialSensorData.angle.y() = axis[1] * w;
   }
 }
 
 void SimulatedRobot3D::getAndSetMotionData(const MotionRequest&, MotionInfo&)
 {}
 
-void SimulatedRobot3D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation)
+void SimulatedRobot3D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics)
 {
   const Vector3f position = pos * 0.001f;
 
@@ -393,11 +406,34 @@ void SimulatedRobot3D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool 
   }
   else
     static_cast<SimRobotCore2::Body*>(robot)->move(&position.x());
+
+  if(resetDynamics)
+    static_cast<SimRobotCore2::Body*>(robot)->resetDynamics();
 }
 
 void SimulatedRobot3D::enablePhysics(bool enable)
 {
   static_cast<SimRobotCore2::Body*>(robot)->enablePhysics(enable);
+}
+
+void SimulatedRobot3D::enableGravity(bool enable)
+{
+  static_cast<SimRobotCore2::Body*>(robot)->enableGravity(enable);
+}
+
+void SimulatedRobot3D::enableSensorWhiteNoise(const bool enable)
+{
+  useWhiteNoise = enable;
+}
+
+void SimulatedRobot3D::enableSensorDelay(const bool enable)
+{
+  useTimeDelay = enable;
+}
+
+void SimulatedRobot3D::enableSensorDiscretization(const bool enable)
+{
+  useDiscretization = enable;
 }
 
 bool SimulatedRobot3D::getPose2f(const SimRobot::Object* obj, Pose2f& pose) const
@@ -452,4 +488,20 @@ void SimulatedRobot3D::getPose3f(const SimRobot::Object* obj, Pose3f& pose) cons
          rotation[0][1], rotation[1][1], rotation[2][1],
          rotation[0][2], rotation[1][2], rotation[2][2];
   pose.rotation = rot;
+}
+
+float SimulatedRobot3D::applyDiscretization(float value, float discretizationStep) const
+{
+  if(!useDiscretization)
+    return value;
+
+  return floorf(value / discretizationStep) * discretizationStep;
+}
+
+float SimulatedRobot3D::applyWhiteNoise(float value, float variance)
+{
+  if(!useWhiteNoise)
+    return value;
+
+  return value + generalNormalDistribution(randomGenerator) * std::sqrt(variance);
 }

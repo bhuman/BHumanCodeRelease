@@ -6,49 +6,28 @@
  * @author Philip Reichenberg
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/RobotPose.h"
-#include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GyroState.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(CalibrationControlImpl,
-{,
-  IMPLEMENTS(CalibrationControl),
-  CALLS(CalibrationFinished),
-  CALLS(LookForward),
-  CALLS(PlayDead),
-  CALLS(Say),
-  CALLS(Stand),
-  CALLS(LookLeftAndRight),
-  CALLS(AutomaticIMUCalibration),
-  CALLS(AutonomousCameraCalibration),
-  REQUIRES(FallDownState),
-  REQUIRES(FrameInfo),
-  REQUIRES(GyroState),
-  REQUIRES(RobotPose),
-  DEFINES_PARAMETERS(
-  {,
-    (int)(3000) lookAroundDuration, /**< Min duration to look around before starting the calibration process. */
-    (int)(6000) lookAroundDurationMax, /**< Max duration to look around before starting the calibration process. */
-    (int)(3) notMovingCycles, /**< Sample size from gyro state times this factor to check if we can calibrate. */
-  }),
-});
-
-class CalibrationControlImpl : public CalibrationControlImplBase
+option((SkillBehaviorControl) CalibrationControl,
+       defs((int)(3000) lookAroundDuration, /**< Min duration to look around before starting the calibration process. */
+            (int)(6000) lookAroundDurationMax, /**< Max duration to look around before starting the calibration process. */
+            (int)(3) notMovingCycles), /**< Sample size from gyro state times this factor to check if we can calibrate. */
+       vars((bool)(false) cameraCalibrationFinished,
+            (bool)(false) imuCalibrationFinished,
+            (bool)(false) initialized,
+            (CalibrationRequest)({}) theCalibrationRequest))
 {
-  option(CalibrationControl)
+  common_transition
   {
-    common_transition
-    {
-      if(theFallDownState.state == FallDownState::fallen || theFallDownState.state == FallDownState::falling)
-        goto waitAfterFallen;
-    }
+    if(theFallDownState.state == FallDownState::fallen || theFallDownState.state == FallDownState::falling)
+      goto waitAfterFallen;
+  }
 
-    initial_state(start)
+  initial_state(start)
+  {
+    transition
     {
-      transition
+      if(initialized)
       {
         if(!imuCalibrationFinished ||
            !cameraCalibrationFinished)
@@ -56,103 +35,105 @@ class CalibrationControlImpl : public CalibrationControlImplBase
         else
           goto calibrationFinished;
       }
-      action
-      {
-        theStandSkill();
-      }
     }
-
-    state(lookAroundBeforeCalibration)
+    action
     {
-      transition
+      if(!initialized)
       {
-        if((state_time > lookAroundDuration && theRobotPose.quality != RobotPose::LocalizationQuality::poor) || state_time > lookAroundDurationMax)
-          goto decideForNextState;
+        initialized = true;
+        theCalibrationRequest = {};
+        CalibrateRobot({.request = theCalibrationRequest });
       }
-      action
-      {
-        theLookLeftAndRightSkill({.startLeft = false});
-        theStandSkill();
-      }
-    }
-
-    state(decideForNextState)
-    {
-      transition
-      {
-        if(!imuCalibrationFinished)
-          goto calibrateIMU;
-        else if(!cameraCalibrationFinished)
-          goto calibrateCamera;
-        else
-          goto calibrationFinished;
-      }
-      action
-      {
-        theLookForwardSkill();
-        theStandSkill();
-      }
-    }
-
-    state(calibrateIMU)
-    {
-      transition
-      {
-        if(theAutomaticIMUCalibrationSkill.isDone())
-        {
-          imuCalibrationFinished = true;
-          goto decideForNextState;
-        }
-      }
-      action
-      {
-        theAutomaticIMUCalibrationSkill();
-        if(theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) < theGyroState.filterTimeWindow * notMovingCycles) // the time should be less than the robot needs to say the text
-          theSaySkill({.text = "Please do not move me. I need to calibrate my i m u"});
-      }
-    }
-
-    state(calibrateCamera)
-    {
-      transition
-      {
-        if(theAutonomousCameraCalibrationSkill.isDone())
-        {
-          cameraCalibrationFinished = true;
-          goto decideForNextState;
-        }
-      }
-      action
-      {
-        theAutonomousCameraCalibrationSkill();
-      }
-    }
-
-    state(calibrationFinished)
-    {
-      theCalibrationFinishedSkill();
-      theSaySkill({.text = "Calibration finished."});
-      thePlayDeadSkill();
-      theLookForwardSkill();
-    }
-
-    state(waitAfterFallen)
-    {
-      transition
-      {
-        if(theFallDownState.state == FallDownState::upright)
-          goto start;
-      }
-      action
-      {
-        theStandSkill();
-        theLookForwardSkill();
-      }
+      Stand();
+      LookLeftAndRight({.startLeft = false});
     }
   }
 
-  bool cameraCalibrationFinished = false;
-  bool imuCalibrationFinished = false;
-};
+  state(lookAroundBeforeCalibration)
+  {
+    transition
+    {
+      if((state_time > lookAroundDuration && theRobotPose.quality != RobotPose::LocalizationQuality::poor) || state_time > lookAroundDurationMax)
+        goto decideForNextState;
+    }
+    action
+    {
+      LookLeftAndRight({.startLeft = false});
+      Stand();
+    }
+  }
 
-MAKE_SKILL_IMPLEMENTATION(CalibrationControlImpl);
+  state(decideForNextState)
+  {
+    transition
+    {
+      if(!imuCalibrationFinished)
+        goto calibrateIMU;
+      else if(!cameraCalibrationFinished)
+        goto calibrateCamera;
+      else
+        goto calibrationFinished;
+    }
+    action
+    {
+      LookForward();
+      Stand();
+    }
+  }
+
+  state(calibrateIMU)
+  {
+    transition
+    {
+      if(action_done)
+      {
+        imuCalibrationFinished = true;
+        goto decideForNextState;
+      }
+    }
+    action
+    {
+      if(theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) < theIMUValueState.filterTimeWindow * notMovingCycles) // the time should be less than the robot needs to say the text
+        Say({.text = "Please do not move me. I need to calibrate my i m u"});
+      AutomaticIMUCalibration();
+    }
+  }
+
+  state(calibrateCamera)
+  {
+    transition
+    {
+      if(action_done)
+      {
+        cameraCalibrationFinished = true;
+        goto decideForNextState;
+      }
+    }
+    action
+    {
+      AutonomousCameraCalibration();
+    }
+  }
+
+  state(calibrationFinished)
+  {
+    CalibrationFinished();
+    Say({.text = "Calibration finished."});
+    PlayDead();
+    LookForward();
+  }
+
+  state(waitAfterFallen)
+  {
+    transition
+    {
+      if(theFallDownState.state == FallDownState::upright)
+        goto start;
+    }
+    action
+    {
+      Stand();
+      LookForward();
+    }
+  }
+}

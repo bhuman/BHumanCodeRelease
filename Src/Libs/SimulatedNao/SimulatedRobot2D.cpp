@@ -157,7 +157,7 @@ void SimulatedRobot2D::toggleCamera()
   currentCamera = currentCamera == CameraInfo::upper ? CameraInfo::lower : CameraInfo::upper;
 }
 
-void SimulatedRobot2D::getSensorData(FsrSensorData&, InertialSensorData&)
+void SimulatedRobot2D::getSensorData(FsrSensorData&, RawInertialSensorData&)
 {}
 
 void SimulatedRobot2D::getAndSetMotionData(const MotionRequest& motionRequest, MotionInfo& motionInfo)
@@ -275,19 +275,31 @@ void SimulatedRobot2D::getAndSetMotionData(const MotionRequest& motionRequest, M
   }
 }
 
-void SimulatedRobot2D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation)
+void SimulatedRobot2D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics)
 {
   const Vector3f position = pos * 0.001f;
   if(changeRotation)
     static_cast<SimRobotCore2D::Body*>(robot)->move(position.data(), rot.z());
   else
     static_cast<SimRobotCore2D::Body*>(robot)->move(position.data());
+
+  if(resetDynamics)
+    static_cast<SimRobotCore2D::Body*>(robot)->resetDynamics();
 }
 
 void SimulatedRobot2D::enablePhysics(bool enable)
 {
   static_cast<SimRobotCore2D::Body*>(robot)->enablePhysics(enable);
 }
+
+void SimulatedRobot2D::enableSensorWhiteNoise(bool)
+{}
+
+void SimulatedRobot2D::enableSensorDelay(bool)
+{}
+
+void SimulatedRobot2D::enableSensorDiscretization(bool)
+{}
 
 bool SimulatedRobot2D::getPose2f(const SimRobot::Object* obj, Pose2f& pose) const
 {

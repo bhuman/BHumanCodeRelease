@@ -55,7 +55,7 @@ STREAMABLE(Agent,
 class Agents : public std::vector<const Agent*>
 {
 public:
-  const Agent* byNumber(int number) const
+  [[nodiscard]] const Agent* byNumber(int number) const
   {
     for(const Agent* agent : *this)
       if(agent->number == number)
@@ -63,7 +63,7 @@ public:
     return nullptr;
   }
 
-  const Agent* byPosition(Tactic::Position::Type position) const
+  [[nodiscard]] const Agent* byPosition(Tactic::Position::Type position) const
   {
     for(const Agent* agent : *this)
       if(agent->position == position)

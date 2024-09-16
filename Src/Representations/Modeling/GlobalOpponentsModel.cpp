@@ -3,34 +3,31 @@
 *
 * Implementation of a representation that stores the estimated states
 * of the opponent robots.
-* The representation is a result of the combined estimates of
-* all teammates.
 *
 * @author Tim Laue
 * @author Michelle Gusev
 */
 
 #include "GlobalOpponentsModel.h"
-#include "Platform/SystemCall.h"
-#include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
-#include "Math/Approx.h"
-#include "Tools/Modeling/Obstacle.h"
 #include "Framework/Blackboard.h"
+#include "Math/Approx.h"
+#include "Platform/SystemCall.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Sensing/RobotModel.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Tools/Modeling/Obstacle.h"
 
 void GlobalOpponentsModel::verify() const
 {
-  DECLARE_DEBUG_RESPONSE("representation:GlobalOpponentsModel:verify");
   for([[maybe_unused]] const auto& opponent : opponents)
   {
     ASSERT(std::isfinite(opponent.position.x()));
     ASSERT(std::isfinite(opponent.position.y()));
-
     ASSERT(std::isfinite(opponent.left.x()));
     ASSERT(std::isfinite(opponent.left.y()));
-
     ASSERT(std::isfinite(opponent.right.x()));
     ASSERT(std::isfinite(opponent.right.y()));
   }
@@ -38,13 +35,9 @@ void GlobalOpponentsModel::verify() const
 
 void GlobalOpponentsModel::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:rectangle", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:centerCross", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:leftCross", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:rightCross", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:leftRight", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel:circle", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:GlobalOpponentsModel", "drawingOnField");
+  if(SystemCall::getMode() != SystemCall::remoteRobot)
+    DECLARE_DEBUG_DRAWING3D("representation:GlobalOpponentsModel", "field");
 
   const ColorRGBA opponentColor = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
     static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).opponentTeam.fieldPlayerColor : GameState::Team::Color::red));
@@ -54,20 +47,69 @@ void GlobalOpponentsModel::draw() const
     const Vector2f& center = opponent.position;
     const Vector2f& left = opponent.left;
     const Vector2f& right = opponent.right;
+    const ColorRGBA fillColor = opponent.unidentified ? ColorRGBA::white : opponentColor;
 
-    CYLINDER3D("representation:GlobalOpponentsModel", center.x(), center.y(), -210, 0, 0, 0, (left - right).norm(), 10, opponentColor);
-    CROSS("representation:GlobalOpponentsModel:centerCross", center.x(), center.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, opponentColor);
-    CROSS("representation:GlobalOpponentsModel:leftCross", left.x(), left.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, ColorRGBA::cyan);
-    CROSS("representation:GlobalOpponentsModel:rightCross", right.x(), right.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, ColorRGBA::magenta);
+    if(SystemCall::getMode() != SystemCall::remoteRobot)
+      CYLINDER3D("representation:GlobalOpponentsModel", center.x(), center.y(), -210, 0, 0, 0, (left - right).norm(), 10, fillColor);
 
     float obstacleRadius = (left - right).norm() * .5f;
-    Angle robotRotation = Blackboard::getInstance().exists("RobotPose") ? static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]).rotation : Angle();
     Vector2f frontRight(-Obstacle::getRobotDepth(), -obstacleRadius);
     frontRight = center + frontRight;
-    RECTANGLE2("representation:GlobalOpponentsModel:rectangle", frontRight, obstacleRadius * 2, obstacleRadius * 2, -robotRotation, 16, Drawings::PenStyle::solidPen, ColorRGBA::black, Drawings::solidBrush, opponentColor);
+    RECTANGLE2("representation:GlobalOpponentsModel", frontRight, obstacleRadius * 2, obstacleRadius * 2, 0.f, 16, Drawings::PenStyle::solidPen, ColorRGBA::black, Drawings::solidBrush, fillColor);
+    if(opponent.unidentified)
+      DRAW_TEXT("representation:GlobalOpponentsModel", center.x()-20, center.y()-50, 150, ColorRGBA::black, "?");
+  }
 
-    LINE("representation:GlobalOpponentsModel:leftRight", center.x(), center.y(), left.x(), left.y(), 20, Drawings::dottedPen, opponentColor);
-    LINE("representation:GlobalOpponentsModel:leftRight", center.x(), center.y(), right.x(), right.y(), 20, Drawings::dottedPen, opponentColor);
-    CIRCLE("representation:GlobalOpponentsModel:circle", center.x(), center.y(), obstacleRadius, 10, Drawings::dottedPen, opponentColor, Drawings::noBrush, opponentColor);
+  if(SystemCall::getMode() == SystemCall::remoteRobot)
+    DEBUG_DRAWING3D("representation:GlobalOpponentsModel", "robot")
+    {
+      if(Blackboard::getInstance().exists("GameState")
+         && Blackboard::getInstance().exists("RawInertialSensorData")
+         && Blackboard::getInstance().exists("RobotModel")
+         && Blackboard::getInstance().exists("RobotPose"))
+      {
+        const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
+        const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+        const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
+        const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
+        const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+        TRANSLATE3D("representation:GlobalOpponentsModel", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
+        ROTATE3D("representation:GlobalOpponentsModel", -orientation.x(), -orientation.y(), -orientation.z());
+        RENDER_OPTIONS3D("representation:GlobalOpponentsModel", Drawings3D::disableOpacity | Drawings3D::disableDepth);
+        ColorRGBA color = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.opponentTeam.fieldPlayerColor));
+        color.a = 128;
+        ColorRGBA white = ColorRGBA::white;
+        white.a = 128;
+        for(const OpponentEstimate& opponent : opponents)
+        {
+          const Vector2f position = theRobotPose.inverse() * opponent.position;
+          CYLINDER3D("representation:GlobalOpponentsModel", position.x(), position.y(), 290, 0, 0, 0, 100, 580, opponent.unidentified ? white : color);
+        }
+      }
+    }
+
+  DEBUG_DRAWING3D("representation:GlobalOpponentsModel:sectors", "robot")
+  {
+    if(Blackboard::getInstance().exists("GameState")
+       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("RobotModel")
+       && Blackboard::getInstance().exists("RobotPose"))
+    {
+      const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
+      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
+      const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
+      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      TRANSLATE3D("representation:GlobalOpponentsModel:sectors", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
+      ROTATE3D("representation:GlobalOpponentsModel:sectors", -orientation.x(), -orientation.y(), -orientation.z());
+      const ColorRGBA color = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.opponentTeam.fieldPlayerColor));
+      for(const OpponentEstimate& opponent : opponents)
+      {
+        const Vector2f position = theRobotPose.inverse() * opponent.position;
+        const Angle range = std::max(1_deg, static_cast<Angle>(std::asin(std::min(1.f, 100.f / position.norm()))));
+        const Angle angle = position.angle();
+        RING_SECTOR3D("representation:GlobalOpponentsModel:sectors", Vector3f(0, 0, 3.f), angle - range, angle + range, 140.f, 160.f, opponent.unidentified ? ColorRGBA::white : color);
+      }
+    }
   }
 }

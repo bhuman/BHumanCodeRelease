@@ -7,12 +7,14 @@
  * @author Jo Lienhoop
  */
 
-#include "PlayBall.h"
-#include "Representations/Communication/TeamData.h"
-#include "Tools/BehaviorControl/Strategy/Agent.h"
 #include "Debugging/Modify.h"
-#include <array>
-#include <cmath>
+#include "Modules/BehaviorControl/ActionRatingProvider/ClearTargetProvider.h"
+#include "Modules/BehaviorControl/StrategyBehaviorControl/Behavior.h"
+#include "PlayBall.h"
+#include "Representations/BehaviorControl/DribbleTarget.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Tools/BehaviorControl/Strategy/Agent.h"
 
 void PlayBall::reset()
 {
@@ -21,87 +23,68 @@ void PlayBall::reset()
 
 void PlayBall::preProcess()
 {
-  MODIFY("parameters:behavior:PlayBall", p);
+  MODIFY("behavior:PlayBall", p);
   DECLARE_DEBUG_DRAWING("behavior:PlayBall:ratings", "drawingOnField");
 }
 
 SkillRequest PlayBall::execute(const Agent& self, const Agents& teammates)
 {
-  return p.ignoreObstacles ? executeLegacy(self, teammates) : smashOrPass(self, teammates);
+  return smashOrPass(self, teammates);
 }
 
 SkillRequest PlayBall::smashOrPass(const Agent& self, const Agents& teammates)
 {
-  if(p.alwaysShoot)
+  const bool allowDirectKick = !Global::getSettings().scenario.starts_with("SharedAutonomyDefender") && theIndirectKick.allowDirectKick;
+
+  if(p.alwaysShoot || (Global::getSettings().scenario.starts_with("SharedAutonomy") && allowDirectKick))
     return SkillRequest::Builder::shoot();
 
   // Calculate a penalty for changing the decision of the shoot or pass target based on the distance to the ball and the penalty value range
-  const float decisionPenalty = mapToRange(self.ballPosition.norm(), p.ballDistMaxPenalty, p.ballDistMinPenalty, p.maxPenalty, p.minPenalty);
-
+  decisionPenalty = mapToRange(self.ballPosition.norm(), p.ballDistMaxPenalty, p.ballDistMinPenalty, p.maxPenalty, p.minPenalty);
   // Get the estimated probability of shooting a goal from the current ball position
-  // TODO: Use ballEndPosition instead?
   const Vector2f ballPosition = self.pose * self.ballPosition;
-  float maxValue = theExpectedGoals.getRating(ballPosition);
+  // No goal shots allowed if indirect kick rule applies
+  float bestActionRating = !allowDirectKick ? p.minRating : theExpectedGoals.getRating(ballPosition, false);
   float maxPassDistance = p.maxPassDistance;
   if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
   {
     // Minimize the own goal rating because the rules do not allow this robot to perform a direct kick.
-    maxValue = p.minRating;
+    bestActionRating = p.minRating;
     maxPassDistance = theGameState.isGoalKick() ? p.maxGoalKickDistance : p.maxFreeKickDistance;
   }
-  draw(ballPosition, goalPosition, goalPosition, maxValue, decisionPenalty, lastPassTarget > 0);
   // Apply the decision penalty when this action is different from the last frame
   if(lastPassTarget > 0)
-    maxValue -= decisionPenalty;
-  if(maxValue > p.shootThreshold)
+    bestActionRating -= decisionPenalty;
+  if(bestActionRating > p.shootThreshold && allowDirectKick)
   {
     lastPassTarget = -1;
     return SkillRequest::Builder::shoot();
   }
-
-  const Agent* passTarget = nullptr;
-  // Find a pass target i.e. the teammate with the highest rating for a successful pass (from the current ball position) and a following goal shot (from the teammate's current position)
-  for(const Agent* agent : teammates)
+  dribbleTarget = theDribbleTarget.getTarget(theFieldInterceptBall.interceptedEndPositionOnField);
+  if(allowDirectKick && !(theGameState.isFreeKick() && theGameState.isForOwnTeam()))
   {
-    if(agent->position == Tactic::Position::Type::goalkeeper)
-      continue;
-    Vector2f agentPosition = agent->currentPosition;
-    const float passDistance = (agentPosition - ballPosition).norm();
-    if(passDistance < p.minPassDistance ||
-       passDistance > maxPassDistance)
-      continue;
-
-    Vector2f bestAgentPosition = agentPosition;
-    float agentValue = 0.f;
-    // Sample and evaluate a given number of positions in a given distance on the line from the agent's current position to the opponent's goal
-    const Geometry::Line agentGoalLine(agentPosition, (goalPosition - agentPosition).normalized(p.sampleDistance));
-    for(int t = p.sampleSteps.min; t <= p.sampleSteps.max; t++)
+    float newBestActionRating = theExpectedGoals.getRating(dribbleTarget, false);
+    if(lastPassTarget > 0)
+      newBestActionRating -= decisionPenalty;
+    bestActionRating = std::max(bestActionRating, newBestActionRating);
+    if(bestActionRating > p.shootThreshold)
     {
-      const Vector2f samplePosition = agentGoalLine.base + t * agentGoalLine.direction;
-      // The teammate's rating is the estimated probability that the ball would reach the given target position when passed AND the teammate would score a direct goal from the pass target position
-      const float sampleValue = thePassEvaluation.getRating(samplePosition) *
-                                theExpectedGoals.getRating(samplePosition) *
-                                theExpectedGoals.getOpponentRating(samplePosition);
-      if(sampleValue > agentValue)
-      {
-        agentValue = sampleValue;
-        bestAgentPosition = samplePosition;
-      }
+      lastPassTarget = -1;
+      return SkillRequest::Builder::shoot();
     }
-    // TODO: if p.lookAhead we should also consider the agent's estimated future position given by:
-    // const Vector2f futurePosition = Teammate::getEstimatedPosition(agent->lastKnownPose, agent->lastKnownTarget, agent->lastKnownSpeed, theFrameInfo.getTimeSince(agent->lastKnownTimestamp) + p.lookAheadTime);
-
-    // Apply the decision penalty when this action is different from the last frame
-    const bool applyDecisionPenalty = lastPassTarget && lastPassTarget != agent->number;
-    draw(ballPosition, agentPosition, bestAgentPosition, agentValue, decisionPenalty, applyDecisionPenalty);
-    if(applyDecisionPenalty)
-      agentValue -= decisionPenalty;
-    if(agentValue > maxValue)
+    else // Get the rating for a second dribble kick. But only call shoot, if this rating would be better then passing
     {
-      maxValue = agentValue;
-      passTarget = agent;
+      const Vector2f secondTarget = theDribbleTarget.getTarget(dribbleTarget);
+      float newBestActionRating = theExpectedGoals.getRating(secondTarget, false);
+      if(lastPassTarget > 0)
+        newBestActionRating -= decisionPenalty;
+      bestActionRating = std::max(bestActionRating, newBestActionRating);
     }
   }
+
+  const Agent* passTarget = nullptr;
+  // TODO: Should the search start with ballPosition or recentBallBallPositionOnField?
+  findPassTarget(theFieldBall.recentBallPositionOnField(), teammates, maxPassDistance, p.maxSearchDepth, passTarget, bestActionRating, decisionPenalty, {});
   if(passTarget)
   {
     lastPassTarget = passTarget->number;
@@ -109,63 +92,132 @@ SkillRequest PlayBall::smashOrPass(const Agent& self, const Agents& teammates)
   }
   else if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
   {
-    // Here, the pass skill request is set with an invalid pass target on purpose. This way, the waiting states of the pass skill are utilized during setplays. Outside of setplays, the shoot skill request is set and the robot will dribble immediately without waiting behind the ball.
-    lastPassTarget = -1;
-    return SkillRequest::Builder::passTo(0);
-  }
-  lastPassTarget = maxValue > p.minRating ? -1 : 0;
-  return SkillRequest::Builder::shoot();
-}
-
-SkillRequest PlayBall::executeLegacy(const Agent& self, const Agents& teammates)
-{
-  if(!p.alwaysShoot)
-  {
-    const Vector2f ballPosition = self.pose * self.ballPosition;
-
-    float xGOpt = theExpectedGoals.xG(ballPosition);
-    draw(ballPosition, goalPosition, goalPosition, xGOpt, 0.f, false);
-    if(xGOpt > p.shootThreshold)
-      return SkillRequest::Builder::shoot();
-    xGOpt += p.passImprovement;
-    const Agent* ptOpt = nullptr;
-    for(const Agent* agent : teammates)
+    //clear the ball when there is no passtarget
+    //when clearing the ball is not possible dribble by calling the pass skill
+    if(theClearTarget.getKickType() != KickInfo::numOfKickTypes)
     {
-      const float passDistance = (agent->currentPosition - ballPosition).norm();
-      if(passDistance < p.minPassDistance ||
-         passDistance > p.maxPassDistance)
-        continue;
-      const float passTargetxG = theExpectedGoals.xG(agent->currentPosition);
-      draw(ballPosition, agent->currentPosition, agent->currentPosition, passTargetxG, 0.f, false);
-      if(passTargetxG > xGOpt)
+      return SkillRequest::Builder::clear();
+    }
+    else
+    {
+      // Here, the pass skill request is set with an invalid pass target on purpose. This way, the waiting states of the pass skill are utilized during setplays. Outside of setplays, the shoot skill request is set and the robot will dribble immediately without waiting behind the ball.
+      lastPassTarget = -1;
+      return SkillRequest::Builder::passTo(0);
+    }
+  }
+  else
+  {
+    const float clearRating = theClearTarget.getRating();
+    const float dribbleRating = theExpectedGoals.getRating(dribbleTarget, false);
+    lastPassTarget = bestActionRating > p.minRating ? -1 : 0;
+    if(allowDirectKick)
+    {
+      float shootRating = theExpectedGoals.getRating(ballPosition, false);
+      if(shootRating >= clearRating + clearDribbleHysteresis)
       {
-        xGOpt = passTargetxG;
-        ptOpt = agent;
+        return SkillRequest::Builder::shoot();
       }
     }
-    if(ptOpt)
-      return SkillRequest::Builder::passTo(ptOpt->number);
+    if(Global::getSettings().scenario.starts_with("SharedAutonomy") || (dribbleRating > clearRating + clearDribbleHysteresis) || theClearTarget.getKickType() == KickInfo::numOfKickTypes)
+    {
+      // If goalkeeper, just clear the ball
+      if(Tactic::Position::isGoalkeeper(self.position) && theClearTarget.getKickType() != KickInfo::numOfKickTypes)
+        return SkillRequest::Builder::clear();
+
+      clearDribbleHysteresis = -p.clearDribbleHysteresisValue;
+      return SkillRequest::Builder::dribbleTo((dribbleTarget - theRobotPose.translation).angle());
+    }
+    else
+    {
+      clearDribbleHysteresis = p.clearDribbleHysteresisValue;
+      return SkillRequest::Builder::clear();
+    }
   }
-  return SkillRequest::Builder::shoot();
 }
 
-void PlayBall::draw([[maybe_unused]] const Vector2f& ballPosition, [[maybe_unused]] const Vector2f& agentPosition, [[maybe_unused]] const Vector2f& bestPosition, [[maybe_unused]] const float value, [[maybe_unused]] const float penalty, const bool applyPenalty)
+float PlayBall::findPassTarget(const Vector2f& ballPosition, const Agents& teammates, const float maxPassDistance, int remainingSearchDepth, const Agent*& passTarget, float& bestActionRating, const float decisionPenalty, const std::vector<int>& ballPossessionList)
+{
+  const bool allowDirectKick = !Global::getSettings().scenario.starts_with("SharedAutonomyDefender") && theIndirectKick.allowDirectKick;
+  if(Global::getSettings().scenario.starts_with("SharedAutonomy"))
+  {
+    for(const Agent* teammate : teammates)
+    {
+      // when the distance to the teammate is enough to count as a point, always pass to the teammate
+      if((teammate->pose.translation - theFieldBall.recentBallPositionOnField()).squaredNorm() > sqr(p.minPassDistanceSAC) && !allowDirectKick)
+      {
+        passTarget = teammate;
+        return 1.f;
+      }
+    }
+    return 0.f;
+  }
+  if(remainingSearchDepth <= 0)
+    return 0.f;
+
+  float bestCombinedRating = 0.f;
+  // Find a pass target i.e. the teammate with the highest rating for a successful pass (from the current ball position) and a following goal shot or another pass recursively (from the teammate's current position)
+  for(const Agent* teammate : teammates)
+  {
+    if(teammate->position == Tactic::Position::Type::goalkeeper || std::count(ballPossessionList.begin(), ballPossessionList.end(), teammate->number))
+      continue;
+
+    const Vector2f& passTargetPosition = teammate->currentPosition;
+    const float passDistance = (passTargetPosition - ballPosition).squaredNorm();
+    if(passDistance < sqr(p.minPassDistance) ||
+       passDistance > sqr(maxPassDistance))
+      continue;
+
+    // Evaluation for the pass
+    const float passRating = thePassEvaluation.getRating(ballPosition, passTargetPosition, false);
+    // Pruning, if path can't be better than best rating
+    if(passRating < bestActionRating)
+      continue;
+
+    // Evaluation for a goal
+    const float goalRating = theExpectedGoals.getRating(passTargetPosition, false) * theExpectedGoals.getOpponentRating(passTargetPosition);
+
+    // Add current player to list, which tracks who had the ball
+    std::vector<int> currentBallPossessionList = ballPossessionList;
+    currentBallPossessionList.push_back(teammate->number);
+
+    // The teammate's rating is the estimated probability that the ball would reach the given target position when passed AND the teammate would score a direct goal from the pass target position
+    const float nextRating = p.discountFactor * findPassTarget(passTargetPosition, teammates, maxPassDistance, remainingSearchDepth - 1, passTarget, bestActionRating, decisionPenalty, currentBallPossessionList);
+    float combinedRating = passRating * std::max(goalRating, nextRating);
+
+    draw(ballPosition, passTargetPosition, combinedRating, 0.f, false);
+
+    if(remainingSearchDepth == p.maxSearchDepth)
+    {
+      // Apply the decision penalty when this action is different from the last frame
+      const bool applyDecisionPenalty = lastPassTarget > 0 && lastPassTarget != teammate->number;
+
+      if(applyDecisionPenalty)
+        combinedRating -= decisionPenalty;
+      if(combinedRating > bestActionRating)
+      {
+        bestActionRating = combinedRating;
+        passTarget = teammate;
+      }
+    }
+    if(combinedRating > bestCombinedRating)
+      bestCombinedRating = combinedRating;
+  }
+  return bestCombinedRating;
+}
+
+void PlayBall::draw([[maybe_unused]] const Vector2f& passBasePosition, [[maybe_unused]] const Vector2f& passTargetPosition, [[maybe_unused]] const float value, [[maybe_unused]] const float penalty, const bool applyPenalty)
 {
   COMPLEX_DRAWING("behavior:PlayBall:ratings")
   {
-    float maxPassDistance = theGameState.isFreeKick() && theGameState.isForOwnTeam() ?
+    const bool allowDirectKick = !Global::getSettings().scenario.starts_with("SharedAutonomyDefender") && theIndirectKick.allowDirectKick;
+
+    float maxPassDistance = (theGameState.isFreeKick() && theGameState.isForOwnTeam()) || !allowDirectKick ?
                             (theGameState.isGoalKick() ? p.maxGoalKickDistance : p.maxFreeKickDistance) :
                             p.maxPassDistance;
-    CIRCLE("behavior:PlayBall:ratings", ballPosition.x(), ballPosition.y(), maxPassDistance, 20, Drawings::solidPen, ColorRGBA::violet, Drawings::noPen, ColorRGBA::violet);
-    LINE("behavior:PlayBall:ratings", ballPosition.x(), ballPosition.y(), agentPosition.x(), agentPosition.y(), 20, Drawings::dashedPen, applyPenalty ? ColorRGBA::violet : ColorRGBA::blue);
-    DRAW_TEXT("behavior:PlayBall:ratings", bestPosition.x(), bestPosition.y(), 250, ColorRGBA::blue, value);
+    CIRCLE("behavior:PlayBall:ratings", passBasePosition.x(), passBasePosition.y(), maxPassDistance, 20, Drawings::solidPen, ColorRGBA::violet, Drawings::noPen, ColorRGBA::violet);
+    LINE("behavior:PlayBall:ratings", passBasePosition.x(), passBasePosition.y(), passTargetPosition.x(), passTargetPosition.y(), 20, Drawings::dashedPen, applyPenalty ? ColorRGBA::violet : ColorRGBA::blue);
+    DRAW_TEXT("behavior:PlayBall:ratings", passTargetPosition.x(), passTargetPosition.y(), 250, ColorRGBA::blue, value);
     if(applyPenalty)
-      DRAW_TEXT("behavior:PlayBall:ratings", bestPosition.x(), bestPosition.y() - 250, 250, ColorRGBA::violet, value - penalty);
-    const Geometry::Line agentGoalLine(agentPosition, (goalPosition - agentPosition).normalized(p.sampleDistance));
-    for(int t = p.sampleSteps.min; t <= p.sampleSteps.max; t++)
-    {
-      const Vector2f samplePosition = agentGoalLine.base + t * agentGoalLine.direction;
-      LARGE_DOT("behavior:PlayBall:ratings", samplePosition.x(), samplePosition.y(), ColorRGBA::blue, applyPenalty ? ColorRGBA::violet : ColorRGBA::blue);
-    }
+      DRAW_TEXT("behavior:PlayBall:ratings", passTargetPosition.x(), passTargetPosition.y() - 250, 250, ColorRGBA::violet, value - penalty);
   }
 }

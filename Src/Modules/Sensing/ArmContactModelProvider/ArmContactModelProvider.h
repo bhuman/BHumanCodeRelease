@@ -87,7 +87,7 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
   //Was the keyFrameMotion to put the arms on the back active last frame? 0 is left 1 is right arm.
   bool armOnBackLastFrame[Arms::numOfArms] = {false, false};
 
-  //How many frames ago the robot started to ove his hands on the back or from the back to there "normal" positions? 0 is left 1 is right.
+  //How many frames ago the robot started to move his hands on the back or from the back to there "normal" positions? 0 is left 1 is right.
   int adjustingHandCounter[Arms::numOfArms] = {0, 0};
 
   /**
@@ -115,7 +115,7 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
   //The factor to dim the errors regarding the requested speed of the arms.
   Vector2f speedFactor;
 
-  //Building a RobotModel with the actual joint angles the robot is sensing right now with the limbs angle encoders and returning the hand position. German: Ist-Wert der Arme.
+  //Building a RobotModel with the actual joint angles the robot is sensing right now with the limbs angle encoders and returning the hand position.
   Vector3f calculateActualHandPosition(Arms::Arm arm) const;
 
   //Decides whether the robot is currently moving his arms to the back or away. During this time the errors should be ignored.

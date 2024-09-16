@@ -23,17 +23,17 @@ MODULE(WalkLearnerProvider,
   REQUIRES(JointPlay),
   REQUIRES(WalkModifier),
   PROVIDES(WalkLearner),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (Rangef)({30.f, 1.f}) adjustmentRange,
-    (float)(20.f) adjustmentSteps,
-    (float)(15.f) minForwardStep,
-    (float)(30.f) maxSideStep,
-    (Angle)(15_deg) maxTurnStep,
-    (float)(1.2f) clipStepDurationRatio,
-    (int)(2) maxStepsForJointPlayInitializing,
-    (float)(240.f) jointPlayInitializing,
-    (Rangef)({1.f, 1.07f}) bestStepDuration,
+    (Rangef) adjustmentRange,
+    (float) adjustmentSteps,
+    (float) minForwardStep,
+    (float) maxSideStep,
+    (Angle) maxTurnStep,
+    (float) clipStepDurationRatio,
+    (int) maxStepsForJointPlayInitializing,
+    (float) jointPlayInitializing,
+    (Rangef) bestStepDuration,
   }),
 });
 
@@ -46,14 +46,14 @@ private:
   float oldAverageMaxGyro; // average positive max gyro.y value over the last x frames
   float oldAverageMaxGyroPhase1; // average positive max gyro.y value over the last x frames of Phase 2
   float oldBackwardGyro; // The old balancing value for balancing backward
-  float oldAverageMinGyro; // average negativ max gyro.y value over the last x frames
+  float oldAverageMinGyro; // average negative max gyro.y value over the last x frames
   float oldAverageMinGyroPhase1; // average negative max gyro.y value over the last x frames of Phase 2
   float speed; // speed of the current walk in x-coordinate
 
   int phaseLearn; //learn phase
   int learnIteration; //learnIteration. If > theWalkModifier.numOfGyroPeaks, then change balance factor
   bool isForwardPhase; //are we searching for the current positive gyro max value?
-  bool wasPositiv; //gyro changed sign
+  bool wasPositive; //gyro changed sign
 
   std::vector<float> gyroForwardMax, //save the last theWalkModifier.numOfGyroPeaks gyro peaks
       gyroBackwardMin;

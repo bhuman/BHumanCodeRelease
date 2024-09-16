@@ -84,8 +84,8 @@ public:
         print(activeOption.option.c_str(), formattedTime, true, true);
 
         paintRectField0.setLeft(defaultLeft + 10 * activeOption.depth + 5);
-        for(const std::string& parameter : activeOption.parameters)
-          print(parameter.c_str(), "", false, false);
+        for(const std::string& argument : activeOption.arguments)
+          print(argument.c_str(), "", false, false);
 
         if(!activeOption.state.empty())
         {

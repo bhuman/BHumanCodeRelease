@@ -9,11 +9,11 @@
  * For example, lets assume the robot is walking forward and is tilted forward, with a resulting CoM near the tip of the toe.
  * The supporting foot is requested to move backwards.
  * This means:
- * - the HipPitch will move positiv (good!),
- * - the Knee stays the same (good) until the end, where it will move negativ (bad!)
- * - the AnklePitch will move negativ (bad!)
+ * - the HipPitch will move positive (good!),
+ * - the Knee stays the same (good) until the end, where it will move negative (bad!)
+ * - the AnklePitch will move negative (bad!)
  *
- * The regulation now makes sure, that the Knee and Ankle are still allowed to execute the change of direction (moving negativ),
+ * The regulation now makes sure, that the Knee and Ankle are still allowed to execute the change of direction (moving negative),
  * but the size of the change will be reduced. For example the ankle would move like -1deg per frame,
  * the regulation reduces it down to -0.5deg per frame. This is enough to stabilize the walking significantly!
  *

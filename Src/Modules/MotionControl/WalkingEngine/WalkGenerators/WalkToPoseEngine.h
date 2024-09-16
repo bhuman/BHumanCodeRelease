@@ -14,6 +14,7 @@
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -28,6 +29,7 @@ MODULE(WalkToPoseEngine,
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
   REQUIRES(WalkingEngineOutput),
+  REQUIRES(WalkStepData),
   PROVIDES(WalkToPoseGenerator),
   DEFINES_PARAMETERS(
   {,
@@ -43,11 +45,18 @@ MODULE(WalkToPoseEngine,
 
 class WalkToPoseEngine : public WalkToPoseEngineBase
 {
+  RingBuffer<Angle, 2> lastExecutedStepRotation; /**< Step rotation of the last executed steps. */
+  RingBuffer<Angle, 2> lastLeftOverRotation; /**< The last executed rotations if a zero step would have been executed. */
+  Angle tempLastLeftOverRotation = 0_deg; /**< If a zero step would be executed now, this would be the executed step rotation. */
+  unsigned lastWalkStepUpdate = 0; /**< Timestamp of last WalkStepData update. */
+  float rotationReductionPerDirectionChange; /**< 1 / (Size of RingBuffer + 1) */
+
   void update(WalkToPoseGenerator& walkToPoseGenerator) override;
 
   /**
    * Creates a walk phase to get to a target.
    * @param targetInSCS The target pose in the next support coordinate system.
+   * @param scsCognition Transformation from RobotPose to zero step
    * @param obstacleAvoidanceInSCS The obstacle avoidance parameters in the next support coordinate system.
    * @param walkSpeed The walk speed ratio.
    * @param isLeftPhase Whether the next phase is a left-swing phase.
@@ -59,9 +68,16 @@ class WalkToPoseEngine : public WalkToPoseEngineBase
    * @param doNotForceDiagonalWalk If true, the targetOfInterest does not force side/diagonal walk
    * @return The walk phase to the target.
    */
-  std::unique_ptr<MotionPhase> createPhase(const Pose2f& targetInSCS, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
+  std::unique_ptr<MotionPhase> createPhase(const Pose2f& targetInSCS, const Pose2f& scsCognition, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                            const Pose2f& walkSpeed, bool isLeftPhase, bool keepTargetRotation,
                                            const MotionPhase& lastPhase, const bool isFastWalkAllowed,
                                            const std::optional<Vector2f>& targetOfInterest,
                                            const bool forceSideWalk, const bool isSideWalkAllowed, const bool useModTarget) const;
+
+  Pose2f generateStep(const bool isLeftPhase, const MotionPhase& lastPhase, const Pose2f& walkSpeed,
+                      const bool isFastWalk, const Pose2f& targetInSCS, const Pose2f& modTargetInSCS,
+                      const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS, const bool isObstacle) const;
+
+public:
+  WalkToPoseEngine();
 };

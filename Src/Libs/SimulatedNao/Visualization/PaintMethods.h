@@ -45,7 +45,7 @@ public:
   static void paintEllipse(const DebugDrawing::Ellipse& element, QPainter& painter);
   static void paintArc(const DebugDrawing::Arc& element, QPainter& painter);
   static void paintOrigin(const DebugDrawing::Origin& element, QPainter& painter, const QTransform& baseTrans);
-  static void paintText(const DebugDrawing::Text& element, QPainter& painter);
+  static void paintText(const DebugDrawing::Text& element, QPainter& painter, const QTransform& baseTrans);
   static void paintRectangle(const DebugDrawing::Rectangle& element, QPainter& painter);
   static void paintRobot(const DebugDrawing::Robot& element, QPainter& painter);
   static void paintGridMono(const DebugDrawing::GridMono& element, QPainter& painter);

@@ -158,8 +158,8 @@ bool KickPhase::isDone(const MotionRequest& motionRequest) const
                                       ((newestPressure != engine.theFsrData.lastUpdateTimestamp && engine.theFrameInfo.getTimeSince(newestPressure) < 100) ||
                                        (engine.theFsrData.legInfo[legOfInterest].hasPressure == engine.theFsrData.lastUpdateTimestamp));
 
-  return ((normalEarlyExistAllowed || earlyRiskyExistAllowed) && (motionRequest.isWalking() || motionRequest.motion == MotionRequest::stand)) || // forwardFast kick and support switch happend
-         (!isKickForward && data.phaseNumber == data.currentParameters.numberOfPhases && (data.currentParameters.numberOfPhases != 0 || currentKickRequest.kickMotionType == KickRequest::none)) || // no fowardFast kick and kick is over
+  return ((normalEarlyExistAllowed || earlyRiskyExistAllowed) && (motionRequest.isWalking() || motionRequest.motion == MotionRequest::stand)) || // forwardFast kick and support switch happened
+         (!isKickForward && data.phaseNumber == data.currentParameters.numberOfPhases && (data.currentParameters.numberOfPhases != 0 || currentKickRequest.kickMotionType == KickRequest::none)) || // no forwardFast kick and kick is over
          (isKickForward && data.phaseNumber == data.currentParameters.numberOfPhases && data.currentParameters.numberOfPhases != 0 && engine.theFrameInfo.getTimeSince(bothFeetGroundContactTimestamp) > engine.minFootGroundContactTime); // forwardFast kick and both feet have ground contact
 }
 

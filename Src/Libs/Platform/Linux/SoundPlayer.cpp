@@ -21,8 +21,8 @@
 #include <cstring>
 
 #if false
-#include <iostream>
-#define PRINT_ERROR(expr) std::cerr << "Error: " << expr << std::endl;
+#include "Streaming/Output.h"
+#define PRINT_ERROR(expr) OUTPUT_ERROR(expr)
 #else
 #define PRINT_ERROR(expr)
 #endif
@@ -45,16 +45,16 @@ bool WaveFile::parse()
     return false;
 
   master = reinterpret_cast<const RiffChunk*>(ptr);
-  if(0 != std::memcmp(master->waveId, "WAVE", 4))
+  if(std::memcmp(master->waveId, "WAVE", 4))
     return false;
 
   for(ptr += sizeof(RiffChunk); ptr <= buffer.data() + buffer.size() - 8;)
   {
     const size_t remainingBytes = buffer.data() + buffer.size() - ptr;
 
-    if(0 == std::memcmp(ptr, "fmt ", 4) && remainingBytes >= sizeof(FmtChunk))
+    if(!std::memcmp(ptr, "fmt ", 4) && remainingBytes >= sizeof(FmtChunk))
       format = reinterpret_cast<const FmtChunk*>(ptr);
-    else if(0 == std::memcmp(ptr, "data", 4) && remainingBytes >= sizeof(DataChunk))
+    else if(!std::memcmp(ptr, "data", 4) && remainingBytes >= sizeof(DataChunk))
       data = reinterpret_cast<const DataChunk*>(ptr);
 
     const auto chunkSize = *reinterpret_cast<const uint32_t*>(ptr + 4);
@@ -191,6 +191,7 @@ void SoundPlayer::playWave(const Wave& wave)
   auto frames = static_cast<snd_pcm_uframes_t>(wave.numFrames);
   auto* p = reinterpret_cast<const unsigned*>(wave.data.data());
 
+  playing.store(true, std::memory_order_relaxed);
   VERIFY(!snd_pcm_prepare(soundPlayer.handle));
   while(frames > 0)
   {
@@ -209,6 +210,7 @@ void SoundPlayer::playWave(const Wave& wave)
     }
   }
   snd_pcm_drain(soundPlayer.handle);
+  playing.store(false, std::memory_order_relaxed);
 }
 
 void SoundPlayer::flush()
@@ -224,55 +226,69 @@ void SoundPlayer::flush()
       queue.pop_front();
     }
 
-    playing.store(true, std::memory_order_relaxed);
     if(first.isTextToSpeech && !first.fileOrText.empty())
     {
-      bool isStretched = first.ttsDurationStretchFactor != 1.f;
+      const bool isStretched = first.ttsDurationStretchFactor != 1.f;
       const std::string& text = first.fileOrText;
-      flite_feat_set_float(soundPlayer.voice->features, "duration_stretch", first.ttsDurationStretchFactor);
+#ifdef TARGET_ROBOT
+      fprintf(stderr, "Saying %s\n", text.c_str());
+#endif
+      if(!first.mute)
+      {
+        flite_feat_set_float(soundPlayer.voice->features, "duration_stretch", first.ttsDurationStretchFactor);
 
-      if(isStretched)
-      {
-        cst_wave* rawWave = flite_text_to_wave(text.c_str(), soundPlayer.voice);
-        cst_wave_rescale(rawWave, static_cast<int>(textToSpeechVolumeFactor * 65536));
-        soundPlayer.playWave(Wave(rawWave));
-        delete_wave(rawWave);
-      }
-      else
-      {
-        auto soundInMap = soundPlayer.synthesizedSounds.find(text);
-        if(soundInMap == soundPlayer.synthesizedSounds.end())
+        if(isStretched)
         {
-          // Sound not yet synthesized => Synthesize and insert into map
           cst_wave* rawWave = flite_text_to_wave(text.c_str(), soundPlayer.voice);
           cst_wave_rescale(rawWave, static_cast<int>(textToSpeechVolumeFactor * 65536));
-          soundInMap = soundPlayer.synthesizedSounds.emplace(std::make_pair(text, Wave(rawWave))).first;
+          cst_wave_resample(rawWave, static_cast<int>(sampleRate));
+          soundPlayer.playWave(Wave(rawWave));
           delete_wave(rawWave);
         }
-        soundPlayer.playWave(soundInMap->second);
+        else
+        {
+          auto soundInMap = soundPlayer.synthesizedSounds.find(text);
+          if(soundInMap == soundPlayer.synthesizedSounds.end())
+          {
+            // Sound not yet synthesized => Synthesize and insert into map
+            cst_wave* rawWave = flite_text_to_wave(text.c_str(), soundPlayer.voice);
+            cst_wave_rescale(rawWave, static_cast<int>(textToSpeechVolumeFactor * 65536));
+            cst_wave_resample(rawWave, static_cast<int>(sampleRate));
+            soundInMap = soundPlayer.synthesizedSounds.emplace(std::make_pair(text, Wave(rawWave))).first;
+            delete_wave(rawWave);
+          }
+          soundPlayer.playWave(soundInMap->second);
+        }
       }
     }
     else
     {
-      File file(soundPlayer.filePrefix + first.fileOrText, "rb");
-      if(file.exists())
+#ifdef TARGET_ROBOT
+      if(first.fileOrText == "DerShredder.wav" && (random() & 1))
+        first.fileOrText = "Sabine.wav";
+      fprintf(stderr, "Playing %s\n", first.fileOrText.c_str());
+#endif
+      if(!first.mute)
       {
-        Wave wave(file);
-        soundPlayer.playWave(wave);
+        File file(soundPlayer.filePrefix + first.fileOrText, "rb");
+        if(file.exists())
+        {
+          Wave wave(file);
+          soundPlayer.playWave(wave);
+        }
       }
     }
-    playing.store(false, std::memory_order_relaxed);
   }
 }
 
 int SoundPlayer::enqueue(const SoundRequest& soundRequest)
 {
-  int queuelen;
+  int queueLength;
 
   {
     SYNC_WITH(soundPlayer);
     soundPlayer.queue.push_back(soundRequest);
-    queuelen = static_cast<int>(soundPlayer.queue.size());
+    queueLength = static_cast<int>(soundPlayer.queue.size());
     if(!soundPlayer.started)
     {
       soundPlayer.started = true;
@@ -281,18 +297,19 @@ int SoundPlayer::enqueue(const SoundRequest& soundRequest)
     else
       soundPlayer.sem.post();
   }
-  return queuelen;
+  return queueLength;
 }
 
-int SoundPlayer::play(const std::string& name)
+int SoundPlayer::play(const std::string& name, bool mute)
 {
-  return enqueue(SoundRequest(name));
+  const int queueLength = enqueue(SoundRequest(name, mute));
+  return mute ? 0 : queueLength;
 }
 
-int SoundPlayer::say(const std::string& text, float speed)
+int SoundPlayer::say(const std::string& text, bool mute, float speed)
 {
-  float stretchFactor = speed > 0.f ? 1.f / speed : 0.f;
-  return enqueue(SoundRequest(text, stretchFactor));
+  const float stretchFactor = speed > 0.f ? 1.f / speed : 0.f;
+  return enqueue(SoundRequest(text, mute, stretchFactor));
 }
 
 bool SoundPlayer::isPlaying()

@@ -34,4 +34,5 @@ STREAMABLE(CameraCalibrationStatus,
   (CameraCalibrationStatus::State)(CameraCalibrationStatus::State::idle) state,
   (int)(0) inStateSince,
   (SampleConfigurationStatus)(SampleConfigurationStatus::none) sampleConfigurationStatus,
+  (unsigned)(0) sampleIndex, /**< Index of the current sample configuration. */
 });

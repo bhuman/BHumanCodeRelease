@@ -85,6 +85,7 @@ public:
   Vector3f scale = Vector3f::Ones();
   Vector3f rotate = Vector3f::Zero();
   Vector3f trans = Vector3f::Zero();
+  unsigned char renderOptions = 0;
 
   std::vector<Line>      lines;
   std::vector<Dot>       dots;

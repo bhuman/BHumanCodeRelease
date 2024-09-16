@@ -10,6 +10,8 @@ namespace WalkUtilities
    * Allowed angle range that the targetOfInterest is allowed to have relative to the robot
    */
   const Rangea maxTargetFocusAngle = Rangea(-50_deg, 50_deg);
+  const Vector2f shiftBallPosition = Vector2f(100.f, 0.f); // Foot Length from origin to the tip of the toe
+  const Angle extraFocusShiftIfBallNotInVision = 0;
 
   /**
    *

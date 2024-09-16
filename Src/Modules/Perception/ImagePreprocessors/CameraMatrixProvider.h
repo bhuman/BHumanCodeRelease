@@ -28,7 +28,7 @@ MODULE(CameraMatrixProvider,
   REQUIRES(FieldDimensions), // for debug drawing
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(JointSensorData),
+  REQUIRES(JointAngles),
   REQUIRES(MotionInfo),
   REQUIRES(RobotCameraMatrix),
   REQUIRES(RobotModel),

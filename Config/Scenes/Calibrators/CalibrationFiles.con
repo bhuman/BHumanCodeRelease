@@ -1,6 +1,5 @@
 get representation:CameraCalibration save
-get representation:FootSoleRotationCalibration save
 get representation:IMUCalibration save
 
 echo --Optional Calibration File. Save It With This Command By Hand--
-echo get parameters:FsrDataProvider save
+echo get module:FsrDataProvider save

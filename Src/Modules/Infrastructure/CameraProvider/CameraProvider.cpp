@@ -122,7 +122,7 @@ void CameraProvider::update(CameraImage& theCameraImage)
 
 void CameraProvider::update(JPEGImage& jpegImage)
 {
-  jpegImage = theCameraImage;
+  jpegImage.fromCameraImage(theCameraImage, jpegQuality);
 }
 
 void CameraProvider::update(CameraInfo& cameraInfo)

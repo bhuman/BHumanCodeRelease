@@ -28,7 +28,7 @@ public:
 private:
   RobotConsole& console; /**< A reference to the console object. */
   std::string threadName; /**<The thread of the modules shown in this view. */
-  unsigned lastModulInfoTimestamp = 0; /**< Module Info timestamp when the image was created. */
+  unsigned lastModuleInfoTimestamp = 0; /**< Module Info timestamp when the image was created. */
 
   /**
    * Checks whether the content that will be returned from a \c generateDotFileContent call has changed

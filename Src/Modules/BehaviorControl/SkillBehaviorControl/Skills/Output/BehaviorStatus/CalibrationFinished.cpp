@@ -1,29 +1,21 @@
 /**
  * @file CalibrationFinished.cpp
  *
- * This file implements the implementation of the CalibrationFinished skill.
+ * This file implements the CalibrationFinished skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(CalibrationFinishedImpl,
-{,
-  IMPLEMENTS(CalibrationFinished),
-  REQUIRES(LibCheck),
-  MODIFIES(BehaviorStatus),
-});
-
-class CalibrationFinishedImpl : public CalibrationFinishedImplBase
+option((SkillBehaviorControl) CalibrationFinished)
 {
-  void execute(const CalibrationFinished&) override
+  initial_state(execute)
   {
-    theBehaviorStatus.calibrationFinished = true;
-    theLibCheck.inc(LibCheck::calibrationFinished);
+    action
+    {
+      theBehaviorStatus.calibrationFinished = true;
+      theLibCheck.inc(LibCheck::calibrationFinished);
+    }
   }
-};
-
-MAKE_SKILL_IMPLEMENTATION(CalibrationFinishedImpl);
+}

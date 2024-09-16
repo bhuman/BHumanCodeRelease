@@ -29,12 +29,13 @@ namespace InverseKinematic
    * @param jointAngles The instance of JointAngles where the resulting joint angles are written into.
    * @param robotDimensions The RobotDimensions needed for calculation
    * @param ratio The ratio between the left and right yaw angle
+   * @param legLengthThreshold The legs are allowed to be clipped by this amount (in mm)
    * @return Whether the target position was reachable or not (if the given target position is not reachable the computation proceeds using the closest reachable position near the target)
    */
   [[nodiscard]] bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Vector2f& bodyRotation, JointAngles& jointAngles,
-                                   const RobotDimensions& robotDimensions, float ratio = 0.5f);
+                                   const RobotDimensions& robotDimensions, float legLengthThreshold = 0.f, float ratio = 0.5f);
   [[nodiscard]] bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation, JointAngles& jointAngles,
-                                   const RobotDimensions& robotDimensions, float ratio = 0.5f);
+                                   const RobotDimensions& robotDimensions, float legLengthThreshold = 0.f, float ratio = 0.5f);
 
   /**
    * Solves the inverse kinematics for the head of the Nao such that the camera looks at a certain point.

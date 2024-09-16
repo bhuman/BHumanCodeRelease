@@ -18,7 +18,7 @@
           ((cx-128)*nx+(cy-128)*ny)^2 >> RESPONSE_COMPUTATION_IMPLICIT_SHIFTRIGHT
        \endcode
     for every pixel on the contour where (cx,cy) is the binary value from the
-    \c CnsImage and (nx, ny) is the binary value from the \c CodedContur.
+    \c CnsImage and (nx, ny) is the binary value from the \c CodedContour.
 
     \c RESPONSE_COMPUTATION_IMPLICIT_SHIFTRIGHT gives the implicit shift in this
     computation.
@@ -43,7 +43,7 @@ inline void responseX8YRUsingSSE3(const CNSResponse* srcPixel, int srcOfs, unsig
   *(__m128i*)(responseBin + 0x00) = dataA;
 }
 
-//! faster variant of \c reponseX16Y16RUsingC with SSE3
+//! faster variant of \c responseX16Y16RUsingC with SSE3
 /*! The routine takes an image of contrast normalized Sobel (CNS)
   responses, and a \c contour and computes the contour quality
   value for an 16*16 block of potential reference points. In terms
@@ -73,7 +73,7 @@ inline void responseX8YRUsingSSE3(const CNSResponse* srcPixel, int srcOfs, unsig
  */
 void responseX16Y16RUsingSSE3(const CNSResponse* srcPixel, int srcOfs, signed short* responseBin, const CodedContour& contour);
 
-//! 8*8 block variant of \c reponseX16Y16RUsingSSE3
+//! 8*8 block variant of \c responseX16Y16RUsingSSE3
 /*! Used in refinement.
  */
 void responseX8Y8RUsingSSE3(const CNSResponse* srcPixel, int srcOfs, signed short* responseBin, const CodedContour& contour);
@@ -152,20 +152,20 @@ inline void maximumUsingSSE2(int& max, int& argMax, int baseArg, const short* ac
 // time.
 //
 // The formal computation is specified in \c
-// cns_reponseX8YRUsingC.  In general it computes \c
+// cns_responseX8YRUsingC.  In general it computes \c
 // ((cns_x-128)*normal_x+(cns_y-128)*normal_y)^2>>16
 // \c cns_x and \c cns_y are given in \c
 // srcPixel, \c normal_x and \c normal_y by odd and even signed bytes
 // in \c cosSinVal. \c cosPSinVal is needed for technical reasons and
 // contains the signed 16bit result of \c _mm_maddubs_epi16
 // (cns_const128V, cosSinVal);
-inline void cns_reponseX8YRUsingSSE3(const CNSResponse* __restrict srcPixel, __m128i cosSinVal, __m128i cosPSinVal, __m128i& acc)
+inline void cns_responseX8YRUsingSSE3(const CNSResponse* __restrict srcPixel, __m128i cosSinVal, __m128i cosPSinVal, __m128i& acc)
 {
   __m128i val = _mm_subs_epi16(_mm_maddubs_epi16(_mm_loadu_si128((__m128i*) srcPixel), cosSinVal), cosPSinVal);
   acc = _mm_adds_epu16(acc, _mm_mulhi_epi16(val, val));
 }
 
-inline void cns_reponseX16YRUsingSSE3(const CNSResponse* __restrict srcPixel, __m128i cosSinVal, __m128i cosPSinVal, __m128i* __restrict acc)
+inline void cns_responseX16YRUsingSSE3(const CNSResponse* __restrict srcPixel, __m128i cosSinVal, __m128i cosPSinVal, __m128i* __restrict acc)
 {
   __m128i srcA = _mm_loadu_si128((__m128i*) srcPixel);
   __m128i srcB = _mm_loadu_si128((__m128i*)(srcPixel + 8));
@@ -217,10 +217,10 @@ ALWAYSINLINE void load8PixelUsingSSE(__m128i& imgL, __m128i& img, __m128i& imgR,
     if(!isFirst)
       imgRaw = _mm_loadu_si128((__m128i*)(src - 1));          // regular pixel in the middle of the image
     else
-      imgRaw = _mm_slli_si128(_mm_loadu_si128((__m128i*)src), 1);   // on the left border take one adress later and shift
+      imgRaw = _mm_slli_si128(_mm_loadu_si128((__m128i*)src), 1);   // on the left border take one address later and shift
   }
   else
-    imgRaw = _mm_srli_si128(_mm_loadu_si128((__m128i*)(src - 8)), 7);  // right border take 7 adress earlier and shift
+    imgRaw = _mm_srli_si128(_mm_loadu_si128((__m128i*)(src - 8)), 7);  // right border take 7 address earlier and shift
   imgL   = _mm_unpacklo_epi8(imgRaw, _mm_setzero_si128());
   img    = _mm_unpacklo_epi8(_mm_srli_si128(imgRaw, 1), _mm_setzero_si128());
   imgR   = _mm_unpacklo_epi8(_mm_srli_si128(imgRaw, 2), _mm_setzero_si128());
@@ -235,7 +235,7 @@ ALWAYSINLINE __m128i blur_epi32(__m128i a, __m128i b, __m128i c) {return _mm_add
 //! Computes SIMD a+2*b+c
 ALWAYSINLINE __m128 blur_ps(__m128 a, __m128 b, __m128 c) {return _mm_add_ps(a, _mm_add_ps(b, _mm_add_ps(b, c)));}
 
-//! Compute a gaussian [1 2 1]^T*[1 2 1] filter
+//! Compute a Gaussian [1 2 1]^T*[1 2 1] filter
 /*! First, the [1 2 1] convolution is computed horizontally, the result stored in currentIV.
     Then this result and the values of \c previousIV and the old value of \c currentIV
     are combined vertically with the result stored in \c gaussI.

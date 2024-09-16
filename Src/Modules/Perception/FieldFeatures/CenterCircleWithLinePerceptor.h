@@ -2,7 +2,7 @@
 * @file CenterCircleWithLinePerceptor.h
 *
 * Declaration of a module that tries to find the combination of
-* the center circle and the center line crossing the circle.
+* the center circle and the halfway line crossing the circle.
 * in the current field percepts. This is the combination
 * that this module is looking for:
 *
@@ -40,7 +40,7 @@ MODULE(CenterCircleWithLinePerceptor,
   DEFINES_PARAMETERS(
   {,
     (int)(80) bufferTimeCenterCircle,             /**< Use old center circles not longer than for this number of milliseconds */
-    (float)(450.f) minimumLengthOfPerceivedLine,  /**< A line must be at least this long to be considered as the center line */
+    (float)(450.f) minimumLengthOfPerceivedLine,  /**< A line must be at least this long to be considered as the halfway line */
     (float)(1000.f) maxExtraCheckingLineLength,   /**< Lines that are shorter than this threshold have a stricter check for their distance to the center circle's center */
     (float)(200.f) maxLineDeviationFromCenter,    /**< The distance between the center of the center circle and the line is not allowed to be larger than this value */
     (Angle)(80_deg) maxAbsAngleAlpha,             /**< Threshold to avoid some lines that are "too vertical" and might result from false positives inside robots */
@@ -49,7 +49,7 @@ MODULE(CenterCircleWithLinePerceptor,
 
 /**
 * A module that tries to find the combination of
-* the center circle and the center line crossing the circle.
+* the center circle and the halfway line crossing the circle.
 * in the current field percepts.
 */
 class CenterCircleWithLinePerceptor : public CenterCircleWithLinePerceptorBase
@@ -57,18 +57,18 @@ class CenterCircleWithLinePerceptor : public CenterCircleWithLinePerceptorBase
   Vector2f centerCirclePosition;              /**< Buffered position of center circle */
   Matrix2f centerCircleCovariance;            /**< Buffered covariance of center circle */
   unsigned timeWhenCenterCircleLastSeen;      /**< Point of time when the center circle was seen for the last time */
-  Geometry::Line centerLine;                  /**< If a center line was found, it becomes stored here (coordinates on field, relative to robot) */
-  Matrix2f centerLineCov;                     /**< The covariance of the determined center line, copied from line percept */
+  Geometry::Line halfwayLine;                 /**< If a halfway line was found, it becomes stored here (coordinates on field, relative to robot) */
+  Matrix2f halfwayLineCov;                    /**< The covariance of the determined halfway line, copied from line percept */
 
   void update(CenterCircleWithLine& centerCircleWithLine) override;
 
-  /** Tries to find a field line that seems to be the center line.
+  /** Tries to find a field line that seems to be the halfway line.
    *  If a line was found, its start and end point are written to the lineStart and lineEnd members.
    *  @return true, if a line was found. false otherwise.
    */
-  bool findIntersectingCenterLine();
+  bool findIntersectingHalfwayLine();
 
-  /** Computes a pose based on the center circle and the center line and fills the representation
+  /** Computes a pose based on the center circle and the halfway line and fills the representation
    * @param centerCircleWithLine The representation set by this method.
    */
   void computeFeature(CenterCircleWithLine& centerCircleWithLine);

@@ -69,12 +69,16 @@ class GlobalOpponentsHypothesis : public Obstacle
                const float odometryNoiseX, const float odometryNoiseY);
   /**
    * EKF measurement step.
-   * @param weightedSum Factor how much the measured width affects the actual width.
+   * @param modelWidthWeighting Factor how much the measured width affects the actual width.
    */
-  void measurement(const GlobalOpponentsHypothesis& measurement, const float weightedSum);
+  void measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting);
 
-  /** Trying to identify the type of the obstacle. */
-  void considerType(const GlobalOpponentsHypothesis& measurement, const int teamThreshold, const int uprightThreshold);
+  /** Trying to identify the type of the hypothesis. Sets the team. upright, and type attributes.
+   * @param measurement A new measurement of an opponent (or something else)
+   * @param teamThreshold Frickle parameter configured in module
+   * @param uprightThreshold Frickle parameter configured in module
+   */
+  void determineAndSetType(const GlobalOpponentsHypothesis& measurement, const int teamThreshold, const int uprightThreshold);
 
   /**
    * Whether the field boundary is further as this obstacle.

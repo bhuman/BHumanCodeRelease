@@ -6,14 +6,8 @@
 
 #pragma once
 
-#include "Math/Pose2f.h"
-#include "Streaming/AutoStreamable.h"
 #include "FieldFeatureCheck.h"
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
-
-#include <vector>
-
-#define CHECK_FIELD_FEATURE_POSE_OF(name) CHECK_FIELD_FEATURE_POSE(name, 1000.f, 40_deg)
+#include "Streaming/AutoStreamable.h"
 
 /**
  * The pose of a field feature.
@@ -65,9 +59,11 @@ STREAMABLE_WITH_BASE(FieldFeature, Pose2f,
    * Returns 1 of the 2 global positions of this feature (in case of isValid == true).
    */
   virtual const Pose2f getGlobalFeaturePosition() const = 0;
+
+  /** Draws the representation */
   void draw() const,
 
-  (Matrix3f) covOfAbsoluteRobotPose, /**< The robot pose's overall covariance in field coordinates */
+  (Matrix3f)((Matrix3f() << 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f).finished()) covOfAbsoluteRobotPose, /**< The robot pose's overall covariance in field coordinates */
   (bool)(false) isValid,             /**< Set to "true", if the representation contains valid data */
 });
 

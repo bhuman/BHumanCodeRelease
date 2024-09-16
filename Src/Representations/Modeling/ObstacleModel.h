@@ -8,7 +8,6 @@
 #pragma once
 
 #include "Math/Eigen.h"
-#include "Streaming/Enum.h"
 #include "Tools/Modeling/Obstacle.h"
 
 /**
@@ -17,10 +16,8 @@
  * A struct that represents all kind of obstacles seen by vision, detected by arm contact,
  * foot bumper contact.
  */
-
 STREAMABLE(ObstacleModel,
 {
-  ObstacleModel() = default;
   void draw() const;
   void verify() const,
 

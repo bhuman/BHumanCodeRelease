@@ -44,6 +44,8 @@ MODULE(RefereeGestureDetection,
 
     (unsigned) bufferSize, /**< Number of gesture detections buffered for majority vote. */
     (float) minDetectionRatio, /**< Minimum ratio of buffered gestures that make up an accepted gesture. */
+    (bool) mustCrossMiddle, /**< Must there be keypoints in both halves of the image to accept a gesture? */
+    (float) yThreshold, /**< At least one point must be below this threshold. */
     (std::vector<Rule>) rules, /**< The rules made up of constraints that must be satisfied to detect a gesture. */
   }),
 });
@@ -67,6 +69,13 @@ class RefereeGestureDetection : public RefereeGestureDetectionBase
    * @return Could this detection be the referee?
    */
   bool crossesMiddle() const;
+
+  /**
+   * Checks whether at least one point is below the horizon.
+   * This should exclude people on grand stands.
+   * @return At least one point below horizon?
+   */
+  bool pointsLowEnough() const;
 
   /**
    * Get a keypoint returned by the network. The order to its left/right counterpart

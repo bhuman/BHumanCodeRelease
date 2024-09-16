@@ -15,6 +15,7 @@
 #include "Math/Pose2f.h"
 #include "Streaming/AutoStreamable.h"
 #include "Tools/Motion/KickPrecision.h"
+#include "Tools/Motion/PreStepType.h"
 
 STREAMABLE(MotionRequest,
 {
@@ -30,7 +31,7 @@ STREAMABLE(MotionRequest,
     dive, /**< Execute a diving motion. */
     special, /**< Execute a special motion. */
     replayWalk, /**< Replay a recorded walkPhase history. */
-    calibration, /**< Calibration module controls the arms. */
+    photoMode, /**< Photo mode, to knead the robot in custom positions. */
   });
 
   STREAMABLE(ObstacleAvoidance,
@@ -100,13 +101,14 @@ STREAMABLE(MotionRequest,
   (std::optional<Vector2f>) targetOfInterest, /**< If filled, the first entry is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. */
   (bool)(false) forceSideWalking, /**< If set, the robot is forced to side walk. */
   (bool)(false) shouldInterceptBall, /**< If the ball should be intercepted. */
+  (bool)(false) shouldWalkOutOfBallLine, /**< If the robot should intenionally leave the ball line*/
 
   (Angle)(0_deg) targetDirection, /**< The target direction of the ball (only used if type is walkToBallAndKick or dribble). */
   (Rangea) directionPrecision, /**< The min and max target direction difference of the ball (only used if type is walkToBallAndKick or dribble). */
   (KickInfo::KickType)(KickInfo::forwardFastLeft) kickType, /**< The kick type (only used if type is walkToBallAndKick). */
   (float)(0.f) kickLength, /**< The kick length (only used if type is walkToBallAndKick) (in mm). */
   (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
-  (bool)(true) preStepAllowed, /**< Is the InWalkKick allowed to have a preStep? */
+  (PreStepType)(PreStepType::allowed) preStepType, /**< Is the InWalkKick allowed to have a preStep? */
   (bool)(true) turnKickAllowed, /**< Can the forward InWalkKick be executed with rotation? */
   (bool)(false) shiftTurnKickPose, /**< Should the turn kick be shifted? */
 

@@ -2,4 +2,3 @@ vp pid 2000 -100 100
 vpd pid module:KeyframeMotionEngine:pid:com red
 vpd pid module:KeyframeMotionEngine:pid:borderF brown
 vpd pid module:KeyframeMotionEngine:pid:borderB blue
-echo vd representation:KeyframeMotionEngineOutput

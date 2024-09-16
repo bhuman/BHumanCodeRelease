@@ -75,7 +75,9 @@ Logger::Logger(const Configuration& config) :
               if(loggerRepresentation == representationProvider.representation)
                 goto representationFound;
             PRINT("Logger: Thread " << rpt.thread << " does not contain representation " << loggerRepresentation);
-          representationFound:;
+          representationFound:
+            if(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + loggerRepresentation) == -1)
+              PRINT("Logger: Representation " << loggerRepresentation << " does not have a message id");
           }
           goto threadFound;
         }
@@ -111,7 +113,7 @@ void Logger::update(const LoggingController& controller)
   if(!enabled)
     return;
 
-  const bool shouldLog = controller.shouldLog();
+  const bool shouldLog = controller.shouldLog(logging.load(std::memory_order_relaxed));
   if(shouldLog != logging.load(std::memory_order_relaxed))
   {
     if(shouldLog)
@@ -259,7 +261,6 @@ void Logger::writer()
       // All "real" buffers have at least two messages (idFrameBegin and idFrameFinished).
 
       // Read filename from message queue.
-
       (*buffer->begin()).bin() >> filename;
       buffer->clear();
 
@@ -279,6 +280,11 @@ void Logger::writer()
         OUTPUT_WARNING("Logger: File " << completeFilename << " could not be created!");
         break;
       }
+
+      // On the robot, we want this to end up in bhumand.log.
+#ifdef TARGET_ROBOT
+      std::printf("Logging to %s\n", completeFilename.c_str());
+#endif
 
       *file << LoggingTools::logFileSettings;
       file->write(settings.data(), settings.size());

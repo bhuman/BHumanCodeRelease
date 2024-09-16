@@ -142,9 +142,9 @@ void SimulatedRobot::getOdometryData(const Pose2f& robotPose, OdometryData& odom
   static_cast<Pose2f&>(odometryData) = firstTeam ? (Pose2f(pi) + robotPose) : robotPose;
 }
 
-void SimulatedRobot::moveRobotPerTeam(const Vector3f& pos, const Vector3f& rot, bool changeRotation)
+void SimulatedRobot::moveRobotPerTeam(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics)
 {
-  moveRobot(firstTeam ? (Vector3f() << -pos.head<2>(), pos.z()).finished() : pos, firstTeam ? (Vector3f() << rot.head<2>(), Angle::normalize(rot.z() + pi)).finished() : rot, changeRotation);
+  moveRobot(firstTeam ? (Vector3f() << -pos.head<2>(), pos.z()).finished() : pos, firstTeam ? (Vector3f() << rot.head<2>(), Angle::normalize(rot.z() + pi)).finished() : rot, changeRotation, resetDynamics);
 }
 
 void SimulatedRobot::moveBallPerTeam(const Vector3f& pos, bool resetDynamics)

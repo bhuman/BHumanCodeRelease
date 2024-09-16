@@ -9,23 +9,25 @@
 #pragma once
 
 #include "Representations/Sensing/GyroOffset.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Infrastructure/RobotHealth.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
 
 MODULE(GyroOffsetProvider,
 {,
-  USES(FrameInfo),
+  REQUIRES(FrameInfo),
   USES(GameState),
-  USES(GroundContactState),
-  USES(InertialData),
+  REQUIRES(GroundContactState),
+  REQUIRES(IMUValueState),
   USES(MotionInfo),
-  REQUIRES(GyroState),
+  REQUIRES(RawInertialSensorData),
+  REQUIRES(MotionRobotHealth),
   PROVIDES(GyroOffset),
   DEFINES_PARAMETERS(
   {,
@@ -36,7 +38,7 @@ MODULE(GyroOffsetProvider,
     (unsigned int)(101000) startTimestamp, // check stuck gyro after the software is running for at least for 1 second
     (int)(1500) bodyDisconnectWaitTime, // Wait this much time, until the body connection is back. The joints need about one seconds, until the stiffness is back
     (int)(10000) gyroOffsetWarningTime, // Repeat the sound, that the robot needs a reboot, every 10secs
-    (int)(8000) gyroNotCheckedWarningTime, // Repeat that the gyro was not checked after this duration
+    (int)(20000) gyroNotCheckedWarningTime, // Repeat that the gyro was not checked after this duration
     (int)(1000) waitForInitialGroundContactTime, // The robot shall not warn us, if it never had ground contact
   }),
 });

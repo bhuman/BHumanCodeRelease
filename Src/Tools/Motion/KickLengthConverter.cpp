@@ -18,7 +18,7 @@ namespace KickLengthConverter
     return { { 0.f, 0.2f }, { 0.5f, 0.5f }, { 1.f, 1.f } };
   }
 
-  float kickLengthToPower(const KickInfo::KickType kickType, float length, Angle direction, const KickInfo& theKickInfo)
+  float kickLengthToPower(const KickInfo::KickType kickType, const float length, const Angle direction, const KickInfo& theKickInfo)
   {
     if(kickType == KickInfo::forwardFastRight || kickType == KickInfo::forwardFastLeft)
     {

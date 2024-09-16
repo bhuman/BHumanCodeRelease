@@ -41,8 +41,10 @@ STREAMABLE(SoleRotationParameter,
   (Rangef) maxStepRatioToStart,
   (Angle) minGyro,
   (float) minSideStepSize,
-  (Rangea) gyroScalingSecondStep,
   (Rangef) deltaRangeSecondStep,
+
+  (Rangef) scalingClipRange, /**< Clip the scaling values into this range. */
+  (Rangef) minMaxSumScaling, /**< Sum of scalings must be bigger than the min value and get scaled between [ûkneeScalingMin .. 1] */
 });
 
 STREAMABLE(WalkStepAdjustmentParams,
@@ -55,7 +57,7 @@ STREAMABLE(WalkStepAdjustmentParams,
   (Rangef) desiredFootArea, /**< In which area of the feet can the com move, before the feet must be adjusted to ensure stability (in %)? */
   (float) hipBalanceBackwardFootArea, /**< In which area of the feet can the com move, while the hip pitch is used to balancing when walking unstable. */
   (float) unstableWalkThreshold, /**< Thresholds for the lastLeftAdjustment and lastRightAdjustment values to trigger unstable sound. */
-  (float) reduceWalkingSpeedTimeWindow, /**< If the step adjustment adjusted the feet too much two separat times in this time duration, then reduce the walking speed. */
+  (float) reduceWalkingSpeedTimeWindow, /**< If the step adjustment adjusted the feet too much two separate times in this time duration, then reduce the walking speed. */
 });
 
 class WalkStepAdjustment
@@ -71,6 +73,7 @@ private:
   int adjustmentResumeCounter = 0;
 
   bool kneeBalanceActive = false;
+  float kneeBalanceFactor = 0.f;
 
   RingBuffer<Angle, 3> lastLeftPitchRequest;
   RingBuffer<Angle, 3> lastLeftRollRequest;
@@ -91,7 +94,7 @@ public:
   float lastRightAdjustmentX; // right foot adjustment, to prevent falling
 
   float highestAdjustmentX; // highest adjustment of current step, with sign. If current adjustment is 0, then highestAdjustment is reset to 0 too.
-  float highestNegativeAdjustmentX; // highest negativ adjustment of current step
+  float highestNegativeAdjustmentX; // highest negative adjustment of current step
   float previousHighestAdjustmentX; // highest adjustment of previous step, with sign
 
   float kneeHipBalanceCounter; // count motion phases since the last time the step adjustment adjusted backwards
@@ -148,7 +151,7 @@ public:
   /**
    * Reset the WalkStepAdjustment based on the last one
    * @param walkData The last WalkStepAdjustment object
-   * @param reset Should the whole WalkStepAdjustment object get resetted (except for the modeling part), or just update based on the last one?
+   * @param reset Should the whole WalkStepAdjustment object get reset (except for the modeling part), or just update based on the last one?
    * @param frameInfo Threshold for how much backwards adjustment is allowed before the walking speed is reduced
    * @param unstableWalkThreshold Threshold
    */

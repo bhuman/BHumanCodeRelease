@@ -13,24 +13,31 @@
 #include "Tools/Modeling/BallPhysics.h"
 #include "Framework/Blackboard.h"
 
-#include <algorithm>
-
 void BallModel::verify() const
 {
+#ifndef NDEBUG
   ASSERT(std::isfinite(lastPerception.x()));
   ASSERT(std::isfinite(lastPerception.y()));
   ASSERT(seenPercentage <= 100);
 
-  ASSERT(std::isfinite(estimate.position.x()));
-  ASSERT(std::isfinite(estimate.position.y()));
-  ASSERT(std::isfinite(estimate.velocity.x()));
-  ASSERT(std::isfinite(estimate.velocity.y()));
+  const auto check = [](const BallState& estimate)
+  {
+    ASSERT(std::isfinite(estimate.position.x()));
+    ASSERT(std::isfinite(estimate.position.y()));
+    ASSERT(std::isfinite(estimate.velocity.x()));
+    ASSERT(std::isfinite(estimate.velocity.y()));
 
-  ASSERT(std::isnormal(estimate.covariance(0, 0)));
-  ASSERT(std::isnormal(estimate.covariance(1, 1)));
-  ASSERT(std::isfinite(estimate.covariance(0, 1)));
-  ASSERT(std::isfinite(estimate.covariance(1, 0)));
-  ASSERT(Approx::isEqual(estimate.covariance(0, 1), estimate.covariance(1, 0), 1e-20f));
+    ASSERT(std::isnormal(estimate.covariance(0, 0)));
+    ASSERT(std::isnormal(estimate.covariance(1, 1)));
+    ASSERT(std::isfinite(estimate.covariance(0, 1)));
+    ASSERT(std::isfinite(estimate.covariance(1, 0)));
+    ASSERT(Approx::isEqual(estimate.covariance(0, 1), estimate.covariance(1, 0), 1e-20f));
+  };
+
+  check(estimate);
+  if(riskyMovingEstimateIsValid)
+    check(riskyMovingEstimate);
+#endif
 }
 
 void BallModel::draw() const

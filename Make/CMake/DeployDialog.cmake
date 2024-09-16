@@ -29,10 +29,15 @@ if(MACOS)
 
   list(APPEND DEPLOY_DIALOG_SOURCES "${DEPLOY_DIALOG_FRAMEWORKS}" "${DEPLOY_DIALOG_PLUGINS}")
 
-  set_source_files_properties(${DEPLOY_DIALOG_ICONS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-  set_source_files_properties(${DEPLOY_DIALOG_FRAMEWORKS} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-  set_source_files_properties(${DEPLOY_DIALOG_PLUGIN_COCOA} PROPERTIES MACOSX_PACKAGE_LOCATION PlugIns/platforms)
-  set_source_files_properties(${DEPLOY_DIALOG_PLUGIN_MACSTYLE} PROPERTIES MACOSX_PACKAGE_LOCATION PlugIns/styles)
+  set_source_files_properties(${DEPLOY_DIALOG_ICONS} PROPERTIES
+      MACOSX_PACKAGE_LOCATION Resources)
+  set_source_files_properties(${DEPLOY_DIALOG_FRAMEWORKS} PROPERTIES
+      MACOSX_PACKAGE_LOCATION Frameworks
+      XCODE_FILE_ATTRIBUTES "CodeSignOnCopy;RemoveHeadersOnCopy")
+  set_source_files_properties(${DEPLOY_DIALOG_PLUGIN_COCOA} PROPERTIES
+      MACOSX_PACKAGE_LOCATION PlugIns/platforms XCODE_FILE_ATTRIBUTES "CodeSignOnCopy")
+  set_source_files_properties(${DEPLOY_DIALOG_PLUGIN_MACSTYLE} PROPERTIES
+      MACOSX_PACKAGE_LOCATION PlugIns/styles XCODE_FILE_ATTRIBUTES "CodeSignOnCopy")
 
   source_group("Libs" FILES ${DEPLOY_DIALOG_FRAMEWORKS} ${DEPLOY_DIALOG_PLUGINS})
 endif()
@@ -49,6 +54,7 @@ set_property(TARGET DeployDialog PROPERTY XCODE_ATTRIBUTE_COPY_PHASE_STRIP "NO")
 set_property(TARGET DeployDialog PROPERTY XCODE_GENERATE_SCHEME ON)
 set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/../Common/deployDialog")
 set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_ARGUMENTS "Debug")
+set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_ENVIRONMENT "IDEPreferLogStreaming=YES")
 
 target_include_directories(DeployDialog PRIVATE "${DEPLOY_DIALOG_ROOT_DIR}")
 

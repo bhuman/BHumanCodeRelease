@@ -130,7 +130,7 @@ void MotionUtilities::interpolate(const JointAngles& from, const JointRequest& t
 
 void MotionUtilities::walkStand(JointRequest& output, const RobotDimensions& dimensions)
 {
-  VERIFY(InverseKinematic::calcLegJoints(Pose3f(Vector3f(-12.f, 50.f, -230.f)), Pose3f(Vector3f(-12.f, -50.f, -230.f)), Vector2f::Zero(), output, dimensions)); // this verify should never be false!
+  VERIFY(InverseKinematic::calcLegJoints(Pose3f(Vector3f(-14.f, 50.f, -230.f)), Pose3f(Vector3f(-14.f, -50.f, -230.f)), Vector2f::Zero(), output, dimensions)); // this verify should never be false!
   output.angles[Joints::rShoulderPitch] = 90_deg;
   output.angles[Joints::lShoulderPitch] = 90_deg;
   output.angles[Joints::rShoulderRoll] = -7_deg;

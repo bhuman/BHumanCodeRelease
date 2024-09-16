@@ -18,23 +18,14 @@
 
 class BallSearch;
 
-#include "Representations/BehaviorControl/Skills.h"
 #ifdef __INTELLISENSE__
 #define INTELLISENSE_PREFIX BallSearch::
 #endif
-#include "Tools/Cabsl.h"
+#include "Tools/BehaviorControl/Cabsl.h"
 
-class BallSearch : public Cabsl<BallSearch>, public BehaviorBase
+class BallSearch : public cabsl::Cabsl<BallSearch>, public BehaviorBase
 {
 public:
-  bool ballUnknown = false;
-  const float cornerPositionOffset = 500.f;
-  const int refereeBallPlacementDelay = 5000;
-  const float refereeBallPlacementAccuracy = 400.f;
-  bool teammatesBallModelInCorner = false;
-  bool ballModelIsInOneCorner = false;
-  const float positionOffset = 10.f;
-
   BallSearch();
 
   void preProcess() override;
@@ -43,48 +34,49 @@ public:
 
   SkillRequest execute(const Agent& agent, const Agents& otherAgents);
 
-  SkillRequest decidePositionForSearch(const Vector2f leftPosition, const Vector2f rightPosition, const Agent& agent, const Agents& otherAgents);
-
 private:
   ActivationGraph activationGraph;
-
-  //Own corner kick possible ball positions
-  const std::array<Vector2f, 2> opponentCorners =
-  {
-    Vector2f(theFieldDimensions.xPosOpponentGroundLine - positionOffset, theFieldDimensions.yPosLeftSideline - positionOffset),
-    Vector2f(theFieldDimensions.xPosOpponentGroundLine - positionOffset, theFieldDimensions.yPosRightSideline + positionOffset)
-  };
-  //Own goal kick possible ball positions
-  const std::array<Vector2f, 2> ownGoalCorners =
-  {
-    Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea),
-    Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea)
-  };
-  //Opponent corner kick possible ball positions
-  const std::array<Vector2f, 2> ownCorners =
-  {
-    Vector2f(theFieldDimensions.xPosOwnGroundLine + positionOffset, theFieldDimensions.yPosLeftSideline - positionOffset),
-    Vector2f(theFieldDimensions.xPosOwnGroundLine + positionOffset, theFieldDimensions.yPosRightSideline + positionOffset)
-  };
-  //Opponent goal kick possible ball positions
-  const std::array<Vector2f, 2> opponentGoalCorners =
-  {
-    Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea),
-    Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea)
-  };
-  // skill request for ballSearch bevaior
-  SkillRequest skillRequest;
+  SkillRequest skillRequest; /**< Skill request for ballSearch behavior */
   Agents agents;
-  const float groundLineXOffset = 50.f;
+  const float goalLineXOffset = 50.f;
   const float minRadius = 20.f;
   float initialRadius;
   const Agent* agent;
 
+  const int lastBallPositionThreshold = 6000; /**< if the last known ball position was longer that this not in view at the beginning of the search check it first. */
+  const float ignoreVoronoiThreshold = 1500.f; /**< if the last known ball position is closer that this check it first even if it is outside the Voronoi cell */
+
   option(Root)
   {
-    const Pose2f goalCenterOnFieldWithOffset = Pose2f(0.f, theFieldDimensions.xPosOwnGroundLine + groundLineXOffset, 0.f);
+    const Pose2f goalCenterOnFieldWithOffset = Pose2f(0.f, theFieldDimensions.xPosOwnGoalLine + goalLineXOffset, 0.f);
     const Pose2f goalCenterRelativeWithOffset = theRobotPose.inverse() * goalCenterOnFieldWithOffset;
-    //the initial ballSearch is used in non-standard situations
+
+    const auto getBallCell = [&]
+    {
+      // Todo: refactor the grid to find positions by indices
+      // find the cell next to the ball
+      auto cellsToSearch = theBallSearchAreas.grid;
+      return *std::min_element(cellsToSearch.cbegin(), cellsToSearch.cend(), [&](const BallSearchAreas::Cell& a, const BallSearchAreas::Cell& b)
+      {
+        return (a.positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm() <
+               (b.positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm();
+      });
+    };
+
+    /**
+     * return true if the condition to first check the last ball position is met
+     */
+    const auto checkNearLastBallCondition = [&](const BallSearchAreas::Cell nextCellToBall)
+    {
+      const bool longerNotChecked = theFrameInfo.getTimeSince(nextCellToBall.timestamp) > lastBallPositionThreshold;
+      const bool notToFar = (theFieldBall.recentBallPositionOnField() - agent->pose.translation).norm() < ignoreVoronoiThreshold ||
+          Geometry::isPointInsideConvexPolygon(agent->baseArea.data(), static_cast<int>(agent->baseArea.size()), theFieldBall.recentBallPositionOnField());
+      const bool notMovedByGameState = !theGameState.isFreeKick() || theGameState.isPushingFreeKick();
+
+      return longerNotChecked && notToFar && notMovedByGameState;
+    };
+
+    //the initial ballSearch
     initial_state(initial)
     {
       transition
@@ -92,28 +84,42 @@ private:
         ANNOTATION("BallSearch", "is active");
         if(agent->isGoalkeeper)
           goto goalkeeper;
-        else if(theGameState.isCornerKick())
-          goto cornerKick;
-        else if(theGameState.isGoalKick())
-          goto goalKick;
         else
-          goto gridSearch;
+        {
+          if(!theBallSearchAreas.grid.empty() && checkNearLastBallCondition(getBallCell()))
+            goto checkNearLastBall;
+          else
+            goto gridSearch;
+        }
       }
     }
-    // if the ball is lost, the robot will use the ballSearchAreas Grid to search the ball.
+
+    // first look near the last position of the ball
+    state(checkNearLastBall)
+    {
+      BallSearchAreas::Cell nextCellToBall = getBallCell();
+      transition
+      {
+        if(!checkNearLastBallCondition(nextCellToBall))
+        {
+          if(agent->isGoalkeeper)
+            goto goalkeeper;
+          else
+            goto gridSearch;
+        }
+      }
+      action
+      {
+        skillRequest = SkillRequest::Builder::observe(nextCellToBall.positionOnField);
+      }
+    }
+
+    // if the ball is lost in a non-standard situation, the robot will use the ballSearchAreas Grid to search the ball.
     state(gridSearch)
     {
       transition
       {
-        if(theGameState.isCornerKick())
-        {
-          goto cornerKick;
-        }
-        else if(theGameState.isGoalKick())
-        {
-          goto goalKick;
-        }
-        else if(agent->isGoalkeeper)
+        if(agent->isGoalkeeper)
         {
           goto goalkeeper;
         }
@@ -123,34 +129,7 @@ private:
         skillRequest = SkillRequest::Builder::observe(theBallSearchAreas.cellToSearchNext(*agent));
       }
     }
-    state(cornerKick)
-    {
-      transition
-      {
-        if(!theGameState.isCornerKick())
-          goto gridSearch;
-      }
-      action
-      {
-        const auto& corners = theGameState.isForOpponentTeam() ? ownCorners : opponentCorners;
 
-        skillRequest = decidePositionForSearch(corners[0], corners[1], *agent, agents);
-      }
-    }
-    state(goalKick)
-    {
-      transition
-      {
-        if(!theGameState.isGoalKick())
-          goto gridSearch;
-      }
-      action
-      {
-        const auto& corners = theGameState.isForOpponentTeam() ? opponentGoalCorners : ownGoalCorners;
-
-        skillRequest = decidePositionForSearch(corners[0], corners[1], *agent, agents);
-      }
-    }
     //BallSearch Behavior for the Goalkeeper
     state(goalkeeper)
     {
@@ -159,11 +138,11 @@ private:
         {
           if((theGameState.isCornerKick() || theGameState.isGoalKick()) && theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) < 10000)
             goto goalkeeperStandardSituation;
-          else if(theFieldBall.timeSinceBallWasSeen > 10000 && theRobotPose.translation.x() < theFieldDimensions.xPosOwnGroundLine)
+          else if(theFieldBall.timeSinceBallWasSeen > 10000 && theRobotPose.translation.x() < theFieldDimensions.xPosOwnGoalLine)
             goto goalkeeperWalkToTarget;
           else if(theFieldBall.timeSinceBallWasSeen > 10000 && (std::abs(goalCenterRelativeWithOffset.translation.angle()) > 45_deg))
           {
-            initialRadius = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f)).norm();;
+            initialRadius = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f)).norm();;
             goto goalkeeperAvoidBall;
           }
           else if(theFieldBall.timeSinceBallWasSeen > 10000)
@@ -175,6 +154,8 @@ private:
         skillRequest = SkillRequest::Builder::walkTo(agent->basePose);
       }
     }
+
+    // during a standard situation the goalkeeper will remain at the current position
     state(goalkeeperStandardSituation)
     {
       transition
@@ -189,6 +170,8 @@ private:
         skillRequest = SkillRequest::Builder::stand();
       }
     }
+
+    // the goalkeeper will walk to a given position
     state(goalkeeperWalkToTarget)
     {
       action
@@ -196,6 +179,8 @@ private:
         skillRequest = SkillRequest::Builder::walkTo(goalCenterOnFieldWithOffset);
       }
     }
+
+    // the goalkeeper will turn to the given position
     state(goalkeeperTurnToTarget)
     {
       transition
@@ -208,17 +193,19 @@ private:
         skillRequest = SkillRequest::Builder::observe((theRobotPose * goalCenterRelativeWithOffset).translation);
       }
     }
+
+    // while searching for the ball the goalkeeper should avoid touching the ball to avoid scoring an own goal.
     state(goalkeeperAvoidBall)
     {
       transition
       {
-        const float GoalkeeperToGoalLineCenter = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f)).norm();
+        const float GoalkeeperToGoalLineCenter = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f)).norm();
         if(GoalkeeperToGoalLineCenter > initialRadius + minRadius)
           goto goalkeeperTurnToTarget;
       }
       action
       {
-        const Vector2f goalCenterRelative(theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f));
+        const Vector2f goalCenterRelative(theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f));
         const Vector2f offsetRelative(goalCenterRelative.normalized(-200.f));
         const Vector2f offsetAbsolute(theRobotPose * offsetRelative);
         skillRequest = SkillRequest::Builder::walkTo(offsetAbsolute);

@@ -25,7 +25,7 @@ void RelativeFieldColorsProvider::update(RelativeFieldColors& theRelativeFieldCo
 float RelativeFieldColorsProvider::approximateAverage(const Image<PixelTypes::GrayscaledPixel>& image) const
 {
   std::list<unsigned int> yList;
-  if(theScanGrid.y.empty())
+  if(theScanGrid.lowResHorizontalLines.empty())
   {
     yList.emplace_back(image.height * 3 / 8);
     yList.emplace_back(image.height / 4);
@@ -33,9 +33,9 @@ float RelativeFieldColorsProvider::approximateAverage(const Image<PixelTypes::Gr
   }
   else
   {
-    yList.emplace_back(theScanGrid.y[theScanGrid.y.size() / 4 * 3]);
-    yList.emplace_back(theScanGrid.y[theScanGrid.y.size() / 2]);
-    yList.emplace_back(theScanGrid.y[theScanGrid.y.size() / 4]);
+    yList.emplace_back(theScanGrid.lowResHorizontalLines[theScanGrid.lowResHorizontalLines.size() / 4 * 3].y);
+    yList.emplace_back(theScanGrid.lowResHorizontalLines[theScanGrid.lowResHorizontalLines.size() / 2].y);
+    yList.emplace_back(theScanGrid.lowResHorizontalLines[theScanGrid.lowResHorizontalLines.size() / 4].y);
   }
 
   int sum = 0;

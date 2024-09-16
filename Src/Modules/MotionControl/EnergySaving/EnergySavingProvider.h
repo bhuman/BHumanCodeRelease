@@ -48,6 +48,7 @@ MODULE(EnergySavingProvider,
     (float) resetTimeSlow, /**< Time to reduce the offsets back to 0. */
     (int) stepsBeforeEmergencyStep, /**< After so many steps, where the current is still too high, we want to adjust by a large amount, to make sure the current get reduced after sometime.
                                           The big step is the negative value of maxGearStep. */
+    (float) baseOffsetInterpolationTime, /**< Interpolate the base offset over this time duration. */
     (Rangef) comXDiffRangeBeforeReset, /**< The com is allowed to have this much difference to the sole origin, before the offsets are reset (in mm relative to sole origin). */
     (Rangef) comYDiffRangeBeforeReset, /**< The com is allowed to have this much difference to the sole origin, before the offsets are reset (in mm relative to sole origin). */
     (std::vector<Joints::Joint>) skipJoints, /**< Do not adjust these joints. HeadPitch and HeadYaw are assumed to be ignored by the motion engines. */
@@ -63,13 +64,6 @@ public:
 
 private:
 
-  ENUM(State,
-  {,
-    deactive,
-    energySaving,
-    accuratePosition,
-  });
-
   ENUM_INDEXED_ARRAY(Angle, Joints::Joint) lastOffsets;
   ENUM_INDEXED_ARRAY(Angle, Joints::Joint) lastBaseOffset;
   ENUM_INDEXED_ARRAY(int, Joints::Joint) emergencyChangeCounter;
@@ -77,13 +71,13 @@ private:
   unsigned int adjustTimestamp = 0; /**< Time to wait after an adjustment. */
   unsigned int lastInAdjustmentTimestamp = 0;
   bool hasGroundContact = false;
-  State state = State::deactive;
-  State lastState = State::deactive;
+  bool isActive = false;
   void update(EnergySaving& energySaving) override;
   float usedResetInterpolation = resetTimeNormal;
   bool adjustOnlyOneLegJoint = false; /**< To improve energy saving, only adjust one joint at a time. */
 
   JointAngles jointBaseOffset; /**< When energy saving mode started the first time after being off, use the difference between measurendand requested joints as initial offset */
+  unsigned interpolateBaseOffsetStartTimestamp = 0; /**< Interpolate base offset over a very short time. */
 
   void applyJointEnergySaving(const std::size_t& joint,
                               EnergySaving& energySaving, JointRequest& request,

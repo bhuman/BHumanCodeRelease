@@ -288,8 +288,8 @@ int main(int argc, char* argv[])
   {
     // Set stdout to be unbuffered.
     // This has previously been done using stdbuf, but this does not work for a 64-bit program on a 32-bit system.
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
 
     mainThread = pthread_self();
 

@@ -1,37 +1,28 @@
 /**
  * @file WalkAtAbsoluteSpeed.cpp
  *
- * This file implements the implementation of the WalkAtAbsoluteSpeed skill.
+ * This file implements the WalkAtAbsoluteSpeed skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(WalkAtAbsoluteSpeedImpl,
-{,
-  IMPLEMENTS(WalkAtAbsoluteSpeed),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class WalkAtAbsoluteSpeedImpl : public WalkAtAbsoluteSpeedImplBase
+option((SkillBehaviorControl) WalkAtAbsoluteSpeed,
+       args((const Pose2f&) speed))
 {
-  void execute(const WalkAtAbsoluteSpeed& p) override
+  theMotionRequest.motion = MotionRequest::walkAtAbsoluteSpeed;
+  theMotionRequest.walkSpeed = speed;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::walkAtAbsoluteSpeed;
-    theMotionRequest.walkSpeed = p.speed;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::walk)
+        goto done;
+    }
   }
 
-  bool isDone(const WalkAtAbsoluteSpeed&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::walk;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(WalkAtAbsoluteSpeedImpl);
+  target_state(done) {}
+}

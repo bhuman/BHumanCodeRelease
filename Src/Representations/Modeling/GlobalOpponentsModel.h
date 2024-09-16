@@ -3,8 +3,6 @@
  *
  * Declaration of a representation that stores the estimated states
  * of the opponent robots.
- * The representation is a result of the combined estimates of
- * all teammates.
  *
  * @author Tim Laue
  */
@@ -14,11 +12,11 @@
 #include <vector>
 #include "Math/Eigen.h"
 #include "Streaming/AutoStreamable.h"
-#include "Tools/Modeling/Obstacle.h"
 
 /**
  * @struct GlobalOpponentsModel
- * a combined obstacle model.
+ *
+ * Contains a list of all currently tracked opponent robots on the pitch.
  */
 STREAMABLE(GlobalOpponentsModel,
 {
@@ -32,6 +30,7 @@ STREAMABLE(GlobalOpponentsModel,
      (Vector2f) position,        /**< The estimated position of an opponent robot in absolute field coordinates  */
      (Vector2f) left,            /**< Left point of an opponent (in absolute field coordinates) */
      (Vector2f) right,           /**< Right point of an opponent (in absolute field coordinates) */
+     (bool)     unidentified,    /**< Indicates that the jersey has not been seen yet -> UFO (Unidentified Football-playing Object) */
    });
 
    /** Draw the content of this representation */

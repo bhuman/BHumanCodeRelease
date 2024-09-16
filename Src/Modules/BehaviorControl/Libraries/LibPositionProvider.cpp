@@ -43,11 +43,15 @@ void LibPositionProvider::update(LibPosition& libPosition)
   {
     return isOutSideGoalFrame(position, offset);
   };
+  libPosition.isNearPost = [this](const Pose2f& position) -> std::tuple<bool, bool>
+    {
+    return isNearPost(position);
+  };
 }
 
 bool LibPositionProvider::distanceToOwnGoalGreaterThan(float distance) const
 {
-  const Vector2f midPoint(theFieldDimensions.xPosOwnGroundLine, 0.f);
+  const Vector2f midPoint(theFieldDimensions.xPosOwnGoalLine, 0.f);
   float distanceToGoal = (theRobotPose.translation - midPoint).norm();
   return distanceToGoal > distance;
 }
@@ -87,5 +91,29 @@ bool LibPositionProvider::isInOpponentPenaltyArea(const Vector2f& position) cons
 
 bool LibPositionProvider::isOutSideGoalFrame(const Vector2f& position, const float offset) const
 {
-  return position.x() - theFieldDimensions.xPosOwnGroundLine > offset || std::abs(position.y()) - theFieldDimensions.yPosLeftGoal > offset;
+  return position.x() - theFieldDimensions.xPosOwnGoalLine > offset || std::abs(position.y()) - theFieldDimensions.yPosLeftGoal > offset;
+}
+
+std::tuple<bool, bool> LibPositionProvider::isNearPost(const Pose2f& position) const
+{
+  const float jumpDistanceThreshold = 600.f;
+  const Angle jumpAngleThresholdMin = 65_deg;
+  const Angle jumpAngleThresholdMax = 100_deg;
+  const Vector2f leftPost(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
+  const Vector2f rightPost(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
+  const Vector2f leftRel = position.inverse() * leftPost;
+  const Vector2f rightRel = position.inverse() * rightPost;
+  const float angleToLeft = leftRel.angle();
+  const float angleToRight = rightRel.angle();
+
+  bool isNearLeftPost =
+    leftRel.norm() < jumpDistanceThreshold &&
+    angleToLeft > jumpAngleThresholdMin &&
+    angleToLeft < jumpAngleThresholdMax;
+  bool isNearRightPost =
+    rightRel.norm() < jumpDistanceThreshold &&
+    angleToRight < -jumpAngleThresholdMin &&
+    angleToRight > -jumpAngleThresholdMax;
+
+  return std::make_tuple(isNearLeftPost, isNearRightPost);
 }

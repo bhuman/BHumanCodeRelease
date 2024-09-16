@@ -13,17 +13,17 @@
 Vector2f Teammate::getEstimatedPosition(unsigned time) const
 {
   return getEstimatedPosition(theRobotPose, theBehaviorStatus.walkingTo, theBehaviorStatus.speed, -theFrameInfo.getTimeSince(time));
-};
+}
 
 Vector2f Teammate::getEstimatedPosition(const Pose2f& pose, const Vector2f& target, float speed,
                                         const int timeSinceUpdate)
 {
-  const float timeSinceLastPacket = std::max(0, timeSinceUpdate) / 1000.f;
+  const float timeSinceLastPacket = static_cast<float>(std::max(0, timeSinceUpdate)) / 1000.f;
   const float distanceToTarget = target.norm(); // Do not overshoot the target.
   const float correctionFactor = 0.5f;
-  const Vector2f walkDirection = ((pose * target) - pose.translation).normalized();
-  return pose.translation + std::min(distanceToTarget, timeSinceLastPacket * correctionFactor * speed) * walkDirection;
-};
+  const Vector2f walkDirectionRelative = target.normalized();
+  return pose * (std::min(distanceToTarget, timeSinceLastPacket * correctionFactor * speed) * walkDirectionRelative);
+}
 
 void TeamData::draw() const
 {

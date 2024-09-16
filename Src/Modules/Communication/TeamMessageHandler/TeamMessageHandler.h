@@ -13,6 +13,7 @@
 #pragma once
 
 #include "Tools/Communication/TeamMessageChannel.h" // include this first to prevent WinSock2.h/Windows.h conflicts
+#include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/Communication/BHumanMessageOutputGenerator.h"
 #include "Representations/Communication/GameControllerData.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
@@ -53,6 +54,8 @@ MODULE(TeamMessageHandler,
   USES(RobotPose),
   USES(StrategyStatus),
   USES(Whistle),
+  USES(IndirectKick),
+  USES(InitialToReady),
 
   PROVIDES(BHumanMessageOutputGenerator),
   PROVIDES(ReceivedTeamMessages),
@@ -79,9 +82,16 @@ MODULE(TeamMessageHandler,
     (int) ignoreWhistleBeforeEndOfHalf, /**< Time before the end of a half after which the whistle is not sent anymore (in ms). */
     (int) maxWhistleSendDelay, /**< The time after which whistle messages are not sent anymore (in ms). */
     (int) minTimeBetween2RejectSounds, /**< Time in ms after which another sound output is allowed */
+    (int) minTimeBallIsNotNearTeamBall, /**< Only send based on diferrences between own ball and team ball, if this difference remains for this time (in ms). */
+    (float) teamBallMaxPositionThreshold, /**< Max position threshold for own ball distance to the team ball. */
+    (Rangef) teamBallDistanceInterpolationRange, /**< Interpolate the position threshold for the team ball based on this distance of our own ball. */
+    (Rangei) sendDelayRange, /**< Delay sending messages between those time windows. */
+    (int) sendDelayPlayBall, /**< Delay sending messages when sending because of striker switch. */
+    (Rangei) ballDistanceRangeForDelay, /**< Interpolate the delay of sending messages based on the distance to the ball. */
     (bool) sendMirroredRobotPose, /**< Whether to send the robot pose mirrored (useful for one vs one demos such that keeper and striker can share their ball positions). */
     (bool) dropUnsynchronizedMessages, /**< Whether messages in which timestamps cannot be converted should be dropped. */
     (bool) alwaysSend, /**< Send every second. */
+    (bool) alwaysSendInPlaying, /**< Send every second. */
   }),
 });
 
@@ -155,24 +165,27 @@ private:
     std::map<std::string, unsigned> counters; /**< The counters. */
   };
 
-  TeamMessageChannel::Buffer inTeamMessages;
-  TeamMessageChannel::Buffer::Container outTeamMessage;
+  TeamMessageChannel::Container inTeamMessage;
+  TeamMessageChannel::Container outTeamMessage;
   TeamMessageChannel theTeamMessageChannel;
 
-  mutable Statistics statistics; /**< The change statistics. */
+  Statistics statistics; /**< The change statistics. */
   SentTeamMessage lastSent; /**< Last team message that was sent. */
 
   GameControllerRBS theGameControllerRBS;
-  mutable RobotStatus theRobotStatus;
+  RobotStatus theRobotStatus;
 
   CompressedTeamCommunication::TypeRegistry teamCommunicationTypeRegistry;
   const CompressedTeamCommunication::Type* teamMessageType;
+  unsigned timeWhenBallWasNearTeamBall = 0; /**< Timestamp when our ball was close to the team ball. */
+
+  unsigned timeWhenLastSendTryStarted = 0; /**< Timestamp when we last tried to send a message, but the delay condition was not fulfilled. */
 
   // output stuff
-  mutable unsigned timeWhenLastSent = 0;
+  unsigned timeWhenLastSent = 0;
 
   void update(BHumanMessageOutputGenerator& outputGenerator) override;
-  bool writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Buffer::Container* const m);
+  bool writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Container* const m);
 
   // input stuff
   struct ReceivedBHumanMessage : public BHumanMessage
@@ -180,19 +193,26 @@ private:
     enum ErrorCode
     {
       //add more parsing errors if there is a need of distinguishing
-      parsingError,
       magicNumberDidNotMatch,
-      myOwnMessage
+      myOwnMessage,
+      invalidPlayerNumber,
+      duplicate
     } lastErrorCode;
   } receivedMessageContainer;
 
+  /** Timestamps (from the remote robot's clock) of the last received message per player. */
+  std::array<unsigned, Settings::highestValidPlayerNumber - Settings::lowestValidPlayerNumber + 1> lastReceivedTimestamps{};
+
   static void regTeamMessage();
+
+  unsigned lastReceivedBudget = 0;
+  unsigned ownModeledBudget = 0;
 
   void update(ReceivedTeamMessages& receivedTeamMessages) override;
   void update(SentTeamMessage& theSentTeamMessage) override {theSentTeamMessage = lastSent;}
 
   unsigned timeWhenLastMimimi = 0;
-  bool readTeamMessage(const TeamMessageChannel::Buffer::Container* const m);
+  bool readTeamMessage(const TeamMessageChannel::Container* const m);
   void parseMessage(ReceivedTeamMessage& bMate);
 
   /**
@@ -222,11 +242,13 @@ private:
    * @param offset The current relative position.
    * @param oldOrigin The previous pose of the robot.
    * @param oldOffset The previous relative position.
+   * @param positionalThreshold The to be used positional threshold.
    * @return Was there sufficient change between the previous and the current
    *         global position?
    */
   bool globalBearingsChanged(const RobotPose& origin, const Vector2f& offset,
-                             const RobotPose& oldOrigin, const Vector2f& oldOffset) const;
+                             const RobotPose& oldOrigin, const Vector2f& oldOffset,
+                             const std::optional<float>& positionalThreshold = std::optional<float>()) const;
 
   /**
    * Has a position changed significantly seen from the perspective of a teammate?
@@ -289,4 +311,16 @@ private:
 
   /** Is the team ball old and we know better? */
   bool teamBallOld() const;
+
+  /** Did LastKickTimestamp from IndirectKick.h change? */
+  bool indirectKickChanged() const;
+
+  /** Check if we need to delay the sending. */
+  bool checkTimeDelay() const;
+
+  /** Reset timestamp to start delaying messages once again. */
+  void setTimeDelay();
+
+  /** Compute a preview of the message budget based on the own received team messages. */
+  void handleBudgetPreview(ReceivedTeamMessages& receivedTeamMessages);
 };

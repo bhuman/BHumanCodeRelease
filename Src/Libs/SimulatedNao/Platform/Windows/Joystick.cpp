@@ -48,16 +48,22 @@ Joystick::~Joystick() = default;
 bool Joystick::init()
 {
   ASSERT(p->joystickId == -1);
-  for(int i = 0; i < 32; ++i)
+  for(int i = 0; i < 16; ++i)
   {
     if(!(Private::usedJoysticks & (1 << i)))
     {
-      p->usedJoysticks |= 1 << i;
-      p->joystickId = i;
-      p->buttonEvents[0] = p->buttonEvents[1] = p->buttonState[0] = p->buttonState[1] = 0;
-      for(int i = 0; i < numOfAxes; ++i)
-        p->axisState[i] = 32767;
-      return true;
+      JOYINFOEX joy;
+      joy.dwSize = sizeof(joy);
+      joy.dwFlags = JOY_RETURNALL;
+      if(joyGetPosEx(i, &joy) == JOYERR_NOERROR)
+      {
+        p->usedJoysticks |= 1 << i;
+        p->joystickId = i;
+        p->buttonEvents[0] = p->buttonEvents[1] = p->buttonState[0] = p->buttonState[1] = 0;
+        for(int i = 0; i < numOfAxes; ++i)
+          p->axisState[i] = 32767;
+        return true;
+      }
     }
   }
   return false;

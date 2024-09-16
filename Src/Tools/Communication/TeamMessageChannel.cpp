@@ -49,25 +49,22 @@ void TeamMessageChannel::send()
   socket.write(reinterpret_cast<char*>(out.data), out.length);
 }
 
-void TeamMessageChannel::receive()
+bool TeamMessageChannel::receive()
 {
   if(!port)
-    return; // not started yet
+    return false; // not started yet
 
   int size;
   unsigned remoteIp = 0;
 
-  do
-  {
-    auto* entry = in.setForward();
-    size = localId ? socket.readLocal(reinterpret_cast<char*>(entry->data), sizeof(entry->data) + 1)
-                   : socket.read(reinterpret_cast<char*>(entry->data), sizeof(entry->data) + 1, remoteIp);
-    if(size < 1 || static_cast<size_t>(size) > sizeof(entry->data))
-      in.removeFront();
-    else
-      entry->length = static_cast<uint8_t>(size);
-  }
-  while(size > 0);
+  size = localId ? socket.readLocal(reinterpret_cast<char*>(in.data), sizeof(in.data) + 1)
+                 : socket.read(reinterpret_cast<char*>(in.data), sizeof(in.data) + 1, remoteIp);
+  if(size < 1 || static_cast<size_t>(size) > sizeof(in.data))
+    return false;
+  else
+    in.length = static_cast<uint8_t>(size);
+
+  return true;
 }
 
 void TeamMessageChannel::trySetWifiTarget()

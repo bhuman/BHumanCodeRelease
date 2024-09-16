@@ -46,10 +46,12 @@ private:
   ~BHLoggingController() override;
 
   /**
-   * Returns if the current game state is neither INITIAL nor FINISHED.
+   * Returns if the current game state is neither INITIAL nor FINISHED(*).
+   * (*) See the implementation for an exception.
+   * @param wasLogging Whether the logger was logging in the previous frame.
    * @return If the current game state is ...
    */
-  bool shouldLog() const override;
+  bool shouldLog(bool wasLogging) const override;
 
   /**
    * Builds a log file description matching the current game state.

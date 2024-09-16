@@ -28,7 +28,7 @@ MAKE_MODULE(BallStateEstimator);
 
 bool compareHypothesesWeightings(BallStateEstimate& a, BallStateEstimate& b)
 {
-  return a.weighting > b.weighting;
+  return a.nllWeighting < b.nllWeighting;
 }
 
 BallStateEstimator::BallStateEstimator(): timeWhenBallFirstDisappeared(0),
@@ -167,7 +167,7 @@ void BallStateEstimator::motionUpdate(BallModel& ballModel)
   const Matrix2f fixedOdometryRotationTransposed = fixedOdometryRotation.transpose();
   Matrix2f fixedOdometryRotationDeviationRotation;
   fixedOdometryRotationDeviationRotation << odometryDeviationCos, odometryDeviationSin, -odometryDeviationSin, odometryDeviationCos;
-  const Vector2f fixedOdometryTranslation = - fixedOdometryRotation * odometryOffset.translation; // u
+  const Vector2f fixedOdometryTranslation = -fixedOdometryRotation * odometryOffset.translation; // u
 
   // prepare process noise
   const Vector4f squaredProcessCov = processDeviation.cwiseAbs2(); //square every element
@@ -218,11 +218,10 @@ void BallStateEstimator::motionUpdate(BallModel& ballModel)
   if(theFrameInfo.getTimeSince(lastBallPercept.timeWhenSeen) < lastBallPerceptTimeout)
   {
     lastBallPercept.positionOnField = fixedOdometryRotation * lastBallPercept.positionOnField + fixedOdometryTranslation;
-    lastBallPercept.covOnField(0, 0) += odometryTranslationCov[0];
-    lastBallPercept.covOnField(1, 1) += odometryTranslationCov[1];
-    Vector2f squaredOdometryRotationDeviationTranslation = (fixedOdometryRotationDeviationRotation * lastBallPercept.positionOnField - lastBallPercept.positionOnField).cwiseAbs2();
-    lastBallPercept.covOnField(0, 0) += squaredOdometryRotationDeviationTranslation.x();
-    lastBallPercept.covOnField(1, 1) += squaredOdometryRotationDeviationTranslation.y();
+    lastBallPercept.covOnField = fixedOdometryRotation * lastBallPercept.covOnField * fixedOdometryRotation.transpose();
+    Covariance::fixCovariance(lastBallPercept.covOnField);
+    const Vector2f squaredOdometryRotationDeviationTranslation = (fixedOdometryRotationDeviationRotation * lastBallPercept.positionOnField - lastBallPercept.positionOnField).cwiseAbs2();
+    lastBallPercept.covOnField.diagonal() += odometryTranslationCov.head<2>() + squaredOdometryRotationDeviationTranslation;
   }
 
   // Check, if some of the rolling balls have stopped and move them to the buffer
@@ -246,48 +245,48 @@ void BallStateEstimator::motionUpdate(BallModel& ballModel)
 
 void BallStateEstimator::normalizeMeasurementLikelihoods()
 {
-  float highestLikelihoodOfMeasurements = 0;
+  float lowestNLLOfMeasurements = std::numeric_limits<float>::max();
   for(auto& state : rollingBalls)
   {
-    if(state.likelihoodOfMeasurements > highestLikelihoodOfMeasurements)
-      highestLikelihoodOfMeasurements = state.likelihoodOfMeasurements;
+    if(state.nllOfMeasurements < lowestNLLOfMeasurements)
+      lowestNLLOfMeasurements = state.nllOfMeasurements;
   }
   for(auto& state : stationaryBalls)
   {
-    if(state.likelihoodOfMeasurements > highestLikelihoodOfMeasurements)
-      highestLikelihoodOfMeasurements = state.likelihoodOfMeasurements;
+    if(state.nllOfMeasurements < lowestNLLOfMeasurements)
+      lowestNLLOfMeasurements = state.nllOfMeasurements;
   }
-  ASSERT(highestLikelihoodOfMeasurements > 0.f || (stationaryBalls.size() == 0 && rollingBalls.size() == 0));
+  ASSERT(lowestNLLOfMeasurements < std::numeric_limits<float>::max() || (stationaryBalls.empty() && rollingBalls.empty()));
   for(auto& state : stationaryBalls)
-    state.likelihoodOfMeasurements /= highestLikelihoodOfMeasurements;
+    state.nllOfMeasurements -= lowestNLLOfMeasurements;
   for(auto& state : rollingBalls)
-    state.likelihoodOfMeasurements /= highestLikelihoodOfMeasurements;
+    state.nllOfMeasurements -= lowestNLLOfMeasurements;
 }
 
 void BallStateEstimator::findBestState()
 {
   bestState = nullptr;
   bestMovingState = nullptr;
-  float bestWeighting = -1.f;
-  float bestMovingWeighting = -1.f;
+  float bestWeighting = std::numeric_limits<float>::max();
+  float bestMovingWeighting = std::numeric_limits<float>::max();
   for(auto& state : rollingBalls)
   {
-    if(bestState == nullptr || state.weighting > bestWeighting)
+    if(bestState == nullptr || state.nllWeighting < bestWeighting)
     {
       bestState = &state;
-      bestWeighting = state.weighting;
+      bestWeighting = state.nllWeighting;
     }
-    if(bestMovingState == nullptr || state.weighting > bestMovingWeighting)
+    if(bestMovingState == nullptr || state.nllWeighting < bestMovingWeighting)
     {
       bestMovingState = &state;
-      bestMovingWeighting = state.weighting;
+      bestMovingWeighting = state.nllWeighting;
     }
   }
   for(auto& state : stationaryBalls)
-    if(bestState == nullptr || state.weighting > bestWeighting)
+    if(bestState == nullptr || state.nllWeighting < bestWeighting)
     {
       bestState = &state;
-      bestWeighting = state.weighting;
+      bestWeighting = state.nllWeighting;
     }
 }
 
@@ -304,7 +303,9 @@ void BallStateEstimator::createNewFilters(const Vector2f& ballPercept, const flo
 {
   // Create a new stationary state estimator
   StationaryBallKalmanFilter newStationaryBall;
-  newStationaryBall.likelihoodOfMeasurements = initialStateWeight;
+  // initialStateWeight is essentially a factor how much worse a new hypothesis is compared to the best one so far.
+  // For instance, initialStateWeight = 0.1 means that the hypothesis is 1/10 as likely as the best hypothesis.
+  newStationaryBall.nllOfMeasurements = -std::log(initialStateWeight);
   newStationaryBall.radius = ballPerceptRadius;
   newStationaryBall.x = ballPercept;
   newStationaryBall.P = ballPerceptCov;
@@ -322,14 +323,16 @@ void BallStateEstimator::createNewFilters(const Vector2f& ballPercept, const flo
     const float ballSpeed = ballVelocity.norm();
     if(ballSpeed > minSpeed && ballSpeed < theBallSpecification.ballSpeedUpperBound()) // Do not generate slow or very fast balls
     {
+      const Matrix2f positionVelocityCov = ballPerceptCov / deltaTime;
+      const Matrix2f velocityCov = (ballPerceptCov + lastBallPercept.covOnField) / (deltaTime*deltaTime);
       RollingBallKalmanFilter newRollingBall;
-      newRollingBall.likelihoodOfMeasurements = initialStateWeight;
+      newRollingBall.nllOfMeasurements = -std::log(initialStateWeight);
       newRollingBall.radius = ballPerceptRadius;
-      newRollingBall.numOfMeasurements = 2;
       newRollingBall.x << ballPercept, ballVelocity;
-      newRollingBall.P << ballPerceptCov, Matrix2f::Identity(),
-                       Matrix2f::Identity(), (ballPerceptCov + lastBallPercept.covOnField) / deltaTime;
+      newRollingBall.P << ballPerceptCov, positionVelocityCov,
+                          positionVelocityCov, velocityCov;
       newRollingBall.lastPosition = ballPercept;
+      newRollingBall.numOfMeasurements = 2;
       rollingBalls.push_back(newRollingBall);
     }
   }
@@ -341,6 +344,8 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
   if(bestState != nullptr)
   {
     ballModel.estimate.position = bestState->getPosition();
+    if(bestState->timeOfLastCollision > ballModel.timeOfLastCollision)
+      ballModel.timeOfLastCollision = bestState->timeOfLastCollision;
     // <hack>
     if(bestState->numOfMeasurements < minNumberOfMeasurementsForRollingBalls)
       ballModel.estimate.velocity = Vector2f::Zero();
@@ -461,6 +466,7 @@ void BallStateEstimator::integrateCollisionWithFeet()
       state.x << contactInfo.newPosition, contactInfo.newVelocity;
       state.P(2, 2) += contactInfo.addVelocityCov.x();
       state.P(3, 3) += contactInfo.addVelocityCov.y();
+      state.timeOfLastCollision = theFrameInfo.time;
     }
   }
   auto sBall = stationaryBalls.begin();
@@ -471,11 +477,13 @@ void BallStateEstimator::integrateCollisionWithFeet()
       if(contactInfo.newVelocity.norm() < minSpeed) // Ball does not start moving
       {
         sBall->x = contactInfo.newPosition;
+        sBall->timeOfLastCollision = theFrameInfo.time;
         ++sBall;
       }
       else // Ball is rolling after collision -> Create a rolling ball and delete stationary ball
       {
-        rollingBalls.push_back(RollingBallKalmanFilter(*sBall, contactInfo.newPosition, contactInfo.newVelocity, contactInfo.addVelocityCov));
+        rollingBalls.emplace_back(*sBall, contactInfo.newPosition, contactInfo.newVelocity, contactInfo.addVelocityCov);
+        rollingBalls.back().timeOfLastCollision = theFrameInfo.time;
         sBall = stationaryBalls.erase(sBall);
         recomputeBestState = true;  // as pointer bestState might be incorrect after this operation
       }

@@ -68,7 +68,7 @@ void KeyframePhaseBase::calculateJointDifference()
   PLOT("module:KeyframeMotionEngine:jointDiff1:rHipRoll", jointDiffPredictedAngles.angles[Joints::rHipRoll].toDegrees());
 }
 
-void KeyframePhaseBase::removePreviouseKeyframeJointCompensation()
+void KeyframePhaseBase::removePreviousKeyframeJointCompensation()
 {
   JointRequest startDiff;
   for(unsigned int i = 0; i < Joints::numOfJoints; i++)

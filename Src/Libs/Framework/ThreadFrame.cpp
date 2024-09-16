@@ -20,7 +20,7 @@ ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName)
 {
   // Set settings as soon as possible for file access.
   Global::theSettings = &this->settings;
-  File::setSearchPath(settings.getSearchPath());
+  File::setSearchPath(settings.searchPath);
 }
 
 ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName, DebugReceiver<MessageQueue>* debugReceiver, DebugSender<MessageQueue>* debugSender) :
@@ -32,7 +32,7 @@ ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName,
 {
   // Set settings as soon as possible for file access and debugOut for debugging.
   Global::theSettings = &this->settings;
-  File::setSearchPath(settings.getSearchPath());
+  File::setSearchPath(settings.searchPath);
 
   // Initialize MessageQueues if no messaging is required.
   if(!debugReceiver && !debugSender)
@@ -63,7 +63,7 @@ void ThreadFrame::setGlobals()
   Global::theDrawingManager3D = &drawingManager3D;
   Global::theTimingManager = &timingManager;
   Global::theAsmjitRuntime = asmjitRuntime;
-  File::setSearchPath(settings.getSearchPath());
+  File::setSearchPath(settings.searchPath);
 
   Blackboard::setInstance(blackboard); // blackboard is NOT globally accessible
 }
@@ -83,15 +83,24 @@ void ThreadFrame::threadMain()
   init();
   while(isRunning())
   {
+    while(sem.tryWait());
+
     debugReceiver->receivePacket();
     handleAllMessages(*debugReceiver);
     debugReceiver->clear();
 
-    const bool shouldWait = main();
+    bool shouldWait = main();
 
     if(Global::getDebugRequestTable().pollCounter > 0 &&
        --Global::getDebugRequestTable().pollCounter == 0)
+    {
       OUTPUT(idDebugResponse, text, "pollingFinished");
+      if(shouldWait)
+      {
+        yield();
+        shouldWait = false;
+      }
+    }
 
     if(shouldWait)
       wait();

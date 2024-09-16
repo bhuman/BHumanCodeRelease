@@ -2,7 +2,7 @@
 * @file CenterCircleWithLine.h
 *
 * Declaration of a struct that represents the combination of
-* the center circle and the center line crossing the circle:
+* the center circle and the halfway line crossing the circle:
 *
 *                   _____
 *                  *     *      (ugly, I know)
@@ -32,7 +32,7 @@
 STREAMABLE_WITH_BASE(CenterCircleWithLine, FieldFeature,
 {
   void draw() const;
-  CHECK_FIELD_FEATURE_POSE_OF("CenterCircleWithLine");
+  VERIFY_FIELD_FEATURE;
 
   CenterCircleWithLine() = default;
   CenterCircleWithLine(const Pose2f& pose) : FieldFeature(pose) {};

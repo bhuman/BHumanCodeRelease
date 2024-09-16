@@ -48,7 +48,7 @@ void Sobel::sobelSSE(const Image1D& srcImage, SobelImage& destImage)
     for(p0LineEnd = srcImage[y], pDestImg = reinterpret_cast<__m128i*>(destImage[y]); p0 < p0LineEnd;
         p0 += 16, p1 += 16, p2 += 16, pDestImg += 2)
     {
-      // laod values
+      // load values
       valA = _mm_loadu_si128(reinterpret_cast<const __m128i*>(p0 - 1));
       valB = _mm_load_si128(reinterpret_cast<const __m128i*>(p0));
       valC = _mm_loadu_si128(reinterpret_cast<const __m128i*>(p0 + 1));

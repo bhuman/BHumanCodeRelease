@@ -1,145 +1,12 @@
 <Simulation>
 
-  <ComplexAppearance name="kickInBlue">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
+  <ComplexAppearance name="initialToReady">
+    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/initialToReady.png"/>
     <Vertices>
-      0 -0.96 0
-      0 0.35 0
-      0 0.35 1.9
-      0 -0.96 1.9
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      0 0
-      1 0
-      1 1
-      0 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="kickInRed">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
-    <Vertices>
-      0 -0.35 0
-      0 0.96 0
-      0 0.96 1.9
-      0 -0.35 1.9
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      1 0
-      0 0
-      0 1
-      1 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="goalKickBlue">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/goalKickBlue.png"/>
-    <Vertices>
-      0 -0.67 0
-      0 0.35 0
-      0 0.35 2.15
-      0 -0.67 2.15
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      0 0
-      1 0
-      1 1
-      0 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="goalKickRed">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/goalKickBlue.png"/>
-    <Vertices>
-      0 -0.35 0
-      0 0.67 0
-      0 0.67 2.15
-      0 -0.35 2.15
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      1 0
-      0 0
-      0 1
-      1 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="cornerKickBlue">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/cornerKickBlue.png"/>
-    <Vertices>
-      0 -0.86 0
-      0 0.35 0
-      0 0.35 1.9
-      0 -0.86 1.9
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      0 0
-      1 0
-      1 1
-      0 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="cornerKickRed">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/cornerKickBlue.png"/>
-    <Vertices>
-      0 -0.35 0
-      0 0.86 0
-      0 0.86 1.9
-      0 -0.35 1.9
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      1 0
-      0 0
-      0 1
-      1 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="pushingFreeKickBlue">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
-    <Vertices>
-      0 -0.96 0
-      0 0.35 0
-      0 0.35 1.9
-      0 -0.96 1.9
-    </Vertices>
-    <Quads>
-      0 1 2 3
-    </Quads>
-    <TexCoords>
-      1 0
-      0 0
-      0 1
-      1 1
-    </TexCoords>
-  </ComplexAppearance>
-
-  <ComplexAppearance name="pushingFreeKickRed">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
-    <Vertices>
-      0 -0.35 0
-      0 0.96 0
-      0 0.96 1.9
-      0 -0.35 1.9
+      0 -0.33 0
+      0 0.33 0
+      0 0.33 2.3
+      0 -0.33 2.3
     </Vertices>
     <Quads>
       0 1 2 3
@@ -155,39 +22,10 @@
   <Body name="referee">
     <BoxGeometry depth="100mm" width="100mm" height="50mm"/>
     <BoxMass value="0.01kg" depth="100mm" width="100mm" height="50mm"/>
-    <BoxGeometry depth="100mm" width="100mm" height="50mm">
-      <Translation z="10m"/>
-    </BoxGeometry>
     <Appearance>
-      <ComplexAppearance ref="kickInBlue">
-        <Translation z="25mm"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="kickInRed">
+      <ComplexAppearance ref="initialToReady">
         <Translation z="25mm"/>
         <Rotation z="180degree"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="goalKickBlue">
-        <Translation z="-25mm"/>
-        <Rotation x="180degree"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="goalKickRed">
-        <Translation z="-25mm"/>
-        <Rotation x="180degree" z="180degree"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="cornerKickBlue">
-        <Translation z="10025mm"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="cornerKickRed">
-        <Translation z="10025mm"/>
-        <Rotation z="180degree"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="pushingFreeKickBlue">
-        <Translation z="9975mm"/>
-        <Rotation x="180degree"/>
-      </ComplexAppearance>
-      <ComplexAppearance ref="pushingFreeKickRed">
-        <Translation z="9975mm"/>
-        <Rotation x="180degree" z="180degree"/>
       </ComplexAppearance>
     </Appearance>
     <Translation y="-3m" z="25mm"/>

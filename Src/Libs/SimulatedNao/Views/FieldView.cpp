@@ -31,7 +31,7 @@ FieldWidget::FieldWidget(FieldView& view)
 
 void FieldWidget::paint(QPainter& painter)
 {
-  updateTransform();
+  updateTransform(painter);
   SYNC_WITH(view.console);
   paintDrawings(painter);
 }

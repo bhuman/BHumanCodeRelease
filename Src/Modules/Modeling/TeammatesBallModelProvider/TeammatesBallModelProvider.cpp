@@ -106,62 +106,42 @@ void TeammatesBallModelProvider::computeModel(TeammatesBallModel& teammatesBallM
 void TeammatesBallModelProvider::updateInternalBallBuffers()
 {
   // Observations by teammates:
-  for(auto const& teammate : theTeamData.teammates)
+  for(auto const& message : theReceivedTeamMessages.messages)
   {
-    // teammate is participating in the game and has made a new ball observation
-    ASSERT(teammate.number >= Settings::lowestValidPlayerNumber);
-    ASSERT(teammate.number <= Settings::highestValidPlayerNumber);
-    const unsigned n = teammate.number - Settings::lowestValidPlayerNumber;
-    if(teammate.theRobotStatus.isUpright &&
-       (std::abs(static_cast<int>(teammate.theBallModel.timeWhenLastSeen - balls[n].time)) > timestampTolerance ||
-        balls[n].vel.norm() < teammate.theBallModel.estimate.velocity.norm()) &&
-       teammate.theBallModel.timeWhenLastSeen)
+    ASSERT(message.number >= Settings::lowestValidPlayerNumber);
+    ASSERT(message.number <= Settings::highestValidPlayerNumber);
+    const unsigned n = message.number - Settings::lowestValidPlayerNumber;
+
+    // If the teammate has recently changed its position significantly, all information from this robot might have been false and
+    // has to be made invalid:
+    if(theFrameInfo.getTimeSince(message.theRobotPose.timestampLastJump) < 1000)
+      balls[n].valid = false;
+
+    if(message.theRobotStatus.isUpright &&
+       (std::abs(static_cast<int>(message.theBallModel.timeWhenLastSeen - balls[n].time)) > timestampTolerance ||
+        balls[n].vel.norm() < message.theBallModel.estimate.velocity.norm()) &&
+       message.theFrameInfo.getTimeSince(message.theBallModel.timeWhenDisappeared) <= ballDisappearedTimeout &&
+       message.theBallModel.timeWhenLastSeen)
     {
       BufferedBall newBall;
-      newBall.robotPose              = teammate.theRobotPose;
-      newBall.poseQualityModifier    = localizationQualityToModifier(teammate.theRobotPose.quality);
-      newBall.pos                    = teammate.theBallModel.estimate.position;
-      newBall.vel                    = teammate.theBallModel.estimate.velocity;
-      newBall.time                   = teammate.theBallModel.timeWhenLastSeen;
+      newBall.robotPose              = message.theRobotPose;
+      newBall.poseQualityModifier    = localizationQualityToModifier(message.theRobotPose.quality);
+      newBall.pos                    = message.theBallModel.estimate.position;
+      newBall.vel                    = message.theBallModel.estimate.velocity;
+      newBall.time                   = message.theBallModel.timeWhenLastSeen;
       newBall.valid = true;
       if(newBall.poseQualityModifier > 0.f) // If the value is zero, the final weighting would be 0, too.
         balls[n] = newBall;
     }
   }
-  // If any teammate is not playing anymore, invalidate the observations that happened during the time
-  // before the status changed:
+  // There are penalties with a high probability that the robot was delocalized or chasing a false ball.
+  // We do not want to use those.
   for(unsigned index = 0; index < balls.size(); ++index)
   {
-    const int robot = Settings::lowestValidPlayerNumber + int(index);
-    if(robot == theGameState.playerNumber)
-      continue;
-    if(!GameState::isPenalized(theGameState.ownTeam.playerStates[index]))
-    {
-      for(auto const& teammate : theTeamData.teammates)
-        if(teammate.number == static_cast<int>(robot) && teammate.theRobotStatus.isUpright)
-        {
-          if(teammate.theFrameInfo.getTimeSince(teammate.theBallModel.timeWhenDisappeared) > ballDisappearedTimeout)
-            balls[index].valid = false;
-          goto teammateValid;
-        }
-    }
-
-    // Teammate is penalized or fallen
-    if(theFrameInfo.getTimeSince(balls[index].time) <= inactivityInvalidationTimeSpan)
+    const auto state = theGameState.ownTeam.playerStates[index];
+    if(state == GameState::penalizedLeavingTheField ||
+       state == GameState::penalizedIllegalPosition)
       balls[index].valid = false;
-
-  teammateValid:
-    ;
-  }
-
-  // If any teammate has recently changed its position significantly, all information from this robot might have been false and
-  // has to be made invalid:
-  for(auto const& teammate : theTeamData.teammates)
-  {
-    if(theFrameInfo.getTimeSince(teammate.theRobotPose.timestampLastJump) < 1000)
-    {
-      balls[teammate.number - Settings::lowestValidPlayerNumber].valid = false;
-    }
   }
 }
 

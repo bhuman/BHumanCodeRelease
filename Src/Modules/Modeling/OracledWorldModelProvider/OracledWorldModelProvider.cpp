@@ -71,12 +71,10 @@ void OracledWorldModelProvider::update(GlobalOpponentsModel& globalOpponentsMode
 {
   computeRobotPose();
   globalOpponentsModel.opponents.clear();
-  if (!Global::settingsExist())
-    return;
 
-  auto toOpponent = [this, &globalOpponentsModel](const GroundTruthWorldState::GroundTruthPlayer& player, bool isTeammate)
+  for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
   {
-    const Vector2f center(theRobotPose.inverse() * player.pose.translation);
+    const Vector2f center(theRobotPose.inverse() * theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation);
     Vector2f left = center.normalized(Obstacle::getRobotDepth());
     Vector2f right = left;
     left.rotateLeft();
@@ -84,28 +82,21 @@ void OracledWorldModelProvider::update(GlobalOpponentsModel& globalOpponentsMode
     left += center;
     right += center;
 
-    if (center.squaredNorm() >= sqr(obstacleModelMaxDistance))
-      return;
-    if (!isTeammate)
-    {
-      GlobalOpponentsModel::OpponentEstimate opponent;
-      opponent.position = center;
-      opponent.left = left;
-      opponent.right = right;
-      globalOpponentsModel.opponents.emplace_back(opponent);
-    }
-  };
+    if(center.squaredNorm() >= sqr(obstacleModelMaxDistance))
+      continue;
 
-  for (unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
-    toOpponent(theGroundTruthWorldState.opponentTeamPlayers[i], false);
+    GlobalOpponentsModel::OpponentEstimate opponent;
+    opponent.position = theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation;
+    opponent.left = theRobotPose * left;
+    opponent.right = theRobotPose * right;
+    globalOpponentsModel.opponents.emplace_back(opponent);
+  }
 }
 
 void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
 {
   computeRobotPose();
   obstacleModel.obstacles.clear();
-  if(!Global::settingsExist())
-    return;
 
   auto toObstacle = [this, &obstacleModel](const GroundTruthWorldState::GroundTruthPlayer& player, bool isTeammate)
   {

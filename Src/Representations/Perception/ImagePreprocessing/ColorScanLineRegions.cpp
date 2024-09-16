@@ -9,7 +9,10 @@ void ColorScanLineRegionsVertical::draw() const
     {
       for(const ScanLineRegion& r : line.regions)
       {
-        LINE("representation:ColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 4, Drawings::solidPen, r.getDrawColor());
+        // three pixel wide line out of three single pixel lines, to prevent line width to go over the end of the region range
+        LINE("representation:ColorScanLineRegionsVertical:image", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVertical:image", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }
@@ -23,7 +26,9 @@ void ColorScanLineRegionsVerticalClipped::draw() const
     {
       for(const ScanLineRegion& r : line.regions)
       {
-        LINE("representation:ColorScanLineRegionsVerticalClipped:image", line.x, r.range.from, line.x, r.range.to - 1, 4, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:image", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:image", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:image", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }
@@ -35,7 +40,9 @@ void ColorScanLineRegionsVerticalClipped::draw() const
       const ScanLine& line = scanLines[i];
       for(const ScanLineRegion& r : line.regions)
       {
-        LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x, r.range.from, line.x, r.range.to - 1, 4, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }
@@ -49,7 +56,9 @@ void CompressedColorScanLineRegionsVertical::draw() const
     {
       for(const ScanLineRegion& r : line.regions)
       {
-        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 4, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }
@@ -63,7 +72,9 @@ void ColorScanLineRegionsHorizontal::draw() const
     {
       for(const ScanLineRegion& r : line.regions)
       {
-        LINE("representation:ColorScanLineRegionsHorizontal:image", r.range.from, line.y, r.range.to - 1, line.y, 4, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsHorizontal:image", r.range.from, line.y - 1, r.range.to - 1, line.y - 1, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsHorizontal:image", r.range.from, line.y, r.range.to - 1, line.y, 1, Drawings::solidPen, r.getDrawColor());
+        LINE("representation:ColorScanLineRegionsHorizontal:image", r.range.from, line.y + 1, r.range.to - 1, line.y + 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }

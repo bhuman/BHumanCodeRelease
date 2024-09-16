@@ -31,9 +31,9 @@ void ExpectedGoalsProvider::update(ExpectedGoals& theExpectedGoals)
     return xGA(pointOnField);
   };
 
-  theExpectedGoals.getRating = [this](const Vector2f& pointOnField) -> float
+  theExpectedGoals.getRating = [this](const Vector2f& pointOnField, const bool isPositioning) -> float
   {
-    return getRating(pointOnField);
+    return getRating(pointOnField, isPositioning);
   };
 
   theExpectedGoals.getOpponentRating = [this](const Vector2f& pointOnField) -> float
@@ -45,6 +45,7 @@ void ExpectedGoalsProvider::update(ExpectedGoals& theExpectedGoals)
   MODIFY_ONCE("module:ExpectedGoalsProvider:calcOpeningAngle", calcOpeningAngle);
   MODIFY_ONCE("module:ExpectedGoalsProvider:calcShotDistance", calcShotDistance);
   MODIFY_ONCE("module:ExpectedGoalsProvider:drawHeatmap", drawHeatmap);
+  MODIFY_ONCE("module:ExpectedGoalsProvider:isPositioningDrawing", isPositioningDrawing);
   if(drawHeatmap)
     draw();
 }
@@ -65,7 +66,7 @@ float ExpectedGoalsProvider::xG(const Vector2f& pointOnField) const
   features[1] = angleToLeftPost - angleToRightPost;
 
   std::array<float, 2> hidden{};
-  hidden[0] = std::tanh( -0.0182828f + 0.0995936f * features[0] + -2.10128f * features[1]);
+  hidden[0] = std::tanh(-0.0182828f + 0.0995936f * features[0] + -2.10128f * features[1]);
   hidden[1] = std::tanh(-0.137664f + 0.903687f * features[0] + -2.10898f * features[1]);
 
   return 1.f / (1.f + std::exp(-(0.153333f + hidden[0] * -2.7232f + hidden[1] * -1.07426f)));
@@ -76,10 +77,10 @@ float ExpectedGoalsProvider::xGA(const Vector2f& pointOnField) const
   return 1.f - xG(-pointOnField);
 }
 
-float ExpectedGoalsProvider::getRating(const Vector2f& pointOnField) const
+float ExpectedGoalsProvider::getRating(const Vector2f& pointOnField, const bool isPositioning) const
 {
   // Estimated probability that there is a wide enough opening angle on the opponent's goal in order to score
-  const float openingAngleCriterion = calcOpeningAngle ? mapToRange(getOpeningAngle(pointOnField), minOpeningAngle, maxOpeningAngle, 0_deg, Angle(1.f)) : Angle(1.f);
+  const float openingAngleCriterion = calcOpeningAngle ? mapToRange(getOpeningAngle(pointOnField, isPositioning), minOpeningAngle, maxOpeningAngle, 0_deg, Angle(1.f)) : Angle(1.f);
   // Estimated probability that the kick would be successful based on the distance to the opponent's goal
   const float shotDistanceCriterion = calcShotDistance ? xG(Vector2f(goalCenter.x() - (goalCenter - pointOnField).norm(), 0.f)) : 1.f;
   // Estimated probability that the goal shot would be successful based on the combined criteria
@@ -89,10 +90,10 @@ float ExpectedGoalsProvider::getRating(const Vector2f& pointOnField) const
 float ExpectedGoalsProvider::getOpponentRating(const Vector2f& pointOnField) const
 {
   // Estimated probability that the goal shot would not be successful based on the opening angle on the own goal
-  return mapToRange(getOpponentOpeningAngle(-pointOnField), minOpeningAngle, maxOpeningAngle, Angle(1.f), 0_deg);
+  return mapToRange(getOpponentOpeningAngle(-pointOnField), minOpeningAngle, maxOpeningAngleOpponenent, Angle(1.f), 0_deg);
 }
 
-Angle ExpectedGoalsProvider::getOpeningAngle(const Vector2f& pointOnField) const
+Angle ExpectedGoalsProvider::getOpeningAngle(const Vector2f& pointOnField, const bool isPositioning) const
 {
   const float minBallGoalPostOffset = theFieldDimensions.goalPostRadius + theBallSpecification.radius;
   const Angle leftAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (leftGoalPost - pointOnField).norm()));
@@ -116,21 +117,23 @@ Angle ExpectedGoalsProvider::getOpeningAngle(const Vector2f& pointOnField) const
   wheel.begin(pointOnField);
   wheel.addSector(Rangea(angleToRightPost, angleToLeftPost), std::numeric_limits<float>::max(), SectorWheel::Sector::goal);
 
-  // TODO: Replace the ObstacleModel with the GlobalOpponentsModel once implemented
   for(const auto& obstacle : theGlobalOpponentsModel.opponents)
   {
     const Vector2f& obstacleOnField = obstacle.position;
-    // Skip opponents inside of their goal (behind the groundline)
-    if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGroundLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
+    // Skip opponents inside of their goal (behind the goal line)
+    if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGoalLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
       continue;
 
     // Check if the opponent is inside of the goal sector
     const float width = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
     const float distance = std::sqrt(std::max((obstacleOnField - pointOnField).squaredNorm() - sqr(width / 2.f), 1.f));
-    const float radius = std::atan(width / (2.f * distance));
+    const float ratio = !isPositioning ? 1.f : mapToRange(distance, 300.f, 1500.f, 1.f, 0.f);
+    const float radius = ratio * std::atan(width / (2.f * distance));
+
     const Angle direction = (obstacleOnField - pointOnField).angle();
     if(direction - radius > angleToLeftPost ||
-       direction + radius < angleToRightPost)
+       direction + radius < angleToRightPost ||
+       radius == 0.f)
       continue;
 
     // Add the opponent to the sector wheel
@@ -173,7 +176,7 @@ void ExpectedGoalsProvider::draw()
     for(float x = gridCornerLower.x(); x <= gridCornerUpper.x(); x += cellSize)
     {
       // Linear interpolation of rating in [0, 1] between the two colors for the heatmap
-      ColorRGBA cellColor = worstRatingColor.interpolate(getRating(Vector2f(x, y)), bestRatingColor);
+      ColorRGBA cellColor = worstRatingColor.interpolate(getRating(Vector2f(x, y), isPositioningDrawing), bestRatingColor);
       cellColor.a = heatmapAlpha;
       cellColors.push_back(cellColor);
     }

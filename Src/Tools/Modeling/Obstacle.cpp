@@ -2,7 +2,7 @@
 #include "Math/Probabilistics.h"
 
 Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
-                   unsigned int lastSeen, Obstacle::Type type) :
+                   unsigned int lastSeen, Type type) :
   covariance(covariance), center(center), left(left), right(right), velocity(velocity), lastSeen(lastSeen), type(type)
 {}
 

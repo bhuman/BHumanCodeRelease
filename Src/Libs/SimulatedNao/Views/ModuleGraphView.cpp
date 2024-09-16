@@ -21,13 +21,13 @@ ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConso
 bool ModuleGraphViewObject::hasChanged()
 {
   SYNC_WITH(console);
-  return lastModulInfoTimestamp != console.moduleInfo.timestamp;
+  return lastModuleInfoTimestamp != console.moduleInfo.timestamp;
 }
 
 QString ModuleGraphViewObject::generateDotFileContent()
 {
   SYNC_WITH(console);
-  lastModulInfoTimestamp = console.moduleInfo.timestamp;
+  lastModuleInfoTimestamp = console.moduleInfo.timestamp;
 
   const std::vector<Configuration::Thread>& threads = console.moduleInfo.config();
 

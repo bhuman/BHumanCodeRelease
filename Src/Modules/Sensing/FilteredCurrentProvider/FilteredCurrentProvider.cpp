@@ -63,7 +63,7 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
   if(theFrameInfo.getTimeSince(checkTimestamp) > checkWaitTime)
   {
     //The whole idea with managing the flags is not great,
-    //but using ringbuffers for the average joint difference (of request and meassured) can (maybe) lead to more false-positives.
+    //but using ringbuffers for the average joint difference (of request and measured) can (maybe) lead to more false-positives.
     //But also for a faster detection -> TODO for future
     //Right now it takes like 5 secs before a motormalfunction is detected. Also based on the logs it has no false-positives (yet), but some false-negatives.
     checkTimestamp = theFrameInfo.time;
@@ -98,7 +98,7 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
       {
         soundTimestamp = theFrameInfo.time;
         SystemCall::playSound("sirene.wav", true);
-        SystemCall::say("Motor malfunction! Upper boddy!", true);
+        SystemCall::say("Motor malfunction! Upper body!", true);
         SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.color())) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
         OUTPUT_TEXT("hee" << " " << theFrameInfo.time);
       }
@@ -113,11 +113,11 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
         if(flags[i] >= flagsThreshold)
         {
           flags[i] = 0;
-          bool isUninteresstingJoint = false;
+          bool isUninterestingJoint = false;
           // Ignore specific joints
           for(size_t j = 0; j < ignoreJoints.size(); j++)
-            isUninteresstingJoint = isUninteresstingJoint || i == ignoreJoints[j];
-          if(isUninteresstingJoint)
+            isUninterestingJoint = isUninterestingJoint || i == ignoreJoints[j];
+          if(isUninterestingJoint)
             continue;
 
           soundTimestamp = theFrameInfo.time;

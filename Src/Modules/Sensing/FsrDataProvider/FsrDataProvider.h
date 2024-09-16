@@ -22,12 +22,13 @@ MODULE(FsrDataProvider,
   PROVIDES(FsrData),
   LOADS_PARAMETERS(
   {,
-    (float) minPressure, /**< Minimum pressure assumed. */
+    (Rangef) minPressure, /**< Minimum pressure assumed. */
+    (Rangef) badMinPressureTimewindow,
     (float) minPressurePercent,
     (float) maxPressure, /**< Maximum pressure assumed. */
     (Rangef) minPressureRange, /**< Min and Max value for minPressure. */
     (Rangef) minPressureInterpolationValues, /**< Min and Max interpolation range for minPressure, based on the max single foot sum pressure. */
-    (int) numOfSupportSwitches, /**< Update the lowest measured FSRs after this many foot support swithes.*/
+    (int) numOfSupportSwitches, /**< Update the lowest measured FSRs after this many foot support switches.*/
     (float) maxTimeBetweenSupportSwitches, /**< Last step duration was lower than this max time. */
     (float) minTimeBetweenSupportSwitches, /**< Last step duration was higher than this min time. */
     (float) maxTimeLegNoPressureForCalibration, /**< A leg is only allowed to have max this time no pressure before the next calibration is postponed. */
@@ -55,6 +56,8 @@ class FsrDataProvider : public FsrDataProviderBase
   int supportSwitchCounter = 0; /**< Number of foot support switches since the last update of the min pressure. */
   unsigned int lastSupportSwitch = 0; /**< Timestamp of last support switch. */
   unsigned int updatePressureTimestamp = 0; /**< Timestamp of last highest pressure update. */
+
+  unsigned int originalHasPressure[Legs::numOfLegs];
 
 public:
   FsrDataProvider();

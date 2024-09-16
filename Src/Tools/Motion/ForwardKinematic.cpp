@@ -61,7 +61,7 @@ void ForwardKinematic::calculateLegChain(Legs::Leg leg, const JointAngles& joint
                                                                                   Vector3f(0.f, joints.variance[hipJoint + 3], 0.f).asDiagonal()); // KneePitch
   ankle = (tibia + Vector3f(0, 0, -robotDimensions.lowerLegLength)) *= SE3WithCov(RotationMatrix::aroundY(joints.angles[hipJoint + 4]),
                                                                                   Vector3f(0.f, joints.variance[hipJoint + 4], 0.f).asDiagonal()); // AnklePitch
-  foot = ankle * SE3WithCov(RotationMatrix::aroundX(joints.angles[hipJoint + 5]), Vector3f(joints.angles[hipJoint + 5], 0.f, 0.f).asDiagonal());
+  foot = ankle * SE3WithCov(RotationMatrix::aroundX(joints.angles[hipJoint + 5]), Vector3f(joints.variance[hipJoint + 5], 0.f, 0.f).asDiagonal());
 }
 
 void ForwardKinematic::calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(SE3WithCov, Limbs::Limb)& limbs)

@@ -1,12 +1,6 @@
-echo Use keyboard to select referee signal.
-echo - Shift+Ctrl+H:\tkickInBlue
-echo - Shift+Ctrl+J:\tkickInRed
-echo - Shift+Ctrl+K:\tgoalKickBlue
-echo - Shift+Ctrl+L:\tgoalKickRed
-echo - Shift+Ctrl+X:\tcornerKickBlue
-echo - Shift+Ctrl+C:\tcornerKickRed
-echo - Shift+Ctrl+V:\tpushingFreeKickBlue
-echo - Shift+Ctrl+N:\tpushingFreeKickRed
+echo Use keyboard to show referee.
+echo - Shift+Ctrl+K:\thide
+echo - Shift+Ctrl+L:\tshow
 
 call Includes/Normal
 

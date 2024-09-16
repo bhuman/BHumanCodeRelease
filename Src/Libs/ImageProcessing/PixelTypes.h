@@ -38,6 +38,9 @@ namespace PixelTypes
         unsigned char padding;
       };
     };
+    RGBPixel() = default;
+    RGBPixel(unsigned int color) : color(color) {}
+    RGBPixel(unsigned char r, unsigned char g, unsigned char b, unsigned char padding = 255) : r(r), g(g), b(b), padding(padding) {}
   };
 
   struct BGRAPixel
@@ -54,23 +57,13 @@ namespace PixelTypes
       };
     };
 
-    static unsigned numPixel()
-    {
-      return 1;
-    }
-
-    std::vector<unsigned char> raw() const
-    {
-      return std::vector<unsigned char>{b, g, r};
-    }
-    std::vector<unsigned char> rgb() const
-    {
-      return std::vector<unsigned char>{r, g, b};
-    }
-    std::vector<unsigned char> grayscale() const
-    {
-      return std::vector<unsigned char>{static_cast<unsigned char>((r+g+b)/2)};
-    }
+    BGRAPixel() = default;
+    BGRAPixel(unsigned int color) : color(color) {}
+    BGRAPixel(unsigned char b, unsigned char g, unsigned char r, unsigned char a = 255) : b(b), g(g), r(r), a(a) {}
+    static unsigned numPixel() {return 1;}
+    std::vector<unsigned char> raw() const {return std::vector<unsigned char>{b, g, r};}
+    std::vector<unsigned char> rgb() const {return std::vector<unsigned char>{r, g, b};}
+    std::vector<unsigned char> grayscale() const {return std::vector<unsigned char>{static_cast<unsigned char>((r + g + b) / 3)};}
   };
 
   struct YUYVPixel
@@ -85,17 +78,14 @@ namespace PixelTypes
         unsigned char y1;
         unsigned char v;
       };
-
     };
 
-    static unsigned numPixel()
-    {
-      return 2;
-    }
-    std::vector<unsigned char> raw() const
-    {
-      return std::vector<unsigned char>{y0, u, v, y1, u, v};
-    }
+    YUYVPixel() = default;
+    YUYVPixel(unsigned int color) : color(color) {}
+    YUYVPixel(unsigned char y0, unsigned char u, unsigned char y1, unsigned char v) : y0(y0), u(u), y1(y1), v(v) {}
+
+    static unsigned numPixel() {return 2;}
+    std::vector<unsigned char> raw() const {return std::vector<unsigned char>{y0, u, v, y1, u, v};}
     std::vector<unsigned char> rgb() const
     {
       std::vector<unsigned char> ret(6);
@@ -103,21 +93,9 @@ namespace PixelTypes
       ColorModelConversions::fromYUVToRGB(y1, u, v, ret[3], ret[4], ret[5]);
       return ret;
     }
-    std::vector<unsigned char> grayscale() const
-    {
-      return std::vector<unsigned char>{y0,y1};
-    }
-
-    unsigned char& y(const size_t x)
-    {
-      return (reinterpret_cast<unsigned char*>(&color)[(x & 1) << 1]);
-    }
-
-    unsigned char y(const size_t x) const
-    {
-      return (reinterpret_cast<const unsigned char*>(&color)[(x & 1) << 1]);
-    }
-
+    std::vector<unsigned char> grayscale() const {return std::vector<unsigned char>{y0, y1};}
+    unsigned char& y(const size_t x) {return (reinterpret_cast<unsigned char*>(&color)[(x & 1) << 1]);}
+    unsigned char y(const size_t x) const {return (reinterpret_cast<const unsigned char*>(&color)[(x & 1) << 1]);}
   };
 
   struct YUVPixel
@@ -133,6 +111,10 @@ namespace PixelTypes
         unsigned char v;
       };
     };
+
+    YUVPixel() = default;
+    YUVPixel(unsigned int color) : color(color) {}
+    YUVPixel(unsigned char y, unsigned char u, unsigned char v, unsigned char padding = 0) : padding(padding), u(u), y(y), v(v) {}
   };
 
   struct HSIPixel
@@ -148,6 +130,10 @@ namespace PixelTypes
         unsigned char padding;
       };
     };
+
+    HSIPixel() = default;
+    HSIPixel(unsigned int color) : color(color) {}
+    HSIPixel(unsigned char h, unsigned char s, unsigned char i, unsigned char padding = 0) : h(h), s(s), i(i), padding(padding) {}
   };
 
   using GrayscaledPixel = unsigned char;
@@ -173,7 +159,14 @@ namespace PixelTypes
 
   using BinaryPixel = bool;
 
-  struct Edge2Pixel { unsigned char filterX, filterY; Edge2Pixel() = default; Edge2Pixel(unsigned char e1, unsigned char e2) : filterX(e1), filterY(e2) {} };
+  struct Edge2Pixel
+  {
+    unsigned char filterX;
+    unsigned char filterY;
+
+    Edge2Pixel() = default;
+    Edge2Pixel(unsigned char filterX, unsigned char filterY) : filterX(filterX), filterY(filterY) {}
+  };
 
   constexpr size_t pixelSize(const PixelType type)
   {

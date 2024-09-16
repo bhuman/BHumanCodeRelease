@@ -17,7 +17,7 @@
 
 namespace NeuralNetworkONNX
 {
-  /** The compilation settings. They are all ignored. */
+  /** The compilation settings. Most are ignored. */
   struct CompilationSettings
   {
     bool useX64 = true;
@@ -27,6 +27,7 @@ namespace NeuralNetworkONNX
     bool useExpApproxInTanh = true;
     bool debug = false;
     bool useCoreML = false;
+    int numOfThreads = 1;
   };
 
   /** The class for running neural networks.  */
@@ -173,6 +174,9 @@ namespace NeuralNetworkONNX
       Ort::SessionOptions sessionOptions;
 #ifndef TARGET_ROBOT
       sessionOptions.DisablePerSessionThreads();
+#else
+      sessionOptions.SetExecutionMode(ORT_SEQUENTIAL);
+      sessionOptions.SetIntraOpNumThreads(settings.numOfThreads);
 #endif
 #ifdef MACOS
       if(settings.useCoreML)

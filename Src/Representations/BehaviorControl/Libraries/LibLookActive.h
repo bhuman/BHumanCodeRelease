@@ -23,5 +23,5 @@ STREAMABLE(HeadTarget,
 
 STREAMABLE(LibLookActive,
 {
-  FUNCTION(HeadTarget(const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt)) calculateHeadTarget,
+  FUNCTION(HeadTarget(const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt, float slowdownFactor)) calculateHeadTarget,
 });

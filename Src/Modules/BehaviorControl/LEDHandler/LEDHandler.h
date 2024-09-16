@@ -15,7 +15,7 @@
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
-#include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
+#include "Representations/MotionControl/PhotoModeGenerator.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
 #include "Representations/Infrastructure/RobotHealth.h"
@@ -24,7 +24,6 @@ MODULE(LEDHandler,
 {,
   REQUIRES(BallModel),
   REQUIRES(BehaviorStatus),
-  REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(GlobalTeammatesModel),
@@ -34,6 +33,7 @@ MODULE(LEDHandler,
   USES(RobotHealth),
   REQUIRES(SystemSensorData),
   REQUIRES(StrategyStatus),
+  REQUIRES(PhotoModeGenerator),
   PROVIDES(LEDRequest),
   DEFINES_PARAMETERS(
   {,
@@ -70,12 +70,13 @@ private:
 
   void setRightEar(LEDRequest& ledRequest);
   void setLeftEar(LEDRequest& ledRequest);
-  void setLeftEye(LEDRequest& ledRequest);
-  void setRightEye(LEDRequest& ledRequest);
+  void setBothEyes(LEDRequest& ledRequest);
   void setHead(LEDRequest& ledRequest);
   void setChestButton(LEDRequest& ledRequest);
   void setLeftFoot(LEDRequest& ledRequest);
   void setRightFoot(LEDRequest& ledRequest);
+
+  void setPhotoModeLights(LEDRequest& ledRequest);
 
   size_t chargingLED = 0;
   const LEDRequest::LED headLEDCircle[LEDRequest::numOfHeadLEDs] =

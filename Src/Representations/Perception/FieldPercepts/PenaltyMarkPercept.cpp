@@ -25,5 +25,9 @@ void PenaltyMarkPercept::verify() const
   {
     ASSERT(std::isfinite(positionOnField.x()));
     ASSERT(std::isfinite(positionOnField.y()));
+    ASSERT(std::isnormal(covarianceOnField(0, 0)));
+    ASSERT(std::isnormal(covarianceOnField(1, 1)));
+    ASSERT(std::isfinite(covarianceOnField(0, 1)));
+    ASSERT(std::isfinite(covarianceOnField(1, 0)));
   }
 }

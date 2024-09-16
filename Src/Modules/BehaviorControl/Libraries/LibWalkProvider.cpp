@@ -124,8 +124,8 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
 
   // the field border is an obstacle, except if the target is not inside the field (in case theRobotPose is wrong and the ball deemed outside the field)
   if(!theGameState.isPlaying() || !toBall ||
-     (std::abs(targetOnField.x()) < theFieldDimensions.xPosOpponentGroundLine
-      && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftSideline))
+     (std::abs(targetOnField.x()) < theFieldDimensions.xPosOpponentGoalLine
+      && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftTouchline))
   {
     if(theRobotPose.translation.y() > leftOpponentCorner.y() - fieldBorderAvoidanceDistance)
     {
@@ -406,7 +406,7 @@ void LibWalkProvider::calculateAvoidanceAngleOffset(Angle& newAvoidanceAngleOffs
 
   /// Hack so the robot can always walk to the ball if it is on the goal line
   if(theRobotPose.translation.x() < theFieldDimensions.xPosOwnPenaltyArea
-     && targetOnField.x() < theFieldDimensions.xPosOwnGroundLine && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftGoal)
+     && targetOnField.x() < theFieldDimensions.xPosOwnGoalLine && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftGoal)
   {
     if(targetOnField.y() > theFieldDimensions.yPosLeftGoal - 250.f && theRobotPose.translation.y() > targetOnField.y())
       newAvoidanceAngleOffset = angleOffsetLeft;

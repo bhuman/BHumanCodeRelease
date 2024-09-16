@@ -1,20 +1,34 @@
 /**
  * The file declares a representation that describes the image grid that should be scanned.
  * @author Thomas Röfer
+ * @author Lukas Malte Monnerjahn
  */
 
 #include "ScanGrid.h"
 #include "Debugging/DebugDrawings.h"
 
+void ScanGrid::clear()
+{
+  fullResY.clear();
+  lowResHorizontalLines.clear();
+  verticalLines.clear();
+}
+
+bool ScanGrid::isValid() const
+{
+  return !fullResY.empty() && !lowResHorizontalLines.empty() && !verticalLines.empty() && fieldLimit >= 0;
+}
+
 void ScanGrid::draw() const
 {
   DEBUG_DRAWING("representation:ScanGrid", "drawingOnImage")
   {
-    for(const Line& line : lines)
+    for(const Line& verticalLine : verticalLines)
     {
-      for(auto i = y.begin() + line.yMaxIndex; i != y.end(); ++i)
+      for(auto it = lowResHorizontalLines.cbegin() + verticalLine.lowResYMaxIndex; it != lowResHorizontalLines.cend(); ++it)
       {
-        LINE("representation:ScanGrid", line.x, *i - 1, line.x, *i, 2, Drawings::solidPen, ColorRGBA::blue);
+        if(verticalLine.x >= it->left && verticalLine.x < it->right)
+          LINE("representation:ScanGrid", verticalLine.x, it->y - 1, verticalLine.x, it->y, 2, Drawings::solidPen, ColorRGBA::blue);
       }
     }
   }

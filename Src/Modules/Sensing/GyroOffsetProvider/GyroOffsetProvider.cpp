@@ -79,12 +79,12 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
         break;
       }
       // Sampling
-      if(lastGyroStateUpdate + theGyroState.filterTimeWindow < theGyroState.timestamp)
+      if(lastGyroStateUpdate + theIMUValueState.filterTimeWindow < theIMUValueState.timestamp)
       {
-        lastGyroStateUpdate = theGyroState.timestamp;
-        gyroMeanX.push_front(theGyroState.mean.x());
-        gyroMeanY.push_front(theGyroState.mean.y());
-        gyroMeanZ.push_front(theGyroState.mean.z());
+        lastGyroStateUpdate = theIMUValueState.timestamp;
+        gyroMeanX.push_front(theIMUValueState.gyroValues.mean.x());
+        gyroMeanY.push_front(theIMUValueState.gyroValues.mean.y());
+        gyroMeanZ.push_front(theIMUValueState.gyroValues.mean.z());
       }
       // We did enough sampling
       if(gyroMeanX.full())
@@ -95,7 +95,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
     {
       // check if for the windows of the last 333ms and the last 666-999ms, the gyro deviation was small enough
       // use filer window * 3 + some safe offset, in case sensor data was lost
-      if(theFrameInfo.getTimeSince(theGyroState.gyroNotChangingSinceTimestamp) > theGyroState.filterTimeWindow * 3 + 100)
+      if(theFrameInfo.getTimeSince(theIMUValueState.gyroValues.deviationNotChangingSinceTimestamp) > theIMUValueState.filterTimeWindow * 3 + 100)
       {
         gyroOffset.offset.x() = std::abs(gyroMeanX[1]) > thresholdZero ? std::abs(gyroMeanX[1]) : 0;
         gyroOffset.offset.y() = std::abs(gyroMeanY[1]) > thresholdZero ? std::abs(gyroMeanY[1]) : 0;
@@ -140,14 +140,14 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
 
 void GyroOffsetProvider::checkBodyDisconnection(GyroOffset& gyroOffset)
 {
-  if(lastGyroChange == 0 || lastGyros != theInertialData.gyro
-     || (bodyDisconnectGyroRange.isInside(theInertialData.gyro.x()) &&
-         bodyDisconnectGyroRange.isInside(theInertialData.gyro.y()) &&
-         bodyDisconnectGyroRange.isInside(theInertialData.gyro.z())))
+  if(lastGyroChange == 0 || lastGyros != theRawInertialSensorData.gyro
+     || (bodyDisconnectGyroRange.isInside(theRawInertialSensorData.gyro.x()) &&
+         bodyDisconnectGyroRange.isInside(theRawInertialSensorData.gyro.y()) &&
+         bodyDisconnectGyroRange.isInside(theRawInertialSensorData.gyro.z())))
   {
     if(gyroStuckTimestamp > theFrameInfo.time) // in case we are in a log file
       gyroStuckTimestamp = theFrameInfo.time - bodyDisconnectWaitTime;
-    lastGyros = theInertialData.gyro,
+    lastGyros = theRawInertialSensorData.gyro,
     lastGyroChange = theFrameInfo.time;
     gyroOffset.bodyDisconnect = theFrameInfo.getTimeSince(gyroStuckTimestamp) < bodyDisconnectWaitTime;
   }
@@ -158,10 +158,14 @@ void GyroOffsetProvider::checkBodyDisconnection(GyroOffset& gyroOffset)
     if(SystemCall::getMode() == SystemCall::physicalRobot && theFrameInfo.getTimeSince(gyroStuckSoundTimestamp) > bodyDisconnectWaitTime)
     {
       gyroStuckSoundTimestamp = theFrameInfo.time;
-      ANNOTATION("GyroOffsetProvider", "No body connection for " << theFrameInfo.getTimeSince(lastGyroChange) << "ms");
-      SystemCall::playSound("sirene.wav", true);
-      SystemCall::say((std::string("Body disconnect ") + TypeRegistry::getEnumName(theGameState.color()) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
-      OUTPUT_ERROR("Body Disconnect!");
+      // This detection should no longer be necessary. TODO Delete it after last competition 2025?
+      if(theMotionRobotHealth.frameLostStatus != RobotHealth::bodyDisconnect)
+      {
+        ANNOTATION("GyroOffsetProvider", "Module detected a body disconnect that MotionRobotHealth did not detect!");
+        SystemCall::playSound("sirene.wav", true);
+        SystemCall::say((std::string("GyroOffsetProvider Body disconnect ") + TypeRegistry::getEnumName(theGameState.color()) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
+        OUTPUT_ERROR("GyroOffsetProvider Body Disconnect!");
+      }
     }
   }
 }

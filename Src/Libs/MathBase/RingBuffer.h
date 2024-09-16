@@ -24,13 +24,19 @@ private:
 
 public:
   /** A class for iterators with its typical interface. */
-  class iterator : public std::iterator<std::forward_iterator_tag, T>
+  class iterator
   {
   private:
     RingBuffer<T, n>& buffer; /**< The buffer. */
     std::size_t index; /**< Index of the current entry. */
 
   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
+
     iterator(RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
     iterator(const iterator& other) : iterator(other.buffer, other.index) {}
     iterator& operator=(const iterator& other) {return *new(this) iterator(other.buffer, other.index);}
@@ -47,13 +53,19 @@ public:
   };
 
   /** A class for constant iterators with its typical interface. */
-  class const_iterator : public std::iterator<std::forward_iterator_tag, T>
+  class const_iterator
   {
   private:
     const RingBuffer<T, n>& buffer; /**< The buffer. */
     std::size_t index; /**< Index of the current entry. */
 
   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const T*;
+    using reference = const T&;
+
     const_iterator(const RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
     const_iterator(const const_iterator& other) : const_iterator(other.buffer, other.index) {}
     const_iterator& operator=(const const_iterator& other) {return *new(this) const_iterator(other.buffer, other.index);}

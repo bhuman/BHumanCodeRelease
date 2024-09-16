@@ -55,7 +55,7 @@ void JointSpeedRegulator::update(const SpeedRegulatorParams& srp, const float cu
       {
         const Rangea& useMaxSpeed = getMaxSpeed(joint);
         // Left is support -> moving leg to the left is always allowed (robot walks right)
-        // Right is supprot -> moving leg to the right is always allowed (robot walks to the left)
+        // Right is support -> moving leg to the right is always allowed (robot walks to the left)
         this->at(joint).max += (joint == Joints::lHipRoll || joint == Joints::rAnkleRoll) ? useMaxSpeed.max : Angle(useMaxSpeed.max * (1.f - ratioRoll) + useMaxSpeed.min * ratioRoll);
         this->at(joint).min -= (joint == Joints::lAnkleRoll || joint == Joints::rHipRoll) ? useMaxSpeed.max : Angle(useMaxSpeed.max * (1.f - ratioRoll) + useMaxSpeed.min * ratioRoll);
       }

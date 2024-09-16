@@ -22,7 +22,7 @@ WalkLearnerProvider::WalkLearnerProvider()
   phaseLearn = 0;
   learnIteration = 0;
   isForwardPhase = false;
-  wasPositiv = false;
+  wasPositive = false;
 }
 
 void WalkLearnerProvider::update(WalkLearner& walkLearner)
@@ -66,22 +66,22 @@ void WalkLearnerProvider::learnGyroBalanceFactor(WalkLearner&)
     gyroBackwardMin = std::vector<float>(theWalkModifier.numOfGyroPeaks, 0.f);
     learnIteration = 0;
     isForwardPhase = true;
-    wasPositiv = true;
+    wasPositive = true;
   }
 
   //If numOfGyro is > 0 and the robot walks over 100mm/s, then go into the learning part
   if(theWalkModifier.numOfGyroPeaks > 0 && speed > 25.f)
   {
-    //We are sampling over the positiv gyro peaks
-    if(isForwardPhase && wasPositiv)
+    //We are sampling over the positive gyro peaks
+    if(isForwardPhase && wasPositive)
     {
       if(theInertialData.gyro.y() > gyroForwardMax[learnIteration])
         gyroForwardMax[learnIteration] = theInertialData.gyro.y();
       else if(theInertialData.gyro.y() < 0.f)
         isForwardPhase = !isForwardPhase;
     }
-    //We are sampling over the negativ gyro peaks
-    else if(!isForwardPhase && !wasPositiv)
+    //We are sampling over the negative gyro peaks
+    else if(!isForwardPhase && !wasPositive)
     {
       if(theInertialData.gyro.y() < gyroBackwardMin[learnIteration])
         gyroBackwardMin[learnIteration] = theInertialData.gyro.y();
@@ -90,10 +90,10 @@ void WalkLearnerProvider::learnGyroBalanceFactor(WalkLearner&)
       if(learnIteration + 1 <= theWalkModifier.numOfGyroPeaks && isForwardPhase)
         learnIteration += 1;
     }
-    //This is needed to be sure, that we collect a negativ gyro peak after a positiv gyro peak was collected and the
+    //This is needed to be sure, that we collect a negative gyro peak after a positive gyro peak was collected and the
     //sign has changed. Same vice versa.
     else
-      wasPositiv = (isForwardPhase && theInertialData.gyro.y() > 0.f) || (!isForwardPhase && theInertialData.gyro.y() < 0.f) ? !wasPositiv : wasPositiv;
+      wasPositive = (isForwardPhase && theInertialData.gyro.y() > 0.f) || (!isForwardPhase && theInertialData.gyro.y() < 0.f) ? !wasPositive : wasPositive;
     //We collected enough gyro peaks. Rate them and adjust gyroBalanceFactor
     if(learnIteration >= theWalkModifier.numOfGyroPeaks)
     {

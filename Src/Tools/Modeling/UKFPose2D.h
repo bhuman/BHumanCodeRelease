@@ -58,17 +58,26 @@ protected:
   void generateSigmaPoints();
 
   /** Pose update based on the measurement of a perceived landmark
-  * @param landmarkPosition The model position of the landmark (in absolute field coordinates)
-  * @param reading The position of the measured landmark (in coordinates relative to the robot)
-  * @param readingCov The covariance of the measurement
-  */
+   * @param landmarkPosition The model position of the landmark (in absolute field coordinates)
+   * @param reading The position of the measured landmark (in coordinates relative to the robot)
+   * @param readingCov The covariance of the measurement
+   */
   void landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vector2f& reading, const Matrix2f& readingCov);
 
-  void lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2f& readingCov);
+  /** Pose update based on the measurement of a perceived line
+   * @param lineIsParallelToWorldModelXAxis Flag. Set this to "true", if the perceived line is assumed to be parallel to the field's x-axis (given a previous registration process).
+   *                 In this case, only the robot's y-coordinate as well as its rotation can be updated. If this flag is set to false,
+   *                 only the robot's x-coordinate as well as its rotation can be updated, as the line is assumed to be parallel the field's halfway line (y-axis).
+   *                 We assume that there are no major diagonal lines on a football pitch.
+   * @param reading The first element of this vector is a measured coordinate on the field.
+   *                If lineIsParallelToWorldModelXAxis is set to true, it is a y-coordinate, an x-coordinate otherwise. The second component is always a measured rotation.
+   * @param readingCov The covariance of the measurement/reading
+   */
+  void lineSensorUpdate(bool lineIsParallelToWorldModelXAxis, const Vector2f& reading, const Matrix2f& readingCov);
 
   /** Pose update based on the (somehow virtual) absolute measurement of the own pose
-  * @param reading The measured pose (in absolute field coordinates)
-  * @param readingCov The covariance of the measurement (based on the relative measurement of some features indicating the absolute pose)
-  */
+   * @param reading The measured pose (in absolute field coordinates)
+   * @param readingCov The covariance of the measurement (based on the relative measurement of some features indicating the absolute pose)
+   */
   void poseSensorUpdate(const Vector3f& reading, const Matrix3f& readingCov);
 };

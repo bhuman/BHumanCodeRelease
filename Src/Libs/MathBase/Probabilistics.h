@@ -15,14 +15,14 @@
 #include <cmath>
 #include <algorithm>
 
-/** constant for an expression used by the gaussian function*/
+/** constant for an expression used by the Gaussian function*/
 const float sqrt2pi = std::sqrt(2.0f * pi);
 
 /** constant for sqrt(2) */
 const float sqrt2 = std::sqrt(2.f);
 
 /**
- * Returns the probability of a value in a gaussian distribution
+ * Returns the probability of a value in a Gaussian distribution
  * @param x The value
  * @param s The standard deviation
  * @return The probability density at x
@@ -59,17 +59,14 @@ inline bool twoDimSquareEquation(Vector2f& mean, Matrix2f& covariance, const Vec
 {
   //multidimensional square equation (german: "Multidimensionale quadratische Ausgleichsrechnung" aus dem Skript
   //"Theorie der Sensorfusion")
-  const Eigen::Matrix<float, 4, 2> A = (Eigen::Matrix<float, 4, 2>() << Matrix2f::Identity(), Matrix2f::Identity()).finished();
-  const Eigen::Matrix<float, 2, 4> AT = A.transpose();
-  const Eigen::Matrix4f Sigma = ((Eigen::Matrix4f() << covariance, Matrix2f::Zero(), Matrix2f::Zero(), covariance2).finished());
-  if(Sigma.determinant() == 0)
+  if(covariance.determinant() == 0.f || covariance2.determinant() == 0.f)
     return false;
 
-  const Eigen::Matrix<float, 4, 4> SigmaInv = Sigma.inverse();
-  const Eigen::Vector4f z = (Eigen::Vector4f() << mean, mean2).finished();
-  covariance = ((AT * SigmaInv) * A).inverse();
+  const Matrix2f information = covariance.inverse();
+  const Matrix2f information2 = covariance2.inverse();
+  covariance = (information + information2).inverse();
   Covariance::fixCovariance<2>(covariance);
-  mean = covariance * AT * SigmaInv * z;
+  mean = covariance * (information * mean + information2 * mean2);
   ASSERT(mean.allFinite());
   ASSERT(covariance.allFinite());
   return true;

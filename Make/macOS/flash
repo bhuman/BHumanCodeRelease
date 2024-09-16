@@ -1,0 +1,86 @@
+#!/bin/bash
+# flash <opn file>
+# Writes an operating system image to a USB drive.
+# It is only allowed to connect a single USB drive to the
+# computer. The script will detect the drive automatically.
+
+usage() {
+  >&2 echo "usage: $0 <source image>"
+}
+
+if [ $# -ne 1 ]; then
+  usage
+  exit 2
+fi
+
+if [ $(uname) == "Darwin" -a "$UID" != 0 ]; then
+  sudo "$0" "$@"
+  exit $?
+fi
+
+SOURCE_IMAGE="$1"
+
+if [ ! -f "${SOURCE_IMAGE}" ]; then
+  >&2 echo "Error: Source image is not a regular file."
+  exit 10
+fi
+
+if [ ! $(head -c 8 "${SOURCE_IMAGE}") == "ALDIMAGE" ]; then
+  >&2 echo "Error: Source image does not have ALDIMAGE signature."
+  exit 11
+fi
+
+# Find all suitable drives
+INFO="$(diskutil list external physical | grep '^ *0:' | sed -e 's%^[^*]*\*%%' -e 's%^\(.*B\) *\(.*\)%/dev/\2 (\1)%')"
+DEVICE=$(sed 's% .*%%' <<<"$INFO")
+NUM_LINES=$(echo "$DEVICE" | wc -l)
+
+# If there are more than 1 line, print an error message and exit
+if [[ $NUM_LINES -gt 1 ]]; then
+  >&2 echo "Error: Multiple drives are inserted. Please only insert a single USB drive."
+  exit 11
+fi
+
+# An example of a device name is /dev/disk2
+if [[ $DEVICE != *"dev"* ]]; then
+  >&2 echo "Error: No drive detected."
+  exit 12
+fi
+
+echo "Detected drive $INFO"
+
+INFO="$(diskutil information "${DEVICE}" 2>/dev/null)"
+DEVICE_SIZE="$(grep <<<"$INFO" '^ *Disk Size:' | sed 's%[^(]*(\([0-9]*\).*%\1%')"
+IMAGE_SIZE=$(stat -f%z "${SOURCE_IMAGE}")
+
+if [ "${DEVICE_SIZE}" -lt "${IMAGE_SIZE}" ]; then
+  >&2 echo "Error: The drive is too small."
+  exit 13
+fi
+
+echo "Should the firmware be written to that drive (y/N)?"
+read ANSWER
+
+if [ "${ANSWER}" != "y" -a "${ANSWER}" != "Y" ]; then
+  exit 1
+fi
+
+# Unmount drive if it is still mounted
+DEVICE_MOUNTPOINT="$(mount | grep "^${DEVICE}[^0-9]")"
+if [ "${DEVICE_MOUNTPOINT}" != "" ]; then
+  diskutil unmountDisk "$DEVICE"
+  if [ $? -ne 0 ]; then
+    >&2 echo "Error: Could not unmount drive."
+    exit 14
+  fi
+fi
+
+# Write image
+dd if="${SOURCE_IMAGE}" of="${DEVICE}" status=progress bs=1M oflag=sync
+if [ $? -ne 0 ]; then
+  >&2 echo "Error: Could not transfer image to drive."
+  exit 15
+fi
+
+echo "Flashing ${SOURCE_IMAGE} to ${DEVICE} is done."
+exit 0

@@ -34,7 +34,6 @@ class OdometerProvider : public OdometerProviderBase
 {
 private:
   Pose2f lastOdometryData; /**< Odometry data in last frame */
-  Matrix3f covariance;
 
   /**
    * The method that computes the odometry information
@@ -42,6 +41,4 @@ private:
    * @param odometer The odometry information that is updated by this module.
    */
   void update(Odometer& odometer) override;
-
-  void draw();
 };

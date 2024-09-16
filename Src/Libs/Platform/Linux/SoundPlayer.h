@@ -83,12 +83,13 @@ struct SoundRequest
   bool isTextToSpeech = false;
   float ttsDurationStretchFactor = 0.f;
   std::string fileOrText;
+  bool mute;
   SoundRequest() = default;
-  explicit SoundRequest(const std::string& fileName)
-  : fileOrText(fileName)
+  explicit SoundRequest(const std::string& fileName, bool mute)
+  : fileOrText(fileName), mute(mute)
   {}
-  SoundRequest(const std::string& text, float stretchFactor)
-  : isTextToSpeech(true), ttsDurationStretchFactor(stretchFactor), fileOrText(text)
+  SoundRequest(const std::string& text, bool mute, float stretchFactor)
+  : isTextToSpeech(true), ttsDurationStretchFactor(stretchFactor), fileOrText(text), mute(mute)
   {}
 };
 
@@ -109,29 +110,32 @@ private:
 
   snd_pcm_t* handle;
 
-  unsigned retries = 10;      /**< Number of tries to open device. */
-  unsigned retryDelay = 500;  /**< Delay before a retry to open device. */
+  static constexpr unsigned retries = 10; /**< Number of tries to open device. */
+  static constexpr unsigned retryDelay = 500; /**< Delay before a retry to open device. */
   unsigned sampleRate = 16000; /**< Sample rate to playback. This variable will contain the frame rate the driver finally selected. */
-  snd_pcm_uframes_t periodSize = 512; /**< Frames per period. */
-  const float textToSpeechVolumeFactor = 1.4f; /**< Increase text to speech volume by this factor (1.5 seems to be too high, results in cracking noise)  */
+  snd_pcm_uframes_t periodSize = 2048; /**< Frames per period. */
+
+  static constexpr float textToSpeechVolumeFactor = 1.4f; /**< Increase text to speech volume by this factor (1.5 seems to be too high, results in cracking noise)  */
 
 public:
   /**
    * Put a filename into play sound queue.
    * If you want to play Config/Sounds/bla.wav use play("bla.wav");
    * @param name The filename of the sound file.
+   * @param mute Mute the output.
    * @return The amount of elements in play sound queue.
    */
-  static int play(const std::string& name);
+  static int play(const std::string& name, bool mute = false);
 
   /**
    * Put a string to be synthesized to speech into play sound queue.
    * If you want the robot to say "Hello" use say("Hello").
-   * @param text The string to be synthesized and played
+   * @param text The string to be synthesized and played.
+   * @param mute Mute the output.
    * @param speed Use speed < 1 to talk slower and speed > 1 to talk faster.
    * @return The amount of elements in the play sound queue.
    */
-  static int say(const std::string& text, float speed = 1.f);
+  static int say(const std::string& text, bool mute = false, float speed = 1.f);
 
   static bool isPlaying();
 
@@ -169,8 +173,8 @@ private:
 class SoundPlayer
 {
 public:
-  static int play(const std::string&) { return 0; }
-  static int say(const std::string&, float = 1.f) { return 0; }
+  static int play(const std::string&, bool = false) { return 0; }
+  static int say(const std::string&, bool = false, float = 1.f) { return 0; }
   static bool isPlaying() { return false; }
 };
 

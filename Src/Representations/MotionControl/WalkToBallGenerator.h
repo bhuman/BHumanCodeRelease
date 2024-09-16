@@ -1,7 +1,7 @@
 /**
- * @file WalkToBallAndKickGenerator.h
+ * @file WalkToBallGenerator.h
  *
- * This file declares a representation that can create phases to walk to the ball and kick.
+ * This file declares a representation that can create phases to walk to the ball.
  *
  * @author Arne Hasselbring
  */
@@ -16,6 +16,7 @@
 
 STREAMABLE(WalkToBallGenerator,
 {
-  FUNCTION(std::unique_ptr<MotionPhase>(const Pose2f& targetInSCS, const Vector2f& ballInSCS, const int timeSinceBallWasSeen, const float distanceToBall, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
+  FUNCTION(std::unique_ptr<MotionPhase>(const Pose2f& targetInSCS, const Vector2f& ballInSCS, const int timeSinceBallWasSeen,
+                                        const Pose2f& scsCognition, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                         const Pose2f& walkSpeed, const MotionPhase& lastPhase)) createPhase,
 });

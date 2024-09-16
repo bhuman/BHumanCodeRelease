@@ -18,7 +18,6 @@
 
 #include "PerceptRegistrationProvider.h"
 
-
 MAKE_MODULE(PerceptRegistrationProvider);
 
 PerceptRegistrationProvider::PerceptRegistrationProvider()
@@ -53,26 +52,26 @@ PerceptRegistrationProvider::PerceptRegistrationProvider()
 
   // Initialize lists for intersections in the world model
   // X
-  xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfWayLine, theFieldDimensions.centerCircleRadius));
-  xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfWayLine, -theFieldDimensions.centerCircleRadius));
+  xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, theFieldDimensions.centerCircleRadius));
+  xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, -theFieldDimensions.centerCircleRadius));
   // T
   tIntersectionsWorld = xIntersectionsWorld;
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfWayLine, theFieldDimensions.yPosRightSideline));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfWayLine, theFieldDimensions.yPosLeftSideline));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftPenaltyArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightPenaltyArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftGoalArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightGoalArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftPenaltyArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightPenaltyArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoalArea));
-  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoalArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, theFieldDimensions.yPosRightTouchline));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, theFieldDimensions.yPosLeftTouchline));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftPenaltyArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightPenaltyArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftGoalArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightGoalArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftPenaltyArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightPenaltyArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoalArea));
+  tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoalArea));
   // L
   lIntersectionsWorld = tIntersectionsWorld;
-  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightSideline));
-  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline));
-  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline));
-  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftSideline));
+  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline));
+  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline));
+  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline));
+  lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftTouchline));
   lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea));
   lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea));
   lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea));
@@ -91,8 +90,8 @@ PerceptRegistrationProvider::PerceptRegistrationProvider()
 
   // Compute deviations
   // If we see false positive center circles, they are sometimes seen in large corners.
-  // The closest constellation is near the crossing of the centerline and the side line:
-  Vector2f posOfClosestPotentialFalsePositiveCenterCircle(theFieldDimensions.centerCircleRadius, theFieldDimensions.yPosLeftSideline - theFieldDimensions.centerCircleRadius);
+  // The closest constellation is near the crossing of the halfway line and the touchline:
+  Vector2f posOfClosestPotentialFalsePositiveCenterCircle(theFieldDimensions.centerCircleRadius, theFieldDimensions.yPosLeftTouchline - theFieldDimensions.centerCircleRadius);
   maxCenterCircleDeviation = posOfClosestPotentialFalsePositiveCenterCircle.norm();
   maxCenterCircleDeviation *= 0.8f; // Some additional tolerance
   maxGoalPostDeviation = 2.f * theFieldDimensions.yPosLeftGoal / 3.f; // One third of the total goal width
@@ -138,11 +137,16 @@ void PerceptRegistrationProvider::preprocessMeasurements(PerceptRegistration& pe
     perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
   if(theCenterCircleWithLine.isValid)
     perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
+  if(thePenaltyAreaAndGoalArea.isValid)
+    perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
   // --- Landmarks:
   if(thePenaltyMarkPercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
   if(theCirclePercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
+  for(auto const& goalPost : theGoalPostsPercept.goalPosts)
+    if(goalPost.baseInImage)
+      perceptRegistration.totalNumberOfAvailableLandmarks++;
   perceptRegistration.totalNumberOfAvailableLandmarks += static_cast<int>(theFieldLineIntersections.intersections.size());
   // --- Lines:
   perceptRegistration.totalNumberOfAvailableLines = static_cast<int>(theFieldLines.lines.size());
@@ -152,6 +156,7 @@ void PerceptRegistrationProvider::registerAbsolutePoseMeasurements(const Pose2f&
 {
   registerSingleAbsolutePoseMeasurement(pose, thePenaltyMarkWithPenaltyAreaLine, absolutePoseMeasurements);
   registerSingleAbsolutePoseMeasurement(pose, theCenterCircleWithLine, absolutePoseMeasurements);
+  registerSingleAbsolutePoseMeasurement(pose, thePenaltyAreaAndGoalArea, absolutePoseMeasurements);
 }
 
 void PerceptRegistrationProvider::registerSingleAbsolutePoseMeasurement(const Pose2f& pose, const FieldFeature& measurement, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements)
@@ -233,13 +238,29 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
     const auto& intersection = theFieldLineIntersections.intersections[i];
     Vector2f intersectionInWorldModel;
     bool intersectionFound = useIntersectionDirections ? getCorrespondingIntersection(pose, intersection, intersectionInWorldModel)
-                                                       : getCorrespondingIntersectionNoDirections(pose, intersection, intersectionInWorldModel);
+                             : getCorrespondingIntersectionNoDirections(pose, intersection, intersectionInWorldModel);
     if(intersectionFound)
     {
       RegisteredLandmark newLandmark;
       newLandmark.model = intersectionInWorldModel;
       newLandmark.percept = intersection.pos;
       newLandmark.covPercept = intersection.cov;
+      landmarks.push_back(newLandmark);
+    }
+  }
+  // Register goal posts: I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I
+  for(unsigned int i = 0; i < theGoalPostsPercept.goalPosts.size(); ++i)
+  {
+    const auto& goalPost = theGoalPostsPercept.goalPosts[i];
+    if(!goalPost.baseInImage)
+      continue;
+    Vector2f goalPostInWorldModel;
+    if(getCorrespondingGoalPost(pose, goalPost.positionOnField, goalPostInWorldModel))
+    {
+      RegisteredLandmark newLandmark;
+      newLandmark.model = goalPostInWorldModel;
+      newLandmark.percept = goalPost.positionOnField;
+      newLandmark.covPercept = goalPost.covarianceOnField;
       landmarks.push_back(newLandmark);
     }
   }
@@ -268,7 +289,7 @@ void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<
         // The world model is just used for drawing, create a fake line from the center
         // of the perceived line to the center circle.
         const Vector2f fakeLineStartInWorld(pose * ((line.first + line.last) * 0.5f));
-        const Vector2f fakeLineEndInWorld(0.f,0.f);
+        const Vector2f fakeLineEndInWorld(0.f, 0.f);
         RegisteredLine newLine(line.first, line.last, fakeLineStartInWorld, fakeLineEndInWorld, line.cov, true);
         lines.push_back(newLine);
       }
@@ -293,7 +314,7 @@ bool PerceptRegistrationProvider::getCorrespondingGoalPost(const Pose2f& pose, c
 {
   const Vector2f goalPostInWorld = pose * goalPostPercept;
   const Vector2f* listOfGoalPosts = goalPostInWorld.x() > 0.f ? &opponentGoalPostsWorldModel[0] : &ownGoalPostsWorldModel[0];
-  for(int i=0; i<2; i++)
+  for(int i = 0; i < 2; i++)
   {
     if((listOfGoalPosts[i] - goalPostInWorld).norm() <= maxGoalPostDeviation)
     {
@@ -316,10 +337,18 @@ bool PerceptRegistrationProvider::getCorrespondingIntersection(const Pose2f& pos
     int section = intersectionDirectionTo90DegreeSection(pose, intersectionPercept.dir1);
     switch(section)
     {
-      case 0:   intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner0];   break;
-      case 90:  intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner90];  break;
-      case 180: intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner180]; break;
-      default:  intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner270]; break;
+      case 0:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner0];
+        break;
+      case 90:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner90];
+        break;
+      case 180:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner180];
+        break;
+      default:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::tCorner270];
+        break;
     }
   }
   else if(intersectionPercept.type == FieldLineIntersections::Intersection::L)
@@ -327,10 +356,18 @@ bool PerceptRegistrationProvider::getCorrespondingIntersection(const Pose2f& pos
     int section = intersectionDirectionTo90DegreeSection(pose, intersectionPercept.dir1);
     switch(section)
     {
-      case 0:   intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner0];   break;
-      case 90:  intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner90];  break;
-      case 180: intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner180]; break;
-      default:  intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner270]; break;
+      case 0:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner0];
+        break;
+      case 90:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner90];
+        break;
+      case 180:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner180];
+        break;
+      default:
+        intersectionList = &theFieldDimensions.corners[FieldDimensions::lCorner270];
+        break;
     }
   }
   if(intersectionList != 0)
@@ -451,14 +488,14 @@ PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pos
       continue;
     // Not other conditions implemented yet. Some more might be added later (see old implementation).
     // ...
-    // Check association of perceived line to center line. Often, short schniptzels of the center circle
-    // become falsely associated to the center line, causing a translational error in the self-localization.
-    // Thus, any perceived center line must be longer than the center circle diameter, if it was perceived
+    // Check association of perceived line to halfway line. Often, short schniptzels of the center circle
+    // become falsely associated to the halfway line, causing a translational error in the self-localization.
+    // Thus, any perceived halfway line must be longer than the center circle diameter, if it was perceived
     // from a distance that is larger than the diameter.
     // Please note that these are just frickelparameters, but I do not think that we should
     // add some separate parameters to the module.
     const float diameter = 2.f * theFieldDimensions.centerCircleRadius;
-    if(worldModelLine.isCenterLine && lineLength < diameter &&
+    if(worldModelLine.isHalfwayLine && lineLength < diameter &&
        start.norm() > diameter && end.norm() > diameter)
     {
       return nullptr;

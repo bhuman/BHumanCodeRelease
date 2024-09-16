@@ -1,58 +1,194 @@
 /**
  * @file KeyFrameArms.cpp
  *
- * This file implements the implementation of the KeyFrameArms
- * and KeyFrameSingleArm skills.
+ * This file implements the KeyFrameArms and KeyFrameSingleArm skills.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/ArmMotionInfo.h"
-#include "Representations/MotionControl/ArmMotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(KeyFrameArmsImpl,
-{,
-  IMPLEMENTS(KeyFrameArms),
-  IMPLEMENTS(KeyFrameSingleArm),
-  REQUIRES(ArmMotionInfo),
-  MODIFIES(ArmMotionRequest),
-});
-
-class KeyFrameArmsImpl : public KeyFrameArmsImplBase
+option((SkillBehaviorControl) KeyFrameArms,
+       args((ArmKeyFrameRequest::ArmKeyFrameId) motion,
+            (Arms::Arm) arm,
+            (bool) fast))
 {
-  void execute(const KeyFrameArms& p) override
+  initial_state(decideArm)
   {
-    setRequest(p.motion, Arms::left, p.fast);
-    setRequest(p.motion, Arms::right, p.fast);
+    transition
+    {
+      if(arm == Arms::numOfArms)
+        goto both;
+      else if(arm == Arms::left)
+        goto left;
+      else
+        goto right;
+    }
   }
 
-  bool isDone(const KeyFrameArms& p) const override
+  state(both)
   {
-    return requestIsExecuted(p.motion, Arms::left) && requestIsExecuted(p.motion, Arms::right);
+    transition
+    {
+      if(arm == Arms::left)
+        goto left;
+      else if(arm == Arms::right)
+        goto right;
+      else if(action_done)
+        goto waitForLeft;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = motion,
+                       .fast = fast});
+      KeyFrameRightArm({.motion = motion,
+                        .fast = fast});
+    }
   }
 
-  void execute(const KeyFrameSingleArm& p) override
+  state(waitForLeft)
   {
-    setRequest(p.motion, p.arm, p.fast);
+    transition
+    {
+      if(arm == Arms::left)
+        goto left;
+      else if(arm == Arms::right)
+        goto rightDone;
+      else if(action_done)
+        goto bothDone;
+    }
+    action
+    {
+      KeyFrameRightArm({.motion = motion,
+                        .fast = fast});
+      KeyFrameLeftArm({.motion = motion,
+                       .fast = fast});
+    }
   }
 
-  bool isDone(const KeyFrameSingleArm& p) const override
+  target_state(bothDone)
   {
-    return requestIsExecuted(p.motion, p.arm);
+    transition
+    {
+      if(arm == Arms::left)
+        goto leftDone;
+      else if(arm == Arms::right)
+        goto rightDone;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = motion,
+                       .fast = fast});
+      KeyFrameRightArm({.motion = motion,
+                        .fast = fast});
+    }
   }
 
-  void setRequest(ArmKeyFrameRequest::ArmKeyFrameId motion, Arms::Arm arm, bool fast)
+  state(left)
   {
-    theArmMotionRequest.armMotion[arm] = ArmMotionRequest::keyFrame;
-    theArmMotionRequest.armKeyFrameRequest.arms[arm].motion = motion;
-    theArmMotionRequest.armKeyFrameRequest.arms[arm].fast = fast;
+    transition
+    {
+      if(arm == Arms::numOfArms)
+        goto both;
+      else if(arm == Arms::right)
+        goto right;
+      else if(action_done)
+        goto leftDone;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = motion,
+                       .fast = fast});
+    }
   }
 
-  bool requestIsExecuted(ArmKeyFrameRequest::ArmKeyFrameId motion, Arms::Arm arm) const
+  target_state(leftDone)
   {
-    return theArmMotionInfo.isKeyframeMotion(arm, motion);
+    transition
+    {
+      if(arm == Arms::numOfArms)
+        goto both;
+      else if(arm == Arms::right)
+        goto right;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = motion,
+                       .fast = fast});
+    }
   }
-};
 
-MAKE_SKILL_IMPLEMENTATION(KeyFrameArmsImpl);
+  state(right)
+  {
+    transition
+    {
+      if(arm == Arms::numOfArms)
+        goto both;
+      else if(arm == Arms::left)
+        goto left;
+      else if(action_done)
+        goto rightDone;
+    }
+    action
+    {
+      KeyFrameRightArm({.motion = motion,
+                        .fast = fast});
+    }
+  }
+
+  target_state(rightDone)
+  {
+    transition
+    {
+      if(arm == Arms::numOfArms)
+        goto both;
+      else if(arm == Arms::left)
+        goto left;
+    }
+    action
+    {
+      KeyFrameRightArm({.motion = motion,
+                        .fast = fast});
+    }
+  }
+}
+
+option((SkillBehaviorControl) KeyFrameLeftArm,
+       args((ArmKeyFrameRequest::ArmKeyFrameId) motion,
+            (bool) fast))
+{
+  theArmMotionRequest.armMotion[Arms::left] = ArmMotionRequest::keyFrame;
+  theArmMotionRequest.armKeyFrameRequest.arms[Arms::left].motion = motion;
+  theArmMotionRequest.armKeyFrameRequest.arms[Arms::left].fast = fast;
+
+  initial_state(execute)
+  {
+    transition
+    {
+      if(theArmMotionInfo.isKeyframeMotion(Arms::left, motion))
+        goto done;
+    }
+  }
+
+  target_state(done) {}
+}
+
+option((SkillBehaviorControl) KeyFrameRightArm,
+       args((ArmKeyFrameRequest::ArmKeyFrameId) motion,
+            (bool) fast))
+{
+  theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::keyFrame;
+  theArmMotionRequest.armKeyFrameRequest.arms[Arms::right].motion = motion;
+  theArmMotionRequest.armKeyFrameRequest.arms[Arms::right].fast = fast;
+
+  initial_state(execute)
+  {
+    transition
+    {
+      if(theArmMotionInfo.isKeyframeMotion(Arms::right, motion))
+        goto done;
+    }
+  }
+
+  target_state(done) {}
+}

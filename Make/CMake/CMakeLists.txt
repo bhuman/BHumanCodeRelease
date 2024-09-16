@@ -1,3 +1,26 @@
+# This file is either used to build the B-Human system or to generate project files for
+# either Microsoft Visual Studio or Apple Xcode. While the generated Xcode project can
+# build all targets using Xcode's build system, Visual Studio only builds for Windows and
+# uses CMake to cross-compile for the NAO robot. As a result, this file is used twice on
+# Windows and Linux, once to either generate the project or to build for that platform
+# and a second time with the symbol BUILD_NAO set to cross-compile for the NAO. As the
+# Windows Subsystem for Linux is used for cross-compilation on Windows, cross-compilation
+# only takes place with either Linux or macOS build tools. As Xcode is used directly for
+# cross-compilation, a section of this build file basically duplicates most of the
+# project generation and includes several subprojects a second time, but appends "Nao" to
+# the names of the build targets. The symbol TARGET_SUFFIX is used for this.
+#
+# This file defines the following custom symbols to distinguish between the different
+# operating systems and target architectures:
+# LINUX, MACOS, WINDOWS: Boolean values for use in conditions. These describe the
+#                        operating system the project is built on.
+# X86, ARM:              Boolean values for use in conditions. These describe the
+#                        processor architecture the code is built for.
+# PLATFORM:              The name of the target OS ("Linux", "macOS", "Windows") for use
+#                        in path names.
+# ARCH:                  Suffix for current target PLATFORM if path names exist for
+#                        different processors ("", "Arm64", "arm64").
+
 cmake_minimum_required(VERSION 3.17)
 
 if(BUILD_NAO)
@@ -46,6 +69,10 @@ if(NOT BUILD_NAO)
   set(BUILD_DESKTOP ON)
 endif()
 
+if(PYTHON_ONLY)
+  set(MINIMAL_PROJECT ON)
+endif()
+
 set(CMAKE_CONFIGURATION_TYPES Debug Develop Release CACHE STRING "" FORCE)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -79,7 +106,7 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER CMake)
 set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP ".Generated Files")
-if(NOT PYTHON_ONLY)
+if(NOT MINIMAL_PROJECT)
   set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT SimRobot)
 endif()
 
@@ -185,6 +212,9 @@ target_link_options(Flags::Default INTERFACE
 
 if(BUILD_DESKTOP)
   if(NOT PYTHON_ONLY)
+    include("../CMake/CheckThreads.cmake")
+  endif()
+  if(NOT MINIMAL_PROJECT)
     include("../CMake/DeployDialog.cmake")
     if(MACOS)
       include("../CMake/Config.cmake")
@@ -225,7 +255,7 @@ if(BUILD_NAO)
   add_library(Nao::ALSA::ALSA SHARED IMPORTED)
   set_target_properties(Nao::ALSA::ALSA PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/Buildchain/V6/lib/libasound.so.2.0.0")
 elseif(LINUX)
-  if(NOT PYTHON_ONLY)
+  if(NOT MINIMAL_PROJECT)
     find_package(ALSA REQUIRED)
   endif()
 endif()
@@ -321,7 +351,7 @@ if(BUILD_NAO)
   set_target_properties(Nao::flite::flite PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/V6/libflite.a")
 endif()
 
-if(BUILD_DESKTOP AND (NOT PYTHON_ONLY) AND LINUX)
+if(BUILD_DESKTOP AND LINUX AND NOT MINIMAL_PROJECT)
   add_library(flite::flite_cmu_us_slt STATIC IMPORTED)
   add_library(flite::flite_usenglish STATIC IMPORTED)
   add_library(flite::flite_cmulex STATIC IMPORTED)
@@ -391,13 +421,14 @@ include("../CMake/Network.cmake")
 include("../CMake/RobotParts.cmake")
 include("../CMake/Debugging.cmake")
 include("../CMake/Framework.cmake")
+include("../CMake/OptionsAndSkills.cmake")
 include("../CMake/B-Human.cmake")
 
 if(BUILD_DESKTOP)
   include("../CMake/Python.cmake")
 endif()
 
-if(PYTHON_ONLY)
+if(MINIMAL_PROJECT)
   set(BUILD_DESKTOP FALSE)
   set(BUILD_NAO FALSE)
   set(DISABLE_NAO TRUE)
@@ -430,7 +461,9 @@ if(BUILD_DESKTOP)
 
   include("../CMake/qtpropertybrowser.cmake")
 
-  include("../CMake/AppleHelper.cmake")
+  if(MACOS)
+    include("../CMake/AppleHelper.cmake")
+  endif()
 
   include("../CMake/SimulatedNao.cmake")
   include("../CMake/Tests.cmake")
@@ -441,13 +474,19 @@ if(BUILD_DESKTOP)
   endif()
 endif()
 
-if(BUILD_NAO OR (NOT DISABLE_NAO))
+if(NOT MINIMAL_PROJECT)
   if(MACOS)
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
     set(OS "Linux")
     set(PLATFORM "Linux")
     set(TARGET_SUFFIX "Nao")
     set(BUILD_DESKTOP FALSE)
+    set(ARM_BACKUP "${ARM}")
+    set(X86_BACKUP "${X86}")
+    set(ARCH_BACKUP "${ARCH}")
+    set(ARM false)
+    set(X86 true)
+    set(ARCH "")
 
     include("../CMake/asmjit.cmake")
     target_compile_options(asmjitNao PRIVATE
@@ -465,7 +504,9 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
     include("../CMake/RobotParts.cmake")
     include("../CMake/Debugging.cmake")
     include("../CMake/Framework.cmake")
+    include("../CMake/OptionsAndSkills.cmake")
     include("../CMake/B-Human.cmake")
+    set_property(TARGET B-HumanNao PROPERTY XCODE_ATTRIBUTE_ASM_OPTIONS "-target x86_64-linux-gnu -UMACOS")
 
     add_library(CrossCompile INTERFACE)
     target_compile_definitions(CrossCompile INTERFACE LINUX)
@@ -498,6 +539,7 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
     target_link_libraries(RobotPartsNao PUBLIC CrossCompile)
     target_link_libraries(DebuggingNao PUBLIC CrossCompile)
     target_link_libraries(FrameworkNao PUBLIC CrossCompile)
+    target_link_libraries(OptionsAndSkillsNao PUBLIC CrossCompile)
     target_link_libraries(B-HumanNao PUBLIC CrossCompile)
 
     set_property(TARGET
@@ -515,6 +557,7 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
         Network
         Platform
         RobotParts
+        OptionsAndSkills
         Streaming
 
         B-HumanNao
@@ -526,6 +569,7 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
         NetworkNao
         PlatformNao
         RobotPartsNao
+        OptionsAndSkillsNao
         StreamingNao
         PROPERTY XCODE_ATTRIBUTE_LIBTOOL "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/ignoretool")
   endif()
@@ -535,11 +579,14 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
     set(CMAKE_OSX_ARCHITECTURES "")
     set(TARGET_SUFFIX "")
     set(BUILD_DESKTOP TRUE)
+    set(ARM "${ARM_BACKUP}")
+    set(X86 "${X86_BACKUP}")
+    set(ARCH "${ARCH_BACKUP}")
     add_dependencies(DeployDialog Nao)
   endif()
 endif()
 
-if(BUILD_DESKTOP AND (NOT DISABLE_NAO))
+if(BUILD_DESKTOP AND NOT MINIMAL_PROJECT)
   include("../CMake/deploy.cmake")
 endif()
 

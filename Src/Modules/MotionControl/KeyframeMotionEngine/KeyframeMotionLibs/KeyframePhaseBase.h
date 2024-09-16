@@ -102,7 +102,7 @@ STREAMABLE_WITH_BASE(WaitCondition, Condition,
 
 STREAMABLE(JointPair,
 {,
-  (Joints::Joint)(Joints::headYaw)joint,  // The joint
+  (Joints::Joint)(Joints::headYaw) joint,  // The joint
   (float)(0.f) scaling, // The scaling factor
 });
 
@@ -250,7 +250,7 @@ STREAMABLE(Keyframe,
   (Vector2f)(Vector2f::Zero()) goalCom, // reference com
   (bool)(false) setLastCom, // shall last com be overwritten with the current com at the start of the keyframe?
   (bool)(false) forbidWaitBreak, // Wait time is not allowed to break up early if goal angle is not reachable
-  (InterpolationType)(InterpolationType::Default)interpolationType, // How shall the interpolation be done
+  (InterpolationType)(InterpolationType::Default) interpolationType, // How shall the interpolation be done
   (std::optional<JointCompensation>) jointCompensation, // list of joints that shall be compensated. Only first entry is used. A list is used because: no compensation -> empty list -> no useless lines in the config file
   (std::vector<WaitCondition>) waitConditions, // conditions, if a wait time shall be executed at the end of a keyframe
   (std::vector<KeyframeBlockBranch>) keyframeBranches,
@@ -468,7 +468,7 @@ protected:
    * Otherwise the compensation of the keyframe before would be reduce not fast enough.
    * Compensation reduction does not work if used with negative values, because every use-case is with positive values.
    */
-  void removePreviouseKeyframeJointCompensation();
+  void removePreviousKeyframeJointCompensation();
 
   /**
    * Calculates the difference of the com relative to the ground floor and support polygon middle of the robot.
@@ -550,7 +550,7 @@ protected:
 
            comDiff = Vector2f::Zero(), // com relative to support polygon for current frame
            oldCom = Vector2f::Zero(), // com relative to support polygon from last frame
-           comDistanceToEdge = Vector2f(-1000.f, -1000.f), // for condtions
+           comDistanceToEdge = Vector2f(-1000.f, -1000.f), // for conditions
 
            valPID_I = Vector2f::Zero(), // current PID-Values
            valPID_D = Vector2f::Zero(),

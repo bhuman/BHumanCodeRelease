@@ -172,6 +172,11 @@ bool DebugDrawing3D::addShapeFromQueue(In& stream, Drawings3D::ShapeType shapeTy
       this->image(v, rot, w, h, ci);
       break;
     }
+    case Drawings3D::renderOptions:
+    {
+      stream >> renderOptions;
+      break;
+    }
   }
   return true;
 }

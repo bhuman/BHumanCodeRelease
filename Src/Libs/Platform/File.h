@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include <string>
 #include <list>
+#include <string>
+#include <vector>
 
 /**
  * This class provides basic file input/output capabilities.
@@ -144,13 +145,11 @@ public:
    * Sets the search path for \c getConfigDirs.
    * @param paths The new search path.
    */
-  static void setSearchPath(const std::list<std::string>& paths);
+  static void setSearchPath(const std::vector<std::string>& paths);
 
   /** Clears the search path. */
   static void clearSearchPath();
 
 private:
-  static std::list<std::string> getConfigDirs();
-
-  static thread_local std::list<std::string> searchPath;
+  static thread_local std::vector<std::string> searchPath;
 };

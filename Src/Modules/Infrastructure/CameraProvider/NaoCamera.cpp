@@ -19,9 +19,10 @@
 #include <linux/usb/video.h>
 
 #include "NaoCamera.h"
-#include "Platform/BHAssert.h"
-#include "Platform/Time.h"
 #include "Debugging/Debugging.h"
+#include "Platform/BHAssert.h"
+#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 
 NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip,
                      const CameraSettings::Collection& settings,
@@ -138,19 +139,26 @@ bool NaoCamera::captureNew(int timeout)
   int polled = poll(&pollfd, 1, timeout);
   if(polled < 0)
   {
-    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : Cannot poll. Reason: " << strerror(errno));
-    FAIL(TypeRegistry::getEnumName(camera) << "camera : Cannot poll. Reason: " << strerror(errno) << ".");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << " camera : Cannot poll. Reason: " << strerror(errno));
+    FAIL(TypeRegistry::getEnumName(camera) << " camera : Cannot poll. Reason: " << strerror(errno) << ".");
   }
   else if(polled == 0)
   {
-    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : " << timeout << " ms passed and there's still no image to read from the camera. Terminating.");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << " camera : " << timeout << " ms passed and there's still no image to read from the camera. Terminating.");
+    if(!pollTimedOut)
+    {
+      SystemCall::say((std::string(TypeRegistry::getEnumName(camera)) + " camera timed out").c_str(), true);
+      pollTimedOut = true;
+    }
     return false;
   }
   else if(pollfd.revents & (POLLERR | POLLNVAL))
   {
-    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : Polling failed.");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << " camera : Polling failed.");
     return false;
   }
+
+  pollTimedOut = false;
 
   // dequeue a frame buffer (this call blocks when there is no new image available) */
   v4l2_buffer lastBuf;
@@ -341,16 +349,16 @@ void NaoCamera::writeCameraSettings()
 
     if(timestamp == 0)
     {
-      if(currentSetting.notChangableWhile != CameraSettings::Collection::numOfCameraSettings &&
-         settings.settings[currentSetting.notChangableWhile].value ^ currentSetting.invert)
+      if(currentSetting.notChangeableWhile != CameraSettings::Collection::numOfCameraSettings &&
+         settings.settings[currentSetting.notChangeableWhile].value ^ currentSetting.invert)
         continue;
     }
     else
     {
-      if(currentSetting.notChangableWhile != CameraSettings::Collection::numOfCameraSettings)
+      if(currentSetting.notChangeableWhile != CameraSettings::Collection::numOfCameraSettings)
       {
-        const bool nowActive = settings.settings[currentSetting.notChangableWhile].value ^ currentSetting.invert;
-        const bool oldActive = oldSettings[currentSetting.notChangableWhile].value ^ currentSetting.invert;
+        const bool nowActive = settings.settings[currentSetting.notChangeableWhile].value ^ currentSetting.invert;
+        const bool oldActive = oldSettings[currentSetting.notChangeableWhile].value ^ currentSetting.invert;
         if(nowActive || (!oldActive && currentSetting.value == appliedSetting.value))
           continue;
       }
@@ -694,8 +702,8 @@ bool NaoCamera::getRegister(unsigned short address, unsigned short& value) const
   return false;
 }
 
-NaoCamera::V4L2Setting::V4L2Setting(int command, int value, int min, int max, CameraSettings::Collection::CameraSetting notChangableWhile, int invert) :
-  command(command), value(value), notChangableWhile(notChangableWhile), invert(invert), min(min), max(max)
+NaoCamera::V4L2Setting::V4L2Setting(int command, int value, int min, int max, CameraSettings::Collection::CameraSetting notChangeableWhile, int invert) :
+  command(command), value(value), notChangeableWhile(notChangeableWhile), invert(invert), min(min), max(max)
 {
   ASSERT(min <= max);
 }

@@ -15,6 +15,7 @@
 
 #include "RobotsTable.h"
 #include <iostream>
+#include <QComboBox>
 #include "../../Util/SimRobot/Src/SimRobot/Theme.h"
 
 RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 11)
@@ -58,9 +59,12 @@ RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 11)
 #elif defined WINDOWS
   QString left("10");
   QString right("15");
-#else
+#elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
   QString left("19");
   QString right("0");
+#else
+  QString left("10");
+  QString right("15");
 #endif
 
   // The stylesheet for ::section:first is strange, because it influences all headers.
@@ -245,6 +249,14 @@ void RobotsTable::changeEvent(QEvent* event)
       model()->setHeaderData(column, Qt::Horizontal, QVariant::fromValue(Theme::updateIcon(this, icon)), Qt::DecorationRole);
       setStyleSheet(QString("QTableWidget {gridline-color: ") + (Theme::isDarkMode(this) ? "#404040" : "#e0e0e0") + "}");
     }
+#ifdef MACOS
+    if(parent())
+    {
+      const QColor color = palette().text().color();
+      for(QComboBox* comboBox : parent()->findChildren<QComboBox*>())
+        comboBox->setStyleSheet("color: " + color.name(QColor::HexArgb) + ";");
+    }
+#endif
   }
   QTableWidget::changeEvent(event);
 }
@@ -268,6 +280,9 @@ void RobotsTable::setSelectedPreset(Presets::Preset* selectedPreset, int index)
 QSize RobotsTable::sizeHint() const
 {
   int width = verticalHeader()->width();
+#ifndef MACOS
+  width += style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+#endif
   for(int column = 0; column < columnCount(); ++column)
     width += columnWidth(column);
   int height = horizontalHeader()->height();

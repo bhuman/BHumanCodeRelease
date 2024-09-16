@@ -62,13 +62,16 @@ mkdir -p "${basePath}/../../Build/Documentation/SkillBehaviorControl"
 cd "${basePath}/../../Build/Documentation/SkillBehaviorControl"
 
 (
-  echo "option theRootSkill"
-  grep "^[ 	]*the[A-Z][A-Za-z0-9]*Skill[ 	]*(" "${basePath}/../../Src/Modules/BehaviorControl/SkillBehaviorControl/SkillBehaviorControl.cpp" \
-  | sed "s%^[   ]*\(the[A-Z][A-Za-z0-9]*Skill\)[ 	]*(.*%call \1%"
-  grep "^[ 	]*[A-Z][A-Za-z0-9]*" "${basePath}/../../Config/Scenarios/$scenario/skillBehaviorControl.cfg" | sed "s%^[ 	]*\([A-Z][A-Za-z0-9]*\).*%call \1%"
+  echo "option PlaySoccer"
+  echo "initial_state selectOption"
+  grep -E "^(playingOptions|[ 	]*[A-Z][A-Za-z0-9]*)" "${basePath}/../../Config/Scenarios/$scenario/skillBehaviorControl.cfg" \
+  | sed -e "s%^[ 	]*\([A-Z][A-Za-z0-9]*\).*%call \1%" -e "s%^playingOptions.*%option HandleGameState|state playing%" \
+  | tr '|' '\n'
 ) >data.tmp
 
-"${basePath}/../../Util/CABSL/createOptionAndSkillGraphs" -a data.tmp -d "$dot" $pdf "${basePath}/../../Src/Modules/BehaviorControl/SkillBehaviorControl"
+find ../../..//Src/Modules/BehaviorControl/SkillBehaviorControl/Options ../../..//Src/Modules/BehaviorControl/SkillBehaviorControl/Skills -name "*.cpp" \
+| xargs "${basePath}/../../Util/CABSL/createGraphs" -a data.tmp -m SkillBehaviorControl -d "$dot" $pdf
+
 rm data.tmp
 
 cd "${basePath}/../../Src/"
@@ -79,4 +82,6 @@ while read line; do
   cd "${basePath}/../../Build/Documentation/${line% *}"
   "${basePath}/../../Util/CABSL/createGraphs" -d "$dot" $pdf "${basePath}/../../Src/${line##* }"
 done <<<\
-"FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp"
+"BallSearch Modules/BehaviorControl/StrategyBehaviorControl/BallSearch.cpp
+FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.h
+PhotoModeEngine Modules/MotionControl/MotionEngine/PhotoModeEngine.cpp"

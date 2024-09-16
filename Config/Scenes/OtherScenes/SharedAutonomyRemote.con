@@ -1,0 +1,10 @@
+# Add robot processes used for visualization.
+sl remote remote SharedAutonomyRemote
+robot remote
+
+# Must be started before sending debug requests, so that
+# Cognition receives new data from Upper and Lower.
+sac view remote 89 10.0.255.255
+
+# Configure robot processes used for visualization.
+call Includes/SharedAutonomy

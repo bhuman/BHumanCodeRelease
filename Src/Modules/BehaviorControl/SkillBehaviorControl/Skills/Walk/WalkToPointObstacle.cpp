@@ -8,139 +8,33 @@
  * @author Philip Reichenberg
  */
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/RobotPose.h"
-#include "Representations/BehaviorControl/ExpectedGoals.h"
+#include "SkillBehaviorControl.h"
 #include "Debugging/DebugDrawings.h"
 #include "Math/Geometry.h"
 #include <cmath>
-#include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
 
-SKILL_IMPLEMENTATION(WalkToPointObstacleImpl,
-{,
-  IMPLEMENTS(WalkToPointObstacle),
-  REQUIRES(ExpectedGoals),
-  REQUIRES(ObstacleModel),
-  REQUIRES(RobotPose),
-  CALLS(WalkToPoint),
-  DEFINES_PARAMETERS(
-  {,
-    (float)(500.f) switchToRequestedPoseDistance, /**< Update the shifted target pose if the new one differs by more than this value to the old one. */
-    (float)(1000.f) minDistanceToLeaveForAvoidance, /**< If the target is further away than this threshold, leave the obstacle avoidance state. */
-    (float)(600.f) minDistanceToTargetForAvoidance, /**< Start obstacle avoidance at this distance to the target. */
-    (float)(100.f) ignoreObstacleAvoidanceDistance, /**< Set obstacleAvoidance for walkToPointSkill to false at this distance to the target. */
-    (float)(400.f) positionOffsetIfOccupied, /**< The radius around an obstacle that occupies my target position. */
-    (Angle)(22.5_deg) deleteObstacleCircleRange, /**< A previous obstacle is only deleted if it is outside +- this angle. */
-  }),
-});
-
-class WalkToPointObstacleImpl : public WalkToPointObstacleImplBase
+option((SkillBehaviorControl) WalkToPointObstacle,
+       args((const Pose2f&) target,
+            (const Pose2f&) speed,
+            (ReduceWalkSpeedType) reduceWalkingSpeed,
+            (bool) rough,
+            (bool) disableObstacleAvoidance,
+            (bool) disableAligning,
+            (bool) disableStanding,
+            (bool) disableAvoidFieldBorder,
+            (const std::optional<Vector2f>&) targetOfInterest,
+            (bool) forceSideWalking),
+       defs((float)(500.f) switchToRequestedPoseDistance, /**< Update the shifted target pose if the new one differs by more than this value to the old one. */
+            (float)(1000.f) minDistanceToLeaveForAvoidance, /**< If the target is further away than this threshold, leave the obstacle avoidance state. */
+            (float)(600.f) minDistanceToTargetForAvoidance, /**< Start obstacle avoidance at this distance to the target. */
+            (float)(100.f) ignoreObstacleAvoidanceDistance, /**< Set obstacleAvoidance for walkToPointSkill to false at this distance to the target. */
+            (float)(400.f) positionOffsetIfOccupied, /**< The radius around an obstacle that occupies my target position. */
+            (Angle)(22.5_deg) deleteObstacleCircleRange), /**< A previous obstacle is only deleted if it is outside +- this angle. */
+       vars((Geometry::Circle)({}) lastCircle,
+            (std::optional<Pose2f>)({}) shiftedTarget,
+            (Pose2f)({}) targetWhenShifted))
 {
-  option(WalkToPointObstacle)
-  {
-    auto circle = getObstacleAtMyPositionCircle(theRobotPose * p.target.translation);
-    circle.center = theRobotPose.inverse() * circle.center;
-    bool ignoreObstacle = false;
-    if(shiftedTarget)
-    {
-      if((targetWhenShifted.translation - p.target.translation).squaredNorm() > sqr(switchToRequestedPoseDistance))
-      {
-        if(circle.radius == 0.f || circle.center.squaredNorm() > sqr(circle.radius))
-          ignoreObstacle = true;
-        else
-          calcShiftedPose(p.target, circle);
-      }
-      else
-        shiftedTarget->rotation = p.target.rotation + theRobotPose.rotation;
-    }
-
-    common_transition
-    {
-      if(p.disableObstacleAvoidance || ignoreObstacle)
-        goto walkFar;
-    }
-
-    initial_state(walkFar)
-    {
-      transition
-      {
-        if(!p.disableObstacleAvoidance && p.target.translation.squaredNorm() < sqr(minDistanceToTargetForAvoidance) && circle.radius > 0.f && circle.center.squaredNorm() < sqr(circle.radius))
-          goto avoidObstacle;
-        if(theWalkToPointSkill.isDone())
-          goto targetReached;
-      }
-      action
-      {
-        shiftedTarget.reset();
-        theWalkToPointSkill({.target = p.target,
-                             .speed = p.speed,
-                             .reduceWalkingSpeed = p.reduceWalkingSpeed,
-                             .rough = p.rough,
-                             .disableObstacleAvoidance = p.disableObstacleAvoidance,
-                             .disableAligning = p.disableAligning,
-                             .disableStanding = p.disableStanding,
-                             .disableAvoidFieldBorder = p.disableAvoidFieldBorder,
-                             .targetOfInterest = p.targetOfInterest,
-                             .forceSideWalking = p.forceSideWalking});
-      }
-    }
-
-    state(avoidObstacle)
-    {
-      transition
-      {
-        if(!p.disableObstacleAvoidance && p.target.translation.squaredNorm() > sqr(minDistanceToLeaveForAvoidance))
-          goto walkFar;
-        if(theWalkToPointSkill.isDone())
-          goto targetReached;
-      }
-      action
-      {
-        if(state_time == 0)
-          calcShiftedPose(p.target, circle);
-        const Pose2f relativeTarget = theRobotPose.inverse() * *shiftedTarget;
-        theWalkToPointSkill({.target = relativeTarget,
-                             .speed = p.speed,
-                             .reduceWalkingSpeed = p.reduceWalkingSpeed,
-                             .rough = p.rough,
-                             .disableObstacleAvoidance = p.disableObstacleAvoidance
-                                                         || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
-                             .disableAligning = p.disableAligning,
-                             .disableStanding = p.disableStanding,
-                             .disableAvoidFieldBorder = p.disableAvoidFieldBorder,
-                             .targetOfInterest = p.targetOfInterest,
-                             .forceSideWalking = p.forceSideWalking});
-      }
-    }
-
-    target_state(targetReached)
-    {
-      transition
-      {
-        if(!theWalkToPointSkill.isDone())
-          goto walkFar;
-      }
-      action
-      {
-        const Pose2f relativeTarget = shiftedTarget ? theRobotPose.inverse() * *shiftedTarget : p.target;
-        theWalkToPointSkill({.target = relativeTarget,
-                             .speed = p.speed,
-                             .reduceWalkingSpeed = p.reduceWalkingSpeed,
-                             .rough = p.rough,
-                             .disableObstacleAvoidance = p.disableObstacleAvoidance
-                                                         || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
-                             .disableAligning = p.disableAligning,
-                             .disableStanding = p.disableStanding,
-                             .disableAvoidFieldBorder = p.disableAvoidFieldBorder,
-                             .targetOfInterest = p.targetOfInterest,
-                             .forceSideWalking = p.forceSideWalking});
-      }
-    }
-  }
-
-  void calcShiftedPose(const Pose2f& target, const Geometry::Circle& circle)
+  const auto calcShiftedPose = [&](const Pose2f& target, const Geometry::Circle& circle)
   {
     targetWhenShifted = target;
     const Vector2f relativeObstacleShiftVector = circle.center.normalized(circle.radius);
@@ -153,7 +47,7 @@ class WalkToPointObstacleImpl : public WalkToPointObstacleImplBase
     float bestRating = -1;
     for(const auto& vec : evalPoints)
     {
-      const float rating = theExpectedGoals.getRating(theRobotPose * vec);
+      const float rating = theExpectedGoals.getRating(theRobotPose * vec, false);
       if(rating > bestRating)
       {
         shiftedTarget->translation = vec;
@@ -162,23 +56,12 @@ class WalkToPointObstacleImpl : public WalkToPointObstacleImplBase
     }
     shiftedTarget->translation = theRobotPose * shiftedTarget->translation;
     shiftedTarget->rotation += theRobotPose.rotation;
-  }
+  };
 
-  void preProcess() override {}
-  void preProcess(const WalkToPointObstacle&) override
+  // Calculates the circle around an obstacle which occupies my target position.
+  const auto getObstacleAtMyPositionCircle = [&](const Vector2f& position) -> Geometry::Circle
   {
-    DECLARE_DEBUG_DRAWING("skill:WalkToPointObstacle:obstacleAtMyPosition", "drawingOnField");
-  }
-
-
-  /**
-   * Calculates the circle around an obstacle which occupies my target position.
-   * @param position The potential target position on the field
-   * @return The circle with the obstacle as center or radius 0 if none
-   */
-  Geometry::Circle getObstacleAtMyPositionCircle(const Vector2f& position)
-  {
-    CIRCLE("skill:WalkToPointObstacle:obstacleAtMyPosition", lastCircle.center.x(), lastCircle.center.y(), lastCircle.radius, 20, Drawings::solidPen, ColorRGBA::red, Drawings::noPen, ColorRGBA::black);
+    CIRCLE("option:WalkToPointObstacle:obstacleAtMyPosition", lastCircle.center.x(), lastCircle.center.y(), lastCircle.radius, 20, Drawings::solidPen, ColorRGBA::red, Drawings::noPen, ColorRGBA::black);
     const Vector2f posRel(theRobotPose.inverse() * position);
     for(const Obstacle& obstacle : theObstacleModel.obstacles)
       if((obstacle.center - posRel).squaredNorm() < sqr(positionOffsetIfOccupied))
@@ -190,12 +73,104 @@ class WalkToPointObstacleImpl : public WalkToPointObstacleImplBase
 
     lastCircle.radius = 0.f;
     return lastCircle;
+  };
+
+  auto circle = getObstacleAtMyPositionCircle(theRobotPose * target.translation);
+  circle.center = theRobotPose.inverse() * circle.center;
+  bool ignoreObstacle = false;
+
+  if(shiftedTarget)
+  {
+    if((targetWhenShifted.translation - target.translation).squaredNorm() > sqr(switchToRequestedPoseDistance))
+    {
+      if(circle.radius == 0.f || circle.center.squaredNorm() > sqr(circle.radius))
+        ignoreObstacle = true;
+      else
+        calcShiftedPose(target, circle);
+    }
+    else
+      shiftedTarget->rotation = target.rotation + theRobotPose.rotation;
   }
 
-  Geometry::Circle lastCircle;
+  common_transition
+  {
+    if(disableObstacleAvoidance || ignoreObstacle)
+      goto walkFar;
+  }
 
-  std::optional<Pose2f> shiftedTarget;
-  Pose2f targetWhenShifted;
-};
+  initial_state(walkFar)
+  {
+    transition
+    {
+      if(!disableObstacleAvoidance && target.translation.squaredNorm() < sqr(minDistanceToTargetForAvoidance) && circle.radius > 0.f && circle.center.squaredNorm() < sqr(circle.radius))
+        goto avoidObstacle;
+      if(action_done)
+        goto targetReached;
+    }
+    action
+    {
+      WalkToPoint({.target = target,
+                   .speed = speed,
+                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .rough = rough,
+                   .disableObstacleAvoidance = disableObstacleAvoidance,
+                   .disableAligning = disableAligning,
+                   .disableStanding = disableStanding,
+                   .disableAvoidFieldBorder = disableAvoidFieldBorder,
+                   .targetOfInterest = targetOfInterest,
+                   .forceSideWalking = forceSideWalking});
+    }
+  }
 
-MAKE_SKILL_IMPLEMENTATION(WalkToPointObstacleImpl);
+  state(avoidObstacle)
+  {
+    transition
+    {
+      if(!disableObstacleAvoidance && target.translation.squaredNorm() > sqr(minDistanceToLeaveForAvoidance))
+        goto walkFar;
+      if(action_done)
+        goto targetReached;
+    }
+    action
+    {
+      if(state_time == 0)
+        calcShiftedPose(target, circle);
+      const Pose2f relativeTarget = theRobotPose.inverse() * *shiftedTarget;
+      WalkToPoint({.target = relativeTarget,
+                   .speed = speed,
+                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .rough = rough,
+                   .disableObstacleAvoidance = disableObstacleAvoidance
+                                               || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
+                   .disableAligning = disableAligning,
+                   .disableStanding = disableStanding,
+                   .disableAvoidFieldBorder = disableAvoidFieldBorder,
+                   .targetOfInterest = targetOfInterest,
+                   .forceSideWalking = forceSideWalking});
+    }
+  }
+
+  target_state(targetReached)
+  {
+    transition
+    {
+      if(!action_done)
+        goto walkFar;
+    }
+    action
+    {
+      const Pose2f relativeTarget = shiftedTarget ? theRobotPose.inverse() * *shiftedTarget : target;
+      WalkToPoint({.target = relativeTarget,
+                   .speed = speed,
+                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .rough = rough,
+                   .disableObstacleAvoidance = disableObstacleAvoidance
+                                               || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
+                   .disableAligning = disableAligning,
+                   .disableStanding = disableStanding,
+                   .disableAvoidFieldBorder = disableAvoidFieldBorder,
+                   .targetOfInterest = targetOfInterest,
+                   .forceSideWalking = forceSideWalking});
+    }
+  }
+}

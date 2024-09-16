@@ -127,7 +127,7 @@ namespace Geometry
   bool checkIntersectionOfLines(const Vector2f& l1p1, const Vector2f& l1p2, const Vector2f& l2p1, const Vector2f& l2p2);
   [[nodiscard]] bool getIntersectionOfLines(const Line& line1, const Line& line2, Vector2f& intersection);
   [[nodiscard]] bool getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, float& intersection);
-  [[nodiscard]] bool getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection);
+  [[nodiscard]] bool getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection, const bool isCCW, Line* intersectedLine = nullptr);
 
   /**
    * Computes the signed distance of a point to a line.
@@ -170,6 +170,17 @@ namespace Geometry
   bool clipPointToPolygonBorder(const std::vector<Vector2f>& polygon, Vector2f& point);
   bool clipPointInsidePolygon(const std::vector<Vector2f>& polygon, Vector2f& point);
   bool clipPointInsideConvexPolygon(const std::vector<Vector2f>& polygon, Vector2f& point);
+
+  /**
+   * Checks, if a circle intesects with a rectangle. The rectangle is assumed to be axis-aligned and defined by two points,
+   * which have to be diagonally opposing corners.
+   * @param cp The position of the circle
+   * @param r The radius of the circle
+   * @param p1 One corner of the rectangle
+   * @param p2 Another corner of the rectangle, diagonally opposite to p1
+   * @return states whether clipping was necessary (and done)
+   */
+  [[nodiscard]] bool circleIntersectsAxisAlignedRectangle(const Vector2f& cp, float r, const Vector2f& p1, const Vector2f& p2);
 
   /**
    * Clips a line with a rectangle
@@ -220,4 +231,10 @@ namespace Geometry
    * @return A point on the edge
    */
   Vector2f getOrthogonalProjectionOfPointOnEdge(const Line& line, const Vector2f& point);
+
+  /**
+   * Calculates if the points occur in clockwise or counter clockwise
+   * @return 0 if all points are on a line, 1 if ccw, -1 if cw
+   */
+  int ccw(const Vector2f& p0, const Vector2f& p1, const Vector2f& p2);
 };

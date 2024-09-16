@@ -70,7 +70,7 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
   float heelFeetInTorso[Legs::numOfLegs];
   float toeFeetInTorso[Legs::numOfLegs];
   float innerEdgeFeetInTorso[Legs::numOfLegs];
-  float outterEdgeFeetInTorso[Legs::numOfLegs];
+  float outerEdgeFeetInTorso[Legs::numOfLegs];
   float middleOfFeetInTorso[Legs::numOfLegs];
 
   heelFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.x() - theFootOffset.backward;
@@ -79,10 +79,10 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
   toeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.x() + theFootOffset.forward;
 
   innerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() - theFootOffset.leftFoot.right;
-  outterEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() + theFootOffset.leftFoot.left;
+  outerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() + theFootOffset.leftFoot.left;
   middleOfFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y();
   innerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() + theFootOffset.rightFoot.left;
-  outterEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() - theFootOffset.rightFoot.right;
+  outerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() - theFootOffset.rightFoot.right;
   middleOfFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y();
 
   FOREACH_ENUM(Legs::Leg, leg)
@@ -93,7 +93,7 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
                                                     (toeFeetInTorso[leg] - heelFeetInTorso[leg]));
 
     theRobotStableState.comInTorso[leg].outerSide =
-      calcPercentInFeet(sign * comInTorso.y(), 0.f, sign * innerEdgeFeetInTorso[leg], sign * middleOfFeetInTorso[leg], sign * outterEdgeFeetInTorso[leg]);
+      calcPercentInFeet(sign * comInTorso.y(), 0.f, sign * innerEdgeFeetInTorso[leg], sign * middleOfFeetInTorso[leg], sign * outerEdgeFeetInTorso[leg]);
 
     const Pose3f& sole = leg == Legs::left ? theRobotModel.soleLeft : theRobotModel.soleRight;
     const Vector2f comInFeetRotated = (comInTorso.head<2>() - sole.translation.head<2>()).rotated(-sole.rotation.getZAngle());
@@ -106,9 +106,9 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
                                                    (theFootOffset.backward + theFootOffset.forward));
 
     const float useInner = leg == Legs::left ? -theFootOffset.leftFoot.right : -theFootOffset.rightFoot.left;
-    const float useOutter = leg == Legs::left ? theFootOffset.leftFoot.left : theFootOffset.rightFoot.right;
+    const float useOuter = leg == Legs::left ? theFootOffset.leftFoot.left : theFootOffset.rightFoot.right;
     theRobotStableState.comInFeet[leg].outerSide =
-      calcPercentInFeet(sign * comInFeetRotated.y(), sign * zeroPointInFeet.y(), useInner, 0.f, useOutter);
+      calcPercentInFeet(sign * comInFeetRotated.y(), sign * zeroPointInFeet.y(), useInner, 0.f, useOuter);
   }
 }
 
@@ -189,7 +189,7 @@ void RobotStableStateProvider::predictRotation(RobotStableState& state, Rotation
   turnPointMatrix = rotationMatrix;
   if(findTurnPoint)
   {
-    if(returnType != PredictReturnType::noIntersection) // ignore velocity change if it happend here already too
+    if(returnType != PredictReturnType::noIntersection) // ignore velocity change if it happened here already too
     {
       ASSERT(turnPointSteps - predictionSteps > 0);
       for(std::size_t i = 0; i < turnPointSteps - predictionSteps; i++)

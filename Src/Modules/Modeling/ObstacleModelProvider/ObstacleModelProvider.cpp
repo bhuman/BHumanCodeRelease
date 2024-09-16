@@ -127,7 +127,7 @@ void ObstacleModelProvider::dynamic()
 void ObstacleModelProvider::addArmContacts()
 {
   merged.clear();
-  merged.resize(obstacleHypotheses.size());
+  merged.resize(obstacleHypotheses.size(), false);
 
   FOREACH_ENUM(Arms::Arm, arm)
   {
@@ -153,7 +153,7 @@ void ObstacleModelProvider::addArmContacts()
 void ObstacleModelProvider::addFootContacts()
 {
   merged.clear();
-  merged.resize(obstacleHypotheses.size());
+  merged.resize(obstacleHypotheses.size(), false);
 
   FOREACH_ENUM(Legs::Leg, leg)
   {
@@ -182,7 +182,7 @@ void ObstacleModelProvider::addPlayerPercepts()
     return;
 
   merged.clear();
-  merged.resize(obstacleHypotheses.size());
+  merged.resize(obstacleHypotheses.size(), false);
 
   for(const ObstaclesFieldPercept::Obstacle& percept : theObstaclesFieldPercept.obstacles)
   {
@@ -243,7 +243,7 @@ void ObstacleModelProvider::tryToMerge(const ObstacleHypothesis& measurement)
     obstacleHypotheses[atMerge].lastSeen = measurement.lastSeen;
 
     obstacleHypotheses[atMerge].measurement(measurement, weightedSum); // EKF
-    obstacleHypotheses[atMerge].considerType(measurement, teamThreshold, uprightThreshold);
+    obstacleHypotheses[atMerge].determineAndSetType(measurement, teamThreshold, uprightThreshold);
     obstacleHypotheses[atMerge].seenCount += measurement.seenCount;
     obstacleHypotheses[atMerge].notSeenButShouldSeenCount = 0; // Reset that counter.
     merged[atMerge] = true;
@@ -304,7 +304,7 @@ void ObstacleModelProvider::considerTeammates()
       Obstacle::fusion2D(obstacleHypotheses[atMerge], teammateHypothesis);
       // Since fusion2D makes all previous positions unusable for a correct calculation.
       obstacleHypotheses[atMerge].lastObservations.clear();
-      obstacleHypotheses[atMerge].considerType(teammateHypothesis, teamThreshold, uprightThreshold);
+      obstacleHypotheses[atMerge].determineAndSetType(teammateHypothesis, teamThreshold, uprightThreshold);
       obstacleHypotheses[atMerge].lastSeen = std::max(obstacleHypotheses[atMerge].lastSeen, teammateHypothesis.lastSeen);
     }
   };
@@ -362,14 +362,13 @@ void ObstacleModelProvider::mergeOverlapping()
       if(((distanceOfCenters <= overlap || distanceOfCenters < 2 * Obstacle::getRobotDepth()) // The obstacles are overlapping
           || (actual.squaredMahalanobis(other) < sqr(minMahalanobisDistance)
               && (actual.seenCount >= minPercepts && other.seenCount >= minPercepts))) // they were seen at least minPercepts times
-         && (actual.type == Obstacle::unknown || actual.type == Obstacle::someRobot || actual.type == Obstacle::fallenSomeRobot
-             || other.type == Obstacle::unknown || other.type == Obstacle::someRobot || other.type == Obstacle::fallenSomeRobot
+         && (actual.isUnknown() || actual.isSomeRobot() || other.isUnknown() || other.isSomeRobot()
              || actual.type == other.type)) // Their type is unknown, someRobot or fallenSomeRobot or their type is equal
       {
         Obstacle::fusion2D(actual, other);
         // Since fusion2D makes all previous positions unusable for a correct calculation.
         actual.lastObservations.clear();
-        actual.considerType(other, teamThreshold, uprightThreshold);
+        actual.determineAndSetType(other, teamThreshold, uprightThreshold);
         actual.lastSeen = std::max(actual.lastSeen, other.lastSeen);
         actual.seenCount = std::max(actual.seenCount, other.seenCount);
         actual.notSeenButShouldSeenCount = (actual.notSeenButShouldSeenCount + other.notSeenButShouldSeenCount) / 2;

@@ -28,7 +28,6 @@
 
 MODULE(ScanLineRegionizer,
 {,
-  REQUIRES(BodyContour),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(ECImage),
@@ -43,10 +42,10 @@ MODULE(ScanLineRegionizer,
   {,
     (Vector2f)(1500.f, 0.f) additionalSmoothingPoint,   /**< On field distance in mm up to which additional smoothing is applied */
     (float)(13) edgeThreshold,                          /**< The edge threshold. */
-    (unsigned short)(12) minHorizontalScanLineDistance, /**< Minimal distance between horizontal scan lines in px */
     (unsigned char)(20) luminanceSimilarityThreshold,   /**< Maximum luminance difference for two regions to become united */
     (unsigned char)(20) hueSimilarityThreshold,         /**< Maximum hue difference for two regions to become united */
     (unsigned char)(26) saturationSimilarityThreshold,  /**< Maximum saturation difference for two regions to become united */
+    (unsigned char)(138) initialMinSaturation,          /**< Standard minimum field saturation for field classification */
     (int)(520) lowerMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the lower camera */
     (int)(640) upperMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the upper camera */
     (float)(0.9f) baseLuminanceReduction,               /**< Rather underestimate the baseLuminance as it is used for noise filtering */
@@ -170,7 +169,8 @@ class ScanLineRegionizer : public ScanLineRegionizerBase
     const unsigned int scanStop;         /**< right- or topmost pixel of the scan-line */
     unsigned int leftScanEdgePosition{}; /**< Left or lower edge of the current region */
     unsigned int& lowerScanEdgePosition = leftScanEdgePosition; /**< name alias for vertical scan */
-    int (*gauss)(const PixelTypes::GrayscaledPixel*, const unsigned int){}; /**< 1D gauss smoothing filter that works on the image */
+    int (*gaussV)(const PixelTypes::GrayscaledPixel*, const unsigned int){}; /**< 1D vertical gaussV smoothing filter that works on the image */
+    int (*gaussH)(const PixelTypes::GrayscaledPixel*){};                    /**< 1D horizontal gaussV smoothing filter that works on the image */
     int (*gaussSecond)(::std::array<int, filterSize>&, int);                /**< 1D gauss smoothing filter that works on an array */
     int (*gradient)(::std::array<int, filterSize>&, int);                   /**< 1D sobel gradient filter */
     std::array<int, filterSize> leftGaussBuffer;  /**< buffer for the left or lower grid point and for sobel scans*/
@@ -241,36 +241,6 @@ class ScanLineRegionizer : public ScanLineRegionizerBase
    * @param rightmostX Right-side end point of the scan-line
    */
   void scanHorizontalAdditionalSmoothing(unsigned int y, std::vector<InternalRegion>& regions, const unsigned int leftmostX, const unsigned int rightmostX) const;
-
-  /**
-   * Determines the horizontal scan start, excluding areas outside the field boundary
-   * @param x x-coordinate from where to start searching for a start point.
-   * @param y The height of the scan line in the image.
-   * @return The x-coordinate of where to start the scan
-   */
-  [[nodiscard]] int horizontalFieldBoundaryScanStart(int x, int y) const;
-
-  /**
-   * Determines the horizontal scan stop, excluding areas outside the field boundary
-   * @param x-coordinate up to which ot search for a stop point.
-   * @param y The height of the scan line in the image.
-   * @return The x-coordinate of where to stop the scan
-   */
-  [[nodiscard]] int horizontalFieldBoundaryScanStop(int x, int y) const;
-
-  /**
-   * Determine the horizontal scan start, excluding both areas outside the field and inside the robots body.
-   * @param usedY The height of the scan line in the image.
-   * @return The x-coordinate of where to start the scan
-   */
-  [[nodiscard]] unsigned int horizontalScanStart(int usedY) const;
-
-  /**
-   * Determine the horizontal scan stop, excluding both areas outside the field and inside the robots body.
-   * @param usedY The height of the scan line in the image.
-   * @return The x-coordinate of where to stop the scan
-   */
-  [[nodiscard]] unsigned int horizontalScanStop(int usedY) const;
 
   /**
    * Creates regions along a vertical scan line.
@@ -349,17 +319,38 @@ class ScanLineRegionizer : public ScanLineRegionizerBase
   void classifyFieldRegions(const std::vector<unsigned short>& xy, std::vector<std::vector<InternalRegion>>& regions, bool horizontal);
 
   /**
-   * todo
-   * @param y
-   * @param regions
+   * Classify all yet unclassified horizontal regions as field or not.
+   * Classification based on estimated field color.
+   * @param y the in image heights of the scan lines
+   * @param regions the regions
    */
   void classifyFieldHorizontal(const std::vector<unsigned short>& y, std::vector<std::vector<InternalRegion>>& regions) const;
 
+
   /**
-   * todo
-   * @param regions
+   * Classify all yet unclassified vertical regions as field or not.
+   * Classification based on estimated field color.
+   * @param regions the regions
    */
   void classifyFieldVertical(std::vector<std::vector<InternalRegion>>& regions) const;
+
+  /**
+   * Classify a single yet unclassified region as field or not.
+   * Classification based on estimated field color.
+   * @param region the region
+   * @param regionHeight the height of the region in image coordinates (overwritten in vertical case)
+   * @param horizontal Are the regions on horizontal (true) or vertical (false) scan lines
+   */
+  void classifyFieldSingleRegion(InternalRegion& region, float regionHeight, bool horizontal) const;
+
+  /**
+   * Saturation of very dark field pixels is often 0. Also, further away field regions can have lower saturation.
+   * Adjusts saturation threshold from estimated field color accordingly.
+   * @param region the region
+   * @param regionHeight the height of the region in image coordinates
+   * @return adjusted saturation threshold
+   */
+  unsigned char fieldClassificationSaturationThreshold(const InternalRegion& region, float regionHeight) const;
 
   /**
    * Decides whether a region qualifies as field.

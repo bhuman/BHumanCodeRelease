@@ -37,6 +37,13 @@ public:
   JPEGImage& operator=(const CameraImage& src);
 
   /**
+   * Compress camera image and store result in this object.
+   * @param src The camera image to compress.
+   * @param quality The quality of the resulting image (0 = bad ... 100 = very good).
+   */
+  void fromCameraImage(const CameraImage& src, int quality = 75);
+
+  /**
    * Uncompress image.
    * @param dest Will receive the uncompressed image.
    */

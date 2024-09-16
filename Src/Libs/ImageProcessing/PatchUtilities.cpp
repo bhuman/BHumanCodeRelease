@@ -224,7 +224,7 @@ template void PatchUtilities::normalizeBrightness<unsigned char>(unsigned char* 
 
 void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, GrayscaledImage& dest, const ExtractionMode mode)
 {
-  dest.setResolution(static_cast<unsigned int>(outSize(0)), static_cast<unsigned int>(outSize(0)));
+  dest.setResolution(static_cast<unsigned int>(outSize(0)), static_cast<unsigned int>(outSize(1)));
   extractPatch(center, inSize, outSize, src, dest[0], mode);
 }
 

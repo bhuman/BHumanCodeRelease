@@ -62,10 +62,10 @@ namespace Covariance
   Matrix2f rotateCovarianceMatrix(const Matrix2f& covariance, float angle);
 
   /**
- * In some covariance matrices, m(i, j) is not equal to m(j, i). This is probably a result
- * of the low precision of "float". This method equals both values.
- * @param m A reference to a matrix that will be changed by this method
- */
+   * In some covariance matrices, m(i, j) is not equal to m(j, i). This is probably a result
+   * of the low precision of "float". This method equals both values.
+   * @param m A reference to a matrix that will be changed by this method
+   */
   template<int SIZE>
   inline void fixCovariance(Eigen::Matrix<float, SIZE, SIZE>& m)
   {

@@ -216,7 +216,7 @@ public:
       evaluated in \c cnsLeft and \c cnsRight. This binary response is stored in response[8][8] and can be
       converted to float using \c mapping.finalBin2finalFloat(...).
 
-      The same is done in parallel with contours shifted by -8..7 in x/y. Alle these responses are stored in
+      The same is done in parallel with contours shifted by -8..7 in x/y. All these responses are stored in
       \c response.
    */
   void responseX16Y16(signed short response[16][16],

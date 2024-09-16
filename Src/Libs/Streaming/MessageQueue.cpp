@@ -179,7 +179,7 @@ MessageQueue& MessageQueue::operator<<(const std::pair<const_iterator, const_ite
 void MessageQueue::clear()
 {
   used = 0;
-  if(!ownBuffer)
+  if(!ownBuffer && !capacity)
   {
     capacity = 16384;
     buffer = static_cast<char*>(malloc(capacity));
@@ -214,11 +214,18 @@ void MessageQueue::reserve(size_t capacity, size_t protectedCapacity)
 
 void MessageQueue::setBuffer(const char* buffer, size_t size)
 {
+  setBuffer(const_cast<char*>(buffer), size, 0);
+}
+
+void MessageQueue::setBuffer(char* buffer, size_t size, size_t capacity)
+{
   if(ownBuffer)
     free(this->buffer);
-  this->buffer = const_cast<char*>(buffer);
+  this->buffer = buffer;
   used = size;
-  capacity = 0;
+  this->capacity = capacity;
+  if(capacity)
+    maxCapacity = capacity;
   ownBuffer = false;
 }
 

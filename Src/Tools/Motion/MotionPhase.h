@@ -28,7 +28,8 @@ struct MotionPhase
     getUp,
     keyframeMotion,
     replayWalk,
-    calibration,
+    photoMode,
+    freeze,
   });
 
   ENUM(Limb,

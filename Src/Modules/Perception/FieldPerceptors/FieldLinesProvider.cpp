@@ -10,8 +10,6 @@
 
 #include <algorithm>
 
-using namespace std;
-
 MAKE_MODULE(FieldLinesProvider);
 
 bool FieldLinesProvider::isPointInSegment(const SpotLine& line, const Vector2f& point) const
@@ -114,7 +112,7 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
             (theCirclePercept.pos - line.lastField).squaredNorm() < sqr(theFieldDimensions.centerCircleRadius) &&
             (firstInField - lastInField).squaredNorm() > bigLineThreshold*bigLineThreshold / 2))
         {
-          midLine = const_cast<SpotLine*>(&line);
+          midLine = &line;
         }
       }
     }

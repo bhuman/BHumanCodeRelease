@@ -58,18 +58,8 @@ void Thread::changePriority()
     ASSERT((priority >= -2 && priority <= 0)
            || (priority > 0 && priority <= sched_get_priority_max(SCHED_FIFO)));
     sched_param param;
-    param.sched_priority = 0;
-    switch(priority)
-    {
-      case -2:
-      case -1:
-      case 0:
-        VERIFY(!pthread_setschedparam(thread->native_handle(), SCHED_OTHER, &param));
-        break;
-      default:
-        param.sched_priority = priority + helper.basePriority;
-        VERIFY(!pthread_setschedparam(thread->native_handle(), SCHED_FIFO, &param));
-    }
+    param.sched_priority = priority + helper.basePriority;
+    VERIFY(!pthread_setschedparam(thread->native_handle(), SCHED_FIFO, &param));
   }
 }
 

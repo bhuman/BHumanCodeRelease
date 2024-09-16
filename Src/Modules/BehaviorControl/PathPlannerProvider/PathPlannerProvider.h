@@ -44,7 +44,7 @@ MODULE(PathPlannerProvider,
     (float) freeKickRadius, /**< Radius to walk around the ball when defending a free kick (in mm). */
     (float) wrongBallSideCostFactor, /**< How much of a full circle is it more expensive to pass the ball on the wrong side? */
     (float) wrongBallSideRadius, /**< How far from the ball is passing it on the wrong side penalized? */
-    (float) fieldBorderLimit, /**< Distance outside the side lines that is still used for walking (in mm). */
+    (float) fieldBorderLimit, /**< Distance outside the touchlines that is still used for walking (in mm). */
     (float) radiusControlOffset, /**< Plan closer to obstacles by this offset, but keep original distance when executing plan (in mm). */
     (float) radiusAvoidanceTolerance, /**< Radius range in which robot is partially pushed away (in mm). */
     (float) rotationPenalty, /**< Penalty factor for rotating towards first intermediate target in mm/radian. Stabilizes path selection. */
@@ -223,7 +223,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
   std::vector<Node> nodes; /**< All nodes of the visibility graph, i.e. all obstacles, and starting point (1st entry) and target (2nd entry). */
   std::vector<Candidate> candidates; /**< All open edges during the A* search. */
   std::vector<Barrier> barriers; /**< Barrier lines that cannot be crossed during planning. */
-  std::vector<Geometry::Line> borders; /**< The border of the field plus a tolerance. */
+  const std::vector<Geometry::Line> borders; /**< The border of the field plus a tolerance. */
   Rotation lastDir = cw; /**< Last direction selected when walking around first obstacle. */
   unsigned timeWhenLastPlayedSound = 0; /**< Used to limit frequency of sound playback. */
   bool pathPlannerWasActive = false; /**< Was the path planner active in previous frame? */

@@ -93,76 +93,6 @@ void LinePerceptor::update(CirclePercept& circlePercept)
       }
     }
   }
-
-  // Construct a circle from detected lines:
-  // Cluster centers of arcs from detected lines
-  clusters.clear();
-  for(const LinesPercept::Line& line : theLinesPercept.lines)
-  {
-    for(auto it = line.spotsInField.cbegin(); it < line.spotsInField.cend() - 2; it++)
-    {
-      const Vector2f& a = *it;
-      const Vector2f& b = *(++it);
-      const Vector2f& c = *(++it);
-
-      clusterCircleCenter(b + (((a + c) / 2) - b).normalized() * theFieldDimensions.centerCircleRadius);
-    }
-  }
-
-  // Find biggest valid cluster
-  for(size_t n = clusters.size(); n; --n)
-  {
-    // Find current biggest cluster
-    auto biggestCluster = clusters.begin();
-    size_t maxSize = biggestCluster->centers.size();
-    for(auto it = biggestCluster + 1; it < clusters.end(); ++it)
-    {
-      const size_t curSize = it->centers.size();
-      if(curSize > maxSize)
-      {
-        maxSize = curSize;
-        biggestCluster = it;
-      }
-    }
-
-    // Abort if the minimum size is not reached
-    if(maxSize < minCircleClusterSize)
-      break;
-
-    // Check if the cluster is valid
-    if(isCircleWhite(biggestCluster->center, theFieldDimensions.centerCircleRadius))
-    {
-      circlePercept.pos = biggestCluster->center;
-      circlePercept.wasSeen = true;
-      const float distToCenter = biggestCluster->center.norm();
-      const Vector2f virtualPosForCovariance(distToCenter > theFieldDimensions.centerCircleRadius ? distToCenter : theFieldDimensions.centerCircleRadius, 0.f);
-      circlePercept.cov = theMeasurementCovariance.computeForRelativePosition(virtualPosForCovariance);
-      markLinesOnCircle(biggestCluster->center);
-      break;
-    }
-
-    // Remove the cluster
-    biggestCluster->centers.clear();
-  }
-}
-
-void LinePerceptor::clusterCircleCenter(const Vector2f& center)
-{
-  for(CircleCluster& cluster : clusters)
-  {
-    if((cluster.center - center).squaredNorm() <= sqrCircleClusterRadius)
-    {
-      cluster.centers.emplace_back(center);
-      Vector2f newCenter(0, 0);
-      for(const Vector2f& c : cluster.centers)
-      {
-        newCenter += c;
-      }
-      cluster.center = newCenter / static_cast<float>(cluster.centers.size());
-      return;
-    }
-  }
-  clusters.emplace_back(center);
 }
 
 void LinePerceptor::markLinesOnCircle(const Vector2f& center)
@@ -251,7 +181,7 @@ void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
               {
                 if(candidate.spots.size() > 1 &&
                    candidate.getDistance(thisSpot.field) <= maxLineFittingError &&
-                      isSegmentValid(thisSpot, *candidate.spots.back(), candidate))
+                   isSegmentValid(thisSpot, *candidate.spots.back(), candidate))
                 {
                   if(!circleFitted)
                   {
@@ -283,7 +213,7 @@ void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
                 Candidate& candidate = candidates[spot.candidate];
                 if(candidate.spots.size() == 1 &&
                    getAbsoluteDeviation(spot.image.x(), thisSpot.image.x()) < getAbsoluteDeviation(spot.image.y(), thisSpot.image.y()) &&
-                    isSegmentValid(thisSpot, spot, candidate))
+                   isSegmentValid(thisSpot, spot, candidate))
                 {
                   thisSpot.candidate = candidate.spots.front()->candidate;
                   candidate.spots.emplace_back(&thisSpot);
@@ -425,7 +355,7 @@ void LinePerceptor::scanVerticalScanLines(LinesPercept& linesPercept)
               {
                 if(candidate.spots.size() > 1 &&
                    candidate.getDistance(thisSpot.field) <= maxLineFittingError &&
-                    isSegmentValid(thisSpot, *candidate.spots.back(), candidate))
+                   isSegmentValid(thisSpot, *candidate.spots.back(), candidate))
                 {
                   if(!circleFitted)
                   {
@@ -457,12 +387,12 @@ void LinePerceptor::scanVerticalScanLines(LinesPercept& linesPercept)
                 Candidate& candidate = candidates[spot.candidate];
                 if(candidate.spots.size() == 1 &&
                    getAbsoluteDeviation(spot.image.x(), thisSpot.image.x()) > getAbsoluteDeviation(spot.image.y(), thisSpot.image.y()) &&
-                    isSegmentValid(thisSpot, spot, candidate))
+                   isSegmentValid(thisSpot, spot, candidate))
                 {
                   thisSpot.candidate = candidate.spots.front()->candidate;
-                    candidate.spots.emplace_back(&thisSpot);
-                    candidate.fitLine();
-                    goto vEndAdjacentSearch;
+                  candidate.spots.emplace_back(&thisSpot);
+                  candidate.fitLine();
+                  goto vEndAdjacentSearch;
                 }
               }
             }
@@ -534,7 +464,7 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
   {
     const Vector2f step(static_cast<Vector2f>((line->firstImg - line->lastImg).cast<float>().normalized() * 2.f));
     // Extend left
-    Vector2f n0 (-step.y(), step.x()); // rotates 90 degrees
+    Vector2f n0(-step.y(), step.x());  // rotates 90 degrees
 
     Vector2f pos(line->firstImg.cast<float>() + step);
     bool changed = false;
@@ -626,7 +556,7 @@ void LinePerceptor::trimLine(LinesPercept::Line& line) const
           lower -= dir, p = static_cast<Vector2i>(lower.cast<int>()), ++loopCount)
       {
         if(loopCount > maxWidthImage ||
-            theRelativeFieldColors.isFieldNearWhite(theECImage.grayscaled[p], theECImage.saturated[p],
+           theRelativeFieldColors.isFieldNearWhite(theECImage.grayscaled[p], theECImage.saturated[p],
                                                    luminanceReference, saturationReference))
           break;
       }
@@ -636,7 +566,7 @@ void LinePerceptor::trimLine(LinesPercept::Line& line) const
           upper += dir, p = static_cast<Vector2i>(upper.cast<int>()), ++loopCount)
       {
         if(loopCount > maxWidthImage ||
-            theRelativeFieldColors.isFieldNearWhite(theECImage.grayscaled[p], theECImage.saturated[p],
+           theRelativeFieldColors.isFieldNearWhite(theECImage.grayscaled[p], theECImage.saturated[p],
                                                    luminanceReference, saturationReference))
           break;
       }
@@ -1054,12 +984,12 @@ bool LinePerceptor::isPointWhite(const Vector2f& pointOnField, const Vector2i& p
       {
         CROSS("module:LinePerceptor:isWhite", referencePointInImage.x(), referencePointInImage.y(), 2, 1, Drawings::solidPen, ColorRGBA::orange);
         LINE("module:LinePerceptor:isWhite", pointInImage.x(), pointInImage.y(), referencePointInImage.x(), referencePointInImage.y(),
-               1, Drawings::solidPen, ColorRGBA::orange);
+             1, Drawings::solidPen, ColorRGBA::orange);
       }
     }
   }
-  return theRelativeFieldColors.isWhiteNearField(theECImage.grayscaled[pointInImage],theECImage.saturated[pointInImage],
-                                                  static_cast<unsigned char>(luminanceReference), static_cast<unsigned char>(saturationReference));
+  return theRelativeFieldColors.isWhiteNearField(theECImage.grayscaled[pointInImage], theECImage.saturated[pointInImage],
+                                                 static_cast<unsigned char>(luminanceReference), static_cast<unsigned char>(saturationReference));
 }
 
 bool LinePerceptor::isPointWhite(const Vector2f& pointInImage, const Vector2f& n) const
@@ -1068,7 +998,7 @@ bool LinePerceptor::isPointWhite(const Vector2f& pointInImage, const Vector2f& n
   unsigned short luminanceReference = 0, saturationReference = 0;
   Vector2i outerReference = (pointInImage + n).cast<int>();
   if(outerReference.x() >= 0 && outerReference.x() < theCameraInfo.width &&
-      outerReference.y() >= 0 && outerReference.y() < theCameraInfo.height)
+     outerReference.y() >= 0 && outerReference.y() < theCameraInfo.height)
   {
     luminanceReference = theECImage.grayscaled[outerReference];
     saturationReference = theECImage.saturated[outerReference];
@@ -1100,7 +1030,7 @@ bool LinePerceptor::isPointWhite(const Vector2f& pointInImage, const Vector2f& n
     }
   }
   Vector2i intPointInImage = pointInImage.cast<int>();
-  return theRelativeFieldColors.isWhiteNearField(theECImage.grayscaled[intPointInImage],theECImage.saturated[intPointInImage],
+  return theRelativeFieldColors.isWhiteNearField(theECImage.grayscaled[intPointInImage], theECImage.saturated[intPointInImage],
                                                  static_cast<unsigned char>(luminanceReference), static_cast<unsigned char>(saturationReference));
 }
 

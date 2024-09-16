@@ -12,9 +12,11 @@
 #include "Debugging/ColorRGBA.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Debugging/Plot.h"
 #include "Framework/Blackboard.h"
 #include "Framework/Settings.h"
 #include "Math/Eigen.h"
+#include "Platform/SystemCall.h"
 #include "Streaming/Global.h"
 #include <algorithm>
 
@@ -121,15 +123,28 @@ GameState::GameState() :
 
 void GameState::draw() const
 {
-  DEBUG_DRAWING3D("representation:GameState", "field")
+  [[maybe_unused]] const bool onJersey = SystemCall::getMode() == SystemCall::remoteRobot;
+  DEBUG_DRAWING3D("representation:GameState", onJersey ? "robot" : "field")
   {
-    float yPosLeftSideline = 3000.f;
-    if(Blackboard::getInstance().exists("FieldDimensions"))
-      yPosLeftSideline = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]).yPosLeftSideline;
-    yPosLeftSideline += 500;
+    if(!onJersey)
+    {
+      float yPosLeftTouchline = 3000.f;
+      if(Blackboard::getInstance().exists("FieldDimensions"))
+        yPosLeftTouchline = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]).yPosLeftTouchline;
+      yPosLeftTouchline += 500;
+      TRANSLATE3D("representation:GameState", 0, yPosLeftTouchline, 500.f);
+    }
+    else
+    {
+      TRANSLATE3D("representation:GameState", -800.f, 0, 2200.f);
+      ROTATE3D("representation:GameState", 0, 0, -90_deg);
+      SCALE3D("representation:GameState", 0.07f, 0.07f, 0.07f);
+    }
 
     std::string gameState = "INITIAL";
-    if(isReady())
+    if(state == standby)
+      gameState = "STANDBY";
+    else if(isReady())
       gameState = "READY";
     else if(isSet())
       gameState = "SET";
@@ -137,7 +152,6 @@ void GameState::draw() const
       gameState = "PLAYING";
     else if(isFinished())
       gameState = "FINISHED";
-    print(gameState, Vector3f(static_cast<float>((gameState.size()) * -135.f + 35.f) / 2.f + 100.f, yPosLeftSideline, 500), 100, ColorRGBA::blue);
 
     std::string setPlay;
     if(isPushingFreeKick())
@@ -150,43 +164,74 @@ void GameState::draw() const
       setPlay = "KICKIN";
     else if(isPenaltyKick())
       setPlay = "PENALTY";
-    print(setPlay, Vector3f(-1635.f, yPosLeftSideline, 500), 100, ColorRGBA::blue);
+
+    if(onJersey)
+    {
+      const std::string& show = isPenalized() ? "PENALIZED" : setPlay.empty() ? gameState : setPlay;
+      print(show, Vector3f(static_cast<float>((show.size()) * -135.f + 35.f) / 2.f + 100.f, 0, 0), 100.f, ColorRGBA::white);
+    }
+    else
+    {
+      print(gameState, Vector3f(static_cast<float>((gameState.size()) * -135.f + 35.f) / 2.f + 100.f, 0, 0), 100.f, ColorRGBA::blue);
+      print(setPlay, Vector3f(-1635.f, 0, 0), 100, ColorRGBA::blue);
+    }
 
     if(Blackboard::getInstance().exists("FrameInfo"))
     {
       const FrameInfo& theFrameInfo = static_cast<const FrameInfo&>(Blackboard::getInstance()["FrameInfo"]);
       if(timeWhenPhaseEnds)
       {
-        const int secsRemaining = std::min(std::abs(theFrameInfo.getTimeSince(timeWhenPhaseEnds)) / 1000, 5999);
+        const int secsRemaining = std::min((std::abs(theFrameInfo.getTimeSince(timeWhenPhaseEnds)) + (onJersey ? 100 : 0)) / 1000, 5999);
         const int mins = secsRemaining / 60;
         const int secs = secsRemaining % 60;
-        const ColorRGBA color = timeWhenPhaseEnds < theFrameInfo.time ? ColorRGBA::red : ColorRGBA::black;
-        print(std::to_string(mins / 10) + std::to_string(mins % 10), Vector3f(-350, yPosLeftSideline, 1000), 200, color);
-        print(std::to_string(secs / 10) + std::to_string(secs % 10), Vector3f(280, yPosLeftSideline, 1000), 200, color);
-        LINE3D("representation:GameState", 0, yPosLeftSideline, 890, 0, yPosLeftSideline, 910, 3, color);
-        LINE3D("representation:GameState", 0, yPosLeftSideline, 690, 0, yPosLeftSideline, 710, 3, color);
+        const ColorRGBA color = onJersey ? ColorRGBA::white : timeWhenPhaseEnds < theFrameInfo.time ? ColorRGBA::red : ColorRGBA::black;
+        print(std::to_string(mins / 10) + std::to_string(mins % 10), Vector3f(-350, 0, 500), 200, color);
+        print(std::to_string(secs / 10) + std::to_string(secs % 10), Vector3f(280, 0, 500), 200, color);
+        LINE3D("representation:GameState", 0, 0, 390, 0, 0, 410, 3, color);
+        LINE3D("representation:GameState", 0, 0, 190, 0, 0, 210, 3, color);
       }
 
-      if(timeWhenStateEnds)
+      if(timeWhenStateEnds || (onJersey && timeWhenPenaltyEnds))
       {
+        unsigned timeWhenStateEnds = onJersey && timeWhenPenaltyEnds ? timeWhenPenaltyEnds : this->timeWhenStateEnds;
         const int secondaryTime = std::min(std::abs(theFrameInfo.getTimeSince(timeWhenStateEnds)) / 1000, 5999);
         const int mins = secondaryTime / 60;
         const int secs = secondaryTime % 60;
-        const ColorRGBA color = timeWhenStateEnds < theFrameInfo.time ? ColorRGBA::red : ColorRGBA::blue;
-        print(std::to_string(mins / 10) + std::to_string(mins % 10), Vector3f(1285, yPosLeftSideline, 500), 100, color);
-        print(std::to_string(secs / 10) + std::to_string(secs % 10), Vector3f(1600, yPosLeftSideline, 500), 100, color);
-        LINE3D("representation:GameState", 1460, yPosLeftSideline, 445, 1460, yPosLeftSideline, 455, 3, color);
-        LINE3D("representation:GameState", 1460, yPosLeftSideline, 345, 1460, yPosLeftSideline, 355, 3, color);
+        const ColorRGBA color = onJersey ? ColorRGBA::white : timeWhenStateEnds < theFrameInfo.time ? ColorRGBA::red : ColorRGBA::blue;
+        const float x = onJersey ? 0.f : 1460.f;
+        const float z = onJersey ? -300.f : 0.f;
+        print(std::to_string(mins / 10) + std::to_string(mins % 10), Vector3f(x - 175.f, 0, z), 100, color);
+        print(std::to_string(secs / 10) + std::to_string(secs % 10), Vector3f(x + 140.f, 0, z), 100, color);
+        LINE3D("representation:GameState", x, 0, z - 55.f, x, 0, z - 45.f, 3, color);
+        LINE3D("representation:GameState", x, 0, z - 155.f, x, 0, z - 145.f, 3, color);
+        if(onJersey && !timeWhenPenaltyEnds)
+        {
+          if(isForOwnTeam())
+          {
+            LINE3D("representation:GameState", -670, 0, 400, -870, 0, 300, 3, ColorRGBA::white);
+            LINE3D("representation:GameState", -670, 0, 200, -870, 0, 300, 3, ColorRGBA::white);
+          }
+          else
+          {
+            LINE3D("representation:GameState", 670, 0, 400, 870, 0, 300, 3, ColorRGBA::white);
+            LINE3D("representation:GameState", 670, 0, 200, 870, 0, 300, 3, ColorRGBA::white);
+          }
+        }
       }
     }
 
     const auto drawScore = [&](const Team& team, bool ownTeam)
     {
-      const float x = ownTeam ? -1535.f : 1465.f;
       const int score = std::min(static_cast<int>(team.score), 99);
-      print(std::to_string(score / 10) + std::to_string(score % 10), Vector3f(x, yPosLeftSideline, 1000), 200, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
-      std::string budget = "   " + std::to_string(team.messageBudget);
-      print(budget.substr(budget.size() - 4), Vector3f(x - 135.f, yPosLeftSideline, 1300), 100, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
+      if(onJersey)
+        print(std::to_string(score % 10), Vector3f(ownTeam ? -1200.f : 1400.f, 0, 1000), 200, ColorRGBA::white);
+      else
+      {
+        const float x = ownTeam ? -1535.f : 1465.f;
+        print(std::to_string(score / 10) + std::to_string(score % 10), Vector3f(x, 0, 500), 200, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
+        std::string budget = "   " + std::to_string(team.messageBudget);
+        print(budget.substr(budget.size() - 4), Vector3f(x - 135.f, 0, 800), 100, ColorRGBA::fromTeamColor(team.fieldPlayerColor));
+      }
     };
 
     drawScore(ownTeam, true);
@@ -243,4 +288,6 @@ void GameState::draw() const
     }
     DRAW_TEXT("representation:GameState:ownTeam", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName(ownTeam.fieldPlayerColor) << "/" << TypeRegistry::getEnumName(ownTeam.goalkeeperColor));
   }
+
+  PLOT("representation:GameState:budget", ownTeam.messageBudget);
 }

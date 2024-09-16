@@ -78,7 +78,7 @@ void GlobalOpponentsHypothesis::dynamic(const float odometryRotation, const Vect
   Covariance::fixCovariance<2>(covariance);
 }
 
-void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& measurement, const float weightedSum)
+void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting)
 {
   ASSERT(covariance(0, 1) == covariance(1, 0));
   Matrix2f newCov = measurement.covariance;
@@ -91,13 +91,13 @@ void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& mea
   // SetLeftRight
   const float measurementWidth = (measurement.left - measurement.right).norm();
   const float obstacleWidth = (left - right).norm();
-  float width = (obstacleWidth * (weightedSum - 1) + measurementWidth) / weightedSum;
+  float width = (obstacleWidth * modelWidthWeighting + measurementWidth) / (modelWidthWeighting + 1);
   if(width < 2.f * Obstacle::getRobotDepth())
     width = 2.f * Obstacle::getRobotDepth();
   setLeftRight(width * .5f); // Radius (that's why * .5f)
 }
 
-void GlobalOpponentsHypothesis::considerType(const GlobalOpponentsHypothesis& measurement, const int teamThreshold, const int uprightThreshold)
+void GlobalOpponentsHypothesis::determineAndSetType(const GlobalOpponentsHypothesis& measurement, const int teamThreshold, const int uprightThreshold)
 {
   team = std::min(sqr(teamThreshold), std::max(team + measurement.team, -sqr(teamThreshold)));
   upright = std::min(2 * uprightThreshold, std::max(upright + measurement.upright, -2 * uprightThreshold)); //'2' seems to be chosen wisely

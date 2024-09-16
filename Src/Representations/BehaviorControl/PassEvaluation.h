@@ -13,5 +13,5 @@
 
 STREAMABLE(PassEvaluation,
 {
-  FUNCTION(float(const Vector2f& pointOnField)) getRating, /**< Estimates the probability that a pass from the current ball position to the given target position would be successful, taking into account the known obstacles. */
+  FUNCTION(float(const Vector2f& baseOnField, const Vector2f& targetOnField, const bool isPositioning)) getRating, /**< Estimates the probability that a pass from the base position (e.g. current position) to the given target position would be successful, taking into account the known obstacles. */
 });

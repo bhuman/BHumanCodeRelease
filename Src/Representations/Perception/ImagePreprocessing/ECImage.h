@@ -28,12 +28,16 @@ STREAMABLE(ECImage,
     SEND_DEBUG_IMAGE("GrayscaledImage", grayscaled);
     SEND_DEBUG_IMAGE("SaturatedImage", saturated);
     SEND_DEBUG_IMAGE("HuedImage", hued);
+    SEND_DEBUG_IMAGE("BlueChromaticityImage", blueChromaticity);
+    SEND_DEBUG_IMAGE("RedChromaticityImage", redChromaticity);
   },
 
   (unsigned)(0) timestamp,
   (Image<PixelTypes::GrayscaledPixel>) grayscaled,
   (Image<PixelTypes::GrayscaledPixel>) saturated,
   (Image<PixelTypes::HuePixel>) hued,
+  (Image<PixelTypes::GrayscaledPixel>) blueChromaticity,
+  (Image<PixelTypes::GrayscaledPixel>) redChromaticity,
 });
 
 /**

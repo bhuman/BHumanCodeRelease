@@ -7,7 +7,7 @@
 #define GAMECONTROLLER_RETURN_PORT 3939
 
 #define GAMECONTROLLER_STRUCT_HEADER  "RGme"
-#define GAMECONTROLLER_STRUCT_VERSION 15
+#define GAMECONTROLLER_STRUCT_VERSION 18
 
 #define MAX_NUM_PLAYERS 20
 
@@ -26,8 +26,8 @@
 #define COMPETITION_PHASE_ROUNDROBIN 0
 #define COMPETITION_PHASE_PLAYOFF    1
 
-#define COMPETITION_TYPE_NORMAL                0
-#define COMPETITION_TYPE_DYNAMIC_BALL_HANDLING 1
+#define COMPETITION_TYPE_NORMAL          0
+#define COMPETITION_TYPE_SHARED_AUTONOMY 1
 
 #define GAME_PHASE_NORMAL       0
 #define GAME_PHASE_PENALTYSHOOT 1
@@ -39,6 +39,7 @@
 #define STATE_SET      2
 #define STATE_PLAYING  3
 #define STATE_FINISHED 4
+#define STATE_STANDBY  5
 
 #define SET_PLAY_NONE              0
 #define SET_PLAY_GOAL_KICK         1
@@ -59,6 +60,7 @@
 #define PENALTY_SPL_LOCAL_GAME_STUCK          8
 #define PENALTY_SPL_ILLEGAL_POSITION_IN_SET   9
 #define PENALTY_SPL_PLAYER_STANCE             10
+#define PENALTY_SPL_ILLEGAL_MOTION_IN_STANDBY 11
 
 #define PENALTY_SUBSTITUTE                    14
 #define PENALTY_MANUAL                        15
@@ -89,7 +91,7 @@ struct RoboCupGameControlData
   uint8_t packetNumber;     // number incremented with each packet sent (with wraparound)
   uint8_t playersPerTeam;   // the number of players on a team
   uint8_t competitionPhase; // phase of the competition (COMPETITION_PHASE_ROUNDROBIN, COMPETITION_PHASE_PLAYOFF)
-  uint8_t competitionType;  // type of the competition (COMPETITION_TYPE_NORMAL, COMPETITION_TYPE_DYNAMIC_BALL_HANDLING)
+  uint8_t competitionType;  // type of the competition (COMPETITION_TYPE_NORMAL, COMPETITION_TYPE_SHARED_AUTONOMY)
   uint8_t gamePhase;        // phase of the game (GAME_PHASE_NORMAL, GAME_PHASE_PENALTYSHOOT, etc)
   uint8_t state;            // state of the game (STATE_READY, STATE_PLAYING, etc)
   uint8_t setPlay;          // active set play (SET_PLAY_NONE, SET_PLAY_GOAL_KICK, etc)

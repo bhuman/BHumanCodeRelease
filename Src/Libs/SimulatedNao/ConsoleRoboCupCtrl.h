@@ -77,8 +77,9 @@ public:
    * The function is called when a console command has been entered.
    * @param command The command.
    * @param console Use this console to execute the command.
+   * @return Robot selection changed, i.e. parameter console should not be used anymore.
    */
-  void executeConsoleCommand(std::string command, RobotConsole* console = nullptr);
+  bool executeConsoleCommand(std::string command, RobotConsole* console = nullptr);
 
   /**
    * The function is called when the tabulator key is pressed.
@@ -194,8 +195,9 @@ private:
    * @param name2 The file to execute if name1 does not exist.
    * @param printError Print error message if file is not found.
    * @param console Use this console to execute all commands in the file.
+   * @return Robot selection changed, i.e. parameter console should not be used anymore.
    */
-  void executeFile(const std::string& name1, const std::string& name2,
+  bool executeFile(const std::string& name1, const std::string& name2,
                    bool printError, RobotConsole* console);
 
   /**
@@ -290,4 +292,8 @@ private:
    * ${Robot:,Rajesh Sheldon} for selection.
    */
   void showInputDialog(std::string& command);
+
+  void writeFastConfiguration(std::string fileName);
+
+  void writePerceptOracleConfig(std::string fileName);
 };

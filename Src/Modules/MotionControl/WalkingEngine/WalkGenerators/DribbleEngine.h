@@ -43,9 +43,10 @@ MODULE(DribbleEngine,
   {,
     (Angle)(3_deg) redecideSignThreshold, /**< The dribble foot is only redecided if the decision angle is larger than this. */
     (float)(100.f) minBallPositionFuture, /**< Ball must land this far away from us if it is rolling towards us. */
-    (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relativ to the closest point it will have to us. */
+    (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relative to the closest point it will have to us. */
     (float)(300.f) minBallVelocityCloseRange, /**< Clip ball velocity to this value when close to the ball. */
     (Rangef)(250.f, 2000.f) ballVelocityInterpolationRange, /**< Based on the current ball distance interpolate the velocity. */
+    (float)(800.f) maxBallVelocity, /**< Max ball velocity to still allow a kick. */
   }),
 });
 

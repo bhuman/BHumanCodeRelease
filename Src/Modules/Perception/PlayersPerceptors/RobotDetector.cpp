@@ -10,17 +10,18 @@
  * @author Bernd Poppinga
  */
 
-#include "RobotDetector.h"
-#include "Platform/File.h"
+#include "CompiledNN/Model.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/Stopwatch.h"
-#include "Streaming/Global.h"
 #include "ImageProcessing/PatchUtilities.h"
 #include "ImageProcessing/Resize.h"
+#include "Math/BHMath.h"
 #include "Math/Eigen.h"
+#include "Platform/File.h"
+#include "RobotDetector.h"
+#include "Streaming/Global.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
-#include <CompiledNN/Model.h>
 
 MAKE_MODULE(RobotDetector);
 
@@ -98,37 +99,7 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
 
   if(theCameraInfo.camera == CameraInfo::upper)
   {
-    if(useOnnx ? !onnxConvModel.valid() : !cnnConvModel.valid())
-      return;
-
-    LabelImage labelImage;
-
-    if(networkParameters.inputChannels == 1)
-      applyGrayscaleNetwork();
-    else
-      applyColorNetwork();
-
-    if(useOnnx)
-      STOPWATCH("module:RobotDetector:boundingBoxes") boundingBoxes(labelImage, onnxConvModel);
-    else
-      STOPWATCH("module:RobotDetector:boundingBoxes") boundingBoxes(labelImage, cnnConvModel);
-
-    STOPWATCH("module:RobotDetector:nonMaximumSuppression") labelImage.nonMaximumSuppression(0.3f);
-    STOPWATCH("module:RobotDetector:bigBoxSuppression") labelImage.bigBoxSuppression();
-
-    for(const LabelImage::Annotation& box : labelImage.annotations)
-    {
-      DRAW_TEXT("module:RobotDetector:image", box.upperLeft.x(), box.upperLeft.y() - 2, 10, ColorRGBA::black, "dist: " << box.distance << "m");
-      DRAW_TEXT("module:RobotDetector:image", box.upperLeft.x(), box.upperLeft.y() - 12, 10, ColorRGBA::black, "prob: " << box.probability);
-      obstacles.emplace_back();
-      obstacles.back().top = static_cast<int>(box.upperLeft.y());
-      obstacles.back().bottom = static_cast<int>(box.lowerRight.y());
-      obstacles.back().left = static_cast<int>(box.upperLeft.x());
-      obstacles.back().right = static_cast<int>(box.lowerRight.x());
-      obstacles.back().probability = box.probability;
-      obstacles.back().distance = box.distance;
-      obstacles.back().bottomFound = true;
-    }
+    extractImageObstaclesFromNetwork(obstacles);
   }
   else
   {
@@ -141,6 +112,208 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
     STOPWATCH("module:RobotDetector:clusterRegions") dbScan(regions, obstacles);
   }
 
+  mergeObstacles(theObstaclesFieldPercept, obstacles);
+}
+
+void RobotDetector::update(ObstaclesPerceptorData& theObstaclesPerceptorData)
+{
+  theObstaclesPerceptorData.cameraInfo = theCameraInfo;
+  theObstaclesPerceptorData.cameraMatrix = theCameraMatrix;
+  theObstaclesPerceptorData.imageCoordinateSystem = theImageCoordinateSystem;
+}
+
+void RobotDetector::extractImageObstaclesFromNetwork(std::vector<ObstaclesImagePercept::Obstacle>& obstacles)
+{
+  if(useOnnx ? !onnxConvModel.valid() : !cnnConvModel.valid())
+    return;
+
+  LabelImage labelImage;
+
+  if(networkParameters.inputChannels == 1)
+    applyGrayscaleNetwork();
+  else
+    applyColorNetwork();
+
+  if(useOnnx)
+    STOPWATCH("module:RobotDetector:boundingBoxes") boundingBoxes(labelImage, onnxConvModel);
+  else
+    STOPWATCH("module:RobotDetector:boundingBoxes") boundingBoxes(labelImage, cnnConvModel);
+
+  STOPWATCH("module:RobotDetector:nonMaximumSuppression") labelImage.nonMaximumSuppression(nonMaximumSuppressionIoUThreshold);
+  STOPWATCH("module:RobotDetector:bigBoxSuppression") labelImage.bigBoxSuppression();
+
+  for(const LabelImage::Annotation& box : labelImage.annotations)
+  {
+    DRAW_TEXT("module:RobotDetector:image", box.upperLeft.x(), box.upperLeft.y() - 2, 10, ColorRGBA::black, "fallen: " << box.fallen);
+    DRAW_TEXT("module:RobotDetector:image", box.upperLeft.x(), box.upperLeft.y() - 12, 10, ColorRGBA::black, "conf: " << box.confidence);
+    obstacles.emplace_back();
+    obstacles.back().top = static_cast<int>(box.upperLeft.y());
+    obstacles.back().bottom = static_cast<int>(box.lowerRight.y());
+    obstacles.back().left = static_cast<int>(box.upperLeft.x());
+    obstacles.back().right = static_cast<int>(box.lowerRight.x());
+    obstacles.back().confidence = box.confidence;
+    obstacles.back().fallen = box.fallen;
+    obstacles.back().distance = box.distance;
+    obstacles.back().bottomFound = true;
+  }
+}
+
+void RobotDetector::fillGrayscaleThumbnail()
+{
+  const auto scale = static_cast<unsigned int>(std::round(std::log2(theECImage.grayscaled.width / networkParameters.inputWidth)));
+  ASSERT(theECImage.grayscaled.width == static_cast<unsigned>(networkParameters.inputWidth) << scale);
+  ASSERT(theECImage.grayscaled.height == static_cast<unsigned>(networkParameters.inputHeight) << scale);
+
+  // Can't shrink directly to NN input because it needs a larger buffer :-(
+  STOPWATCH("module:RobotDetector:shrinkY") Resize::shrinkY(scale, theECImage.grayscaled, grayscaleThumbnail);
+  ASSERT(networkParameters.inputWidth == grayscaleThumbnail.width);
+  ASSERT(networkParameters.inputHeight == grayscaleThumbnail.height);
+  SEND_DEBUG_IMAGE("GrayscaleThumbnail", grayscaleThumbnail);
+}
+
+void RobotDetector::fillChromaThumbnails()
+{
+  const auto scale = static_cast<unsigned int>(std::round(std::log2(theECImage.blueChromaticity.width / networkParameters.inputWidth)));
+  ASSERT(scale == static_cast<unsigned int>(std::round(std::log2(theECImage.redChromaticity.width / networkParameters.inputWidth))));
+  ASSERT(theECImage.blueChromaticity.width == theECImage.redChromaticity.width);
+  ASSERT(theECImage.blueChromaticity.width == static_cast<unsigned>(networkParameters.inputWidth) << scale);
+  ASSERT(theECImage.blueChromaticity.height == theECImage.redChromaticity.height);
+  ASSERT(theECImage.blueChromaticity.height == static_cast<unsigned>(networkParameters.inputHeight) << scale);
+  STOPWATCH("module:RobotDetector:shrinkBlueChroma") Resize::shrinkY(scale, theECImage.blueChromaticity, redChromaThumbnail);
+  STOPWATCH("module:RobotDetector:shrinkRedChroma") Resize::shrinkY(scale, theECImage.redChromaticity, blueChromaThumbnail);
+  ASSERT(networkParameters.inputWidth == redChromaThumbnail.width);
+  ASSERT(networkParameters.inputWidth == blueChromaThumbnail.width);
+  ASSERT(networkParameters.inputHeight == redChromaThumbnail.height);
+  ASSERT(networkParameters.inputHeight == blueChromaThumbnail.height);
+  SEND_DEBUG_IMAGE("RedChromaThumbnail", redChromaThumbnail);
+  SEND_DEBUG_IMAGE("BlueChromaThumbnail", blueChromaThumbnail);
+}
+
+void RobotDetector::applyGrayscaleNetwork()
+{
+  ASSERT(networkParameters.inputChannels == 1);
+  fillGrayscaleThumbnail();
+
+  if(useOnnx)
+  {
+    // Copy image into input of the model
+    std::memcpy(reinterpret_cast<unsigned char*>(onnxConvModel.input(0).data()), grayscaleThumbnail[0], grayscaleThumbnail.width * grayscaleThumbnail.height * sizeof(unsigned char));
+
+    STOPWATCH("module:RobotDetector:normalizeContrast") PatchUtilities::normalizeContrast<unsigned char>(
+          reinterpret_cast<unsigned char*>(onnxConvModel.input(0).data()), inputImageSize, 0.02f);
+    STOPWATCH("module:RobotDetector:apply") onnxConvModel.apply();
+  }
+  else
+  {
+    // Copy image into input of the model
+    std::memcpy(reinterpret_cast<unsigned char*>(cnnConvModel.input(0).data()), grayscaleThumbnail[0], grayscaleThumbnail.width * grayscaleThumbnail.height * sizeof(unsigned char));
+
+    STOPWATCH("module:RobotDetector:normalizeContrast") PatchUtilities::normalizeContrast<unsigned char>(
+          reinterpret_cast<unsigned char*>(cnnConvModel.input(0).data()), inputImageSize, 0.02f);
+    STOPWATCH("module:RobotDetector:apply") cnnConvModel.apply();
+  }
+}
+
+void RobotDetector::applyColorNetwork()
+{
+  ASSERT(networkParameters.inputChannels == 3);
+  fillGrayscaleThumbnail();
+  fillChromaThumbnails();
+
+  PixelTypes::GrayscaledPixel* yPos = grayscaleThumbnail[0];
+  PixelTypes::GrayscaledPixel* uPos = redChromaThumbnail[0];
+  PixelTypes::GrayscaledPixel* vPos = blueChromaThumbnail[0];
+  PixelTypes::GrayscaledPixel* inputPos;
+  if(useOnnx)
+    inputPos = reinterpret_cast<PixelTypes::GrayscaledPixel*>(onnxConvModel.input(0).data());
+  else
+    inputPos = reinterpret_cast<PixelTypes::GrayscaledPixel*>(cnnConvModel.input(0).data());
+
+  STOPWATCH("module:RobotDetector:copyYUVToInput")
+  {
+    for(unsigned int pos = 0; pos < networkParameters.inputWidth * networkParameters.inputHeight; ++pos, ++yPos, ++uPos, ++vPos, inputPos += 3)
+    {
+      inputPos[0] = yPos[0];
+      inputPos[1] = uPos[0];
+      inputPos[2] = vPos[0];
+    }
+  }
+
+  if(useOnnx)
+    STOPWATCH("module:RobotDetector:apply") onnxConvModel.apply();
+  else
+    STOPWATCH("module:RobotDetector:apply") cnnConvModel.apply();
+}
+
+template<typename ConvModel>
+void RobotDetector::boundingBoxes(LabelImage& labelImage, ConvModel& convModel)
+{
+  const float objectThreshold = logit(objectThres);
+  for(unsigned y = 0; y < networkParameters.outputHeight; ++y)
+    for(unsigned x = 0; x < networkParameters.outputWidth; ++x)
+      for(unsigned b = 0; b < networkParameters.outputAnchors; ++b)
+      {
+        // Check confidence objectThreshold for every Anchor, calculate bounding box only if confidence is above objectThreshold
+        const size_t offset = (y * networkParameters.outputWidth + x)
+                              * networkParameters.outputAnchors
+                              * networkParameters.paramsPerAnchor
+                              + b * networkParameters.paramsPerAnchor;
+        if(convModel.output(0)[offset] > objectThreshold)
+        {
+          Eigen::Map<Eigen::Vector<float, 5>> pred(convModel.output(0).data() + offset);
+          LabelImage::Annotation box = predictionToBoundingBox(pred, y, x, b);
+          if(static_cast<float>(theFieldBoundary.getBoundaryY(static_cast<int>((box.lowerRight.x() + box.upperLeft.x()) / 2.f))) > box.lowerRight.y())
+            continue;
+          labelImage.annotations.emplace_back(box);
+        }
+      }
+}
+
+LabelImage::Annotation RobotDetector::predictionToBoundingBox(Eigen::Map<Eigen::Vector<float, 5>>& pred, unsigned int y, unsigned int x, unsigned int b) const
+{
+  pred.array() = 1.f / (1.f + (pred * -1).array().exp());
+  ASSERT(pred(networkParameters.confidenceIndex) >= 0.f && pred(networkParameters.confidenceIndex) <= 1.f);
+  ASSERT(pred(networkParameters.yMidIndex) >= 0.f && pred(networkParameters.yMidIndex) <= 1.f);
+  ASSERT(pred(networkParameters.xMidIndex) >= 0.f && pred(networkParameters.xMidIndex) <= 1.f);
+  ASSERT(pred(networkParameters.widthIndex) >= 0.f && pred(networkParameters.widthIndex) <= 1.f);
+  ASSERT(pred(networkParameters.heightIndex) >= 0.f && pred(networkParameters.heightIndex) <= 1.f);
+
+  // Bounding Box Position
+  pred(networkParameters.yMidIndex) = (static_cast<float>(y) + pred(networkParameters.yMidIndex)) /
+                                      static_cast<float>(networkParameters.outputHeight) *
+                                      static_cast<float>(theCameraInfo.height);
+  pred(networkParameters.xMidIndex) = (static_cast<float>(x) + pred(networkParameters.xMidIndex)) /
+                                      static_cast<float>(networkParameters.outputWidth) *
+                                      static_cast<float>(theCameraInfo.width);
+
+  // Bounding Box Size
+  // 0.5 = no change in size, above and below will scale exponentially
+  pred(networkParameters.heightIndex) = networkParameters.anchors[b].y()
+                                        * std::pow(networkParameters.sizeConversionFactor, 2.f * pred(3) - 1.f)
+                                        * static_cast<float>(theCameraInfo.height);
+  pred(networkParameters.widthIndex) = networkParameters.anchors[b].x()
+                                       * std::pow(networkParameters.sizeConversionFactor, 2.f * pred(4) - 1.f)
+                                       * static_cast<float>(theCameraInfo.width);
+
+  LabelImage::Annotation box;
+  box.upperLeft = Vector2f(pred(networkParameters.xMidIndex) - pred(networkParameters.widthIndex) / 2.f,
+                           pred(networkParameters.yMidIndex) - pred(networkParameters.heightIndex) / 2.f);
+  box.lowerRight = Vector2f(pred(networkParameters.xMidIndex) + pred(networkParameters.widthIndex) / 2.f,
+                            pred(networkParameters.yMidIndex) + pred(networkParameters.heightIndex) / 2.f);
+  box.confidence = pred(networkParameters.confidenceIndex);
+
+  if(networkParameters.predictFallen)
+    box.fallen = pred(networkParameters.fallenClassIndex) > fallenThres;
+  else
+    box.fallen = false;
+
+  box.distance = -1.f;
+
+  return box;
+}
+
+void RobotDetector::mergeObstacles(ObstaclesFieldPercept& theObstaclesFieldPercept, std::vector<ObstaclesImagePercept::Obstacle>& obstacles)
+{
   bool mergeObstacles = false;
   const Vector2f& robotRotationDeviation = theMotionInfo.executedPhase == MotionPhase::stand ? pRobotRotationDeviationInStand : pRobotRotationDeviation;
   do
@@ -149,18 +322,17 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
     auto it = obstacles.begin();
     while(it != obstacles.end())
     {
-      bool validObstacle;
       ObstaclesImagePercept::Obstacle& obstacleInImage = *it;
       ObstaclesFieldPercept::Obstacle obstacleOnField;
-
       Matrix2f leftCovariance, rightCovariance;
+      bool validObstacle =
+          theMeasurementCovariance.transformWithCovLegacy(theImageCoordinateSystem.toCorrected(Vector2i(obstacleInImage.left, obstacleInImage.bottom)), 0.f,
+                                                          robotRotationDeviation, obstacleOnField.left, leftCovariance) &&
+          theMeasurementCovariance.transformWithCovLegacy(theImageCoordinateSystem.toCorrected(Vector2i(obstacleInImage.right, obstacleInImage.bottom)),
+                                                          0.f,
+                                                          robotRotationDeviation, obstacleOnField.right, rightCovariance);
 
-      if((validObstacle =
-              theMeasurementCovariance.transformWithCovLegacy(theImageCoordinateSystem.toCorrected(Vector2i(obstacleInImage.left, obstacleInImage.bottom)), 0.f,
-                                                              robotRotationDeviation, obstacleOnField.left, leftCovariance) &&
-              theMeasurementCovariance.transformWithCovLegacy(theImageCoordinateSystem.toCorrected(Vector2i(obstacleInImage.right, obstacleInImage.bottom)),
-                                                              0.f,
-                                                              robotRotationDeviation, obstacleOnField.right, rightCovariance)))
+      if(validObstacle)
       {
         obstacleOnField.fallen = obstacleInImage.fallen;
         obstacleOnField.type = ObstaclesFieldPercept::unknown;
@@ -276,184 +448,6 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
     }
   }
   while(mergeObstacles);
-}
-
-void RobotDetector::update(ObstaclesPerceptorData& theObstaclesPerceptorData)
-{
-  theObstaclesPerceptorData.cameraInfo = theCameraInfo;
-  theObstaclesPerceptorData.cameraMatrix = theCameraMatrix;
-  theObstaclesPerceptorData.imageCoordinateSystem = theImageCoordinateSystem;
-}
-
-void RobotDetector::fillGrayscaleThumbnail()
-{
-  const auto scale = static_cast<unsigned int>(std::round(std::log2(theECImage.grayscaled.width / networkParameters.inputWidth)));
-  ASSERT(theECImage.grayscaled.width == static_cast<unsigned>(networkParameters.inputWidth) << scale);
-  ASSERT(theECImage.grayscaled.height == static_cast<unsigned>(networkParameters.inputHeight) << scale);
-
-  // Can't shrink directly to NN input because it needs a larger buffer :-(
-  STOPWATCH("module:RobotDetector:shrinkY") Resize::shrinkY(scale, theECImage.grayscaled, yThumbnail);
-  ASSERT(networkParameters.inputWidth == yThumbnail.width);
-  ASSERT(networkParameters.inputHeight == yThumbnail.height);
-  SEND_DEBUG_IMAGE("YThumbnail", yThumbnail);
-}
-
-void RobotDetector::fillUVThumbnails()
-{
-  // Subsampling from CameraImage, as UV is given in only half resolution horizontally
-  ASSERT(theCameraImage.width == static_cast<unsigned int>(theCameraInfo.width / 2));
-  ASSERT(theCameraImage.height >> 1 == theCameraImage.height / 2);
-  // todo still slower than it should be
-  STOPWATCH("module:RobotDetector:subsampleUV")
-  {
-    uSubsampled.setResolution(theCameraImage.width, theCameraImage.height >> 1);
-    PixelTypes::GrayscaledPixel* uPos = uSubsampled[0];
-    vSubsampled.setResolution(theCameraImage.width, theCameraImage.height >> 1);
-    PixelTypes::GrayscaledPixel* vPos = vSubsampled[0];
-    const PixelTypes::YUYVPixel* yuyvPos = theCameraImage[0];
-    for(unsigned int yPos = 0; yPos < theCameraImage.height; yPos += 2, yuyvPos += theCameraImage.width)
-    {
-      for(unsigned int xPos = 0; xPos < theCameraImage.width; ++xPos, ++yuyvPos, ++uPos, ++vPos)
-      {
-        uPos[0] = yuyvPos->u;
-        vPos[0] = yuyvPos->v;
-      }
-    }
-  }
-  // downscale to expected input size
-  const auto scale = static_cast<unsigned int>(std::round(std::log2(uSubsampled.width / networkParameters.inputWidth)));
-  ASSERT(scale == static_cast<unsigned int>(std::round(std::log2(vSubsampled.width / networkParameters.inputWidth))));
-  ASSERT(uSubsampled.width == vSubsampled.width);
-  ASSERT(uSubsampled.width == static_cast<unsigned>(networkParameters.inputWidth) << scale);
-  ASSERT(uSubsampled.height == vSubsampled.height);
-  ASSERT(uSubsampled.height == static_cast<unsigned>(networkParameters.inputHeight) << scale);
-  // Resize::shrinkY doesn't work in place
-  STOPWATCH("module:RobotDetector:shrinkU") Resize::shrinkY(scale, uSubsampled, uThumbnail);
-  STOPWATCH("module:RobotDetector:shrinkV") Resize::shrinkY(scale, vSubsampled, vThumbnail);
-  ASSERT(networkParameters.inputWidth == uThumbnail.width);
-  ASSERT(networkParameters.inputWidth == vThumbnail.width);
-  ASSERT(networkParameters.inputHeight == uThumbnail.height);
-  ASSERT(networkParameters.inputHeight == vThumbnail.height);
-  SEND_DEBUG_IMAGE("UThumbnail", uThumbnail);
-  SEND_DEBUG_IMAGE("VThumbnail", vThumbnail);
-}
-
-void RobotDetector::applyGrayscaleNetwork()
-{
-  ASSERT(networkParameters.inputChannels == 1);
-  fillGrayscaleThumbnail();
-
-  if(useOnnx)
-  {
-    // Copy image into input of the model
-    std::memcpy(reinterpret_cast<unsigned char*>(onnxConvModel.input(0).data()), yThumbnail[0], yThumbnail.width * yThumbnail.height * sizeof(unsigned char));
-
-    STOPWATCH("module:RobotDetector:normalizeContrast")PatchUtilities::normalizeContrast<unsigned char>(
-          reinterpret_cast<unsigned char*>(onnxConvModel.input(0).data()), inputImageSize, 0.02f);
-    STOPWATCH("module:RobotDetector:apply") onnxConvModel.apply();
-  }
-  else
-  {
-    // Copy image into input of the model
-    std::memcpy(reinterpret_cast<unsigned char*>(cnnConvModel.input(0).data()), yThumbnail[0], yThumbnail.width * yThumbnail.height * sizeof(unsigned char));
-
-    STOPWATCH("module:RobotDetector:normalizeContrast")PatchUtilities::normalizeContrast<unsigned char>(
-          reinterpret_cast<unsigned char*>(cnnConvModel.input(0).data()), inputImageSize, 0.02f);
-    STOPWATCH("module:RobotDetector:apply") cnnConvModel.apply();
-  }
-}
-
-void RobotDetector::applyColorNetwork()
-{
-  ASSERT(networkParameters.inputChannels == 3);
-  fillGrayscaleThumbnail();
-  fillUVThumbnails();
-
-  PixelTypes::GrayscaledPixel* yPos = yThumbnail[0];
-  PixelTypes::GrayscaledPixel* uPos = uThumbnail[0];
-  PixelTypes::GrayscaledPixel* vPos = vThumbnail[0];
-  PixelTypes::GrayscaledPixel* inputPos;
-  if(useOnnx)
-    inputPos = reinterpret_cast<PixelTypes::GrayscaledPixel*>(onnxConvModel.input(0).data());
-  else
-    inputPos = reinterpret_cast<PixelTypes::GrayscaledPixel*>(cnnConvModel.input(0).data());
-
-  STOPWATCH("module:RobotDetector:copyYUVToInput")
-  {
-    for(unsigned int pos = 0; pos < networkParameters.inputWidth * networkParameters.inputHeight; ++pos, ++yPos, ++uPos, ++vPos, inputPos += 3)
-    {
-      inputPos[0] = yPos[0];
-      inputPos[1] = uPos[0];
-      inputPos[2] = vPos[0];
-    }
-  }
-
-  if(useOnnx)
-    STOPWATCH("module:RobotDetector:apply") onnxConvModel.apply();
-  else
-    STOPWATCH("module:RobotDetector:apply") cnnConvModel.apply();
-}
-
-template<typename ConvModel>
-void RobotDetector::boundingBoxes(LabelImage& labelImage, ConvModel& convModel)
-{
-  // convert threshold from [0, 1] range to logit
-  const float threshold = -std::log(1.f / objectThres - 1);
-  for(unsigned y = 0; y < networkParameters.outputHeight; ++y)
-    for(unsigned x = 0; x < networkParameters.outputWidth; ++x)
-      for(unsigned b = 0; b < networkParameters.outputAnchors; ++b)
-      {
-        // Check confidence threshold for every Anchor, calculate bounding box only if confidence is above threshold
-        const size_t offset = (y * networkParameters.outputWidth + x)
-                              * networkParameters.outputAnchors
-                              * networkParameters.paramsPerAnchor
-                              + b * networkParameters.paramsPerAnchor;
-        if(convModel.output(0)[offset] > threshold)
-        {
-          Eigen::Map<Eigen::Vector<float, 5>> pred(convModel.output(0).data() + offset);
-          LabelImage::Annotation box = predictionToBoundingBox(pred, y, x, b);
-          if(static_cast<float>(theFieldBoundary.getBoundaryY(static_cast<int>((box.lowerRight.x() + box.upperLeft.x()) / 2.f))) > box.lowerRight.y())
-            continue;
-          labelImage.annotations.emplace_back(box);
-        }
-      }
-}
-
-LabelImage::Annotation RobotDetector::predictionToBoundingBox(Eigen::Map<Eigen::Vector<float, 5>>& pred, unsigned int y, unsigned int x, unsigned int b) const
-{
-  pred.array() = 1.f / (1.f + (pred * -1).array().exp());
-  ASSERT(pred(networkParameters.confidenceIndex) >= 0.f && pred(networkParameters.confidenceIndex) <= 1.f);
-  ASSERT(pred(networkParameters.yMidIndex) >= 0.f && pred(networkParameters.yMidIndex) <= 1.f);
-  ASSERT(pred(networkParameters.xMidIndex) >= 0.f && pred(networkParameters.xMidIndex) <= 1.f);
-  ASSERT(pred(networkParameters.widthIndex) >= 0.f && pred(networkParameters.widthIndex) <= 1.f);
-  ASSERT(pred(networkParameters.heightIndex) >= 0.f && pred(networkParameters.heightIndex) <= 1.f);
-
-  // Bounding Box Position
-  pred(networkParameters.yMidIndex) = (static_cast<float>(y) + pred(networkParameters.yMidIndex)) /
-                                      static_cast<float>(networkParameters.outputHeight) *
-                                      static_cast<float>(theCameraInfo.height);
-  pred(networkParameters.xMidIndex) = (static_cast<float>(x) + pred(networkParameters.xMidIndex)) /
-                                      static_cast<float>(networkParameters.outputWidth) *
-                                      static_cast<float>(theCameraInfo.width);
-
-  // Bounding Box Size
-  // 0.5 = no change in size, above and below will scale exponentially
-  pred(networkParameters.heightIndex) = networkParameters.anchors[b].y()
-                                        * std::pow(networkParameters.sizeConversionFactor, 2.f * pred(3) - 1.f)
-                                        * static_cast<float>(theCameraInfo.height);
-  pred(networkParameters.widthIndex) = networkParameters.anchors[b].x()
-                                       * std::pow(networkParameters.sizeConversionFactor, 2.f * pred(4) - 1.f)
-                                       * static_cast<float>(theCameraInfo.width);
-
-  LabelImage::Annotation box;
-  box.upperLeft = Vector2f(pred(networkParameters.xMidIndex) - pred(networkParameters.widthIndex) / 2.f,
-                           pred(networkParameters.yMidIndex) - pred(networkParameters.heightIndex) / 2.f);
-  box.lowerRight = Vector2f(pred(networkParameters.xMidIndex) + pred(networkParameters.widthIndex) / 2.f,
-                            pred(networkParameters.yMidIndex) + pred(networkParameters.heightIndex) / 2.f);
-  box.probability = pred(networkParameters.confidenceIndex);
-  box.distance = 0.f;
-
-  return box;
 }
 
 bool RobotDetector::trimObstacle(bool trimHeight, ObstaclesImagePercept::Obstacle& obstacleInImage)

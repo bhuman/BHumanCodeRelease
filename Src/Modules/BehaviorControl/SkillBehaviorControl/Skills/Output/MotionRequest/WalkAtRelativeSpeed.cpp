@@ -1,37 +1,28 @@
 /**
  * @file WalkAtRelativeSpeed.cpp
  *
- * This file implements the implementation of the WalkAtRelativeSpeed skill.
+ * This file implements the WalkAtRelativeSpeed skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(WalkAtRelativeSpeedImpl,
-{,
-  IMPLEMENTS(WalkAtRelativeSpeed),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class WalkAtRelativeSpeedImpl : public WalkAtRelativeSpeedImplBase
+option((SkillBehaviorControl) WalkAtRelativeSpeed,
+       args((const Pose2f&) speed))
 {
-  void execute(const WalkAtRelativeSpeed& p) override
+  theMotionRequest.motion = MotionRequest::walkAtRelativeSpeed;
+  theMotionRequest.walkSpeed = speed;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::walkAtRelativeSpeed;
-    theMotionRequest.walkSpeed = p.speed;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::walk)
+        goto done;
+    }
   }
 
-  bool isDone(const WalkAtRelativeSpeed&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::walk;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(WalkAtRelativeSpeedImpl);
+  target_state(done) {}
+}

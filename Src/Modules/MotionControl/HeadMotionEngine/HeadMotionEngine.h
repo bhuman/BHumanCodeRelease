@@ -18,6 +18,7 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -36,6 +37,7 @@ MODULE(HeadMotionEngine,
   REQUIRES(HeadLimits),
   REQUIRES(JointAngles),
   USES(JointRequest),
+  REQUIRES(OdometryDataPreview),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),

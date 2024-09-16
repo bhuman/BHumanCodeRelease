@@ -440,7 +440,10 @@ void LogPlayer::playBack(size_t frame)
     const_iterator end = frame + 1 == frameIndex.size() ? this->end() : begin() + frameIndex[frame + 1];
     target << std::pair<const_iterator, const_iterator>(begin() + frameIndex[frame], end);
     for(auto i = target.begin() + originalSize; i != target.end(); ++i)
-      *const_cast<char*>(i.current) = mapLogToID[*i.current];
+    {
+      const MessageID id = static_cast<MessageID>(*i.current);
+      *const_cast<char*>(i.current) = id < mapLogToID.size() ? mapLogToID[id] : undefined;
+    }
   }
   currentFrame = frame;
 }

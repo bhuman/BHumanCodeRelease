@@ -13,23 +13,19 @@
 
 STREAMABLE(ActivationGraph,
 {
-  int currentDepth = 0; /**< This is only used during construction of the graph and therefore not streamed.  */
-
-  void verify() const;
-
   STREAMABLE(Node,
   {
     Node() = default;
     Node(const std::string& option, int depth,
          const std::string& state, int optionTime,
-         int stateTime, const std::vector<std::string>& parameters),
+         int stateTime, const std::vector<std::string>& arguments),
 
     (std::string) option,
     (int)(0) depth,
     (std::string) state,
     (int)(0) optionTime,
     (int)(0) stateTime,
-    (std::vector<std::string>) parameters,
+    (std::vector<std::string>) arguments,
   });
 
   ActivationGraph()
@@ -42,16 +38,11 @@ STREAMABLE(ActivationGraph,
 
 inline ActivationGraph::Node::Node(const std::string& option, int depth,
                                    const std::string& state, int optionTime,
-                                   int stateTime, const std::vector<std::string>& parameters) :
+                                   int stateTime, const std::vector<std::string>& arguments) :
   option(option),
   depth(depth),
   state(state),
   optionTime(optionTime),
   stateTime(stateTime),
-  parameters(parameters)
+  arguments(arguments)
 {}
-
-inline void ActivationGraph::verify() const
-{
-  ASSERT(currentDepth == 0);
-}

@@ -6,7 +6,6 @@
 
 #include "UdpComm.h"
 
-#include <iostream>
 #ifdef WINDOWS
 #include <ws2tcpip.h>
 #else
@@ -28,10 +27,16 @@
 
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
+#include "Streaming/Output.h"
 
 UdpComm::UdpComm()
 {
   sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#ifdef MACOS
+  const int size = 212992;
+  setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
+  setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+#endif
   target = reinterpret_cast<sockaddr*>(new sockaddr_in);
 
   ASSERT(-1 != sock);
@@ -55,7 +60,7 @@ bool UdpComm::resolve(const char* addrStr, int port, sockaddr_in* addr)
   addr->sin_port = htons(static_cast<unsigned short>(port));
   if(1 != inet_pton(AF_INET, addrStr, &(addr->sin_addr.s_addr)))
   {
-    std::cerr << addrStr << " is not a valid dotted ipv4 address" << std::endl;
+    OUTPUT_ERROR(addrStr << " is not a valid dotted ipv4 address");
     return false;
   }
 
@@ -96,7 +101,7 @@ bool UdpComm::setTTL(const char ttl)
 {
   if(setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(unsigned char)) < 0)
   {
-    std::cerr << "could not set TTL to " << ttl << std::endl;
+    OUTPUT_ERROR("could not set TTL to " << ttl);
     return false;
   }
   return true;
@@ -107,7 +112,7 @@ bool UdpComm::setLoopback(bool yesno)
   const char val = yesno ? 1 : 0;
   if(setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, &val, sizeof(char)) < 0)
   {
-    std::cerr << "could not set ip_multicast_loop to " << val << std::endl;
+    OUTPUT_ERROR("could not set ip_multicast_loop to " << val);
     return false;
   }
   return true;
@@ -132,7 +137,7 @@ bool UdpComm::joinMulticast(const char* addrStr)
     ifc.ifc_buf = buf;
     if(ioctl(sock, SIOCGIFCONF, &ifc) < 0)
     {
-      std::cerr << "cannot get interface list" << std::endl;
+      OUTPUT_ERROR("cannot get interface list");
       return false;
     }
     else
@@ -148,7 +153,7 @@ bool UdpComm::joinMulticast(const char* addrStr)
       }
       if(!could_join)
       {
-        std::cerr << "join multicast group failed for interface" << std::endl;
+        OUTPUT_ERROR("join multicast group failed for interface");
         return false;
       }
     }
@@ -157,7 +162,7 @@ bool UdpComm::joinMulticast(const char* addrStr)
     hostent* pHost;
     if(gethostname(host, sizeof(host)) < 0 || !(pHost = static_cast<hostent*>(gethostbyname(host))))
     {
-      std::cerr << "cannot get interface list" << std::endl;
+      OUTPUT_ERROR("cannot get interface list");
       return false;
     }
 
@@ -172,14 +177,14 @@ bool UdpComm::joinMulticast(const char* addrStr)
     }
     if(!couldJoin)
     {
-      std::cerr << "join multicast group failed for interface" << std::endl;
+      OUTPUT_ERROR("join multicast group failed for interface");
       return false;
     }
 #endif
     return true;
   }
   else
-    std::cerr << "not a multicast address" << std::endl;
+    OUTPUT_ERROR("not a multicast address");
   return false;
 }
 
@@ -190,7 +195,7 @@ bool UdpComm::setBroadcast(bool enable)
     return true;
   else
   {
-    std::cerr << "UdpComm::setBroadcast() failed: " << strerror(errno) << std::endl;
+    OUTPUT_ERROR("UdpComm::setBroadcast() failed: " << strerror(errno));
     return false;
   }
 }
@@ -199,8 +204,8 @@ bool UdpComm::setRcvBufSize(unsigned int rcvbuf)
 {
   if(0 == setsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&rcvbuf), sizeof(rcvbuf)))
   {
-    std::cerr << "multicast-socket: setsockopt for SO_RCVBUF failed: "
-              << strerror(errno) << std::endl;
+    OUTPUT_ERROR("multicast-socket: setsockopt for SO_RCVBUF failed: "
+                 << strerror(errno));
     return false;
   }
 
@@ -208,12 +213,11 @@ bool UdpComm::setRcvBufSize(unsigned int rcvbuf)
   socklen_t result_len = sizeof(result);
   if(0 == getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&result), &result_len))
   {
-    std::cerr << "multicast-socket: receive buffer set to "
-              << result << " Bytes." << std::endl;
+    OUTPUT_TEXT("multicast-socket: receive buffer set to " << result << " Bytes.");
     return true;
   }
 
-  std::cerr << "multicast-socket: could not get sockopt SO_RCVBUF" << std::endl;
+  OUTPUT_ERROR("multicast-socket: could not get sockopt SO_RCVBUF");
   return false;
 }
 
@@ -230,22 +234,22 @@ bool UdpComm::bind(const char* addr_str, int port)
 #else
   if(inet_pton(AF_INET, addr_str, &(addr.sin_addr)) <= 0)
   {
-    std::cerr << "UdpComm::bind() failed: invalid address " << addr_str << std::endl;
+    OUTPUT_ERROR("UdpComm::bind() failed: invalid address " << addr_str);
     return false;
   }
 #endif
 
 #ifdef SO_REUSEADDR
   if(-1 == setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&yes), sizeof(yes)))
-    std::cerr << "UdpComm: could not set SO_REUSEADDR" << std::endl;
+    OUTPUT_ERROR("UdpComm: could not set SO_REUSEADDR");
 #endif
 #ifdef SO_REUSEPORT
   if(-1 == setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<const char*>(&yes), sizeof(yes)))
-    std::cerr << "UdpComm: could not set SO_REUSEPORT" << std::endl;
+    OUTPUT_ERROR("UdpComm: could not set SO_REUSEPORT");
 #endif
   if(-1 == ::bind(sock, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)))
   {
-    std::cout << "UdpComm::bind() failed: " << strerror(errno) << std::endl;
+    OUTPUT_ERROR("UdpComm::bind() failed: " << strerror(errno));
     return false;
   }
 

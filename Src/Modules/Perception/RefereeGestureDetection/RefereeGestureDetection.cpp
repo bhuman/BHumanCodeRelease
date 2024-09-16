@@ -10,6 +10,7 @@
 #include "Debugging/Debugging.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
+#include "Tools/Math/Transformation.h"
 #include <algorithm>
 
 MAKE_MODULE(RefereeGestureDetection);
@@ -46,7 +47,7 @@ void RefereeGestureDetection::update(RefereePercept& theRefereePercept)
     lastHistoryUpdate = Time::getCurrentSystemTime();
 
     // Detect gesture and filter it over time.
-    updateHistogram(crossesMiddle() ? detectGesture() : RefereePercept::none);
+    updateHistogram((!mustCrossMiddle || crossesMiddle()) && pointsLowEnough() ? detectGesture() : RefereePercept::none);
     theRefereePercept.gesture = getPredominantGesture();
   }
 
@@ -73,6 +74,18 @@ bool RefereeGestureDetection::crossesMiddle() const
   return isLeft && isRight;
 }
 
+bool RefereeGestureDetection::pointsLowEnough() const
+{
+  Vector2f dummy;
+  FOREACH_ENUM(Keypoints::Keypoint, keypoint)
+  {
+    const Keypoints::Point& point = theKeypoints.points[keypoint];
+    if(point.valid && point.position.y() > yThreshold)
+      return true;
+  }
+  return false;
+}
+
 const Keypoints::Point& RefereeGestureDetection::getOrdered(const Keypoints::Keypoint keypoint) const
 {
   if(keypoint == Keypoints::nose)
@@ -95,8 +108,8 @@ RefereePercept::Gesture RefereeGestureDetection::detectGesture() const
         }) checks;
         std::string text);
 
-  const Vector2f refereeOnField(theFieldDimensions.xPosHalfWayLine,
-                                (theFieldDimensions.yPosLeftSideline + theFieldDimensions.yPosLeftFieldBorder) / 2.f
+  const Vector2f refereeOnField(theFieldDimensions.xPosHalfwayLine,
+                                (theFieldDimensions.yPosLeftTouchline + theFieldDimensions.yPosLeftFieldBorder) / 2.f
                                 * (theGameState.leftHandTeam ? 1 : -1));
   const Vector2f refereeOffset = refereeOnField - theRobotPose.translation;
   const float yScale = refereeOffset.norm() / 3000.f;

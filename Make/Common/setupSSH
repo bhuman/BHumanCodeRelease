@@ -2,7 +2,12 @@
 # Defines the variable "SSHOPTIONS" with parameters that should be passed
 # to ssh.
 
+if [ "$(uname)" == "Darwin" ]; then
+  noOverwrite=-n
+else
+  noOverwrite=-u
+fi
 keyFile=/tmp/id_rsa_nao
-cp -n "$(dirname "${BASH_SOURCE[0]}")"/../../Install/Keys/id_rsa_nao $keyFile || true
+cp $noOverwrite "$(dirname "${BASH_SOURCE[0]}")"/../../Install/Keys/id_rsa_nao $keyFile || true
 chmod 600 $keyFile
 SSHOPTIONS="-c aes128-ctr -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"

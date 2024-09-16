@@ -1,76 +1,168 @@
 /**
  * @file ArmContact.cpp
  *
- * This file implements implementations of the ArmContact
- * and ArmContactSingleArm skills.
+ * This file implements the ArmContact skills.
  *
  * @author Arne Hasselbring
  */
 
-#include "Platform/SystemCall.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Sensing/ArmContactModel.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(ArmContactImpl,
-{,
-  IMPLEMENTS(ArmContact),
-  IMPLEMENTS(ArmContactSingleArm),
-  CALLS(KeyFrameSingleArm),
-  REQUIRES(ArmContactModel),
-  REQUIRES(FrameInfo),
-  DEFINES_PARAMETERS(
-  {,
-    (int)(6000) stayBackTime, /**< The duration for which an arm stays back after contact. */
-    (int)(2000) deadTime, /**< The duration for which new contacts are ignored after the arm has been back. */
-  }),
-});
-
-class ArmContactImpl : public ArmContactImplBase
+option((SkillBehaviorControl) ArmContact,
+       args((Arms::Arm) arm))
 {
-  void execute(const ArmContact&) override
+  common_transition
   {
-    setRequest(Arms::left);
-    setRequest(Arms::right);
+    if(arm == Arms::numOfArms)
+      goto both;
+    else if(arm == Arms::left)
+      goto left;
+    else
+      goto right;
   }
 
-  void reset(const ArmContact&) override
+  initial_state(both)
   {
-    timesOfLastAction[Arms::left] = timesOfLastAction[Arms::right] = 0;
-    timesOfLastContact[Arms::left] = timesOfLastContact[Arms::right] = 0;
-  }
-
-  void execute(const ArmContactSingleArm& p) override
-  {
-    setRequest(p.arm);
-  }
-
-  void reset(const ArmContactSingleArm& p) override
-  {
-    timesOfLastAction[p.arm] = 0;
-    timesOfLastContact[p.arm] = 0;
-  }
-
-  void setRequest(Arms::Arm arm)
-  {
-    if(SystemCall::getMode() == SystemCall::simulatedRobot)
-      return;
-    if(theArmContactModel.status[arm].contact &&
-       (theArmContactModel.status[arm].pushDirection == ArmContactModel::backward ||
-        theArmContactModel.status[arm].pushDirection == ArmContactModel::left ||
-        theArmContactModel.status[arm].pushDirection == ArmContactModel::right) &&
-       theFrameInfo.getTimeSince(timesOfLastAction[arm]) >= deadTime)
-      timesOfLastContact[arm] = theFrameInfo.time;
-    if(theFrameInfo.getTimeSince(timesOfLastContact[arm]) < stayBackTime)
+    action
     {
-      theKeyFrameSingleArmSkill({.motion = ArmKeyFrameRequest::back,
-                                 .arm = arm});
-      timesOfLastAction[arm] = theFrameInfo.time;
+      ArmContactLeftArm();
+      ArmContactRightArm();
     }
   }
 
-  unsigned timesOfLastContact[Arms::numOfArms]; /**< The last time when a contact has been detected that should be reacted upon. */
-  unsigned timesOfLastAction[Arms::numOfArms]; /**< The last time when an arm was taken back by this skill. */
-};
+  state(left)
+  {
+    action
+    {
+      ArmContactLeftArm();
+    }
+  }
 
-MAKE_SKILL_IMPLEMENTATION(ArmContactImpl);
+  state(right)
+  {
+    action
+    {
+      ArmContactRightArm();
+    }
+  }
+}
+
+option((SkillBehaviorControl) ArmContactLeftArm,
+       defs((int)(6000) stayBackTime, /**< The duration for which an arm stays back after contact. */
+            (int)(2000) deadTime)) /**< The duration for which new contacts are ignored after the arm has been back. */
+{
+  const bool hasContact = theArmContactModel.status[Arms::left].contact
+                          && (theArmContactModel.status[Arms::left].pushDirection == ArmContactModel::backward
+                              || theArmContactModel.status[Arms::left].pushDirection == ArmContactModel::left
+                              || theArmContactModel.status[Arms::left].pushDirection == ArmContactModel::right);
+
+  initial_state(armNormal)
+  {
+    transition
+    {
+      if(SystemCall::getMode() == SystemCall::simulatedRobot)
+        goto ignoreInSimulation;
+      else if(hasContact)
+        goto armBack;
+    }
+  }
+
+  state(armBack)
+  {
+    transition
+    {
+      if(!hasContact)
+        goto keepBack;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = ArmKeyFrameRequest::back});
+    }
+  }
+
+  state(keepBack)
+  {
+    transition
+    {
+      if(hasContact)
+        goto armBack;
+      else if(state_time > stayBackTime)
+        goto delay;
+    }
+    action
+    {
+      KeyFrameLeftArm({.motion = ArmKeyFrameRequest::back});
+    }
+  }
+
+  state(delay)
+  {
+    transition
+    {
+      if(state_time > deadTime)
+        goto armNormal;
+    }
+  }
+
+  aborted_state(ignoreInSimulation) {}
+}
+
+option((SkillBehaviorControl) ArmContactRightArm,
+       defs((int)(6000) stayBackTime, /**< The duration for which an arm stays back after contact. */
+            (int)(2000) deadTime)) /**< The duration for which new contacts are ignored after the arm has been back. */
+{
+  const bool hasContact = theArmContactModel.status[Arms::right].contact
+                          && (theArmContactModel.status[Arms::right].pushDirection == ArmContactModel::backward
+                              || theArmContactModel.status[Arms::right].pushDirection == ArmContactModel::left
+                              || theArmContactModel.status[Arms::right].pushDirection == ArmContactModel::right);
+
+  initial_state(armNormal)
+  {
+    transition
+    {
+      if(SystemCall::getMode() == SystemCall::simulatedRobot)
+        goto ignoreInSimulation;
+      else if(hasContact)
+        goto armBack;
+    }
+  }
+
+  state(armBack)
+  {
+    transition
+    {
+      if(!hasContact)
+        goto keepBack;
+    }
+    action
+    {
+      KeyFrameRightArm({.motion = ArmKeyFrameRequest::back});
+    }
+  }
+
+  state(keepBack)
+  {
+    transition
+    {
+      if(hasContact)
+        goto armBack;
+      else if(state_time > stayBackTime)
+        goto delay;
+    }
+    action
+    {
+      KeyFrameRightArm({.motion = ArmKeyFrameRequest::back});
+    }
+  }
+
+  state(delay)
+  {
+    transition
+    {
+      if(state_time > deadTime)
+        goto armNormal;
+    }
+  }
+
+  aborted_state(ignoreInSimulation) {}
+}

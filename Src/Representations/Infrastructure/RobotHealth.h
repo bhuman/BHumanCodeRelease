@@ -16,11 +16,26 @@
  * All information collected within motion thread.
  */
 STREAMABLE(MotionRobotHealth,
-{,
+{
+  /**
+   * Different levels of badness of lost frames
+   * so that not every module needs to define its own threshold.
+ */
+  ENUM(FrameLostStatus,
+  {,
+    noFrameLost,
+    oneFrameLost,
+    multipleFramesLost,
+    bodyDisconnect,
+  });,
+
   (float)(0) motionFrameRate, /**< Frames per second within thread "Motion" */
   (float)(0) avgMotionTime, /**< average execution time */
   (float)(0) maxMotionTime, /**< Maximum execution time */
   (float)(0) minMotionTime, /**< Minimum execution time */
+
+  (unsigned)(0) motionFramesDropped, /**< Number of lost motion frames between the current and the last executed motion frame. */
+  (FrameLostStatus)(noFrameLost) frameLostStatus, /**< Discretized status of frames dropped */
 });
 
 /**

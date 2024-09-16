@@ -40,9 +40,17 @@ void LibDemoProvider::update(LibDemo& libDemo)
 
     lastBumperState = thisBumperState;
   }
+  handleHeatInSoccer();
   libDemo.isDemoActive = isDemoActive;
   libDemo.demoGameState = demoGameState;
   libDemo.changeArmToWave = changeArmToWave;
   libDemo.isOneVsOneDemoActive = isOneVsOneDemoActive;
   libDemo.isMiniFieldActive = isMiniFieldActive;
+}
+
+void LibDemoProvider::handleHeatInSoccer()
+{
+  if(theRobotHealth.maxJointTemperatureStatus != JointSensorData::TemperatureStatus::regular &&
+     demoGameState == LibDemo::DemoGameState::soccer)
+    demoGameState = LibDemo::DemoGameState::waving;
 }

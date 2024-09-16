@@ -14,8 +14,8 @@
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Representations/MotionControl/MotionInfo.h"
@@ -37,7 +37,7 @@ private:
   CameraInfo cameraInfo; /**< The information about the camera that took the image sent to the robot code. */
   JointSensorData jointSensorData; /**< The simulated joint measurements sent to the robot code. */
   FsrSensorData fsrSensorData; /**< The simulated inertia sensor data sent to the robot code. */
-  InertialSensorData inertialSensorData; /**< The simulated inertia sensor data sent to the robot code. */
+  RawInertialSensorData rawInertialSensorData; /**< The simulated inertia sensor data sent to the robot code. */
   MotionInfo motionInfo; /**< The simulated motion info sent to the robot code (2D only). */
   Pose2f robotPose; /**< The robot's pose, used for some internal computations. */
   GroundTruthWorldState worldState; /**< The current world state of the simulation scene, sent to the robot code. */

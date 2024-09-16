@@ -162,19 +162,17 @@ void SystemCall::mute(bool isMuted)
 
 int SystemCall::playSound(const char* name, bool force)
 {
-#ifdef TARGET_ROBOT
-  fprintf(stderr, "Playing %s\n", name);
-#endif
+#ifdef LINUX
+  return SoundPlayer::play(name, isMuted && !force);
+#else
   return isMuted && !force ? 0 : SoundPlayer::play(name);
+#endif
 }
 
 int SystemCall::say(const char* text, bool force, float stretchFactor)
 {
-#ifdef TARGET_ROBOT
-  fprintf(stderr, "Saying %s\n", text);
-#endif
 #ifdef LINUX
-  return isMuted && !force ? 0 : SoundPlayer::say(text, stretchFactor);
+  return SoundPlayer::say(text, isMuted && !force, stretchFactor);
 #else
   static_cast<void>(stretchFactor);
   return isMuted && !force  ? 0 : SoundPlayer::say(text);

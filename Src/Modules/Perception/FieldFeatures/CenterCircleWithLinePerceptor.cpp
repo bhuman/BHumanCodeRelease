@@ -2,7 +2,7 @@
 * @file CenterCircleWithLinePerceptor.cpp
 *
 * Implementation of a module that tries to find the combination of
-* the center circle and the center line crossing the circle.
+* the center circle and the halfway line crossing the circle.
 * in the current field percepts. This is the combination
 * that this module is looking for:
 *
@@ -55,12 +55,12 @@ void CenterCircleWithLinePerceptor::update(CenterCircleWithLine& centerCircleWit
   {
     return;
   }
-  // There seems to be a center circle available, so let's find the center line:
-  if(findIntersectingCenterLine())
+  // There seems to be a center circle available, so let's find the halfway line:
+  if(findIntersectingHalfwayLine())
     computeFeature(centerCircleWithLine);
 }
 
-bool CenterCircleWithLinePerceptor::findIntersectingCenterLine()
+bool CenterCircleWithLinePerceptor::findIntersectingHalfwayLine()
 {
   // Iterate over all lines and take the first line that fulfills all criteria.
   // As lines are sorted by length, processing is stopped when the first line
@@ -81,8 +81,8 @@ bool CenterCircleWithLinePerceptor::findIntersectingCenterLine()
 
     if(distanceToCenter < maxLineDeviationFromCenter)
     {
-      centerLine = geoLine;
-      centerLineCov = line.cov;
+      halfwayLine = geoLine;
+      halfwayLineCov = line.cov;
       return true;
     }
   }
@@ -92,7 +92,7 @@ bool CenterCircleWithLinePerceptor::findIntersectingCenterLine()
 void CenterCircleWithLinePerceptor::computeFeature(CenterCircleWithLine& centerCircleWithLine)
 {
   // Determine the pose:
-  Vector2f lineDirection = centerLine.direction;
+  Vector2f lineDirection = halfwayLine.direction;
   lineDirection.rotateLeft();
   Pose2f perceivedPose(lineDirection.angle(), centerCirclePosition);
   centerCircleWithLine = perceivedPose;
@@ -104,11 +104,11 @@ void CenterCircleWithLinePerceptor::computeFeature(CenterCircleWithLine& centerC
     const float c = std::cos(computedRobotPose.rotation);
     const float s = std::sin(computedRobotPose.rotation);
     const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
-    const Matrix2f covXR = angleRotationMatrix * centerLineCov * angleRotationMatrix.transpose();
+    const Matrix2f covXR = angleRotationMatrix * halfwayLineCov * angleRotationMatrix.transpose();
     const Matrix2f covY = angleRotationMatrix * centerCircleCovariance * angleRotationMatrix.transpose();
     const float xVariance = covXR(0, 0); // Depends on line
     const float yVariance = covY(1, 1);  // Depends on circle center
-    const float sqrLineLength = std::max(sqr(2 * theFieldDimensions.centerCircleRadius), centerLine.direction.squaredNorm());
+    const float sqrLineLength = std::max(sqr(2 * theFieldDimensions.centerCircleRadius), halfwayLine.direction.squaredNorm());
     const float angleVariance = sqr(std::atan(std::sqrt (4.f * xVariance / sqrLineLength)));
     centerCircleWithLine.covOfAbsoluteRobotPose << xVariance, 0.f, 0.f, 0.f, yVariance, 0.f, 0.f, 0.f, angleVariance;
   }

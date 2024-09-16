@@ -12,12 +12,10 @@
 #include <algorithm>
 #include <cstdlib>
 
-using namespace std;
-
 float Geometry::angleTo(const Pose2f& from, const Vector2f& to)
 {
   const Pose2f relPos = Pose2f(to) - from;
-  return atan2(relPos.translation.y(), relPos.translation.x());
+  return std::atan2(relPos.translation.y(), relPos.translation.x());
 }
 
 void Geometry::Line::normalizeDirection()
@@ -41,10 +39,10 @@ Geometry::Circle Geometry::getCircle(const Vector2i& point1, const Vector2i& poi
     circle.radius = 0;
   else
     circle.radius = 0.5f *
-                    sqrt(((sqr(x1 - x2) + sqr(y1 - y2)) *
-                          (sqr(x1 - x3) + sqr(y1 - y3)) *
-                          (sqr(x2 - x3) + sqr(y2 - y3))) /
-                         sqr(temp));
+                    std::sqrt(((sqr(x1 - x2) + sqr(y1 - y2)) *
+                               (sqr(x1 - x3) + sqr(y1 - y3)) *
+                               (sqr(x2 - x3) + sqr(y2 - y3))) /
+                              sqr(temp));
   if(temp == 0)
     circle.center.x() = 0;
   else
@@ -128,12 +126,12 @@ int Geometry::getIntersectionOfCircles(const Circle& c0, const Circle& c1, Vecto
   const float dy = c1.center.y() - c0.center.y();
 
   // Determine the straight-line distance between the centers.
-  const float d = sqrt((dy * dy) + (dx * dx));
+  const float d = std::sqrt((dy * dy) + (dx * dx));
 
   // Check for solvability.
   if(d > (c0.radius + c1.radius)) // no solution. circles do not intersect.
     return 0;
-  if(d < abs(c0.radius - c1.radius)) //no solution. one circle is contained in the other
+  if(d < std::abs(c0.radius - c1.radius)) //no solution. one circle is contained in the other
     return 0;
 
   // 'point 2' is the point where the line through the circle
@@ -149,7 +147,7 @@ int Geometry::getIntersectionOfCircles(const Circle& c0, const Circle& c1, Vecto
 
   // Determine the distance from point 2 to either of the
   // intersection points.
-  const float h = sqrt((c0.radius * c0.radius) - (a * a));
+  const float h = std::sqrt((c0.radius * c0.radius) - (a * a));
 
   // Now determine the offsets of the intersection points from
   // point 2.
@@ -186,7 +184,7 @@ int Geometry::getIntersectionOfLineAndCircle(const Line& line, const Circle& cir
     return 0;
   else
   {
-    const float radix = sqrt(radicand);
+    const float radix = std::sqrt(radicand);
     firstIntersection = line.base + line.direction * (-p_2 + radix);
     secondIntersection = line.base + line.direction * (-p_2 - radix);
     return radicand == 0 ? 1 : 2;
@@ -208,8 +206,9 @@ bool Geometry::getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, f
   return false;
 }
 
-bool Geometry::getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection)
+bool Geometry::getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection, const bool isCCW, Line* intersectedLine)
 {
+  ASSERT(polygon.size() >= 3);
   for(size_t i = 0; i < polygon.size(); ++i)
   {
     Vector2f intersection2D;
@@ -217,11 +216,14 @@ bool Geometry::getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>
     const Vector2f& p2 = polygon[(i + 1) % polygon.size()];
     const Vector2f dir = p2 - p1;
     const Geometry::Line polygonLine(p1, dir.normalized());
-    if(Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p1) &&
-       !Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p2) &&
-       Geometry::getIntersectionOfLines(direction, polygonLine, intersection2D))
+    const bool isLeftP1 = Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p1);
+    const bool isLeftP2 = Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p2);
+    const bool hasIntersection = isLeftP1 != isLeftP2 && (isCCW ? !isLeftP1 : isLeftP1);
+    if(hasIntersection && Geometry::getIntersectionOfLines(direction, polygonLine, intersection2D))
     {
       intersection = intersection2D;
+      if(intersectedLine)
+        *intersectedLine = polygonLine;
       return true;
     }
   }
@@ -299,7 +301,7 @@ bool Geometry::isPointInsideRectangle(const Vector2i& bottomLeftCorner, const Ve
          bottomLeftCorner.y() <= point.y() && point.y() <= topRightCorner.y());
 }
 
-int ccw(const Vector2f& p0, const Vector2f& p1, const Vector2f& p2)
+int Geometry::ccw(const Vector2f& p0, const Vector2f& p1, const Vector2f& p2)
 {
   const float dx1 = p1.x() - p0.x();
   const float dy1 = p1.y() - p0.y();
@@ -465,6 +467,59 @@ bool Geometry::clipPointInsideConvexPolygon(const std::vector<Vector2f>& polygon
     return false;
   clipPointToPolygonBorder(polygon, point);
   return true;
+}
+
+bool Geometry::circleIntersectsAxisAlignedRectangle(const Vector2f& cp, float r,
+                                                    const Vector2f& p1, const Vector2f& p2)
+{
+  // Compute borders of rectangle, as parameters can be in different coordinate systems,
+  // in which the directions of the axes are different:
+  float xMin, xMax, yMin, yMax;
+  if(p1.x() < p2.x())
+  {
+    xMin = p1.x();
+    xMax = p2.x();
+  }
+  else
+  {
+    xMin = p2.x();
+    xMax = p1.x();
+  }
+  if(p1.y() < p2.y())
+  {
+    yMin = p1.y();
+    yMax = p2.y();
+  }
+  else
+  {
+    yMin = p2.y();
+    yMax = p1.y();
+  }
+
+  // If the circle is too far away from the edges of the rectangle ...
+  if(cp.x() < xMin - r ||
+     cp.x() > xMax + r ||
+     cp.y() < yMin - r ||
+     cp.y() > yMax + r)
+  {
+    //... it cannot intersect or be inside of the rectangle.
+    return false;
+  }
+  // The previous check should cover most situations. However, it is not
+  // valid close to the corners of the rectangle, where the x/y coordinates of the center of the circle could be
+  // closer than r to the rectangle edges whilst the circle does not intersect anyway.
+  else
+  {
+    // Check for distance between circle center and the four corners of the rectangle
+    const float rSquare = sqr(r);
+    if((cp.x() < xMin && cp.y() < yMin && (cp - Vector2f(xMin, yMin)).squaredNorm() > rSquare) ||
+       (cp.x() < xMin && cp.y() > yMax && (cp - Vector2f(xMin, yMax)).squaredNorm() > rSquare) ||
+       (cp.x() > xMax && cp.y() < yMin && (cp - Vector2f(xMax, yMin)).squaredNorm() > rSquare) ||
+       (cp.x() > xMax && cp.y() > yMax && (cp - Vector2f(xMax, yMax)).squaredNorm() > rSquare))
+      return false;
+  else
+    return true;
+  }
 }
 
 bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLeft, const Vector2i& topRight,

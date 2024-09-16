@@ -32,12 +32,12 @@ STREAMABLE(BallPercept,
   /** Verifies that the ball percept contains valid values. */
   void verify() const,
 
-  (Vector2f) positionInImage,         /**< The position of the ball in the current image */
-  (float) radiusInImage,              /**< The radius of the ball in the current image */
-  (Status)(notSeen) status,           /**< Indicates, if the ball was seen in the current image. */
-  (Vector2f) positionOnField,         /**< Ball position relative to the robot. */
-  (float)(50.f) radiusOnField,        /**< The radius of the ball on the field in mm */
-  (Matrix2f) covarianceOnField,       /**< The measurement covariance of positionOnField */
+  (Vector2f)(Vector2f::Zero()) positionInImage, /**< The position of the ball in the current image */
+  (float)(1.f) radiusInImage,                   /**< The radius of the ball in the current image */
+  (Status)(notSeen) status,                     /**< Indicates, if the ball was seen in the current image. */
+  (Vector2f)(Vector2f::Zero()) positionOnField, /**< Ball position relative to the robot. */
+  (float)(50.f) radiusOnField,                  /**< The radius of the ball on the field in mm */
+  (Matrix2f)((Matrix2f() << 1.f, 0.f, 0.f, 1.f).finished()) covarianceOnField, /**< The measurement covariance of positionOnField */
 });
 
 inline BallPercept::BallPercept(const Vector2f& positionInImage, const float radiusInImage, const Vector2f& positionOnField,

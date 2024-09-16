@@ -21,7 +21,7 @@ STREAMABLE(EnergySaving,
   });
   EnergySaving();
 
-  FUNCTION(void(JointRequest& request, bool adjustLeftLeg, bool adjustRightLeg, bool adjustLeftArm, bool adjustRightArm, const bool standHigh, const bool accuratePositions)) applyHeatAdjustment;
+  FUNCTION(void(JointRequest& request, bool adjustLeftLeg, bool adjustRightLeg, bool adjustLeftArm, bool adjustRightArm, const bool standHigh, const bool onlyBaseOffset)) applyHeatAdjustment;
   FUNCTION(void()) reset;
   FUNCTION(void()) shutDown,
 

@@ -16,7 +16,6 @@
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Modeling/Obstacle.h"
 #include "Framework/Blackboard.h"
 #include <cmath>
 
@@ -73,9 +72,22 @@ void ObstaclesFieldPercept::draw() const
         {
           for(int i = 0; i < 3; ++i)
             pointsInImage[i] = imageCoordinateSystem.fromCorrected(pointsInImage[i]);
-          RECTANGLE("representation:ObstaclesFieldPercept:image",
-                    pointsInImage[0].x(), pointsInImage[0].y(), pointsInImage[1].x(), pointsInImage[2].y(),
-                    6, Drawings::solidPen, teamColors[obstacle.type]);
+          if(obstacle.type == unknown)
+          {
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() - 2.5f, pointsInImage[0].y() + 2.5f, pointsInImage[1].x() + 2.5f, pointsInImage[2].y() - 2.5f, 1, Drawings::solidPen, ColorRGBA::red);
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() - 1.5f, pointsInImage[0].y() + 1.5f, pointsInImage[1].x() + 1.5f, pointsInImage[2].y() - 1.5f, 1, Drawings::solidPen, ColorRGBA::orange);
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() - 0.5f, pointsInImage[0].y() + 0.5f, pointsInImage[1].x() + 0.5f, pointsInImage[2].y() - 0.5f, 1, Drawings::solidPen, ColorRGBA::yellow);
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() + 0.5f, pointsInImage[0].y() - 0.5f, pointsInImage[1].x() - 0.5f, pointsInImage[2].y() + 0.5f, 1, Drawings::solidPen, ColorRGBA::green);
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() + 1.5f, pointsInImage[0].y() - 1.5f, pointsInImage[1].x() - 1.5f, pointsInImage[2].y() + 1.5f, 1, Drawings::solidPen, ColorRGBA::blue);
+            RECTANGLE("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() + 2.5f, pointsInImage[0].y() - 2.5f, pointsInImage[1].x() - 2.5f, pointsInImage[2].y() + 2.5f, 1, Drawings::solidPen, ColorRGBA::violet);
+          }
+          else
+          {
+            RECTANGLE("representation:ObstaclesFieldPercept:image",
+                      pointsInImage[0].x(), pointsInImage[0].y(), pointsInImage[1].x(), pointsInImage[2].y(),
+                      6, Drawings::solidPen, teamColors[obstacle.type]);
+          }
+          //DRAW_TEXT("representation:ObstaclesFieldPercept:image", pointsInImage[0].x() + 2, pointsInImage[0].y() + 14, 10, teamColors[obstacle.type], "Team Conf: " << std::to_string(obstacle.confidence).substr(0, 4));
         }
       }
     }

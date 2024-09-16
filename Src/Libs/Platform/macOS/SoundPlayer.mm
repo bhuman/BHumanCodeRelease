@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <AppKit/NSSound.h>
 #include <AppKit/NSSpeechSynthesizer.h>
+#include <Foundation/NSProcessInfo.h>
 #include "SoundPlayer.h"
 #include "Platform/File.h"
 
@@ -50,14 +51,17 @@
 @end
 
 SoundPlayer SoundPlayer::soundPlayer;
-static SoundPlayerDelegate* delegate;
-static NSSpeechSynthesizer* speechSynthesizer;
+static SoundPlayerDelegate* delegate = nil;
+static NSSpeechSynthesizer* speechSynthesizer = nil;
 
 SoundPlayer::SoundPlayer()
 {
-  delegate = [[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem];
-  speechSynthesizer = [[NSSpeechSynthesizer alloc] initWithVoice:@"com.apple.speech.synthesis.voice.Samantha"];
-  [speechSynthesizer setDelegate:delegate];
+  if(![[[NSProcessInfo processInfo] environment] objectForKey:@"IS_XCTEST"])
+  {
+    delegate = [[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem];
+    speechSynthesizer = [[NSSpeechSynthesizer alloc] initWithVoice:@"com.apple.speech.synthesis.voice.Samantha"];
+    [speechSynthesizer setDelegate:delegate];
+  }
 }
 
 SoundPlayer::~SoundPlayer()

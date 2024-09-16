@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Sensing/InertialSensorData.h"
 #include "Math/Angle.h"
 #include "Math/Eigen.h"
 #include "Streaming/AutoStreamable.h"

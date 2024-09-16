@@ -1,6 +1,6 @@
 /**
  * @file StaticJointPoses.h
- * This representation provides some usefull static joint positions
+ * This representation provides some useful static joint positions
  * @author Philip Reichenberg
  */
 

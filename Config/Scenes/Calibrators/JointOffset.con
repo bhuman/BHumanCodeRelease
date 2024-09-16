@@ -51,7 +51,3 @@ vpd WalkJointOffset:rKP module:WalkingEngine:JointOffset:rKneePitch
 vp WalkJointOffset:rAP 20 -10 10
 echo vp WalkJointOffset:rAP 20 -10 10
 vpd WalkJointOffset:rAP module:WalkingEngine:JointOffset:rAnklePitch
-
-vp WalkJointOffset:lHYP 20 -10 10
-echo vp WalkJointOffset:lHYP 20 -10 10
-vpd WalkJointOffset:lHYP module:WalkingEngine:JointOffset:lHipYawPitch

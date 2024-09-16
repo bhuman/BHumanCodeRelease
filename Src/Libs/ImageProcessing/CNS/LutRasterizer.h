@@ -33,7 +33,7 @@ public:
   /*! A point where the max distance to any vertex is smallest. */
   Eigen::Vector4f centerWith1;
 
-  //! Projection of 3-D object-coordinates to 2-D image coordinates as homogenous matrix
+  //! Projection of 3-D object-coordinates to 2-D image coordinates as homogeneous matrix
   using Perspective = Eigen::Matrix<float, 3, 4>;
 
   //! List of edges that form a contour from a certain point of view in a specially coded way
@@ -205,7 +205,7 @@ public:
   /*! It computes the index of the precomputed vertexlist applying to the given \c object2World and camera.
       Also a reference point which is the projection of \c centerWith1 around which the 8bit signed coordinates
       in \c CodedContour are defined. And it computes a projection matrix in the form taken by \c projectUsingSSE
-      which maps homogenous object vectors (e.g. \c vertexWith1) to homogenous image coordinates relative to
+      which maps homogeneous object vectors (e.g. \c vertexWith1) to homogeneous image coordinates relative to
       the reference point.
 
       (clipRange[0]..clipRange[2])*(clipRange[1]..clipRange[3]) is the range of coordinates relative to the

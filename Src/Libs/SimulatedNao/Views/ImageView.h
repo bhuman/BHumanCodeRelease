@@ -1,7 +1,7 @@
 /**
  * @file SimulatedNao/Views/ImageView.h
  *
- * This file declares a view that displays an image overlayed by debug drawing.
+ * This file declares a view that displays an image overlaid by debug drawing.
  * Such a view is usually associated with a thread. It displays an image provided
  * by that thread. It prefers drawings originating from its associated thread. It
  * ignores drawings from other threads if the associated thread could also provide
@@ -20,6 +20,8 @@
 #include "Representations/Infrastructure/CameraImage.h"
 #include "DrawingView.h"
 
+class SACControlWidget;
+
 /**
  * @class ImageView
  *
@@ -29,6 +31,8 @@
  */
 class ImageView : public DrawingView
 {
+  friend class SACControlWidget;
+
 public:
   /**
    * @param fullName The path to this view in the scene graph.

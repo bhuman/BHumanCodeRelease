@@ -21,6 +21,7 @@ FallDownStateProvider::FallDownStateProvider() : lastTimeSoundPlayed(theFrameInf
   getSupportPolygon();
   lastTiltingEdge = tiltingEdge = getTiltingEdge();
   initUKF(measure());
+  disablePickUp = SystemCall::getMode() == SystemCall::simulatedRobot;
 }
 
 void FallDownStateProvider::update(FallDownState& fallDownState)
@@ -69,7 +70,7 @@ void FallDownStateProvider::update(FallDownState& fallDownState)
 
   // Execute behavior
   beginFrame(theFrameInfo.time);
-  execute(OptionInfos::getOption("Root"));
+  execute("Root");
   endFrame();
 
   // debug stuff
@@ -411,11 +412,11 @@ void FallDownStateProvider::draw() const
     SPHERE3D("module:FallDownStateProvider:tiltingEdge", tiltingEdge.translation.x(), tiltingEdge.translation.y(), 0.f, 3.f, ColorRGBA::red);
   }
 
-  DEBUG_DRAWING3D("module:FallDownStateProvider:measurment", "field")
+  DEBUG_DRAWING3D("module:FallDownStateProvider:measurement", "field")
   {
     Vector3f comInOrigin = measure().head<3>();
     Vector3f com = tiltingEdge.translation + comInOrigin;
-    SPHERE3D("module:FallDownStateProvider:measurment", com.x(), com.y(), 0.f, 1.f, ColorRGBA::black);
+    SPHERE3D("module:FallDownStateProvider:measurement", com.x(), com.y(), 0.f, 1.f, ColorRGBA::black);
   }
 
   DEBUG_DRAWING3D("module:FallDownStateProvider:ukf:field", "field")

@@ -180,7 +180,7 @@ private:
                       const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const CorrectedLine& cLine1, const CorrectedLine& cLine2) :
       Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable CorrectedLine cLine1, cLine2; /**< The corrected ground line or front goal line & corrected short connecting line. */
+    mutable CorrectedLine cLine1, cLine2; /**< The corrected goal line or front goal area line & corrected short connecting line. */
   };
 
   struct ParallelAngleSample : Sample
@@ -189,7 +189,7 @@ private:
                         const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const CorrectedLine& cLine1, const CorrectedLine& cLine2) :
       Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable CorrectedLine cLine1, cLine2; /**< The corrected ground line and front goal line. */
+    mutable CorrectedLine cLine1, cLine2; /**< The corrected goal line and front goal area line. */
   };
 
   struct ParallelLinesDistanceSample : Sample
@@ -198,7 +198,7 @@ private:
                                 const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const CorrectedLine& cLine1, const CorrectedLine& cLine2) :
       Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable CorrectedLine cLine1, cLine2; /**< The corrected ground line and front goal line. */
+    mutable CorrectedLine cLine1, cLine2; /**< The corrected goal line and front goal area line. */
   };
 
   struct GoalAreaDistanceSample : Sample
@@ -208,17 +208,17 @@ private:
       Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), penaltyMarkInImage(penaltyMarkInImage), cLine(cLine) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
     Vector2i penaltyMarkInImage; /**< The penalty mark in the image. */
-    mutable CorrectedLine cLine; /**< The corrected front goal line. */
+    mutable CorrectedLine cLine; /**< The corrected front goal area line. */
   };
 
-  struct GroundLineDistanceSample : Sample
+  struct GoalLineDistanceSample : Sample
   {
-    GroundLineDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                             const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const Vector2i& penaltyMarkInImage, const CorrectedLine cLine) :
+    GoalLineDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
+                           const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const Vector2i& penaltyMarkInImage, const CorrectedLine cLine) :
       Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), penaltyMarkInImage(penaltyMarkInImage), cLine(cLine) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
     Vector2i penaltyMarkInImage; /**< The penalty mark in the image. */
-    mutable CorrectedLine cLine; /**< The corrected ground line. */
+    mutable CorrectedLine cLine; /**< The corrected goal line. */
   };
 
   using Parameters = GaussNewtonOptimizer<numOfParameterTranslations>::Vector;
@@ -377,8 +377,8 @@ private:
   CameraCalibration nextCameraCalibration; /**< The camera calibration which is set as next camera calibration by this module. */
   bool allRequiredFeaturesVisible = true; /**< Whether all currently required features are seen. */
 
-  int numOfDiscardedParallelLines = 0, numOfDiscardedGoalAreaLines = 0, numOfDiscardedGroundLines = 0; /**< How many potential samples have been discarded yet. */
-  Rangef parallelDisRangeLower, parallelDisRangeUpper, goalAreaDisRangeLower, groundLineDisRangeLower, goalAreaDisRangeUpper, groundLineDisRangeUpper; /**< The currently allowed min/max distances for the different features. */
+  int numOfDiscardedParallelLines = 0, numOfDiscardedGoalAreaLines = 0, numOfDiscardedGoalLines = 0; /**< How many potential samples have been discarded yet. */
+  Rangef parallelDisRangeLower, parallelDisRangeUpper, goalAreaDisRangeLower, goalLineDisRangeLower, goalAreaDisRangeUpper, goalLineDisRangeUpper; /**< The currently allowed min/max distances for the different features. */
 
   std::vector<float> cosAngles, sinAngles; /**< The sine/cosine lookup tables used in the hough lines transformation. */
   float lowestDelta = std::numeric_limits<float>::max(); /**< The lowest delta value so far achieved in optimization step. */

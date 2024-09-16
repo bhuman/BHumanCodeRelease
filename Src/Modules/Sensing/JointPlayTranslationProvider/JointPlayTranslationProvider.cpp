@@ -23,18 +23,15 @@ void JointPlayTranslationProvider::update(JointPlayTranslation& theJointPlayTran
   FOREACH_ENUM(Joints::Joint, joint)
   {
     // 1. Calculate the offset
-    JointAnglePred::Joint predJoint;
-    const bool usePred = convertToPredictJoint(joint, predJoint) && SystemCall::getMode() != SystemCall::simulatedRobot;
-    Angle currentOffset =
-      theJointAngles.angles[joint] - theJointPlay.jointState[joint].lastExecutedRequest;
+    const bool usePred = theJointAnglePred.isValid && theJointAnglePred.angles[joint] != SensorData::ignore && SystemCall::getMode() != SystemCall::simulatedRobot;
+    Angle currentOffset = theJointAngles.angles[joint] - theJointPlay.jointState[joint].lastExecutedRequest;
     if(usePred)
     {
       Angle useRequest = theJointRequest.angles[joint];
       const bool isHipPitch = joint == Joints::lHipPitch || joint == Joints::rHipPitch;
       //if(isHipPitch)
       //  useRequest = theJointPlay.jointState[joint].lastExecutedRequest;
-      Angle predictedOffset =
-        theJointAnglePred.angles[predJoint] - useRequest;
+      Angle predictedOffset = theJointAnglePred.angles[joint] - useRequest;
 
       if(isHipPitch || std::abs(currentOffset) > std::abs(predictedOffset))
         currentOffset = predictedOffset;
@@ -57,7 +54,7 @@ void JointPlayTranslationProvider::update(JointPlayTranslation& theJointPlayTran
     if(usePred)
     {
       Angle predictedOffset =
-        theJointAnglePred.angles[predJoint] - theJointPlay.jointState[joint].requestBoundary.limit(theJointAnglePred.angles[predJoint]);
+        theJointAnglePred.angles[joint] - theJointPlay.jointState[joint].requestBoundary.limit(theJointAnglePred.angles[joint]);
 
       if(std::abs(currentOffset) > std::abs(predictedOffset))
         currentOffset = predictedOffset;
@@ -66,54 +63,4 @@ void JointPlayTranslationProvider::update(JointPlayTranslation& theJointPlayTran
     currentOffset -= movementOffset.limit(currentOffset);
     theJointPlayTranslation.jointPlayState[joint].play = currentOffset;
   }
-}
-
-bool JointPlayTranslationProvider::convertToPredictJoint(const Joints::Joint joint, JointAnglePred::Joint& predJoint)
-{
-  if(joint < Joints::firstLeftLegJoint)
-    return false;
-
-  switch(joint)
-  {
-    case Joints::lHipYawPitch:
-      predJoint = JointAnglePred::hipYawPitch;
-      break;
-    case Joints::lHipPitch:
-      predJoint = JointAnglePred::lHipPitch;
-      break;
-    case Joints::lKneePitch:
-      predJoint = JointAnglePred::lKneePitch;
-      break;
-    case Joints::lAnklePitch:
-      predJoint = JointAnglePred::lAnklePitch;
-      break;
-    case Joints::lHipRoll:
-      predJoint = JointAnglePred::lHipRoll;
-      break;
-    case Joints::lAnkleRoll:
-      predJoint = JointAnglePred::lAnkleRoll;
-      break;
-    case Joints::rHipYawPitch:
-      predJoint = JointAnglePred::hipYawPitch;
-      break;
-    case Joints::rHipPitch:
-      predJoint = JointAnglePred::rHipPitch;
-      break;
-    case Joints::rKneePitch:
-      predJoint = JointAnglePred::rKneePitch;
-      break;
-    case Joints::rAnklePitch:
-      predJoint = JointAnglePred::rAnklePitch;
-      break;
-    case Joints::rHipRoll:
-      predJoint = JointAnglePred::rHipRoll;
-      break;
-    case Joints::rAnkleRoll:
-      predJoint = JointAnglePred::rAnkleRoll;
-      break;
-    default:
-      return false;
-  }
-
-  return true;
 }

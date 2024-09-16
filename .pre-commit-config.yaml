@@ -1,0 +1,120 @@
+# https://pre-commit.com/hooks.html
+
+# Install hooks for the commit message stage too, when using $pre-commit install.
+default_install_hook_types: [
+  pre-commit,
+  commit-msg
+]
+
+# Override all stages default for individual hooks that do not set stages. These hooks would run twice otherwise (during pre-commit and commit-msg stage). If you want to use any other than the following stages for any hook or in any command from the server pipeline, you have to add them here.
+default_stages: [
+  commit,
+  # commit-msg, # This stage should be excluded specifically, so that the hooks that ran at the commit stage do not run again.
+  manual,
+  merge-commit,
+  # post-checkout, # These other stages can be included, if needed.
+  # post-commit,
+  # post-merge,
+  # post-rewrite,
+  # prepare-commit-msg
+]
+
+# Exclude some folders and symlinks.
+exclude: |
+  (?x)^(
+    Config/Robots/robots.cfg|
+    Make/Linux/.idea/|
+    Make/Linux/CMakeLists.txt|
+    Make/Python/|
+    Util/
+  )
+
+repos:
+  # - repo: meta # These meta hooks check the pre-commit configuration itself.
+  #   hooks:
+  #     - id: check-hooks-apply # Ensures that the configured hooks apply to at least one file in the repository.
+  #       name: Check that any hook applies
+  #     # - id: check-useless-excludes # Ensures that exclude directives apply to any file in the repository.
+  #     #   name: Check for useless excludes
+  #     # - id: identity # A simple hook which prints all arguments passed to it, useful for debugging.
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files # Prevents giant files from being committed.
+        name: Check for added large files
+      - id: check-case-conflict # Checks for files that would conflict in case-insensitive filesystems.
+        name: Check for case conflicts
+      - id: check-executables-have-shebangs # Ensures that (non-binary) executables have a shebang.
+        name: Check that executables have shebangs
+      - id: check-merge-conflict # Checks for files that contain merge conflict strings.
+        name: Check for merge conflicts
+        args: [--assume-in-merge]
+      # - id: check-json # Checks json files for parseable syntax.
+      # - id: check-symlinks # Checks for symlinks which do not point to anything.
+      - id: check-xml # Checks xml files for parseable syntax.
+        name: Check syntax of xml files
+      - id: check-yaml # Checks yaml files for parseable syntax.
+        name: Check syntax of yaml files
+        args: [--unsafe] # Allows object definitions in yaml.
+      # - id: detect-private-key # Detects the presence of private keys.
+      - id: end-of-file-fixer # Ensures that a file is either empty, or ends with one newline.
+        name: Fix newlines at end of files
+      - id: fix-byte-order-marker # Removes utf-8 byte order marker.
+        name: Fix UTF-8 byte order markers
+      - id: mixed-line-ending # Replaces or checks mixed line ending.
+        name: Check mixed line ending
+      # - id: requirements-txt-fixer # Sorts entries in requirements.txt.
+      - id: trailing-whitespace # Trims trailing whitespace.
+        name: Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md] # Preserve hard linebreaks in Markdown.
+      - id: detect-private-key # Detects the presence of private keys.
+        name: Detect private keys
+        exclude: ^Install/Keys/
+
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.1
+    hooks:
+      - id: forbid-crlf # Forbid files containing CRLF end-lines to be committed.
+        name: Check for CRLF end-lines
+      - id: remove-crlf # Replace CRLF end-lines by LF ones before committing.
+        name: Remove CRLF end-lines
+      - id: forbid-tabs # Forbid files containing tabs to be committed.
+        name: Check for tabs in files
+        exclude_types: [plist]
+        exclude: |
+          (?x)^(
+            Config/Scenes/ReplayRobot.con|
+            Config/Scenes/OtherScenes/SharedAutonomyReplay.con|
+            Make/|
+            Util/
+          )
+      - id: remove-tabs # Replace tabs by whitespaces before committing.
+        name: Replace tabs with spaces
+        args: [--whitespaces-count, '2']  # Defaults to 4.
+        exclude_types: [plist]
+        exclude: |
+          (?x)^(
+            Config/Scenes/ReplayRobot.con|
+            Config/Scenes/OtherScenes/SharedAutonomyReplay.con|
+            Make/|
+            Util/
+          )
+
+  # You can add false positive detections to Make/Hooks/typos.toml.
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.16.21
+    hooks:
+      - id: typos
+        name: Check for misspellings in code
+        args: [--config=Make/Hooks/typos.toml, --locale=en-us, --no-check-filenames, --force-exclude, --write-changes, --format=long]
+        stages: [commit] # Select stage, to skip this hook on the server pipeline.
+
+  # TODO: Add commit style convention (at least for issue format, e.g. "(#123)"). See: https://www.conventionalcommits.org/
+  # TODO: Prevent merge commits by supplying the --no-merge-commit argument.
+  - repo: https://github.com/crate-ci/committed
+    rev: v1.0.20
+    hooks:
+      - id: committed
+        name: Verify commit message
+        stages: [commit-msg]

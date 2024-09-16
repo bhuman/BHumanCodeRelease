@@ -8,46 +8,58 @@
 
 #include "JointAnglePredictor.h"
 #include "Debugging/Annotation.h"
-#include "Platform/Time.h"
-#include "Streaming/Global.h"
-#include <CompiledNN/CompiledNN.h>
+#include "Platform/SystemCall.h"
+
+#include <filesystem>
 
 MAKE_MODULE(JointAnglePredictor);
 
 void JointAnglePredictor::update(JointAnglePred& theJointAnglePred)
 {
+  // Set model name in the first frame.
   if(theJointAnglePred.modelName.empty())
-  {
     theJointAnglePred.modelName = modelName;
-    compile(true);
-  }
 
-  // Do noting until the data is present.
-  if(!jointSensorAngles.full() || !jointRequestAngles.full())
-  {
-    jointSensorAngles.push_front(theJointSensorData.angles);
-    jointRequestAngles.push_front(theJointRequest.angles);
-    return;
-  }
+  // At least in 2019 theJointRequest.timestamp was accidentally  == 0.
+  // The JointRequest must be from the previous frame. This is not ensured by USES currently.
+  ASSERT(theJointRequest.timestamp == 0
+         || theJointRequest.timestamp < theJointSensorData.timestamp
+         || SystemCall::getMode() == SystemCall::logFileReplay
+         || SystemCall::getMode() == SystemCall::remoteRobot);
 
   DEBUG_RESPONSE_ONCE("module:JointAnglePredictor:compile")
+  {
     compile(true);
+    theJointAnglePred.modelName = modelName;
+  }
 
-  // Add tha data from this frame.
+  // Add the data from this frame.
   jointSensorAngles.push_front(theJointSensorData.angles);
+  // Add Request from last frame. == USES(JointRequest)
   jointRequestAngles.push_front(theJointRequest.angles);
 
-  if(!jointSensorAngles.full())
+  // Fill all joints with ignore values.
+  theJointAnglePred.angles.fill(SensorData::ignore);
+  // TODO: It would probably be more correct if the output would be valid 1 or 2 motion cycles earlier.
+  // The model output is only valid during walking and is otherwise undefined.
+  theJointAnglePred.isValid = theMotionInfo.isMotion(MotionPhase::walk);
+
+  // Do noting until data is present and only calculate the predictions if the results are valid.
+  if(!jointSensorAngles.full() || !jointRequestAngles.full() || !theJointAnglePred.isValid)
+  {
+    theJointAnglePred.isValid = false;
     return;
+  }
 
   // Add input to model.
   float* input = network.input(0).data();
   // Add values from old to new and first requests and then the sensor values.
-  for(int i = frames - 1; i >= 0; i--)
+  for(int i = historyLength - 1; i >= 0; i--)
   {
-    for(const Joints::Joint& joint : jointOrder)
+    // Skip lHipYawPitch and use hipYawPitch==rHipYawPitch.
+    for(std::size_t joint = Joints::firstLegJoint + 1; joint < Joints::numOfJoints; joint++)
       *input++ = jointRequestAngles[i][joint];
-    for(const Joints::Joint& joint : jointOrder)
+    for(std::size_t joint = Joints::firstLegJoint + 1; joint < Joints::numOfJoints; joint++)
       *input++ = jointSensorAngles[i][joint];
   }
 
@@ -56,8 +68,10 @@ void JointAnglePredictor::update(JointAnglePred& theJointAnglePred)
     network.apply();
 
   const float* output = network.output(0).data();
-  FOREACH_ENUM(JointAnglePred::Joint, joint)
+  // Override joints that are provided. Skip lHipYawPitch and use hipYawPitch==rHipYawPitch.
+  for(std::size_t joint = Joints::firstLegJoint + 1; joint < Joints::numOfJoints; joint++)
     theJointAnglePred.angles[joint] = *output++;
+  theJointAnglePred.angles[Joints::lHipYawPitch] = theJointAnglePred.angles[Joints::rHipYawPitch];
 }
 
 void JointAnglePredictor::compile(bool output)
@@ -76,10 +90,10 @@ void JointAnglePredictor::compile(bool output)
   network.compile(Model(modelPath + modelName));
   ASSERT(network.valid());
 
-  // Input shape: (3, 22)
+  // Input shape: (historyLength, 22)
   ASSERT(network.numOfInputs() == 1);
   ASSERT(network.input(0).rank() == 2); // (Batch, Time, Features)
-  ASSERT(network.input(0).dims(0) == frames);
+  ASSERT(network.input(0).dims(0) == historyLength);
   ASSERT(network.input(0).dims(1) == 22); // == Request + Sensor
 
   // Output shape: (1, 11)

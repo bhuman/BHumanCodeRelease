@@ -282,19 +282,17 @@ void NaoProvider::update(FsrSensorData& theFsrSensorData)
   }
 }
 
-void NaoProvider::update(InertialSensorData& theInertialSensorData)
+void NaoProvider::update(RawInertialSensorData& theRawInertialSensorData)
 {
   for(size_t i = 0; i < 3; ++i)
   {
-    theInertialSensorData.gyro(i) = MsgPack::readFloat(gyros[i]);
-    theInertialSensorData.gyroVariance(i) = gyroVariance;
-    theInertialSensorData.acc(i) = MsgPack::readFloat(accs[i]);
-    theInertialSensorData.accVariance(i) = accVariance;
-    theInertialSensorData.angle(i) = MsgPack::readFloat(torsoAngles[i]);
+    theRawInertialSensorData.gyro(i) = MsgPack::readFloat(gyros[i]);
+    theRawInertialSensorData.acc(i) = MsgPack::readFloat(accs[i]);
+    theRawInertialSensorData.angle(i) = MsgPack::readFloat(torsoAngles[i]);
   }
 
   // Invert accelerometer signs
-  theInertialSensorData.acc *= -1.f;
+  theRawInertialSensorData.acc *= -1.f;
 }
 
 void NaoProvider::update(JointSensorData& theJointSensorData)
@@ -303,20 +301,18 @@ void NaoProvider::update(JointSensorData& theJointSensorData)
   {
     if(joint == Joints::rHipYawPitch)
     {
-      theJointSensorData.angles[joint] = theJointSensorData.angles[Joints::lHipYawPitch] + theJointCalibration.offsets[Joints::lHipYawPitch]
-                                         - theJointCalibration.offsets[joint];
+      theJointSensorData.angles[joint] = theJointSensorData.angles[Joints::lHipYawPitch];
       theJointSensorData.currents[joint] = theJointSensorData.currents[Joints::lHipYawPitch];
       theJointSensorData.temperatures[joint] = theJointSensorData.temperatures[Joints::lHipYawPitch];
       theJointSensorData.status[joint] = theJointSensorData.status[Joints::lHipYawPitch];
     }
     else
     {
-      theJointSensorData.angles[joint] = MsgPack::readFloat(jointAngles[joint]) - theJointCalibration.offsets[joint];
+      theJointSensorData.angles[joint] = MsgPack::readFloat(jointAngles[joint]);
       theJointSensorData.currents[joint] = static_cast<short>(1000.f * MsgPack::readFloat(jointCurrents[joint]));
       theJointSensorData.temperatures[joint] = static_cast<unsigned char>(MsgPack::readFloat(jointTemperatures[joint]));
       theJointSensorData.status[joint] = static_cast<JointSensorData::TemperatureStatus>(jointStatuses[joint] ? *jointStatuses[joint] : 0);
     }
-    theJointSensorData.variance[joint] = jointVariance;
   }
   theJointSensorData.timestamp = timeWhenPacketReceived;
 }
@@ -515,20 +511,6 @@ void NaoProvider::waitForFrameData()
     theInstance->receivePacket();
 }
 
-void NaoProvider::finishFrame()
-{
-  DEBUG_RESPONSE("module:NaoProvider:lag100") Thread::sleep(100);
-  DEBUG_RESPONSE("module:NaoProvider:lag200") Thread::sleep(200);
-  DEBUG_RESPONSE("module:NaoProvider:lag300") Thread::sleep(300);
-  DEBUG_RESPONSE("module:NaoProvider:lag1000") Thread::sleep(1000);
-  DEBUG_RESPONSE("module:NaoProvider:lag3000") Thread::sleep(3000);
-  DEBUG_RESPONSE("module:NaoProvider:lag6000") Thread::sleep(6000);
-  DEBUG_RESPONSE("module:NaoProvider:segfault") *static_cast<volatile char*>(nullptr) = 0;
-
-  if(theInstance)
-    theInstance->sendPacket();
-}
-
 float NaoProvider::readCPUTemperature() const
 {
   float result = 0.f;
@@ -544,3 +526,19 @@ float NaoProvider::readCPUTemperature() const
 }
 
 #endif
+
+void NaoProvider::finishFrame()
+{
+  DEBUG_RESPONSE("module:NaoProvider:lag100") Thread::sleep(100);
+  DEBUG_RESPONSE("module:NaoProvider:lag200") Thread::sleep(200);
+  DEBUG_RESPONSE("module:NaoProvider:lag300") Thread::sleep(300);
+  DEBUG_RESPONSE("module:NaoProvider:lag1000") Thread::sleep(1000);
+  DEBUG_RESPONSE("module:NaoProvider:lag3000") Thread::sleep(3000);
+  DEBUG_RESPONSE("module:NaoProvider:lag6000") Thread::sleep(6000);
+  DEBUG_RESPONSE("module:NaoProvider:segfault")* static_cast<volatile char*>(nullptr) = 0;
+
+#ifdef TARGET_ROBOT
+  if(theInstance)
+    theInstance->sendPacket();
+#endif
+}

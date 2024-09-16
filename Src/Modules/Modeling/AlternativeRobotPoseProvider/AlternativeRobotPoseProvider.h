@@ -18,8 +18,9 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
+#include "Representations/Perception/FieldFeatures/PenaltyAreaAndGoalArea.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 #include "Math/RingBuffer.h"
 
@@ -31,9 +32,10 @@ MODULE(AlternativeRobotPoseProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(GroundContactState),
-  REQUIRES(GyroState),
+  REQUIRES(IMUValueState),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
+  REQUIRES(PenaltyAreaAndGoalArea),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
   REQUIRES(SideInformation),
   PROVIDES(AlternativeRobotPoseHypothesis),
@@ -43,6 +45,7 @@ MODULE(AlternativeRobotPoseProvider,
     (float)(800.f) translationDifference,      /**< Maximum translational difference for assigning a pose to a cluster */
     (float)(0.5f) rotationDifference,          /**< Maximum rotational difference for assigning a pose to a cluster */
     (unsigned)(6) maxClusters,                 /**< Do not try to find more than this number of clusters */
+    (Angle)(50_deg) gyroZThreshold,            /**< If the robot is turning too fast, do not accept new features. */
   }),
 });
 

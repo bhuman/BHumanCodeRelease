@@ -10,13 +10,13 @@
 #include "Representations/Communication/TeamData.h"
 #include "Tools/BehaviorControl/Strategy/BehaviorBase.h"
 #include "Tools/Modeling/BallPhysics.h"
-#include "Debugging/DebugDrawings.h"
 
 MAKE_MODULE(StrategyBehaviorControl, StrategyBehaviorControl::getExtModuleInfo);
 
 StrategyBehaviorControl::StrategyBehaviorControl() :
-  theBehavior(theBallDropInModel, theExtendedGameState, theFieldBall, theFieldDimensions, theFrameInfo,
-              theGameState, theTeammatesBallModel)
+  theBehavior(theBallDropInModel, theBallSpecification, theExtendedGameState,
+              theFieldBall, theFieldDimensions, theFieldInterceptBall,
+              theFrameInfo, theGameState, theIndirectKick, theOpposingKickoff, theTeammatesBallModel)
 {}
 
 std::vector<ModuleBase::Info> StrategyBehaviorControl::getExtModuleInfo()
@@ -81,7 +81,7 @@ Agent* StrategyBehaviorControl::updateAgents()
     Agent& agent = agents.back();
     agent.number = number;
     agent.lastKnownTimestamp = theFrameInfo.time; // This is to avoid that "self" will write things into lastKnown* that were already sent a long time ago.
-    agent.lastKnownPose = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, number % 2 ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
+    agent.lastKnownPose = Vector2f(theFieldDimensions.xPosReturnFromPenalty, number % 2 ? theFieldDimensions.yPosLeftReturnFromPenalty : theFieldDimensions.yPosRightReturnFromPenalty);
   }
 
   // Remove agents that are not active anymore.
@@ -109,7 +109,7 @@ Agent* StrategyBehaviorControl::updateAgents()
   if(self)
     updateAgentBySelf(*self);
 
-  if(theGameState.kickOffSetupFromSidelines)
+  if(theGameState.kickOffSetupFromTouchlines)
   {
     for(Agent& agent : agents)
     {
@@ -153,17 +153,6 @@ Agent* StrategyBehaviorControl::updateAgents()
 
   for(Agent& agent : agents)
     updateCurrentPosition(agent);
-
-  DEBUG_DRAWING("module:StrategyBehaviorControl:agents", "drawingOnField")
-  {
-    for(const Agent& agent : agents)
-    {
-      DRAW_TEXT("module:StrategyBehaviorControl:agents", agent.lastKnownPose.translation.x() - 50, agent.lastKnownPose.translation.y() - 50, 100, ColorRGBA::black, std::to_string(agent.number));
-      CIRCLE("module:StrategyBehaviorControl:agents", agent.lastKnownPose.translation.x(), agent.lastKnownPose.translation.y(), 100, 10, Drawings::dashedPen, ColorRGBA::black, Drawings::noBrush, ColorRGBA::black);
-      LINE("module:StrategyBehaviorControl:agents", agent.lastKnownPose.translation.x(), agent.lastKnownPose.translation.y(), agent.currentPosition.x(), agent.currentPosition.y(), 10, Drawings::dashedPen, ColorRGBA::black);
-      CROSS("module:StrategyBehaviorControl:agents", agent.currentPosition.x(), agent.currentPosition.y(), 100, 10, Drawings::dashedPen, ColorRGBA::black);
-    }
-  }
 
   return self;
 }

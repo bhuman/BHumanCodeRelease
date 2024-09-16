@@ -1,17 +1,17 @@
-vf worldState
-vfd worldState fieldPolygons
+vf passEvaluation
+vfd passEvaluation fieldPolygons
 
-vfd worldState cognition:Reset
-vfd worldState module:PassEvaluationProvider:heatmap
+vfd passEvaluation cognition:Reset
+vfd passEvaluation module:PassEvaluationProvider:heatmap
 set module:ExpectedGoalsProvider:drawHeatmap false
 set module:PassEvaluationProvider:drawHeatmap true
 
-vfd worldState fieldLines
-vfd worldState goalFrame
-vfd worldState representation:TeammatesBallModel
-vfd worldState cognition:RobotPose
-vfd worldState representation:ObstacleModel:rectangle
-vfd worldState cognition:Reset
+vfd passEvaluation fieldLines
+vfd passEvaluation goalFrame
+vfd passEvaluation representation:TeammatesBallModel
+vfd passEvaluation cognition:RobotPose
+vfd passEvaluation representation:ObstacleModel:rectangle
+vfd passEvaluation cognition:Reset
 
 echo set module:PassEvaluationProvider:drawHeatmap true
 echo set module:PassEvaluationProvider:drawHeatmap false

@@ -15,13 +15,16 @@
 #pragma once
 
 #include "Framework/Module.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/MotionControl/EnergySaving.h"
+#include "Representations/MotionControl/InterceptBallGenerator.h"
 #include "Representations/MotionControl/KeyframeMotionGenerator.h"
 #include "Representations/MotionControl/KickGenerator.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -35,7 +38,7 @@
 #include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/JointPlay.h"
 #include "Representations/Sensing/JointPlayTranslation.h"
@@ -54,7 +57,7 @@ STREAMABLE(BalanceParameters,
   (float) gyroSidewaysBalanceFactor, /**< How much are gyro measurements added to ankle joint angles to compensate falling sideways while standing? */
   (float) gyroBalanceKneeBalanceFactor, /**< How much are gyro measurements added to hip and knee joint angles to compensate falling forwards while walking? */
   (Angle) gyroBalanceKneeNegativeGyroAbort, /**< Stop knee and hip pitch balancing when gyro measures less than this value. */
-  (Vector2f) gyroForwardBalanceFactorHipPitch, /**< Reduce factor of gyroForwardBalanceFactor, to add gyro balancing on the hipPitch of the support foot. x = negative values, y = positiv values. */
+  (Vector2f) gyroForwardBalanceFactorHipPitch, /**< Reduce factor of gyroForwardBalanceFactor, to add gyro balancing on the hipPitch of the support foot. x = negative values, y = positive values. */
   (Angle) slowdownTorsoOffset, /**< Start slowing down the walking speed at this torso rotation. */
   (float) slowdownFactor, /**< Slow down walking speed down to this factor. */
   (Angle) minTorsoRotation, /**< If the torso is this much further back, reduce the walking speed. The reduction is interpolated. */
@@ -77,7 +80,7 @@ STREAMABLE(CommonSpeedParameters,
   (Rangea) soleRotationOffsetSpeed, /**< Sole rotation can return to neutral position with this speed (degree/s). */
   (int) soleRotationOffsetSpeedAfterKickTime, /**< After a kick use a lower soleRotationOffsetSpeed to interpolation the sole rotation. */
   (float) walkSpeedReductionFactor, /**< Reduce the walking speed by this amount (only x translation). */
-  (int) reduceWalkingSpeedStepAdjustmentSteps, /**< If the step adjustment adjusted the feet too much two separat times, then reduce the walking speed for this number of walking steps. */
+  (int) reduceWalkingSpeedStepAdjustmentSteps, /**< If the step adjustment adjusted the feet too much two separate times, then reduce the walking speed for this number of walking steps. */
   (float) afterKickFeetHeightAdjustment, /**< Feet height can change this much after a specific kick. */
 });
 
@@ -91,6 +94,7 @@ STREAMABLE(ConfiguratedParameters,
   (Angle) maxGyroBalanceKneeValue, /**< Max balance value when balancing the with knee and hip pitch. */
   (Rangef) supportSwitchPhaseRange, /**< In which range of the walk phase can the support foot change? */
   (Pose2f) thresholdStopStandTransition, /**< Threshold to be able to switch from walk state stopping to standing. */
+  (Pose2f) thresholdDiveStandTransition, /**< Threshold to be able to switch from walk state stopping to standing. */
   (WalkSpeedParams) walkSpeedParams, /**< Walkspeed parameters for the theoretical max possible speed. ONLY USE use for walking IF you know what you doing! */
   (JointPlayOffsetParameters) jointPlayOffsetParameters, /**< Parameters for the joint play offset algorithmic. */
 });
@@ -138,6 +142,7 @@ STREAMABLE(KinematicParameters,
   (float) walkHipHeight, /**< Walk hip height above ankle joint in mm - seems to work from 200 mm to 235 mm. */
   (float) baseFootLift, /**< Base foot lift in mm. */
   (float) torsoOffset, /**< The base forward offset of the torso relative to the ankles in mm. */
+  (float) legLengthClipThreshold, /**< After special movements like a kick the inverse kinematic is allowed to clip the legs by up to this amount (in mm). */
 });
 
 STREAMABLE(ParabolicFootHeightParameters,
@@ -161,6 +166,7 @@ STREAMABLE(WalkDelayParameters,
   (Rangef) sideShift, /**< How much is the support foot shifted (in mm). */
   (Rangef) sideShiftDelayInterpolation, /**< Use more side shift for higher delays. */
   (float) translationBuffer, /**< When checking if the delay is possible, add this much translation on top of the swing foot. */
+  (float) kickTimeOffset, /**< For kicks we update the delay. This offset is the time from the start of the kick and reaching the ball. */
 });
 
 STREAMABLE(SideStabilizeParameters,
@@ -176,8 +182,15 @@ STREAMABLE(SideStabilizeParameters,
   (Rangef) heightRange,
 });
 
+STREAMABLE(JointTemperatureParameters,
+{,
+  (float) ankleKneeDiff,
+  (float) torsoShift,
+});
+
 STREAMABLE(WalkingEngineCommon,
 {,
+  (bool) dynamicStepUpdate, /**< Update interception steps while being executed? */
   (float) minPhaseForStopWithWrongGroundContact, /**< If the swing foot has ground contact and enough time has passed since the start of the walk phase, freeze all movement. */
   (int) standStiffnessDelay, /**< The time in stand before the stiffness is lowered (in ms). */
   (Rangef) clipForward, /**< Clip forward/backward feet movement, to prevent assert in the inverse kinematic calculation (and to prevent damage). */
@@ -213,10 +226,12 @@ STREAMABLE(WalkingEngineCommon,
   (WalkDelayParameters) walkDelayParameters, /**< Parameters for the walk delay phase. */
   (WalkSpeedParams) walkSpeedParamsWalkStep, /**< Walkspeed parameters for the theoretical max possible speed for WalkStepAdjustment. DO NOT use for walking! */
   (SideStabilizeParameters) sideStabilizeParameters, /**< Conditions to start a WalkDelayPhase and values to shift the hip on the y-axis. */
+  (JointTemperatureParameters) jointTemperatureParameters, /**< To reduce the chance of overheating, shift the torso for the legs. */
 });
 
 MODULE(WalkingEngine,
 {,
+  REQUIRES(BallSpecification),
   REQUIRES(CalibrationRequest),
   REQUIRES(EnergySaving),
   REQUIRES(FootOffset),
@@ -224,13 +239,15 @@ MODULE(WalkingEngine,
   REQUIRES(FsrData),
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
-  REQUIRES(GyroState),
+  REQUIRES(IMUValueState),
   REQUIRES(InertialData),
+  USES(InterceptBallGenerator),
+  REQUIRES(JointAnglePred),
   REQUIRES(JointAngles),
   REQUIRES(JointPlay),
   REQUIRES(JointPlayTranslation),
-  REQUIRES(JointAnglePred),
   USES(JointRequest),
+  REQUIRES(JointSensorData),
   USES(KeyframeMotionGenerator),
   REQUIRES(KickGenerator),
   REQUIRES(MassCalibration),
@@ -252,7 +269,7 @@ MODULE(WalkingEngine,
   PROVIDES(WalkingEngineOutput),
   LOADS_PARAMETERS(
   {,
-    (ConfiguratedParameters) configuratedParameters,
+    (ConfiguratedParameters) configuredParameters,
   }),
 });
 
@@ -306,11 +323,12 @@ public:
    * @param soleRotationXR right foot x rotation
    * @param leftFoot left foot pose
    * @param rightFoot right foot pose
+   * @param torsoShift Current torso shift
    */
   void calcFeetPoses(const float forwardL, const float forwardR, const float sideL, const float sideR,
                      const float footHL, const float footHR, const Angle turn,
                      const Angle soleRotationYL, const Angle soleRotationXL, const Angle soleRotationYR, const Angle soleRotationXR,
-                     Pose3f& leftFoot, Pose3f& rightFoot) const;
+                     Pose3f& leftFoot, Pose3f& rightFoot, std::optional<float> torsoShift = std::optional<float>()) const;
 
   /**
    * Based on the rotation, get the max possible step size in %
@@ -357,7 +375,7 @@ struct DummyPhase : MotionPhase
 
 struct WalkPhase : WalkPhaseBase
 {
-  WalkPhase(WalkingEngine& engine, const Pose2f& stepTarget, const MotionPhase& lastPhase,
+  WalkPhase(WalkingEngine& engine, Pose2f stepTarget, const MotionPhase& lastPhase,
             const WalkGenerator::CreateNextPhaseCallback& createNextPhaseCallback = WalkGenerator::CreateNextPhaseCallback(),
             const WalkKickStep& walkKickStep = WalkKickStep());
 
@@ -381,6 +399,7 @@ protected:
    * @param ratioBase Current time in step (in s)
    * @param duration Planned duration of the step (in s)
    * @param heightDuration Used duration for the step height (in s). Side steps use a longer step duration for the height interpolation.
+   * @param stepDurationSide Used duration for side step (in s).
    * @param forwardSwing0 Start value for the forward position of the swing foot.
    * @param forwardSupport0 Start value for the forward position of the support foot.
    * @param forwardSwing Current forward position of the swing foot.
@@ -423,9 +442,9 @@ protected:
    * @param footHeightSupport0 Start height of the support foot.
    * @param footHeightSwing Current height of the swing foot.
    * @param footHeightSupport Current height of the support foot.
-   * @param turnRL0 Start rotation value of the feet.
    * @param turnVal Current rotation value of the feet.
    * @param walkKickStep Describes all important parameters for the step, like multiple step sizes and their interpolation
+   * @param turnRL0 Start rotation value of the feet.
    */
   void calcWalkKickFootOffsets(const float swingSign, const float ratio,
                                float& forwardSwing0, float& forwardSupport0, float& forwardSwing,
@@ -439,7 +458,7 @@ protected:
    * Set the joint request for the arms, or use the given values
    * @param leftFoot Left foot pose.
    * @param rightFoot Right foot pose.
-   * @param jointRequest The given arm positions, which may be overriden bei walkArms if they should be ignored.
+   * @param jointRequest The given arm positions, which may be overridden bei walkArms if they should be ignored.
    * @param walkArms The arm positions based on the current walk.
    */
   void setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointRequest, JointRequest& walkArms) final;
@@ -458,7 +477,14 @@ protected:
 
   void calculateCurrentBaseStepVariables();
 
+  /**
+   * Update step target dynamically while it is already executed
+   */
+  void updateDynamicStep();
+
   WalkGenerator::CreateNextPhaseCallback createNextPhaseCallback;
+
+  bool wasInterceptingLastFrame = false;
 };
 
 // A walk phase with a start delay
@@ -473,7 +499,9 @@ struct WalkDelayPhase : WalkPhase
                                   const Angle soleRotationYL, const Angle soleRotationXL,
                                   const Angle soleRotationYR, const Angle soleRotationXR,
                                   const bool isLeftPhase, const bool lastPhaseWasKick, const float delay,
-                                  const WalkDelayParameters& params, const WalkingEngine& engine);
+                                  const WalkDelayParameters& params, const WalkingEngine& engine,
+                                  const bool usedWalkDelay = false,
+                                  std::optional<float> torsoShift = std::optional<float>());
 
   static float getSideShift(const bool lastPhaseWasKick, const float delay, const WalkDelayParameters& params);
 
@@ -482,10 +510,18 @@ private:
 
   void update() final;
 
+  /**
+   * For kicks the delay shall be updated every frame.
+   * If a delay is big, the perception of the ball dynamic will be off.
+   * Without an update, the timing of the kick will therefore be off otherwise.
+   */
+  float updatedDelayForKick();
+
   float delay; /**< The defined delay before the walk phase starts. */
   float timeActive = 0.f; /**< How much time has passed on the delay phase? */
   float originalFootHL0 = 0.f; /**< Original left foot height. */
   float originalFootHR0 = 0.f; /**< Original right foot height. */
   bool lastPhaseWasKick = false; /**< Last motion phase was a kick. */
   const float percentHeight = 0.f;
+  bool finishedDelay = false;
 };

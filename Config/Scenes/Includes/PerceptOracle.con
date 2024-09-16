@@ -25,9 +25,9 @@ for Lower Upper mr CameraInfo LogDataProvider
 for Lower Upper mr FrameInfo LogDataProvider
 for Motion mr FrameInfo LogDataProvider
 for Motion mr FsrSensorData LogDataProvider
-for Motion mr InertialSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
 for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
 
 # Switch to percept oracle
 for Lower Upper mr BallPercept OracledPerceptsProvider
@@ -38,9 +38,6 @@ for Lower Upper mr ObstaclesFieldPercept OracledPerceptsProvider
 for Lower Upper mr ObstaclesImagePercept OracledPerceptsProvider
 for Lower Upper mr PenaltyMarkPercept OracledPerceptsProvider
 
-# IntersectionsProvider should not use network
-dr module:IntersectionsProvider:skipClassification
-
 # Representations not required anymore
 mr AutoExposureWeightTable off
 mr BallSpots off
@@ -49,10 +46,11 @@ mr CameraIntrinsics off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage default
+mr GoalPostsPercept default
 mr JerseyClassifier off
 mr JPEGImage off
+mr ObstacleScan off
 mr ObstaclesPerceptorData off
-mr OptionalECImage default
 mr OtherFieldBoundary off
 mr OtherObstaclesPerceptorData off
 mr OtherOdometryData off
@@ -63,10 +61,10 @@ mr SegmentedObstacleImage off
 
 # Representations that are still required
 mr CameraStatus default
-mr FieldFeatureOverview default
 mr RobotHealth default
 mr RefereePercept default
 mr OptionalCameraImage default
+mr OptionalECImage default
 mr Keypoints default
 for Motion mr CameraIntrinsics ConfigurationDataProvider
 

@@ -16,7 +16,7 @@
 
 Robot::Robot(const Settings& settings, const std::string& name) : name(name)
 {
-  File::setSearchPath(settings.getSearchPath());
+  File::setSearchPath(settings.searchPath);
   InMapFile stream("threads.cfg");
   File::clearSearchPath();
 

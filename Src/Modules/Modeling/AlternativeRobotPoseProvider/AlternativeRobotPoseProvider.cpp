@@ -16,6 +16,7 @@ MAKE_MODULE(AlternativeRobotPoseProvider);
 
 void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& alternativeRobotPoseHypothesis)
 {
+  DECLARE_DEBUG_DRAWING("module:AlternativeRobotPoseProvider:buffer", "drawingOnField");
   clusters.clear();
   alternativeRobotPoseHypothesis.isValid = false;
   if(currentStateOrMotionRuinsOdometry() || // Things are going on and might (but must not) ruin the odometry completely
@@ -32,6 +33,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
   {
     addFieldFeatureToBuffer(&theCenterCircleWithLine);
     addFieldFeatureToBuffer(&thePenaltyMarkWithPenaltyAreaLine);
+    addFieldFeatureToBuffer(&thePenaltyAreaAndGoalArea);
   }
 
   drawObservations();
@@ -76,13 +78,11 @@ bool AlternativeRobotPoseProvider::currentMotionAllowsAcceptanceOfNewFeatures()
   if(!theMotionInfo.isMotion(bit(MotionPhase::walk) | bit(MotionPhase::stand)))
     return false;
   // Making fast turns produces strange projections of lines to the ground:
-  // TODO: Move hardcoded number to parameter. Value is guessed by Philip.
-  if(std::abs(theGyroState.mean.z()) > 50_deg)
+  if(std::abs(theIMUValueState.gyroValues.mean.z()) > gyroZThreshold)
     return false;
   // Everything else if probably OK:
   return true;
 }
-
 
 void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* ff)
 {
@@ -164,7 +164,6 @@ void AlternativeRobotPoseProvider::odometryUpdate()
 
 void AlternativeRobotPoseProvider::drawObservations()
 {
-  DECLARE_DEBUG_DRAWING("module:AlternativeRobotPoseProvider:buffer", "drawingOnField");
   for(unsigned int i = 0; i < observations.size(); i++)
   {
     const PoseObservation& obs = observations[i];

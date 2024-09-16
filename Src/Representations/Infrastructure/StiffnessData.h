@@ -24,7 +24,7 @@ STREAMABLE(StiffnessData,
   /** This function resets the stiffness for all joints to the default value. */
   void resetToDefault();
 
-  /** Checks wheather all stiffnesses are in the rangel [0, 100] or have the value useDefault. */
+  /** Checks whether all stiffnesses are in the range [0, 100] or have the value useDefault. */
   bool isValid(bool allowUseDefault = true) const,
 
   (ENUM_INDEXED_ARRAY(int, Joints::Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */

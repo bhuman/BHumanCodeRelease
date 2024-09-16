@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks whether modules and skills actually use their parameters.
-# It lists the requirements that are not used. Unused parameters
+# It lists the parameters that are not used. Unused parameters
 # might be overlooked if other variables of the same are declared.
 
 cd "$(dirname "$(which "$0")")/../../Src/Modules"
@@ -10,36 +10,67 @@ if [ "`uname`" = "Darwin" ]; then
   WORDSTART="[[:<:]]"
 fi
 
-grep -ER "^(MAKE_MODULE|SKILL_IMPLEMENTATION)\(" \
-| sed 's%:.*%%' \
-| sort \
-| while read CPP; do
-  H="${CPP%.*}.h"
-  if [ ! -f "$H" ]; then
-    H="$CPP"
-    CPP=
-  fi
-  PARAMETERS="$(grep -E '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' "$H" | sed -e 's%^ *([^/]*) *\([A-Za-z_][A-Za-z0-9_]*\),.*%\1%' | sort | uniq)"
-  MATCH="$(tr <<<"$PARAMETERS" '\n' '|' | sed 's%|$%%')"
-  OTHER=
-  if [ ! -z "$(grep 'SkillBehaviorControl\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/Options" -name "*.h")"
-  elif [ ! -z "$(grep 'FallDownStateProvider\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(dirname "$CPP")/Options.h"
-  elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
-  elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
-  fi
-  USED="$(cat $H $CPP $OTHER \
-  | grep -vE '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' \
-  | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
-  | tr '|' '\n' \
-  | grep -E "^($MATCH)$" \
+UNUSED="$(
+  grep -ER "^((MAKE_MODULE|option)\(| *STREAMABLE\(Parameters,)" \
+  | sed 's%:.*%%' \
   | sort \
-  | uniq)"
-  DIFF="$(diff --side-by-side --suppress-common-lines <(echo "$PARAMETERS") <(echo "$USED"))"
-  if [ ! -z "$DIFF" ]; then
-    echo "$H: $(sed <<<"$DIFF" 's%	.*%%' | tr '\n' ',' | sed 's%,$%%')"
-  fi
-done
+  | uniq \
+  | while read CPP; do
+    if [ ! -z "$(grep <<<"$CPP" -E '/(Options|Skills)/')" ]; then
+      PARAMETERS="$(grep <"$CPP" -E -m 1 -A 10000 '^ *(defs|load|vars)\(.*' \
+                    | grep -E -m 1 -B 10000 '^ *{' \
+                    | grep -v '^{' \
+                    | sed -E -e 's% *//.*%%' -e 's% */\*.*%%' -e 's%.*\) %%' -e 's%[,)]*$%%' \
+                    | grep -v ' ' \
+                    | grep -E '^.+$' \
+                    | sort \
+                    | uniq)"
+      MATCH="$(tr <<<"$PARAMETERS" '\n' '|' | sed 's%|$%%')"
+      USED="$(grep <"$CPP" -E -m 1 -A 10000 '^ *(defs|load|vars)\(.*' \
+              | grep -E -m 1 -A 10000 '^ *{' \
+              | grep -vE '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' \
+              | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
+              | tr '|' '\n' \
+              | grep -E "^($MATCH)$" \
+              | sort \
+              | uniq)"
+    else
+      if [ -f "${CPP%.*}.cpp" ]; then
+        CPP="${CPP%.*}.cpp"
+      fi
+      H="${CPP%.*}.h"
+      if [ ! -f "$H" ]; then
+        H="$CPP"
+        CPP=
+      fi
+      PARAMETERS="$(grep -E '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' "$H" | sed -e 's%^ *([^/]*) *\([A-Za-z_][A-Za-z0-9_]*\),.*%\1%' | sort | uniq)"
+      MATCH="$(tr <<<"$PARAMETERS" '\n' '|' | sed 's%|$%%')"
+      OTHER=
+      if [ ! -z "$(grep 'SkillBehaviorControl\.cpp' <<<"$CPP")" ]; then
+        OTHER="$(find "$(dirname "$CPP")/Options" "$(dirname "$CPP")/Skills" -name "*.h" -o -name "*.cpp")"
+      elif [ ! -z "$(grep 'FallDownStateProvider\.cpp' <<<"$CPP")" ]; then
+        OTHER="$(dirname "$CPP")/Options.h"
+      elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
+        OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
+      elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
+        OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
+      fi
+      USED="$(cat $H $CPP $OTHER \
+              | grep -vE '^ *\([^/]*\) *[A-Za-z_][A-Za-z0-9_]*,' \
+              | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
+              | tr '|' '\n' \
+              | grep -E "^($MATCH)$" \
+              | sort \
+              | uniq)"
+    fi
+    DIFF="$(diff --side-by-side --suppress-common-lines <(echo "$PARAMETERS") <(echo "$USED"))"
+    if [ ! -z "$DIFF" ]; then
+      echo "$H: Unused parameter(s) $(sed <<<"$DIFF" 's%	.*%, %' | tr -d '\n' | sed 's%, $%%')"
+    fi
+  done
+)"
+
+if [ ! -z "$UNUSED" ]; then
+  echo "$UNUSED"
+  exit 1
+fi

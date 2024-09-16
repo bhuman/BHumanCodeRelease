@@ -6,7 +6,6 @@
  */
 
 #include "LEDHandler.h"
-
 #include <algorithm>
 
 void LEDHandler::update(LEDRequest& ledRequest)
@@ -15,16 +14,21 @@ void LEDHandler::update(LEDRequest& ledRequest)
   FOREACH_ENUM(LEDRequest::LED, led)
     ledRequest.ledStates[led] = LEDRequest::off;
 
-  setRightEye(ledRequest);
-  setLeftEye(ledRequest);
-  setChestButton(ledRequest);
-  setLeftFoot(ledRequest);
-  setRightFoot(ledRequest);
-
   //update
-  setRightEar(ledRequest);
-  setLeftEar(ledRequest);
-  setHead(ledRequest);
+  if(thePhotoModeGenerator.isActive)
+  {
+    setPhotoModeLights(ledRequest);
+  }
+  else
+  {
+    setBothEyes(ledRequest);
+    setChestButton(ledRequest);
+    setLeftFoot(ledRequest);
+    setRightFoot(ledRequest);
+    setRightEar(ledRequest);
+    setLeftEar(ledRequest);
+    setHead(ledRequest);
+  }
 }
 
 void LEDHandler::setRightEar(LEDRequest& ledRequest)
@@ -49,26 +53,10 @@ void LEDHandler::setLeftEar(LEDRequest& ledRequest)
     ledRequest.ledStates[LEDRequest::earsLeft144Deg] = LEDRequest::blinking;
   }
 
-  int numberOfConnectedTeammates = static_cast<int>(theGlobalTeammatesModel.teammates.size());
-  if(numberOfConnectedTeammates > 0)
+  if(!theGlobalTeammatesModel.teammates.empty())
   {
-    ledRequest.ledStates[LEDRequest::earsLeft0Deg] = LEDRequest::on;
-    ledRequest.ledStates[LEDRequest::earsLeft36Deg] = LEDRequest::on;
-  }
-  if(numberOfConnectedTeammates > 1)
-  {
-    ledRequest.ledStates[LEDRequest::earsLeft72Deg] = LEDRequest::on;
-    ledRequest.ledStates[LEDRequest::earsLeft108Deg] = LEDRequest::on;
-  }
-  if(numberOfConnectedTeammates > 2)
-  {
-    ledRequest.ledStates[LEDRequest::earsLeft180Deg] = LEDRequest::on;
-    ledRequest.ledStates[LEDRequest::earsLeft216Deg] = LEDRequest::on;
-  }
-  if(numberOfConnectedTeammates > 3)
-  {
-    ledRequest.ledStates[LEDRequest::earsLeft252Deg] = LEDRequest::on;
-    ledRequest.ledStates[LEDRequest::earsLeft288Deg] = LEDRequest::on;
+    for(int i = LEDRequest::earsLeft0Deg; i <= LEDRequest::earsLeft324Deg; i++)
+      ledRequest.ledStates[static_cast<LEDRequest::LED>(i)] = LEDRequest::on;
   }
 }
 
@@ -132,55 +120,65 @@ void LEDHandler::setEyeColor(LEDRequest& ledRequest,
   }
 }
 
-void LEDHandler::setLeftEye(LEDRequest& ledRequest)
+void LEDHandler::setBothEyes(LEDRequest& ledRequest)
 {
-  //no groundContact
-  if(!theGroundContactState.contact/* && (theFrameInfo.time & 512)*/)
-    setEyeColor(ledRequest, true, yellow, LEDRequest::on);
-  else
+  // Both eyes become yellow, if the robot does not have ground contact
+  if(!theGroundContactState.contact)
   {
-    bool ballSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 250;
-    bool featureSeen = theFrameInfo.getTimeSince(theFieldFeatureOverview.combinedStatus.lastSeen) < 250;
-
-    if(ballSeen && featureSeen)
-      setEyeColor(ledRequest, true, red, LEDRequest::on);
-    else if(ballSeen)
-      setEyeColor(ledRequest, true, white, LEDRequest::on);
-    else if(featureSeen)
-      setEyeColor(ledRequest, true, blue, LEDRequest::on);
+    setEyeColor(ledRequest, true, yellow, LEDRequest::on);
+    setEyeColor(ledRequest, false, yellow, LEDRequest::on);
+    return;
   }
-}
-
-void LEDHandler::setRightEye(LEDRequest& ledRequest)
-{
+  // Set right eye color depending on the current role.
+  // If the ball was seen, the left eye has the same color as the right eye.
+  bool ballWasSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 250;
   if(Role::isActiveRole(theStrategyStatus.role))
+  {
     setEyeColor(ledRequest, false, red, LEDRequest::on);
+    if(ballWasSeen)
+      setEyeColor(ledRequest, true, red, LEDRequest::on);
+  }
   else
   {
     switch(theStrategyStatus.position)
     {
       case Tactic::Position::goalkeeper:
+      case Tactic::Position::attackingGoalkeeper:
         setEyeColor(ledRequest, false, blue, LEDRequest::on);
+        if(ballWasSeen)
+          setEyeColor(ledRequest, true, blue, LEDRequest::on);
         break;
       case Tactic::Position::defender:
       case Tactic::Position::defenderL:
       case Tactic::Position::defenderR:
         setEyeColor(ledRequest, false, white, LEDRequest::on);
+        if(ballWasSeen)
+          setEyeColor(ledRequest, true, white, LEDRequest::on);
         break;
       case Tactic::Position::midfielder:
       case Tactic::Position::midfielderM:
       case Tactic::Position::midfielderL:
       case Tactic::Position::midfielderR:
+      case Tactic::Position::sacPasser:
         setEyeColor(ledRequest, false, green, LEDRequest::on);
+        if(ballWasSeen)
+          setEyeColor(ledRequest, true, green, LEDRequest::on);
         break;
       case Tactic::Position::forward:
       case Tactic::Position::forwardM:
       case Tactic::Position::forwardL:
       case Tactic::Position::forwardR:
         setEyeColor(ledRequest, false, cyan, LEDRequest::on);
+        if(ballWasSeen)
+          setEyeColor(ledRequest, true, cyan, LEDRequest::on);
         break;
       default:
         ASSERT(theStrategyStatus.position == Tactic::Position::none);
+        if(ballWasSeen)
+        {
+          setEyeColor(ledRequest, false, magenta, LEDRequest::on);
+          setEyeColor(ledRequest, true, magenta, LEDRequest::on);
+        }
     }
   }
 }
@@ -230,6 +228,11 @@ void LEDHandler::setChestButton(LEDRequest& ledRequest)
   }
   else if(theGameState.isPenalized())
     ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
+  else if(theGameState.state == GameState::standby)
+  {
+    ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::on;
+    ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
+  }
   else if(theGameState.isReady())
     ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
   else if(theGameState.isSet())
@@ -279,6 +282,100 @@ void LEDHandler::setRightFoot(LEDRequest& ledRequest)
     ledRequest.ledStates[LEDRequest::footRightGreen] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::footRightBlue] = LEDRequest::on;
   }
+}
+
+void LEDHandler::setPhotoModeLights(LEDRequest& ledRequest)
+{
+  auto ledState = thePhotoModeGenerator.ledGroup == PhotoModeGenerator::LEDGroup::eyes && thePhotoModeGenerator.selectLEDs ? LEDRequest::blinking : LEDRequest::on;
+  // set the eyes
+  switch(thePhotoModeGenerator.lamps[PhotoModeGenerator::eyes])
+  {
+    case PhotoModeGenerator::red:
+      setEyeColor(ledRequest, true, LEDHandler::red, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::red, ledState);
+      break;
+    case PhotoModeGenerator::green:
+      setEyeColor(ledRequest, true, LEDHandler::green, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::green, ledState);
+      break;
+    case PhotoModeGenerator::blue:
+      setEyeColor(ledRequest, true, LEDHandler::blue, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::blue, ledState);
+      break;
+    case PhotoModeGenerator::yellow:
+      setEyeColor(ledRequest, true, LEDHandler::yellow, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::yellow, ledState);
+      break;
+    case PhotoModeGenerator::magenta:
+      setEyeColor(ledRequest, true, LEDHandler::magenta, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::magenta, ledState);
+      break;
+    case PhotoModeGenerator::cyan:
+      setEyeColor(ledRequest, true, LEDHandler::cyan, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::cyan, ledState);
+      break;
+    case PhotoModeGenerator::white:
+      setEyeColor(ledRequest, true, LEDHandler::white, ledState);
+      setEyeColor(ledRequest, false, LEDHandler::white, ledState);
+      break;
+    default:
+      break;
+  }
+
+  ledState = thePhotoModeGenerator.ledGroup == PhotoModeGenerator::LEDGroup::ears && thePhotoModeGenerator.selectLEDs ? LEDRequest::blinking : LEDRequest::on;
+  // set the ears
+  if(thePhotoModeGenerator.lamps[PhotoModeGenerator::ears] % 2 == 0)
+  {
+    for(int i = LEDRequest::earsLeft0Deg; i < LEDRequest::chestRed; ++i)
+    {
+      ledRequest.ledStates[LEDRequest::LED(i)] = ledState;
+    }
+  }
+
+  // set the chest
+  ledState = thePhotoModeGenerator.ledGroup == PhotoModeGenerator::LEDGroup::chest && thePhotoModeGenerator.selectLEDs ? LEDRequest::blinking : LEDRequest::on;
+  switch(thePhotoModeGenerator.lamps[PhotoModeGenerator::chest])
+  {
+    case PhotoModeGenerator::red:
+      ledRequest.ledStates[LEDRequest::chestRed] = ledState;
+      break;
+    case PhotoModeGenerator::green:
+      ledRequest.ledStates[LEDRequest::chestGreen] = ledState;
+      break;
+    case PhotoModeGenerator::blue:
+      ledRequest.ledStates[LEDRequest::chestBlue] = ledState;
+      break;
+    case PhotoModeGenerator::yellow:
+      ledRequest.ledStates[LEDRequest::chestRed] = ledState;
+      ledRequest.ledStates[LEDRequest::chestGreen] = ledState;
+      break;
+    case PhotoModeGenerator::magenta:
+      ledRequest.ledStates[LEDRequest::chestRed] = ledState;
+      ledRequest.ledStates[LEDRequest::chestBlue] = ledState;
+      break;
+    case PhotoModeGenerator::cyan:
+      ledRequest.ledStates[LEDRequest::chestGreen] = ledState;
+      ledRequest.ledStates[LEDRequest::chestBlue] = ledState;
+      break;
+    case PhotoModeGenerator::white:
+      ledRequest.ledStates[LEDRequest::chestRed] = ledState;
+      ledRequest.ledStates[LEDRequest::chestGreen] = ledState;
+      ledRequest.ledStates[LEDRequest::chestBlue] = ledState;
+      break;
+    default:
+      break;
+  }
+
+  // provisional because nothing works
+  //  setEyeColor(ledRequest, true, LEDHandler::white, LEDRequest::LEDState::on);
+  //  setEyeColor(ledRequest, false, LEDHandler::white, LEDRequest::LEDState::on);
+  //  for(int i = LEDRequest::earsLeft0Deg; i < LEDRequest::chestRed; ++i)
+  //  {
+  //    ledRequest.ledStates[LEDRequest::LED(i)] = LEDRequest::on;
+  //  }
+  //  ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
+  //  ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::on;
+  //  ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
 }
 
 void LEDHandler::setBatteryLevelInEar(LEDRequest& ledRequest, LEDRequest::LED baseLED)

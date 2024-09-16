@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "log-analyzer"
+version = "0.1.0"
+description = ""
+authors = ["Laurens Müller-Groh <lamu@uni-bremen.de>"]
+packages = [{ include = "log_analyzer" }]
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pybh = { version = "==0.3.9", source = "gitlab" }
+# pybh = { path = "../../Make/Python", develop = false }
+click = "^8.1.3"
+rich = "^13.3.5"
+numpy = "^1.25.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.1"
+pytest = "^7.4.0"
+
+[tool.poetry.scripts]
+log-analyzer = "log_analyzer.cli:cli"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["log_analyzer"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "E501",   # we use black
+  "COM812", # we use black
+  "ANN101", # Self annotation available with python 3.11
+  "ANN102", # Self annotation available with python 3.11
+  "ANN206", # Self annotation available with python 3.11
+  "ERA001", # auto-removal of commented out code affects development and vscode integration
+  "FBT001", # we like to use booleans as function parameters
+  "FBT002", # ^^^
+  "TD003",  # we do not work with issues
+  "D10",    # document later, or so they said...
+  # "TRY",
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15

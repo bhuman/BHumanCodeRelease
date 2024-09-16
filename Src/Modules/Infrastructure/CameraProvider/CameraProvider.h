@@ -41,10 +41,11 @@ MODULE(CameraProvider,
   PROVIDES(CameraIntrinsics),
   PROVIDES(CameraStatus),
   PROVIDES_WITHOUT_MODIFY(JPEGImage),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (unsigned)(1000) maxWaitForImage, /**< Timeout in ms for waiting for new images. */
-    (int)(2000) resetDelay, /**< Timeout in ms for resetting camera without image. */
+    (unsigned) maxWaitForImage, /**< Timeout in ms for waiting for new images. */
+    (int) resetDelay, /**< Timeout in ms for resetting camera without image. */
+    (int) jpegQuality, /**< The quality of the JPEG compressing (0 = bad ... 100 = very good). */
   }),
 });
 

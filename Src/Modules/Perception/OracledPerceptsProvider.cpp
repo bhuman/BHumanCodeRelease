@@ -37,25 +37,25 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   // Half of the intersections
   IntersectionsPercept::Intersection oppLeftCorner;
   oppLeftCorner.type = IntersectionsPercept::Intersection::L;
-  oppLeftCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
+  oppLeftCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
   oppLeftCorner.dir1 = Vector2f(-1.f, 0.f);
   oppLeftCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftCorner);
   IntersectionsPercept::Intersection oppLeftPenaltyArea;
   oppLeftPenaltyArea.type = IntersectionsPercept::Intersection::T;
-  oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftPenaltyArea);
+  oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftPenaltyArea);
   oppLeftPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppLeftPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyArea);
   IntersectionsPercept::Intersection oppRightPenaltyArea;
   oppRightPenaltyArea.type = IntersectionsPercept::Intersection::T;
-  oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightPenaltyArea);
+  oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightPenaltyArea);
   oppRightPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppRightPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppRightPenaltyArea);
   IntersectionsPercept::Intersection oppRightCorner;
   oppRightCorner.type = IntersectionsPercept::Intersection::L;
-  oppRightCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightSideline);
+  oppRightCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
   oppRightCorner.dir1 = Vector2f(-1.f, 0.f);
   oppRightCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightCorner);
@@ -71,12 +71,12 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   oppRightPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
   oppRightPenaltyCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightPenaltyCorner);
-  IntersectionsPercept::Intersection leftCenterLineCrossing;
-  leftCenterLineCrossing.type = IntersectionsPercept::Intersection::T;
-  leftCenterLineCrossing.pos = Vector2f(0.f, theFieldDimensions.yPosLeftSideline);
-  leftCenterLineCrossing.dir1 = Vector2f(1.f, 0.f);
-  leftCenterLineCrossing.dir2 = Vector2f(0.f, -1.f);
-  intersections.push_back(leftCenterLineCrossing);
+  IntersectionsPercept::Intersection leftHalfwayLineCrossing;
+  leftHalfwayLineCrossing.type = IntersectionsPercept::Intersection::T;
+  leftHalfwayLineCrossing.pos = Vector2f(0.f, theFieldDimensions.yPosLeftTouchline);
+  leftHalfwayLineCrossing.dir1 = Vector2f(1.f, 0.f);
+  leftHalfwayLineCrossing.dir2 = Vector2f(0.f, -1.f);
+  intersections.push_back(leftHalfwayLineCrossing);
   IntersectionsPercept::Intersection leftCenterCircleCrossing;
   leftCenterCircleCrossing.type = IntersectionsPercept::Intersection::X;
   leftCenterCircleCrossing.pos = Vector2f(0.f, theFieldDimensions.centerCircleRadius);
@@ -95,38 +95,38 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   }
   // The lines
   std::pair<Vector2f, Vector2f> line;
-  // ground lines and center line:
-  line.first =  Vector2f(0, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2f(0, theFieldDimensions.yPosRightSideline);
+  // goal lines and halfway line:
+  line.first =  Vector2f(0, theFieldDimensions.yPosLeftTouchline);
+  line.second = Vector2f(0, theFieldDimensions.yPosRightTouchline);
   lines.push_back(line);
-  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
   lines.push_back(line);
-  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftTouchline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline);
   lines.push_back(line);
-  // side lines:
-  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftSideline);
+  // touchlines:
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftTouchline);
   lines.push_back(line);
-  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightSideline);
-  line.second = Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline);
   lines.push_back(line);
   // opponent penalty area:
-  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftPenaltyArea);
   line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightPenaltyArea);
   line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
   line.first =  Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
   // own penalty area:
-  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftPenaltyArea);
   line.second = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightPenaltyArea);
   line.second = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
   line.first =  Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
@@ -239,6 +239,41 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
     if(!theMeasurementCovariance.transformWithCovLegacy(percept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
                                                         percept.positionOnField, percept.covarianceOnField))
       ballPercept = percept;
+  }
+}
+
+void OracledPerceptsProvider::update(GoalPostsPercept& goalPostsPercept)
+{
+  goalPostsPercept.goalPosts.clear();
+  if(!theCameraMatrix.isValid)
+    return;
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  for(unsigned int i = 0; i < goalPosts.size(); i++)
+  {
+    const Vector2f relativePostPos = robotPoseInv * goalPosts[i];
+    if(relativePostPos.norm() > nearGoalPostMaxVisibleDistance || isPointBehindObstacle(goalPosts[i]))
+      continue;
+    if(Random::bernoulli(1. - nearGoalPostRecognitionRate))
+      continue;
+    Vector2f postInImage;
+    if(pointIsInImage(relativePostPos, postInImage))
+    {
+      goalPostsPercept.goalPosts.emplace_back();
+      GoalPostsPercept::GoalPost& goalPost = goalPostsPercept.goalPosts.back();
+      goalPost.baseInImage = true;
+      goalPost.positionInImage = postInImage;
+      goalPost.positionOnField = relativePostPos;
+      // Add some noise:
+      if(applyNearGoalPostNoise)
+      {
+        applyNoise(nearGoalPostPosInImageStdDev, goalPost.positionInImage);
+        if(!theMeasurementCovariance.transformPointWithCov(goalPost.positionInImage, 0.f, goalPost.positionOnField, goalPost.covarianceOnField))
+        {
+          goalPostsPercept.goalPosts.pop_back();
+          continue;
+        }
+      }
+    }
   }
 }
 
@@ -368,7 +403,7 @@ void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
       if(applyPenaltyMarkNoise)
         applyNoise(penaltyMarkPosInImageStdDev, penaltyMarkInImage);
 
-      if(theMeasurementCovariance.transformWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
+      if(theMeasurementCovariance.transformPointWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
       {
         penaltyMarkPercept.positionInImage = Vector2i(static_cast<int>(penaltyMarkInImage.x()), static_cast<int>(penaltyMarkInImage.y()));
         penaltyMarkPercept.wasSeen = true;
@@ -385,7 +420,7 @@ void OracledPerceptsProvider::falsePenaltyMarkPercept(PenaltyMarkPercept& penalt
     falseMarkPos.x() *= penaltyMarkFalseDeviationFactor;
   Vector2f penaltyMarkInImage;
   if(pointIsInImage(falseMarkPos, penaltyMarkInImage)
-     && theMeasurementCovariance.transformWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
+     && theMeasurementCovariance.transformPointWithCov(penaltyMarkInImage, 0.f, penaltyMarkPercept.positionOnField, penaltyMarkPercept.covarianceOnField))
   {
     penaltyMarkPercept.positionInImage = penaltyMarkInImage.cast<int>();
     penaltyMarkPercept.wasSeen = true;
@@ -536,7 +571,7 @@ void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::G
 
       Vector2f inImage;
       if(Transformation::robotToImage(o.center, theCameraMatrix, theCameraInfo, inImage)
-         && theMeasurementCovariance.transformWithCov(inImage, 0.f, o.center, o.covariance))
+         && theMeasurementCovariance.transformPointWithCov(inImage, 0.f, o.center, o.covariance))
         obstaclesFieldPercept.obstacles.push_back(o);
     }
   }

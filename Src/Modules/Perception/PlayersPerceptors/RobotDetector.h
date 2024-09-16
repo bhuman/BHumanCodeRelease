@@ -13,7 +13,6 @@
 #pragma once
 
 #include "Representations/Configuration/BallSpecification.h"
-#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/MotionInfo.h"
@@ -47,12 +46,16 @@ STREAMABLE(NetworkParameters,
   (unsigned int) outputAnchors,
   (unsigned int) paramsPerAnchor,
 
+  // class prediction features
+   (bool) predictFallen,
+
   // indices of network outputs inside an anchor
   (int) confidenceIndex,
   (int) yMidIndex,
   (int) xMidIndex,
   (int) heightIndex,
   (int) widthIndex,
+  (int) fallenClassIndex,
 
   // Allow up to 6 anchors (predictors per output pixel), not all need to be used
   (std::vector<Vector2f>) anchors,
@@ -65,7 +68,6 @@ MODULE(RobotDetector,
 {,
   REQUIRES(BallSpecification),
   REQUIRES(BodyContour),
-  REQUIRES(CameraImage),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(ECImage),
@@ -86,6 +88,8 @@ MODULE(RobotDetector,
   DEFINES_PARAMETERS(
   {,
     (float)(0.6f) objectThres, /**< Limit from which a robot is accepted. */
+    (float)(0.55f) fallenThres, /**< Confidence threshold for a robot to be predicted as lying on the ground */
+    (float)(0.3f) nonMaximumSuppressionIoUThreshold, /**< Suppress non-maximal robot predictions with intersection over union above this threshold */
     (unsigned int)(2) xyStep, /**< Step size in x/y direction for scanning the image. */
     (unsigned int)(16) xyRegions, /**< Number of regions in x/y direction. */
     (short)(40) minContrastDiff, /**< Minimal contrast difference to consider a spot. */
@@ -117,27 +121,22 @@ private:
   std::unique_ptr<NeuralNetworkONNX::Model> onnxModel;
   NeuralNetworkONNX::CompiledNN onnxConvModel;
   bool useOnnx;
-  Image<PixelTypes::GrayscaledPixel> yThumbnail;
+  Image<PixelTypes::GrayscaledPixel> grayscaleThumbnail;
   // Splitting into three images and recombining them into one is probably a performance issue
   // We need to optimize this later
-  Image<PixelTypes::GrayscaledPixel> uThumbnail;
-  Image<PixelTypes::GrayscaledPixel> vThumbnail;
-  // Resize::shrinkY doesn't work in place, we need these as a buffer
-  Image<PixelTypes::GrayscaledPixel> uSubsampled;
-  Image<PixelTypes::GrayscaledPixel> vSubsampled;
+  Image<PixelTypes::GrayscaledPixel> redChromaThumbnail;
+  Image<PixelTypes::GrayscaledPixel> blueChromaThumbnail;
   std::vector<ObstaclesImagePercept::Obstacle> obstaclesUpper, obstaclesLower;
 
   // todo: move model_path into the config or extract config_path from model_path
-  /*const std::string model_path = "/Config/NeuralNets/RobotDetector/4_anchor_boxes_grayscale_model_no_activation_20230615-164224.hdf5";
-  const std::string model_config_path = "NeuralNets/RobotDetector/4_anchor_boxes_grayscale_20230615-164224.cfg";*/
   const std::string model_path = "/Config/NeuralNets/RobotDetector/4_anchor_boxes_model_no_activation_20230629-220730.hdf5";
   const std::string model_config_path = "NeuralNets/RobotDetector/4_anchor_boxes_20230629-220730.cfg";
   NetworkParameters networkParameters;
 
   [[maybe_unused]] const int HEIGHT_SHAPE_INDEX = 0;
   [[maybe_unused]] const int WIDTH_SHAPE_INDEX = 1;
-  [[maybe_unused]] const int IMAGE_CHANNELS_INDEX = 2;
-  [[maybe_unused]] const int ANCHOR_SHAPE_INDEX = 2;
+  [[maybe_unused]] const int IMAGE_CHANNELS_INDEX = 2; /**< On network input */
+  [[maybe_unused]] const int ANCHOR_SHAPE_INDEX = 2;   /**< On network output */
   [[maybe_unused]] const int BOX_SHAPE_INDEX = 3;
 
   /** This enumeration lists the possible classes of a image region. */
@@ -194,16 +193,22 @@ private:
   void update(ObstaclesPerceptorData& theObstaclesPerceptorData) override;
 
   /**
+   * Apply a network to extract obstacles from the image.
+   * @param obstacles list of obstacle percepts to be updated
+   */
+  void extractImageObstaclesFromNetwork(std::vector<ObstaclesImagePercept::Obstacle>& obstacles);
+
+  /**
    * Fill the Y-Thumbnail image with a downscaled grayscale image.
    */
    void fillGrayscaleThumbnail();
 
    /**
-    * Fill the U- and V-Thumbnail images with downscale images of the same size as the grayscale thumbnail.
+    * Fill the redChroma- and V-Thumbnail images with downscale images of the same size as the grayscale thumbnail.
     * First subsamples from the CameraImage to obtain the same resolution vertically and horizontally.
     * Then downscales to the expected input size.
     */
-   void fillUVThumbnails();
+   void fillChromaThumbnails();
 
   /**
    * Applies the cnnConvModel on the downscaled grayscale image.
@@ -233,6 +238,13 @@ private:
    * @param b index of the anchor this prediction belongs to
    */
   LabelImage::Annotation predictionToBoundingBox(Eigen::Map<Eigen::Vector<float, 5>>& pred, unsigned int y, unsigned int x, unsigned int b) const;
+
+  /**
+   *
+   * @param theObstaclesFieldPercept representation to be updated
+   * @param obstacles
+   */
+  void mergeObstacles(ObstaclesFieldPercept& theObstaclesFieldPercept, std::vector<ObstaclesImagePercept::Obstacle>& obstacles);
 
   /**
    * Corrects the left and right and optionally the bottom boundary of an obstacle in the image.

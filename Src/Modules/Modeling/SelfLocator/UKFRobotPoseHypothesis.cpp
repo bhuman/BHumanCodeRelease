@@ -12,8 +12,6 @@
 #include "Math/Geometry.h"
 #include "Math/Probabilistics.h"
 
-using namespace std;
-
 void UKFRobotPoseHypothesis::init(const Pose2f& pose, const Pose2f& poseDeviation, int id, float validity)
 {
   this->id = id;
@@ -90,9 +88,9 @@ void UKFRobotPoseHypothesis::updateByLineOnCenterCircle(const RegisteredLine& li
 void UKFRobotPoseHypothesis::updateByLine(const RegisteredLine& line)
 {
   ASSERT(line.partOfCenterCircle == false);
-  const float measuredAngle = abs(Angle::normalize(line.measuredAngleAlternative - getPose().rotation)) < abs(Angle::normalize(line.measuredAngle - getPose().rotation)) ? line.measuredAngleAlternative : line.measuredAngle;
-  const float c = cos(measuredAngle);
-  const float s = sin(measuredAngle);
+  const float measuredAngle = std::abs(Angle::normalize(line.measuredAngleAlternative - getPose().rotation)) < std::abs(Angle::normalize(line.measuredAngle - getPose().rotation)) ? line.measuredAngleAlternative : line.measuredAngle;
+  const float c = std::cos(measuredAngle);
+  const float s = std::sin(measuredAngle);
   const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
   const Vector2f orthogonalProjection = angleRotationMatrix * Vector2f(line.orthogonalProjection.x(), line.orthogonalProjection.y());
 
@@ -103,7 +101,7 @@ void UKFRobotPoseHypothesis::updateByLine(const RegisteredLine& line)
   {
     const float measuredY = line.modelStart.y() - orthogonalProjection.y();
     const float yVariance = cov(1, 1);
-    const float angleVariance = sqr(atan(sqrt(4.f * yVariance / (line.perceptStart - line.perceptEnd).squaredNorm())));
+    const float angleVariance = sqr(std::atan(std::sqrt(4.f * yVariance / (line.perceptStart - line.perceptEnd).squaredNorm())));
     Matrix2f cov;
     cov << yVariance, 0.f, 0.f, angleVariance;
     lineSensorUpdate(true, Vector2f(measuredY, measuredAngle), cov);
@@ -112,7 +110,7 @@ void UKFRobotPoseHypothesis::updateByLine(const RegisteredLine& line)
   {
     const float measuredX = line.modelStart.x() - orthogonalProjection.x();
     const float xVariance = cov(0, 0);
-    const float angleVariance = sqr(atan(sqrt(4.f * xVariance / (line.perceptStart - line.perceptEnd).squaredNorm())));
+    const float angleVariance = sqr(std::atan(std::sqrt(4.f * xVariance / (line.perceptStart - line.perceptEnd).squaredNorm())));
     Matrix2f cov;
     cov << xVariance, 0.f, 0.f, angleVariance;
     lineSensorUpdate(false, Vector2f(measuredX, measuredAngle), cov);

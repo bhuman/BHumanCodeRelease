@@ -21,11 +21,12 @@
 class BallStateEstimate
 {
 public:
-  float radius = 1.f;                        /**< Last perceived radius of the ball */
-  int numOfMeasurements = 0;                 /**< The number of measurements that have been fused in this hypothesis */
-  float likelihoodOfMeasurements = 0.f;      /**< Product of likelihoods of integrated measurements, scaled in relation to hypothesis with highest value (which then has a value of 1) */
-  float weighting = 0.f;                     /**< Kind of likelihood of hypothesis (likelihood of measurements multiplied with likelihood at mean of covariance) */
-  Vector2f lastPosition = Vector2f::Zero();  /**< Store position before update, needed for collision detection */
+  float radius = 1.f;                                     /**< Last perceived radius of the ball */
+  int numOfMeasurements = 0;                              /**< The number of measurements that have been fused in this hypothesis */
+  float nllOfMeasurements = 0.f;                          /**< Sum of negative log-likelihoods (NLLs) of integrated measurements, shifted in relation to hypothesis with lowest value (which then has a value of 0) */
+  float nllWeighting = std::numeric_limits<float>::max(); /**< Kind of NLL of hypothesis (NLL of measurements plus NLL at mean of covariance) */
+  Vector2f lastPosition = Vector2f::Zero();               /**< Store position before update, needed for collision detection */
+  unsigned timeOfLastCollision = 0;                       /**< The last point of time when the estimate computation incorporated a collision with the robot */
 
   /**
    * Make sure that destructors of derived objects are virtual.
@@ -42,20 +43,12 @@ public:
   void measurementUpdate(const Vector2f& measurement, const Matrix2f& measurementCov, float radius)
   {
     // Compute quality of estimate (w.r.t. the current measurement) before integrating the measurement:
-    ASSERT(likelihoodOfMeasurements >= 0.f);
     const Vector2f x = getPosition();
     const Matrix2f P = getPositionCovariance();
-    float gain = BallLocatorTools::getLikelihoodOfPosition(measurement, measurementCov, x); // Probability of mean w.r.t. current measurement
-    if(!(gain >= 0.f && gain <= 10.f))
-    {
-      OUTPUT_ERROR("getLikelihoodOfPosition: gain=" << gain);
-      OUTPUT_ERROR("measurement x=" << measurement.x() << " y=" << measurement.y());
-      OUTPUT_ERROR("measurementCov r0c0=" << measurementCov(0, 0) << " r0c1=" << measurementCov(0, 1) << " r1c0=" << measurementCov(1, 0) << " r1c1=" << measurementCov(1, 1));
-      OUTPUT_ERROR("x x.x=" << x[0] << " x.y=" << x[1]);
-    }
-    ASSERT(gain >= 0.f && gain <= 10.f);
-    likelihoodOfMeasurements *= gain;
-    weighting = likelihoodOfMeasurements * BallLocatorTools::getLikelihoodOfMean(P);
+    const float gain = BallLocatorTools::getNLLOfPosition(measurement, measurementCov, x);
+    ASSERT(std::isfinite(gain));
+    nllOfMeasurements += gain;
+    nllWeighting = nllOfMeasurements + BallLocatorTools::getNLLOfMean(P);
 
     // Major estimation step, performed by subclass:
     integrateMeasurement(measurement, measurementCov);
@@ -125,17 +118,14 @@ public:
     P = fixedOdometryRotation * P * fixedOdometryRotationTransposed;
 
     // add process noise
-    P(0, 0) += squaredProcessCov[0];
-    P(1, 1) += squaredProcessCov[1];
+    P.diagonal() += squaredProcessCov.head<2>();
 
     // add odometry translation noise
-    P(0, 0) += odometryTranslationCov[0];
-    P(1, 1) += odometryTranslationCov[1];
+    P.diagonal() += odometryTranslationCov.head<2>();
 
     // add noise from odometry rotation (crude approximation)
-    Vector2f squaredOdometryRotationDeviationTranslation = (fixedOdometryRotationDeviationRotation * x - x).cwiseAbs2();
-    P(0, 0) += squaredOdometryRotationDeviationTranslation.x();
-    P(1, 1) += squaredOdometryRotationDeviationTranslation.y();
+    const Vector2f squaredOdometryRotationDeviationTranslation = (fixedOdometryRotationDeviationRotation * x - x).cwiseAbs2();
+    P.diagonal() += squaredOdometryRotationDeviationTranslation;
   }
 
   /** Kalman filter measurement update step
@@ -146,7 +136,7 @@ public:
   {
     Matrix2f covPlusSensorCov = P;
     covPlusSensorCov += measurementCov;
-    const Matrix2f K = P* covPlusSensorCov.inverse();
+    const Matrix2f K = P * covPlusSensorCov.inverse();
     const Vector2f innovation = measurement - x;
     const Vector2f correction = K * innovation;
     x += correction;
@@ -163,11 +153,9 @@ class RollingBallKalmanFilter : public BallStateEstimate
 public:
   Vector4f x = Vector4f::Zero();           /**< Mean of the estimated rolling ball */
   Matrix4f P = Matrix4f::Identity();       /**< Covariance matrix of the ball estimate */
-  Matrix2x4f H   = Matrix2x4f::Identity(); /**< Measurement/observation matrix for relating the dimensionality of the measurements (2) to the dimensionality of the state estimate (4) */
-  Matrix4x2f H_T = H.transpose();          /**< Transposed measurement matrix */
 
   /** Empty default constructor */
-  RollingBallKalmanFilter() {}
+  RollingBallKalmanFilter() = default;
 
   /** Constructor based on stationary filter, useful when a ball is kicked and becomes converted
    *   @param sbkf The stationary filter
@@ -181,26 +169,26 @@ public:
                           const Vector2f& addVelocityCov)
   {
     x << newPosition, newVelocity;
-    lastPosition = sbkf.x;
     P = Matrix4f::Identity();
-    P.topLeftCorner(2, 2) << sbkf.P;
+    P.topLeftCorner<2, 2>() << sbkf.P;
     P(2, 2) += addVelocityCov.x();
     P(3, 3) += addVelocityCov.y();
+    lastPosition = sbkf.x;
     radius = sbkf.radius;
     numOfMeasurements = sbkf.numOfMeasurements;
-    likelihoodOfMeasurements = sbkf.likelihoodOfMeasurements;
-    weighting = sbkf.weighting;
+    nllOfMeasurements = sbkf.nllOfMeasurements;
+    nllWeighting = sbkf.nllWeighting;
   }
 
   /** Returns the upper part of the mean of the internal estimate
    * @return Yes, exactly.
    */
-  const Vector2f getPosition() const { return x.topRows(2); }
+  const Vector2f getPosition() const { return x.topRows<2>(); }
 
   /** Returns the covariance of the internal estimate
    * @return Yes, exactly.
    */
-  const Matrix2f getPositionCovariance() const { return P.topLeftCorner(2,2); }
+  const Matrix2f getPositionCovariance() const { return P.topLeftCorner<2, 2>(); }
 
   /** Returns the lower part of the mean of the internal estimate
    * @return Yes, exactly.
@@ -214,28 +202,25 @@ public:
                     float friction, float deltaTime)
   {
     // save old position
-    lastPosition = x.topRows(2);;
+    lastPosition = x.topRows<2>();
 
     // predict
     x = movingA * x + movingOdometryTranslation;
     P = movingA * P * movingATransposed;
 
     // add process noise
-    for(int i = 0; i < 4; ++i)
-      P(i, i) += squaredProcessCov[i];
+    P.diagonal() += squaredProcessCov;
 
     // add odometry translation noise
-    for(int i = 0; i < 4; ++i)
-      P(i, i) += odometryTranslationCov[i];
+    P.diagonal() += odometryTranslationCov;
 
     // add noise from odometry rotation (crude approximation)
-    Vector4f squaredOdometryRotationDeviationTranslation = (movingOdometryRotationDeviationRotation * x - x).cwiseAbs2();
-    for(int i = 0; i < 4; ++i)
-      P(i, i) += squaredOdometryRotationDeviationTranslation[i];
+    const Vector4f squaredOdometryRotationDeviationTranslation = (movingOdometryRotationDeviationRotation * x - x).cwiseAbs2();
+    P.diagonal() += squaredOdometryRotationDeviationTranslation;
 
     // add friction
-    Vector2f newPosition = x.topRows(2);
-    Vector2f newVelocity = x.bottomRows(2);
+    Vector2f newPosition = x.topRows<2>();
+    Vector2f newVelocity = x.bottomRows<2>();
     BallPhysics::applyFrictionToPositionAndVelocity(newPosition, newVelocity, deltaTime, friction);
     x << newPosition, newVelocity;
   }
@@ -246,13 +231,13 @@ public:
    */
   void integrateMeasurement(const Vector2f& measurement, const Matrix2f& measurementCov)
   {
-    Matrix2f covPlusSensorCov = H * P * H_T;
+    Matrix2f covPlusSensorCov = P.topLeftCorner<2, 2>();
     covPlusSensorCov += measurementCov;
-    const Matrix4x2f K = P * H_T * covPlusSensorCov.inverse();
-    const Vector2f innovation = measurement - H * x;
+    const Matrix4x2f K = P.leftCols<2>() * covPlusSensorCov.inverse();
+    const Vector2f innovation = measurement - x.topRows<2>();
     const Vector4f correction = K * innovation;
     x += correction;
-    P -= K * H * P;
+    P -= K * P.topRows<2>();
   }
 
   /** Converts to a stationary filter, useful when ball stops
@@ -261,13 +246,14 @@ public:
   const StationaryBallKalmanFilter toStationaryBallKalmanFilter()
   {
     StationaryBallKalmanFilter sbkf;
-    sbkf.x = x.topRows(2);
+    // Marginalize over the velocity.
+    sbkf.x = x.topRows<2>();
+    sbkf.P = P.topLeftCorner<2, 2>();
     sbkf.lastPosition = sbkf.x;
-    sbkf.P = P.topLeftCorner(2, 2);
     sbkf.radius = radius;
     sbkf.numOfMeasurements = numOfMeasurements;
-    sbkf.likelihoodOfMeasurements = likelihoodOfMeasurements;
-    sbkf.weighting = weighting;
+    sbkf.nllOfMeasurements = nllOfMeasurements;
+    sbkf.nllWeighting = nllWeighting;
     return sbkf;
   }
 };

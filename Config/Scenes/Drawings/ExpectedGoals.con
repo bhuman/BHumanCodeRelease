@@ -1,17 +1,17 @@
-vf worldState
-vfd worldState fieldPolygons
+vf expectedGoals
+vfd expectedGoals fieldPolygons
 
-vfd worldState cognition:Reset
-vfd worldState module:ExpectedGoalsProvider:heatmap
+vfd expectedGoals cognition:Reset
+vfd expectedGoals module:ExpectedGoalsProvider:heatmap
 set module:PassEvaluationProvider:drawHeatmap false
 set module:ExpectedGoalsProvider:drawHeatmap true
 
-vfd worldState fieldLines
-vfd worldState goalFrame
-vfd worldState representation:TeammatesBallModel
-vfd worldState cognition:RobotPose
-vfd worldState representation:ObstacleModel:rectangle
-vfd worldState cognition:Reset
+vfd expectedGoals fieldLines
+vfd expectedGoals goalFrame
+vfd expectedGoals representation:TeammatesBallModel
+vfd expectedGoals cognition:RobotPose
+vfd expectedGoals representation:ObstacleModel:rectangle
+vfd expectedGoals cognition:Reset
 
 echo set module:ExpectedGoalsProvider:drawHeatmap true
 echo set module:ExpectedGoalsProvider:drawHeatmap false

@@ -3,6 +3,10 @@
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Tools/Motion/SensorData.h"
 
+/**
+ * Encapsulates the joint sensor data as it is provided by NAOqi.
+ * Without variance.
+ */
 STREAMABLE_WITH_BASE(JointSensorData, JointAngles,
 {
   ENUM(TemperatureStatus,

@@ -1,0 +1,29 @@
+# Setup local robot, but do not switch off JPEG images.
+call Includes/NormalWithJPEG
+
+# Switch off JPEG images for autonomous robot.
+robot robot21
+mr JPEGImage default
+
+# Add robot processes used for visualization.
+sl remote remote SharedAutonomyRemote
+robot remote
+
+# Must be started before sending debug requests, so that
+# Cognition receives new data from Upper and Lower.
+sac view local 5
+
+# Configure robot processes used for visualization.
+call Includes/SharedAutonomy
+
+# Switch back to simulated robots, so we can use them.
+robot robot21 robot22
+
+# Place them
+dr representation:SetupPoses:place
+
+# Activate challenge
+gc competitionTypeSharedAutonomyChallenge
+
+# Start half
+gc set

@@ -1,0 +1,37 @@
+# replay a log file.
+# you have to adjust the name of the log file.
+call Includes/replayDialog Includes/replay
+
+# simulation time on, otherwise log data may be skipped
+st on
+dt 219
+
+# deactivate game info provided in Cognition
+mr GameControllerData default
+mr GameState default
+
+log mr
+
+echo Use keyboard to navigate log if console does not have focus:
+echo "Space	" Play/pause
+echo "Home	" Stop
+echo "End	" Repeat frame
+echo "Left	" Go to previous frame
+echo "Right	" Go to next frame
+echo "Up	" Go to previous image
+echo "Down	" Go to next image
+echo "PageUp	" Go 100 frames back
+echo "PageDown	" Go 100 frames forward
+
+sl remote remote SharedAutonomyRemote
+robot remote
+
+# Must be started before sending debug requests, so that
+# Cognition receives new data from Upper and Lower.
+sac view local 89
+
+# Configure robot processes used for visualization.
+call Includes/SharedAutonomy
+
+# Switch back to robot that plays back the log.
+robot LOG

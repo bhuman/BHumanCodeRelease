@@ -143,11 +143,11 @@ private:
     int command = 0;
     int value = 0;
 
-    CameraSettings::Collection::CameraSetting notChangableWhile = CameraSettings::Collection::numOfCameraSettings;
+    CameraSettings::Collection::CameraSetting notChangeableWhile = CameraSettings::Collection::numOfCameraSettings;
     int invert = true;
 
     V4L2Setting() = default;
-    V4L2Setting(int command, int value, int min, int max, CameraSettings::Collection::CameraSetting notChangableWhile = CameraSettings::Collection::numOfCameraSettings, int invert = 0);
+    V4L2Setting(int command, int value, int min, int max, CameraSettings::Collection::CameraSetting notChangeableWhile = CameraSettings::Collection::numOfCameraSettings, int invert = 0);
 
     bool operator==(const V4L2Setting& other) const;
     bool operator!=(const V4L2Setting& other) const;
@@ -196,6 +196,7 @@ private:
   struct v4l2_buffer* currentBuf = nullptr; /**< The last dequeued frame buffer. */
   bool first = true; /**< First image grabbed? */
   unsigned long long timestamp = 0; /**< Timestamp of the last captured image in microseconds. */
+  bool pollTimedOut = false; /**< Did poll timeout recently? */
 
   bool checkSettingsAvailability();
 

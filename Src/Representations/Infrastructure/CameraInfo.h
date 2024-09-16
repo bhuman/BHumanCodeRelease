@@ -30,7 +30,7 @@ STREAMABLE(CameraInfo,
   });
 
   /**
-   * Intrinsic camera parameters: axis skew is modelled as 0 (90° perfectly orthogonal XY)
+   * Intrinsic camera parameters: axis skew is modeled as 0 (90° perfectly orthogonal XY)
    * and the same has been modeled for focal axis aspect ratio; distortion is considering
    * only 2nd and 4th order coefficients of radial model, which account for about 95% of total.
    */

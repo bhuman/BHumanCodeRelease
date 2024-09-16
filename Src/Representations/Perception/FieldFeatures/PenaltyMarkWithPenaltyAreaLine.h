@@ -4,7 +4,7 @@
  * Declaration of a struct that represents the combination of
  * a penalty mark and the line of the penalty area that is
  * closest to it (the line between penalty mark and the field's
- * center line):
+ * halfway line):
  *
  *                  (goal)
  *-----------------------------------------
@@ -30,7 +30,7 @@
 STREAMABLE_WITH_BASE(PenaltyMarkWithPenaltyAreaLine, FieldFeature,
 {
   void draw() const;
-  CHECK_FIELD_FEATURE_POSE_OF("PenaltyMarkWithPenaltyAreaLine");
+  VERIFY_FIELD_FEATURE;
 
   PenaltyMarkWithPenaltyAreaLine() = default;
   PenaltyMarkWithPenaltyAreaLine(const Pose2f& pose) : FieldFeature(pose) {};

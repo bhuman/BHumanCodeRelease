@@ -53,7 +53,7 @@ private:
   {,
     invalid,                 /**< Never received any data from this robot. Does not seem to exist at all. */
     penalized,               /**< Currently penalized */
-    waitingAfterUnpenalize,  /**< Teammate has returned from penalty and is now entering the game from the sideline. We did not receive any data after the penalty yet.*/
+    waitingAfterUnpenalize,  /**< Teammate has returned from penalty and is now entering the game from the touchline. We did not receive any data after the penalty yet.*/
     playing,                 /**< Teammate is actively playing */
   });
 
@@ -111,7 +111,7 @@ private:
   std::vector<TeammatePercept> teammatePercepts;              /**< A list of all perceptions of teammates in the current frame */
   std::vector<TeammateInformation> ownTeam;                   /**< The current information about all teammates (including me) */
   int numberOfPenalizedTeammates;                             /**< The number of teammates that are currently penalized and thus assumed to be standing outside the actual playing area */
-  int numberOfTeammatesReturningFromPenalty;                  /**< The number of teammates that are currently returning from a penalty and thus assumed to be standing on the sideline */
+  int numberOfTeammatesReturningFromPenalty;                  /**< The number of teammates that are currently returning from a penalty and thus assumed to be standing on the touchline */
   std::vector<Geometry::Rect> penalizedRobotZonesOwnTeam;     /**< The areas in which penalized robots of the own team are placed during the penalty */
   std::vector<Geometry::Rect> returnFromPenaltyZonesOwnTeam;  /**< The areas in which unpenalized robots of the own team are placed to return to the game */
   SelfLocator::Parameters selfLocatorParameters;              /**< Access self locator parameters to avoid duplicated configuration elements */
@@ -165,7 +165,7 @@ private:
   /** Implements a distance metric for comparing a teammate estimate and a perception of a teammate
    *  @param tmi The teammate estimate
    *  @param tp The teammate percept
-   *  @return squaredDistanceThreshold, if both are too far way from each other, the Mahalanobis distance betwenn both normal distributions otherwise.
+   *  @return squaredDistanceThreshold, if both are too far way from each other, the Mahalanobis distance between both normal distributions otherwise.
    */
   float distanceTeammateAndPerception(const TeammateInformation& tmi, const TeammatePercept& tp);
 

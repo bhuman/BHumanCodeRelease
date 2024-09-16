@@ -9,7 +9,11 @@
 #pragma once
 
 #include "Behavior.h"
+#include "Representations/BehaviorControl/AgentStates.h"
 #include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/OpposingKickoff.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
@@ -39,10 +43,13 @@ MODULE(StrategyBehaviorControl,
   REQUIRES(FallDownState),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
+  REQUIRES(FieldInterceptBall),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
+  REQUIRES(IndirectKick),
   REQUIRES(GroundContactState),
   REQUIRES(MotionInfo),
+  REQUIRES(OpposingKickoff),
   REQUIRES(ReceivedTeamMessages),
   REQUIRES(RobotPose),
   REQUIRES(SentTeamMessage),
@@ -51,6 +58,7 @@ MODULE(StrategyBehaviorControl,
   PROVIDES(SkillRequest),
   REQUIRES(SkillRequest),
   PROVIDES(StrategyStatus),
+  PROVIDES(AgentStates),
   LOADS_PARAMETERS(
   {,
     (Strategy::Type) strategy, /**< The strategy to play. */
@@ -81,6 +89,12 @@ private:
    * @param strategyStatus The provided strategy status.
    */
   void update(StrategyStatus& strategyStatus) override { strategyStatus = theStrategyStatus; }
+
+  /**
+   * Updates the agent states.
+   * @param agentStates The provided agent states.
+   */
+  void update(AgentStates& agentStates) override { agentStates.agents = agents; }
 
   /**
    * Updates the list of agents to represent the most recent data.

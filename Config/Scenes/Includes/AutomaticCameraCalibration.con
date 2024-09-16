@@ -2,6 +2,6 @@ vid all horizon
 vid all representation:FieldLines:image
 vid all representation:PenaltyMarkPercept:image
 vid all module:AutomaticCameraCalibrator:correctedLines
-vfd all behavior:AutonomousCameraCalibrationCard:position
+vfd all option:AutonomousCameraCalibration:position
 
 echo dr module:GameStateProvider:calibration

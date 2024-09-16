@@ -19,8 +19,7 @@ STREAMABLE(JerseyClassifier,
   /**
    * Detect the jersey color.
    * @param obstacleInImage The obstacle as it was detected in the image.
-   * @param obstacleOnField The fields detectedJersey and ownTeam will be updated if a
-   *                        jersey color was detected.
+   * @param obstacleOnField The fields type and confidence will be updated if a jersey color was detected.
    */
   FUNCTION(void(const ObstaclesImagePercept::Obstacle& obstacleInImage, ObstaclesFieldPercept::Obstacle& obstacleOnField)) detectJersey,
 });

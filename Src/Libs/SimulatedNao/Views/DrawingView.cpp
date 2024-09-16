@@ -206,7 +206,7 @@ bool DrawingWidget::event(QEvent* event)
   return QWidget::event(event);
 }
 
-void DrawingWidget::updateTransform()
+void DrawingWidget::updateTransform(QPainter& painter)
 {
   const QSize& size = painter.window().size();
   const float xScale = static_cast<float>(size.width()) / static_cast<float>(viewSize.width());

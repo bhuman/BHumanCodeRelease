@@ -3,7 +3,6 @@
 vfd worldState cognition:RobotPose
 vfd worldState representation:BallModel:endPosition
 vfd worldState representation:BallModel
-vfd worldState representation:ObstacleModel:rectangle
 vfd worldState representation:MotionRequest
 vfd worldState representation:FieldBall:relative
 vfd worldState cognition:Reset

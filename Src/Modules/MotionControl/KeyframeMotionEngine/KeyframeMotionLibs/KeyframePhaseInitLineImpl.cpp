@@ -98,7 +98,7 @@ void KeyframePhaseBase::isCurrentLineOver()
   }
   else
   {
-    OUTPUT_ERROR("Error Happend!");
+    OUTPUT_ERROR("Error Happened!");
     state = EngineState::helpMeState;
   }
 }
@@ -321,6 +321,9 @@ void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
 
   wasInWaiting = false;
   lineJointRequest2Angles.angles = lineJointRequest.angles;
+
+  ASSERT(currentMotionBlock.size() > 0);
+  currentKeyframe.interpolationType = currentMotionBlock[0].interpolationType;
 }
 
 void KeyframePhaseBase::updateLineValues()

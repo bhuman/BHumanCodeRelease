@@ -82,7 +82,7 @@ bool Transformation::imageToRobotHorizontalPlane(const Vector2f& pointInImage, f
   const float b3 = vectorToCenterWorld.z();
   if(std::abs(b3) > 0.00001)
   {
-    pointOnPlane.x() = (a1 * b3 - a3 * b1) / b3;
+    pointOnPlane.x() = (a1 * b3 - a3 * b1) / b3; // Intercept theorem
     pointOnPlane.y() = (a2 * b3 - a3 * b2) / b3;
     return true;
   }

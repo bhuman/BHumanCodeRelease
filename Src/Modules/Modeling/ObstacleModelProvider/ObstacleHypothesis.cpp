@@ -103,7 +103,7 @@ void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, cons
   setLeftRight(width * .5f); // Radius (that's why * .5f)
 }
 
-void ObstacleHypothesis::considerType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold)
+void ObstacleHypothesis::determineAndSetType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold)
 {
   team = std::min(sqr(teamThreshold), std::max(team + measurement.team, -sqr(teamThreshold)));
   upright = std::min(2 * uprightThreshold, std::max(upright + measurement.upright, -2 * uprightThreshold)); //'2' seems to be chosen wisely

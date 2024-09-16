@@ -42,7 +42,7 @@ void PaintMethods::paintDebugDrawing(QPainter& painter, const DebugDrawing& debu
         paintOrigin(*static_cast<const DebugDrawing::Origin*>(e), painter, baseTrans);
         break;
       case DebugDrawing::ElementType::text:
-        paintText(*static_cast<const DebugDrawing::Text*>(e), painter);
+        paintText(*static_cast<const DebugDrawing::Text*>(e), painter, baseTrans);
         break;
       case DebugDrawing::ElementType::robot:
         paintRobot(*static_cast<const DebugDrawing::Robot*>(e), painter);
@@ -132,7 +132,7 @@ void PaintMethods::paintOrigin(const DebugDrawing::Origin& element, QPainter& pa
   painter.setTransform(trans);
 }
 
-void PaintMethods::paintText(const DebugDrawing::Text& element, QPainter& painter)
+void PaintMethods::paintText(const DebugDrawing::Text& element, QPainter& painter, const QTransform& baseTrans)
 {
   QFont font("Arial", element.fontSize, QFont::Normal);
   pen.setColor(QColor(element.penColor.r, element.penColor.g, element.penColor.b, element.penColor.a));
@@ -143,7 +143,7 @@ void PaintMethods::paintText(const DebugDrawing::Text& element, QPainter& painte
   QTransform newTrans(trans);
   newTrans.translate(element.x, element.y);
   newTrans.rotateRadians(std::atan2(trans.m21(), trans.m11()));
-  newTrans.scale(sgn(trans.m11()), sgn(trans.m22()));
+  newTrans.scale(sgn(baseTrans.m11()), sgn(baseTrans.m22()));
   painter.setTransform(newTrans);
   painter.drawText(QPoint(), QObject::tr(reinterpret_cast<const char*>(&element + 1)));
   painter.setTransform(trans);

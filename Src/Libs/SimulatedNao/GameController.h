@@ -10,7 +10,7 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Tools/Communication/TeamMessageBuffer.h"
+#include "Tools/Communication/TeamMessageContainer.h"
 #include "Framework/Settings.h"
 #include "Math/Pose2f.h"
 #include "Streaming/Enum.h"
@@ -96,6 +96,7 @@ private:
 
   static const int numOfRobots = 2 * MAX_NUM_PLAYERS;
   static const int halfTime = 600;
+  static const int sharedAutonomyChallengeHalfTime = 90;
   static const int readyTime = 45;
   static const int penaltyKickReadyTime = 30;
   static const int kickOffTime = 10;
@@ -107,6 +108,7 @@ private:
   static const float dropHeight; /**< height at which robots are placed so the fall a little bit and recognize it. */
   Pose2f lastBallContactPose; /**< Position where the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degrees). */
   unsigned lastBallContactTime = 0;
+  SimRobot::Object* lastBallContactRobots[2] = {nullptr, nullptr}; /**< Last robot touching the ball per team. */
   FieldDimensions fieldDimensions;
   BallSpecification ballSpecification;
   GameControllerData gameControllerData;
@@ -119,9 +121,10 @@ private:
   unsigned timeWhenStateBegan = 0;
   unsigned timeWhenSetPlayBegan = 0;
   Robot robots[numOfRobots];
+  int ballContacts[2];
 
-  TeamMessageBuffer<9> inTeamMessages;
-  TeamMessageBuffer<9>::Container outTeamMessage;
+  TeamMessageContainer inTeamMessage;
+  TeamMessageContainer outTeamMessage;
   TeamMessageChannel* theTeamMessageChannel;
 
   /** enum which declares the different types of balls leaving the field */
@@ -130,12 +133,12 @@ private:
     notOut,
     goalBySecondTeam,
     goalByFirstTeam,
-    outBySecondTeam,
-    outByFirstTeam,
-    ownGoalOutBySecondTeam,
-    ownGoalOutByFirstTeam,
-    opponentGoalOutBySecondTeam,
-    opponentGoalOutByFirstTeam
+    kickInSecondTeam,
+    kickInFirstTeam,
+    cornerKickSecondTeam,
+    cornerKickFirstTeam,
+    goalKickSecondTeam,
+    goalKickFirstTeam
   };
 
 public:
@@ -156,6 +159,7 @@ public:
   void registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot);
 
   bool initial();
+  bool standby();
   bool ready();
   bool set();
   bool playing();
@@ -164,6 +168,7 @@ public:
   bool competitionPhaseRoundrobin();
   bool competitionTypeChampionsCup();
   bool competitionTypeChallengeShield();
+  bool competitionTypeSharedAutonomyChallenge();
   bool globalGameStuck(int side);
   bool goal(int side);
   bool goalKick(int side);
@@ -222,6 +227,9 @@ private:
   /** Sets all times when penalized to 0. */
   void resetPenaltyTimes();
 
+  /** Resets the sets of players that touched the ball. */
+  void resetBallContacts();
+
   /** Update the ball position based on the rules. */
   BallOut updateBall();
 
@@ -229,6 +237,7 @@ private:
    * Initialize both teams.
    * @param robotsPlaying The maximum number of players per team playing at the same time.
    * @param messageBudget The message budget per team for a whole game.
+   * @param goalkeepers The player numbers of the goalkeepers of both teams.
    */
-  void initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget);
+  void initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget, const std::array<uint8_t, 2>& goalkeepers = {1, 1});
 };

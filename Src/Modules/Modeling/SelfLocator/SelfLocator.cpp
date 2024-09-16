@@ -15,8 +15,6 @@
 #include "Platform/SystemCall.h"
 #include <algorithm>
 
-using namespace std;
-
 SelfLocator::SelfLocator() : lastTimeJumpSound(0),
   timeOfLastReturnFromPenalty(0),
   nextSampleNumber(0), idOfLastBestSample(-1), averageWeighting(0.5f), lastAlternativePoseTimestamp(0),
@@ -101,7 +99,7 @@ void SelfLocator::update(RobotPose& robotPose)
    *  - only executed if validities have changed this frame
    */
   if(validitiesHaveBeenUpdated &&
-     theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) > 4000 &&
+     theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) > timeoutForResamplingAfterReturnFromPenalty &&
      !theGameState.isPenaltyShootout())
     resampling();
 
@@ -122,6 +120,13 @@ void SelfLocator::update(RobotPose& robotPose)
   {
     PLOT("module:SelfLocator:sampleResetting", 0.f);
   }
+
+  /** In Initial, the setup pose is directly set to avoid jumping.
+   */
+  if(theGameState.gameControllerActive &&
+     ((theGameState.isInitial() && !theGameState.isPenaltyShootout()) ||
+     (theGameState.isSet() && !theGameState.isPenaltyKick() && Global::getSettings().scenario.starts_with("SharedAutonomy"))))
+    robotPose = getNewPoseAtWalkInPosition();
 
   /* Finally, update internal variables, debug and draw stuff.
    */
@@ -155,14 +160,14 @@ void SelfLocator::update(RobotPose& robotPose)
   if(robotPoseDelta > positionJumpNotificationDistance && theGameState.isPlaying())
   {
     // Play annoying sound
-    if(theFrameInfo.getTimeSince(lastTimeJumpSound) > 1337)
+    if(theFrameInfo.getTimeSince(lastTimeJumpSound) > timeoutBetweenTwoJumpSounds)
     {
       SystemCall::say("Jump");
       lastTimeJumpSound = theFrameInfo.time;
     }
     // Annotate jump depending on current situation:
     // A jump when returning from a penalty is intended, thus we do not annotate it (in most cases) for some seconds.
-    if(theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 1337 * 5)
+    if(theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < timeoutForJumpAnnotationAfterReturnFromPenalty)
     {
       // This indicates that the robot was unsure about the side at which it was placed.
       // This is not so cool and should be annotated:
@@ -228,7 +233,7 @@ void SelfLocator::setLocalizationQuality(RobotPose& robotPose, float validityOfB
   if(sampleSetIsUnimodal(robotPose))
   {
     const float translationalStandardDeviation = robotPose.getTranslationalStandardDeviation();
-    const float rotationalStandardDeviation = std::sqrt(robotPose.covariance(2,2));
+    const float rotationalStandardDeviation = std::sqrt(robotPose.covariance(2, 2));
     if(validityOfBestHypothesis >= minValidityForSuperbLocalizationQuality &&
        translationalStandardDeviation < maxTranslationDeviationForSuperbLocalizationQuality &&
        rotationalStandardDeviation < maxRotationalDeviationForSuperbLocalizationQuality)
@@ -268,6 +273,9 @@ void SelfLocator::motionUpdate()
   // This is a nasty workaround but should help us in cases of bad/slow assistant referees:
   // If the robot returns from a penalty and is not walking, any rotation (that might come from
   // the z-axis gyro as the robot is turned too late!) is ignored!
+  // As of 2024, this workaround should not be necessary anymore as the updated rules require the assistant
+  // referees to place the robots "facing towards the field of play" for the whole time.
+  // TODO: Observe, if this always happens correctly in 2024. If yes, remove this workaround.
   float odometryRotation = theOdometer.odometryOffset.rotation;
   if(theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 10000 && theMotionInfo.executedPhase != MotionPhase::walk)
     odometryRotation = 0.f;
@@ -275,15 +283,15 @@ void SelfLocator::motionUpdate()
   const float transX = theOdometer.odometryOffset.translation.x();
   const float transY = theOdometer.odometryOffset.translation.y();
   const float dist = theOdometer.odometryOffset.translation.norm();
-  const float angle = abs(odometryRotation);
+  const float angle = std::abs(odometryRotation);
   const float angleWeightNoise = theMotionInfo.executedPhase == MotionPhase::walk ? movedAngleWeightRotationNoise : movedAngleWeightRotationNoiseNotWalking;
 
   // Precalculate rotational error that has to be adapted to all samples
-  const float rotError = max(dist * movedDistWeightRotationNoise, angle * angleWeightNoise);
+  const float rotError = std::max(dist * movedDistWeightRotationNoise, angle * angleWeightNoise);
 
   // pre-calculate translational error that has to be adapted to all samples
-  const float transXError = max(abs(transX * majorDirTransWeight), abs(transY * minorDirTransWeight));
-  const float transYError = max(abs(transY * majorDirTransWeight), abs(transX * minorDirTransWeight));
+  const float transXError = std::max(std::abs(transX * majorDirTransWeight), std::abs(transY * minorDirTransWeight));
+  const float transYError = std::max(std::abs(transY * majorDirTransWeight), std::abs(transX * minorDirTransWeight));
 
   // update samples
   for(int i = 0; i < numberOfSamples; ++i)
@@ -402,7 +410,7 @@ bool SelfLocator::currentMotionIsUnsafe()
     return true;
   // If the robot turns too fast, things go wrong.
   // TODO: Move hardcoded number to parameter. Values is guessed by Philip.
-  if(std::abs(theGyroState.mean.z()) > 50_deg)
+  if(std::abs(theIMUValueState.gyroValues.mean.z()) > 50_deg)
     return true;
   return false;
 }
@@ -411,7 +419,7 @@ bool SelfLocator::sensorResetting(const RobotPose& robotPose)
 {
   if(theGameState.isPenaltyShootout())                       // Don't replace samples in penalty shootout
     return false;
-  if(timeOfLastReturnFromPenalty != 0 && theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 7000)
+  if(timeOfLastReturnFromPenalty != 0 && theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < timeoutForSensorResettingAfterReturnFromPenalty)
     return false;
   if(theFallDownState.state != FallDownState::upright
      && theFallDownState.state != FallDownState::squatting)  // Don't replace samples, if robot is not upright (e.g. lying or staggering)
@@ -439,7 +447,7 @@ bool SelfLocator::sensorResetting(const RobotPose& robotPose)
         return false; // Everything is OK, no resetting required
     }
     // Resetting seems to be required:
-    float resettingValidity = max(0.5f, averageWeighting); // TODO: Recompute?
+    float resettingValidity = std::max(0.5f, averageWeighting); // TODO: Recompute?
     int worstSampleIdx = 0;
     float worstSampleValidity = samples->at(0).validity;
     for(int i = 1; i < numberOfSamples; ++i)
@@ -582,10 +590,11 @@ void SelfLocator::handleGameStateChanges()
     sampleSetHasBeenReset = true;
     timeOfLastReturnFromPenalty = theFrameInfo.time;
   }
-  // Normal game is about to start: We start on the sidelines looking at our goal: (this is for checking in TeamCom)
+  // Normal game is about to start: We start on the touchlines looking at our goal: (this is for checking in TeamCom)
   else if((theGameState.isInitial() && !theExtendedGameState.wasInitial()) ||
-          // Normal game really starts: We start on the sidelines looking at our goal: (this is for actual setup)
-          (theGameState.isReady() && theExtendedGameState.wasInitial()))
+          // Normal game really starts: We start on the touchlines looking at our goal: (this is for actual setup)
+          (theGameState.isReady() && theExtendedGameState.wasInitial()) ||
+          (theGameState.isPlaying() && theExtendedGameState.wasSet() && !theGameState.isPenaltyKick() && Global::getSettings().scenario.starts_with("SharedAutonomy")))
   {
     for(int i = 0; i < samples->size(); ++i)
       samples->at(i).init(getNewPoseAtWalkInPosition(), walkInPoseDeviation, nextSampleNumber++, 0.5f);
@@ -699,16 +708,16 @@ void SelfLocator::draw(const RobotPose& robotPose)
     for(const auto& absolutePose : absolutePoseMeasurements)
     {
       // Covariance of the pose measurement
-      ColorRGBA c99(255,255,100,100);
-      ColorRGBA c95(255,128,50,100);
-      ColorRGBA c68(255,100,100,100);
+      ColorRGBA c99(255, 255, 100, 100);
+      ColorRGBA c95(255, 128, 50, 100);
+      ColorRGBA c68(255, 100, 100, 100);
       Matrix2f covMatrix2D = absolutePose.covariance.topLeftCorner(2, 2);
-      covMatrix2D(0,1) = covMatrix2D(1,0) = 0.1f; // Set to small value as drawing does not always work properly, if matrix is axis-aligned ...
+      covMatrix2D(0, 1) = covMatrix2D(1, 0) = 0.1f; // Set to small value as drawing does not always work properly, if matrix is axis-aligned ...
 
       COVARIANCE_ELLIPSES_2D_OWN_COLORS("module:SelfLocator:perceptRegistrationWorld",
                                         covMatrix2D, absolutePose.absolutePoseOnField.translation, c99, c95, c68);
       // Depict rotational covariance as an arc of the standard deviation
-      float stdDev = std::sqrt(absolutePose.covariance(2,2));
+      float stdDev = std::sqrt(absolutePose.covariance(2, 2));
       ARC("module:SelfLocator:perceptRegistrationWorld", absolutePose.absolutePoseOnField.translation.x(), absolutePose.absolutePoseOnField.translation.y(),
           200.f, (-(stdDev) / 2.f + absolutePose.absolutePoseOnField.rotation), stdDev, 20, Drawings::solidPen, ColorRGBA::white, Drawings::noBrush, ColorRGBA::white);
     }
@@ -721,9 +730,9 @@ void SelfLocator::draw(const RobotPose& robotPose)
       // Covariance of center of field line (has to be drawn relative to the robot)
       COVARIANCE_ELLIPSES_2D("module:SelfLocator:perceptRegistrationRobot", line.covPerceptCenter, line.perceptCenter);
     }
-    ColorRGBA c99(255,255,100,100);
-    ColorRGBA c95(255,128,50,100);
-    ColorRGBA c68(255,100,100,100);
+    ColorRGBA c99(255, 255, 100, 100);
+    ColorRGBA c95(255, 128, 50, 100);
+    ColorRGBA c68(255, 100, 100, 100);
     for(const auto& landmark : landmarks)
     {
       // Drawing of covariance (has to be drawn relative to the robot)
@@ -780,13 +789,13 @@ Pose2f SelfLocator::getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal)
     return theStaticInitialPose.staticPoseOnField;
   }
   // Normal stuff:
-  float xPosition = Random::triangular(theFieldDimensions.xPosOwnPenaltyMark - returnFromPenaltyMaxXOffset,
-                                       theFieldDimensions.xPosOwnPenaltyMark,
-                                       theFieldDimensions.xPosOwnPenaltyMark + returnFromPenaltyMaxXOffset);
+  float xPosition = Random::triangular(theFieldDimensions.xPosReturnFromPenalty - returnFromPenaltyMaxXOffset,
+                                       theFieldDimensions.xPosReturnFromPenalty,
+                                       theFieldDimensions.xPosReturnFromPenalty + returnFromPenaltyMaxXOffset);
   if(leftSideOfGoal)
-    return Pose2f(-pi_2, xPosition, theFieldDimensions.yPosLeftSideline);
+    return Pose2f(-pi_2, xPosition, theFieldDimensions.yPosLeftReturnFromPenalty);
   else
-    return Pose2f(pi_2, xPosition, theFieldDimensions.yPosRightSideline);
+    return Pose2f(pi_2, xPosition, theFieldDimensions.yPosRightReturnFromPenalty);
 }
 
 Pose2f SelfLocator::getNewPoseAtWalkInPosition()
@@ -803,7 +812,7 @@ Pose2f SelfLocator::getNewPoseAtManualPlacementPosition()
   // Goalie
   if(theGameState.isGoalkeeper())
   {
-    return Pose2f(0.f, theFieldDimensions.xPosOwnGroundLine + 52.f, 0.f);
+    return Pose2f(0.f, theFieldDimensions.xPosOwnGoalLine + 52.f, 0.f);
   }
   else
   {
@@ -821,14 +830,14 @@ Pose2f SelfLocator::getNewPoseAtPenaltyShootoutPosition()
   else
   {
     //goalie pose (in the center of the goal, looking towards the field's center)
-    return Pose2f(0.f, theFieldDimensions.xPosOwnGroundLine, 0.f);
+    return Pose2f(0.f, theFieldDimensions.xPosOwnGoalLine, 0.f);
   }
 }
 
 bool SelfLocator::isMirrorCloser(const Pose2f& currentPose, const Pose2f& lastPose) const
 {
   const Vector2f& translation = currentPose.translation;
-  Vector2f rotationWeight(std::max(theFieldDimensions.yPosLeftSideline * 1.1f - std::min(std::abs(translation.x()), std::abs(lastPose.translation.x())), 0.f), 0);
+  Vector2f rotationWeight(std::max(theFieldDimensions.yPosLeftTouchline * 1.1f - std::min(std::abs(translation.x()), std::abs(lastPose.translation.x())), 0.f), 0);
   Vector2f opponentGoal(theFieldDimensions.xPosOpponentGoalPost, 0.f);
   const Vector2f rotation = Pose2f(Geometry::angleTo(currentPose, opponentGoal)) * rotationWeight;
   const Vector2f lastRotation = Pose2f(Geometry::angleTo(lastPose, opponentGoal)) * rotationWeight;

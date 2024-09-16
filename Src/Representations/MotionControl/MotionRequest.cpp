@@ -8,7 +8,7 @@
  */
 
 #include "MotionRequest.h"
-#include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
@@ -69,18 +69,18 @@ void MotionRequest::draw() const
   {
     // Only those requests kick the ball
     if((motion == MotionRequest::walkToBallAndKick || motion == MotionRequest::dribble) &&
-       Blackboard::getInstance().exists("FieldBall") && Blackboard::getInstance().exists("RobotPose"))
+       Blackboard::getInstance().exists("FieldInterceptBall") && Blackboard::getInstance().exists("RobotPose"))
     {
-      const FieldBall& theFieldBall = static_cast<FieldBall&>(Blackboard::getInstance()["FieldBall"]);
+      const FieldInterceptBall& theFieldInterceptBall = static_cast<FieldInterceptBall&>(Blackboard::getInstance()["FieldInterceptBall"]);
       const RobotPose& theRobotPose = static_cast<RobotPose&>(Blackboard::getInstance()["RobotPose"]);
-      const Vector2f ballTarget = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation);
-      const Vector2f ballTargetMin = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.min);
-      const Vector2f ballTargetMax = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.max);
-      LINE3D("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), 0, ballTargetMin.x(), ballTargetMin.y(), 0,
+      const Vector2f ballTarget = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation);
+      const Vector2f ballTargetMin = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.min);
+      const Vector2f ballTargetMax = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.max);
+      LINE3D("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), 0, ballTargetMin.x(), ballTargetMin.y(), 0,
              5, ColorRGBA::blue);
-      LINE3D("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), 0, ballTargetMax.x(), ballTargetMax.y(), 0,
+      LINE3D("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), 0, ballTargetMax.x(), ballTargetMax.y(), 0,
              5, ColorRGBA::blue);
-      LINE3D("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), 0, ballTarget.x(), ballTarget.y(), 0,
+      LINE3D("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), 0, ballTarget.x(), ballTarget.y(), 0,
              5, ColorRGBA::red);
       CROSS3D("representation:MotionRequest:kickDirection", ballTarget.x(), ballTarget.y(), 0,
               15, 15, ColorRGBA::red);
@@ -91,18 +91,19 @@ void MotionRequest::draw() const
   {
     // Only those requests kick the ball
     if((motion == MotionRequest::walkToBallAndKick || motion == MotionRequest::dribble) &&
-       Blackboard::getInstance().exists("FieldBall") && Blackboard::getInstance().exists("RobotPose"))
+       Blackboard::getInstance().exists("FieldInterceptBall") && Blackboard::getInstance().exists("RobotPose"))
     {
-      const FieldBall& theFieldBall = static_cast<FieldBall&>(Blackboard::getInstance()["FieldBall"]);
+      const FieldInterceptBall& theFieldInterceptBall = static_cast<FieldInterceptBall&>(Blackboard::getInstance()["FieldInterceptBall"]);
       const RobotPose& theRobotPose = static_cast<RobotPose&>(Blackboard::getInstance()["RobotPose"]);
-      const Vector2f ballTarget = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation);
-      const Vector2f ballTargetMin = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.min);
-      const Vector2f ballTargetMax = theFieldBall.interceptedEndPositionOnField + Vector2f::polar(kickLength, targetDirection + theRobotPose.rotation + directionPrecision.max);
-      LINE("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), ballTargetMin.x(), ballTargetMin.y(),
+      const float useKickLength = std::min(10000.f, kickLength);
+      const Vector2f ballTarget = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(useKickLength, targetDirection + theRobotPose.rotation);
+      const Vector2f ballTargetMin = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(useKickLength, targetDirection + theRobotPose.rotation + directionPrecision.min);
+      const Vector2f ballTargetMax = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(useKickLength, targetDirection + theRobotPose.rotation + directionPrecision.max);
+      LINE("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), ballTargetMin.x(), ballTargetMin.y(),
            5, Drawings::solidPen, ColorRGBA::blue);
-      LINE("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), ballTargetMax.x(), ballTargetMax.y(),
+      LINE("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), ballTargetMax.x(), ballTargetMax.y(),
            5, Drawings::solidPen, ColorRGBA::blue);
-      LINE("representation:MotionRequest:kickDirection", theFieldBall.interceptedEndPositionOnField.x(), theFieldBall.interceptedEndPositionOnField.y(), ballTarget.x(), ballTarget.y(),
+      LINE("representation:MotionRequest:kickDirection", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), ballTarget.x(), ballTarget.y(),
            5, Drawings::solidPen, ColorRGBA::red);
       CROSS("representation:MotionRequest:kickDirection", ballTarget.x(), ballTarget.y(), 15, 15, Drawings::solidPen, ColorRGBA::red);
     }

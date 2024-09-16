@@ -39,7 +39,7 @@ if(BUILD_DESKTOP)
     target_link_libraries(Platform${TARGET_SUFFIX} PRIVATE ${APP_KIT_FRAMEWORK})
   endif()
   target_link_libraries(Platform${TARGET_SUFFIX} PUBLIC $<$<PLATFORM_ID:Linux>:-lpthread>)
-  if(NOT PYTHON_ONLY)
+  if(NOT MINIMAL_PROJECT)
     target_link_libraries(Platform${TARGET_SUFFIX} PRIVATE $<$<PLATFORM_ID:Linux>:flite::flite_cmu_us_slt> $<$<PLATFORM_ID:Linux>:flite::flite_usenglish>
         $<$<PLATFORM_ID:Linux>:flite::flite_cmulex> $<$<PLATFORM_ID:Linux>:flite::flite>)
     target_link_libraries(Platform${TARGET_SUFFIX} PRIVATE $<$<PLATFORM_ID:Linux>:ALSA::ALSA>)

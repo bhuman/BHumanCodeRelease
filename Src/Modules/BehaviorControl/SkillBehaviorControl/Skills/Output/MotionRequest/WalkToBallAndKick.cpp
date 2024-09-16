@@ -1,55 +1,58 @@
 /**
  * @file WalkToBallAndKick.cpp
  *
- * This file implements the implementation of the WalkToBallAndKick skill.
+ * This file implements the WalkToBallAndKick skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(WalkToBallAndKickImpl,
-{,
-  IMPLEMENTS(WalkToBallAndKick),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class WalkToBallAndKickImpl : public WalkToBallAndKickImplBase
+option((SkillBehaviorControl) WalkToBallAndKick,
+       args((Angle) targetDirection,
+            (KickInfo::KickType) kickType,
+            (KickPrecision) alignPrecisely,
+            (float) kickLength,
+            (const Pose2f&) speed,
+            (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
+            (PreStepType)preStepType,
+            (bool) turnKickAllowed,
+            (bool) shiftTurnKickPose,
+            (const Rangea&) directionPrecision),
+       vars((unsigned)(theMotionInfo.lastKickTimestamp) lastKickTimestamp)) /**< The value of the kick timestamp in the previous frame. */
 {
-  void execute(const WalkToBallAndKick& p) override
+  // This code should is executed for any state
+  theMotionRequest.motion = MotionRequest::walkToBallAndKick;
+  theMotionRequest.walkSpeed = speed;
+  theMotionRequest.obstacleAvoidance = obstacleAvoidance;
+  theMotionRequest.targetDirection = targetDirection;
+  theMotionRequest.directionPrecision = directionPrecision;
+  theMotionRequest.kickType = kickType;
+  theMotionRequest.kickLength = kickLength;
+  theMotionRequest.alignPrecisely = alignPrecisely;
+  theMotionRequest.preStepType = preStepType;
+  theMotionRequest.turnKickAllowed = turnKickAllowed;
+  theMotionRequest.shiftTurnKickPose = shiftTurnKickPose;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::walkToBallAndKick;
-    theMotionRequest.walkSpeed = p.speed;
-    theMotionRequest.obstacleAvoidance = p.obstacleAvoidance;
-    theMotionRequest.targetDirection = p.targetDirection;
-    theMotionRequest.directionPrecision = p.directionPrecision;
-    theMotionRequest.kickType = p.kickType;
-    theMotionRequest.kickLength = p.kickLength;
-    theMotionRequest.alignPrecisely = p.alignPrecisely;
-    theMotionRequest.preStepAllowed = p.preStepAllowed;
-    theMotionRequest.turnKickAllowed = p.turnKickAllowed;
-    theMotionRequest.shiftTurnKickPose = p.shiftTurnKickPose;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.lastKickTimestamp != lastKickTimestamp)
+        goto done;
+    }
   }
 
-  bool isDone(const WalkToBallAndKick& p) const override
+  target_state(done)
   {
-    return (p._context.lastFrame == SkillRegistry::theInstance->lastFrameTime || p._context.lastFrame == SkillRegistry::theInstance->currentFrameTime) && theMotionInfo.lastKickTimestamp > lastKickTimestamp;
+    transition
+    {
+      goto execute;
+    }
+    action
+    {
+      lastKickTimestamp = theMotionInfo.lastKickTimestamp;
+    }
   }
-
-  void postProcess(const WalkToBallAndKick&) override
-  {
-    lastKickTimestamp = theMotionInfo.lastKickTimestamp;
-  }
-
-  using SkillImplementationInterface::postProcess;
-
-  unsigned lastKickTimestamp = 0; /**< The value of the kick timestamp when this skill was entered. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(WalkToBallAndKickImpl);
+}

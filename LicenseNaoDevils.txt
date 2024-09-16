@@ -1,0 +1,85 @@
+Copyright (c) 2023 Nao Devils.  All rights reserved.
+*************************************************************************
+
+    Preamble: Nao Devils releases most of the software it uses at RoboCup
+    competitions to allow teams participating in the Standard Platform
+    League that do not have the resources to develop a complete robot
+    soccer system on their own, but still have important contributions
+    to make to the goals of RoboCup. We intend to enable such teams to
+    benchmark their own scientific approaches in RoboCup competitions.
+    We also hope that the scientific community will benefit from their
+    work through the publication of their findings.
+    A second reason for Nao Devils releasing its code is that source code
+    is the most solid documentation of how problems were actually
+    solved.
+
+*************************************************************************
+
+Parts of this distribution were not developed by Nao Devils.
+This license doesn't apply to these parts, the rights of the
+copyright owners remain.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following
+    disclaimer in the documentation and/or other materials provided
+    with the distribution.
+
+ 3. The end-user documentation included with the redistribution, if
+    any, must include the following acknowledgment:
+    "This product includes software developed by Nao Devils
+     (https://naodevils.de)."
+    Alternately, this acknowledgment may appear in the software
+    itself, if and wherever such third-party acknowledgments
+    normally appear.
+
+ 4. To use parts of this Nao Devils code release in a RoboCup
+    competition, participating teams must fulfill the following
+    conditions (if applicable):
+
+      - The usage of this version of the code release must be
+        announced on the SPL mailing list (currently
+        robocup-nao@lists.robocup.org) at least one month before
+        the first competition in which it is used. The announcement
+        shall name which parts of this code are used.
+
+    If the code usage is not limited to single components, such
+    as the ball detection or the self-localization, but consists
+    of major parts of the Nao Devils framework, we consider the team
+    to use "derived software" and the following additional
+    conditions apply:
+
+      - The announcement on the SPL mailing list shall also contain
+        a description of the own contribution that addresses the
+        criteria set by the SPL rule book (in the 2023 SPL rules
+        described in section A.1 of
+        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2023.pdf).
+
+      - For each year, the derived software as used in the last
+        RoboCup competition game in that year, including the
+        contributions previously announced, must be publicly
+        released as source code. The release must be licensed such
+        that other RoboCup teams can use it, although it may place
+        conditions on the use (such as this license). The release
+        must be published and announced on the SPL mailing list by
+        the end of that year.
+
+
+THIS SOFTWARE IS PROVIDED BY NAO DEVILS ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+NAO DEVILS NOR ITS MEMBERS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

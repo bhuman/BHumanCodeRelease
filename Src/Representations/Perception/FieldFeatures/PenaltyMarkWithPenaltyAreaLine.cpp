@@ -4,7 +4,7 @@
 * Implementation of a struct that represents the combination of
 * a penalty mark and the line of the penalty area that is
 * closest to it (the line between penalty mark and the field's
-* center line):
+* halfway line):
 *
 *                  (goal)
 *-----------------------------------------

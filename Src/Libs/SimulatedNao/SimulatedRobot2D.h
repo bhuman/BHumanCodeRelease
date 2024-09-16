@@ -30,10 +30,15 @@ protected:
   void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const override;
   void setJointRequest(const JointRequest& jointRequest) const override;
   void toggleCamera() override;
-  void getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData) override;
+
+  void getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& rawInertialSensorData) override;
   void getAndSetMotionData(const MotionRequest& motionRequest, MotionInfo& motionInfo) override;
-  void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation) override;
+  void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics) override;
   void enablePhysics(bool enable) override;
+  void enableGravity(bool) override {}
+  void enableSensorWhiteNoise(const bool enable) override;
+  void enableSensorDelay(const bool enable) override;
+  void enableSensorDiscretization(const bool enable) override;
   bool getPose2f(const SimRobot::Object* obj, Pose2f& pose) const override;
   void getPose3f(const SimRobot::Object* obj, Pose3f& pose) const override;
 

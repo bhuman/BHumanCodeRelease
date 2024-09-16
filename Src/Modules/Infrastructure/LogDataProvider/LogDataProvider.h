@@ -8,7 +8,11 @@
 
 #include "Platform/SystemCall.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
+#include "Representations/BehaviorControl/AgentStates.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/InitialToReady.h"
+#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/GameControllerData.h"
@@ -26,11 +30,13 @@
 #include "Representations/Infrastructure/JPEGImage.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
+#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -39,6 +45,7 @@
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/MotionControl/HeadMotionInfo.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
@@ -53,6 +60,7 @@
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
@@ -67,8 +75,9 @@
 #include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/GyroOffset.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/InertialSensorData.h"
 #include "Representations/Sensing/JointAnglePred.h"
 #include "Representations/Sensing/JointPlay.h"
 #include "Representations/Sensing/RobotStableState.h"
@@ -93,6 +102,7 @@ MODULE(LogDataProvider,
   USES(CameraInfo),
   PROVIDES_WITHOUT_MODIFY(CameraImage),
   PROVIDES(ActivationGraph),
+  PROVIDES(AgentStates),
   PROVIDES(AlternativeRobotPoseHypothesis),
   PROVIDES(ArmMotionRequest),
   PROVIDES(AudioData),
@@ -116,17 +126,23 @@ MODULE(LogDataProvider,
   PROVIDES(FsrSensorData),
   PROVIDES(GameControllerData),
   PROVIDES(GameState),
+  PROVIDES(GlobalOpponentsModel),
+  PROVIDES(GlobalTeammatesModel),
+  PROVIDES(GoalPostsPercept),
   PROVIDES(GyroOffset),
-  PROVIDES(GyroState),
   PROVIDES(GroundContactState),
   PROVIDES(GroundTruthOdometryData),
   PROVIDES(GroundTruthRobotPose),
   PROVIDES(GroundTruthWorldState),
   PROVIDES(HeadMotionRequest),
+  PROVIDES(HeadMotionInfo),
   PROVIDES(ImageCoordinateSystem),
   PROVIDES(IMUCalibration),
+  PROVIDES(IMUValueState),
+  PROVIDES(IndirectKick),
   PROVIDES(InertialData),
   PROVIDES(InertialSensorData),
+  PROVIDES(InitialToReady),
   PROVIDES(IntersectionsPercept),
   PROVIDES(JointAnglePred),
   PROVIDES(JointAngles),
@@ -139,6 +155,7 @@ MODULE(LogDataProvider,
   PROVIDES(LinesPercept),
   PROVIDES(MotionInfo),
   PROVIDES(MotionRequest),
+  PROVIDES(MotionRobotHealth),
   PROVIDES(ObstacleModel),
   PROVIDES(ObstaclesFieldPercept),
   PROVIDES(ObstaclesImagePercept),
@@ -147,12 +164,14 @@ MODULE(LogDataProvider,
   PROVIDES(OdometryDataPreview),
   PROVIDES(OdometryTranslationRequest),
   PROVIDES(PenaltyMarkPercept),
+  PROVIDES(RawInertialSensorData),
   PROVIDES(ReceivedTeamMessages),
   PROVIDES(RefereePercept),
   PROVIDES(RobotHealth),
   PROVIDES(RobotPose),
   PROVIDES(RobotStableState),
   PROVIDES(SelfLocalizationHypotheses),
+  PROVIDES(SharedAutonomyRequest),
   PROVIDES(SideInformation),
   PROVIDES(SkillRequest),
   PROVIDES(StrategyStatus),
@@ -183,6 +202,7 @@ private:
 
   // No-op update stubs
   void update(ActivationGraph&) override {}
+  void update(AgentStates&) override {}
   void update(AlternativeRobotPoseHypothesis&) override {}
   void update(ArmMotionRequest&) override {}
   void update(AudioData&) override {}
@@ -206,16 +226,22 @@ private:
   void update(FsrSensorData&) override {}
   void update(GameControllerData&) override {}
   void update(GameState&) override {}
+  void update(GlobalOpponentsModel&) override {}
+  void update(GlobalTeammatesModel&) override {}
+  void update(GoalPostsPercept&) override {}
   void update(GyroOffset&) override {}
-  void update(GyroState&) override {}
+  void update(IMUValueState&) override {}
   void update(GroundContactState&) override {}
   void update(GroundTruthRobotPose&) override {}
   void update(GroundTruthWorldState&) override {}
+  void update(HeadMotionInfo&) override {}
   void update(HeadMotionRequest&) override {}
   void update(ImageCoordinateSystem&) override {}
   void update(IMUCalibration&) override {}
   void update(InertialData&) override {}
+  void update(IndirectKick&) override {}
   void update(InertialSensorData&) override {}
+  void update(InitialToReady&) override {}
   void update(IntersectionsPercept&) override {}
   void update(JointAnglePred&) override {}
   void update(JointAngles&) override {}
@@ -228,6 +254,7 @@ private:
   void update(LinesPercept&) override {}
   void update(MotionInfo&) override {}
   void update(MotionRequest&) override {}
+  void update(MotionRobotHealth&) override {}
   void update(ObstacleModel&) override {}
   void update(ObstaclesFieldPercept&) override {}
   void update(ObstaclesImagePercept&) override {}
@@ -236,12 +263,16 @@ private:
   void update(OdometryDataPreview&) override {}
   void update(OdometryTranslationRequest&) override {}
   void update(PenaltyMarkPercept&) override {}
+
+  void update(RawInertialSensorData&) override
+  {}
   void update(ReceivedTeamMessages&) override {}
   void update(RefereePercept&) override {}
   void update(RobotHealth&) override {}
   void update(RobotPose&) override {}
   void update(RobotStableState&) override {}
   void update(SelfLocalizationHypotheses&) override {}
+  void update(SharedAutonomyRequest&) override {}
   void update(SideInformation&) override {}
   void update(SkillRequest&) override {}
   void update(StrategyStatus&) override {}

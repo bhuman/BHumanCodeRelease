@@ -9,7 +9,7 @@
 
 #include "GameControllerData.h"
 
-static_assert(GAMECONTROLLER_STRUCT_VERSION == 15);
+static_assert(GAMECONTROLLER_STRUCT_VERSION == 18);
 
 struct RobotInfo : public RoboCup::RobotInfo
 {

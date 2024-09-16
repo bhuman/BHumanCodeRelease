@@ -164,11 +164,13 @@ void FallPhase::safeBody(JointRequest& request)
     MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit],
                           request, Joints::firstLegJoint, Joints::numOfJoints);
   }
-  const int useKneeStiffness = lateFallMotion ? engine.stiffnessLeg.max : engine.stiffnessLeg.min;
+  const bool lowStiffness = engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDuration;
+  const int useKneeStiffness = !lowStiffness || lateFallMotion ? engine.stiffnessLeg.max : engine.stiffnessLeg.min;
+  const int useHipStiffness = !lowStiffness ? engine.stiffnessLeg.max : engine.stiffnessLeg.min;
   request.stiffnessData.stiffnesses[Joints::lKneePitch] = useKneeStiffness;
   request.stiffnessData.stiffnesses[Joints::rKneePitch] = useKneeStiffness;
-  request.stiffnessData.stiffnesses[Joints::lHipPitch] = engine.stiffnessLeg.min;
-  request.stiffnessData.stiffnesses[Joints::rHipPitch] = engine.stiffnessLeg.min;
+  request.stiffnessData.stiffnesses[Joints::lHipPitch] = useHipStiffness;
+  request.stiffnessData.stiffnesses[Joints::rHipPitch] = useHipStiffness;
 }
 void FallPhase::safeArms(JointRequest& request)
 {

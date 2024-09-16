@@ -8,10 +8,12 @@
 
 usage()
 {
-  echo >&2 "usage: $0 { options } <header file>"
+  echo >&2 "usage: $0 { options } ( <header file> | -m <name> <cpp files> )"
   echo >&2 "  options:"
+  echo >&2 "    -a <file> manually add data"
   echo >&2 "    -d <dot>  path to executable 'dot'"
   echo >&2 "    -h        show this help"
+  echo >&2 "    -m <name> options contained in multiple cpp files, use 'name' for main graph"
   echo >&2 "    -p        output pdf instead of svg"
   exit 1
 }
@@ -23,8 +25,18 @@ urlPath=file:
 
 # Process arguments
 dot=dot
+cpp=
+data=
 while [ $# -gt 0 ]; do
   case $1 in
+    "-a")
+      shift
+      data=`cat $1`
+      ;;
+    "-m")
+      shift
+      cpp="$1"
+      ;;
     "-d")
       shift
       if [ $# -gt 0 ]; then
@@ -66,15 +78,21 @@ elif [ -z "$dotAvailable" ]; then
 fi
 
 # Collect the relevant information from the options
-base=`dirname "$1"`
-fileList=`grep "#include[ 	][ 	]*\"" <"$1" | sed "s%^[ 	]*#include[ 	]*\"\([^\"]*\)\".*$%$base/\1%"`
-files=`while read file; do
-  if [ -e "$file" ]; then
+if [ -z "$cpp" ]; then
+  base=`dirname "$1"`
+  fileList=`grep "#include[ 	][ 	]*\"" <"$1" | sed "s%^[ 	]*#include[ 	]*\"\([^\"]*\)\".*$%$base/\1%"`
+  files=`while read file; do
+    if [ -e "$file" ]; then
+      echo "$file"
+    fi
+  done <<<"$fileList"`
+else
+  files=`for file in "$@"; do
     echo "$file"
-  fi
-done <<<"$fileList"`
-options=`grep -h "^[ 	]*option[ 	]*(" $files | sed "s%^[ 	]*option[ 	]*([ 	]*\([A-Za-z_][A-Za-z0-9_]*\).*$%\1%" | tr '\n' '|' | sed "s%|$%%"`
-lines=`cat $files \
+  done`
+fi
+options=`grep -h "^[ 	]*option[ 	]*(" $files | sed -E "s%^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[ 	]*)?([A-Za-z_][A-Za-z0-9_]*).*$%\2%" | tr '\n' '|' | sed "s%|$%%"`
+lines=`cat <<<"$data" ; cat $files \
 | sed "s%//.*%%" \
 | tr '\t' ' ' \
 | tr -d '\r' \
@@ -82,8 +100,8 @@ lines=`cat $files \
 | sed -e "s%/\*\([^*]*\*[^/]\)*[^*]*\*\**/%%g" \
   -e "s%[ 	]*	%	%g" \
 | tr '\t' '\n' \
-| grep -E "^[ 	]*option[ 	]*\([ 	]*[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($options|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)" \
-| sed -E -e "s%^[ 	]*option[ 	]*\([ 	]*([A-Za-z_][A-Za-z0-9_]*).*%option \1%" \
+| grep -E "^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[   ]*)?[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($options|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)" \
+| sed -E -e "s%^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[   ]*)?([A-Za-z_][A-Za-z0-9_]*).*%option \2%" \
   -e "s%(^|^.*[^A-Za-z0-9_])($options)[ 	]*\(.*%call \2%" \
   -e "s%(^|^.*[^A-Za-z0-9_])(state|initial_state|target_state|aborted_state)[ 	]*\(([A-Za-z_][A-Za-z0-9_]*).*%\2 \3%" \
   -e "s%(^|^.*[^A-Za-z0-9_])goto[ 	][ 	]*([A-Za-z_][A-Za-z0-9_]*).*%goto \2%"`
@@ -91,6 +109,7 @@ lines=`cat $files \
 # Generate temporary files containing all nodes and edges
 optionsTmp=/tmp/options.tmp
 rm -f "$optionsTmp"
+touch /tmp/timestamp
 option=
 while read line; do
   type=`sed "s% .*%%" <<<"$line"`
@@ -104,8 +123,12 @@ while read line; do
     state=
     internalTmp=/tmp/internal_$option.tmp
     externalTmp=/tmp/external_$option.tmp
-    rm -f "$internalTmp"
-    rm -f "$externalTmp"
+    if [ -f "$internalTmp" -a "$internalTmp" -ot /tmp/timestamp ]; then
+      rm "$internalTmp"
+    fi
+    if [ -f "$externalTmp" -a "$externalTmp" -ot /tmp/timestamp ]; then
+      rm "$externalTmp"
+    fi
   elif [ "$type" == "call" ]; then
     echo "$option -> $id;" >>"$optionsTmp"
     if [ "$state" == "" ]; then
@@ -142,9 +165,14 @@ while read line; do
     done
   fi
 done <<<"$lines"
+rm /tmp/timestamp
 
 # Write the main option graph
-file=`basename "${1%.*}.$format"`
+if [ -z "$cpp" ]; then
+  file=`basename "${1%.*}.$format"`
+else
+  file="$cpp.$format"
+fi
 echo "Writing graph '$file'" >&2
 (
   echo "digraph \"\" {"

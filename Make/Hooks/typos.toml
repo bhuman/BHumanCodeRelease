@@ -1,0 +1,57 @@
+# HINT: It is possible to use regex to ignore words, identifiers and code sections. See: https://github.com/crate-ci/typos/blob/master/docs/reference.md
+
+# Don't correct words in files from this list.
+[files]
+extend-exclude = [
+  "Make/Hooks/typos.toml",
+  "Install/Keys/*",
+  "Install/createRootImage",
+  "Util/Buildchain/V6/*",
+]
+
+[default]
+extend-ignore-identifiers-re = [
+  "numOf[^ ]*ss",
+]
+extend-ignore-words-re = []
+
+# Don't correct identifiers from this list.
+[default.extend-identifiers]
+_mmauto_set_as_posible_epi8 = "_mmauto_set_as_posible_epi8"
+_mmauto_set_as_posible_epi8_using = "_mmauto_set_as_posible_epi8_using"
+_STREAM_SER = "_STREAM_SER"
+2ndHalf = "2ndHalf"
+ASSERTs = "ASSERTs"
+Boundaryf = "Boundaryf"
+Boundaryi = "Boundaryi"
+fieldPlayerColour = "fieldPlayerColour"
+goalkeeperColour = "goalkeeperColour"
+iterm2 = "iterm2"
+NaoMat_Buton_nao_pantone445C = "NaoMat_Buton_nao_pantone445C"
+numer = "numer"
+numOfColorInputIndexs = "numOfColorInputIndexs"
+numOfImageInputShapeIndexs = "numOfImageInputShapeIndexs"
+numOfOutputIndexs = "numOfOutputIndexs"
+O_CREAT = "O_CREAT"
+pBA = "pBA"
+VIDIOC_G_PARM = "VIDIOC_G_PARM"
+DerJUSTin = "DerJUSTin"
+
+# Don't correct words from this list.
+[default.extend-words]
+ba = "ba"
+goes = "goes"
+HSI = "HSI"
+Ot = "Ot"
+parm = "parm"
+penalise = "penalise"
+penalised = "penalised"
+prepend="prepend"
+prev="prev"
+ret = "ret"
+TOI = "TOI"
+Udo = "Udo"
+ue = "ue"
+unpenalise = "unpenalise"
+unpenalised = "unpenalised"
+JUSTin = "JUSTin"

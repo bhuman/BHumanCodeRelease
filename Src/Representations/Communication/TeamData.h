@@ -11,6 +11,8 @@
 
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/InitialToReady.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -35,6 +37,8 @@ STREAMABLE(Teammate,
   (BehaviorStatus) theBehaviorStatus,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,
+  (IndirectKick) theIndirectKick,
+  (InitialToReady) theInitialToReady,
 });
 
 /**

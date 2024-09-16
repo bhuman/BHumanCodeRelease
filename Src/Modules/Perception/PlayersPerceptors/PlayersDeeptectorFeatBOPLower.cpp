@@ -224,22 +224,27 @@ bool PlayersDeeptectorFeatBOPLower::trimObstacle(bool trimHeight, ObstaclesImage
 
 void PlayersDeeptectorFeatBOPLower::scanImage(std::vector<std::vector<Region>>& regions)
 {
-  /*
-  std::vector<std::pair<int, int>> yLimits(theECImage.grayscaled.width / xyStep);
-  for(unsigned int x = 0, index = 0; index < theECImage.grayscaled.width / xyStep; x += xyStep, ++index)
+  const unsigned int xScale = theCameraInfo.width / theSegmentedObstacleImage.obstacle.width;
+  const unsigned int yScale = theCameraInfo.height / theSegmentedObstacleImage.obstacle.height;
+
+  std::vector<std::pair<int, int>> yLimits(theSegmentedObstacleImage.obstacle.width);
+  for(unsigned int x = xScale / 2, index = 0; index < theSegmentedObstacleImage.obstacle.width; x += xScale, ++index)
     yLimits[index] = std::make_pair(theFieldBoundary.getBoundaryY(x), theBodyContour.getBottom(x, theCameraInfo.height));
-  */
 
   for(unsigned int y = 0; y < theSegmentedObstacleImage.obstacle.height; ++y)
+  {
+    const int yFullResolution = y * yScale;
     for(unsigned int x = 0; x < theSegmentedObstacleImage.obstacle.width; ++x)
     {
+      const auto& [yMin, yMax] = yLimits[x];
       regions[y][x].regionIndices = Vector2i(x, y);
-      if(theSegmentedObstacleImage.obstacle[y][x] > 128)
+      if(yFullResolution > yMin && yFullResolution < yMax && theSegmentedObstacleImage.obstacle[y][x] > 128)
       {
         regions[y][x].isObstacle = true;
-        regions[y][x].maxY = y * theECImage.grayscaled.height / theSegmentedObstacleImage.obstacle.height;
+        regions[y][x].maxY = yFullResolution;
       }
     }
+  }
 }
 
 void PlayersDeeptectorFeatBOPLower::dbScan(std::vector<std::vector<Region>>& regions, std::vector<ObstaclesImagePercept::Obstacle>& obstacles)

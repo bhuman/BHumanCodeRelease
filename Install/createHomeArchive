@@ -21,6 +21,11 @@ defaultWiredIP="192.168.${teamID}.40"
 defaultWirelessIP="10.0.${teamID}.40"
 homeArchive="${baseDir}/home.tar.gz"
 
+tarOptions=
+if [ "$(uname)" == "Darwin" ]; then
+  tarOptions=--no-fflags
+fi
+
 usage() {
   echo "usage:"
   echo "${0} [-u] [-c <build configuration>] [-d <default hostname>] [-e <default wired IP>] [-f <default wireless IP>] [-v <playback volume>] [-w <wireless profile>] [-H <home archive>]"
@@ -136,7 +141,7 @@ echo "${defaultWirelessIP}" >"${homeDir}/nao/.config/wirelessIP"
 ${requireUSB} && touch "${homeDir}/nao/.config/requireUSB"
 
 # Create the archive.
-tar -czf "${homeArchive}" -C "${homeDir}" nao
+tar -czf "${homeArchive}" -C "${homeDir}" ${tarOptions} nao
 
 rm -r "${homeDir}"
 

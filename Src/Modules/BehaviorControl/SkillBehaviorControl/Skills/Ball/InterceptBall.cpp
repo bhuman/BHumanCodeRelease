@@ -1,324 +1,261 @@
 /**
  * @file InterceptBall.cpp
  *
- * This file implements an implementation of the InterceptBall skill.
+ * This file implements the InterceptBall skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Platform/BHAssert.h"
-#include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Configuration/BehaviorParameters.h"
-#include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
+#include "SkillBehaviorControl.h"
+#include "Tools/BehaviorControl/Interception.h"
 
-SKILL_IMPLEMENTATION(InterceptBallImpl,
-{,
-  IMPLEMENTS(InterceptBall),
-  CALLS(Annotation),
-  CALLS(Dive),
-  CALLS(LookAtBall),
-  CALLS(LookForward),
-  CALLS(Say),
-  CALLS(Stand),
-  CALLS(WalkToPoint),
-  REQUIRES(BehaviorParameters),
-  REQUIRES(FieldBall),
-});
-
-class InterceptBallImpl : public InterceptBallImplBase
+option((SkillBehaviorControl) InterceptBall,
+       args((unsigned) interceptionMethods,
+            (bool) allowGetUp,
+            (bool) allowDive),
+       vars((bool)(false) left, /**< Whether the interception is left of the robot (right otherwise). */
+            (Interception::Method)(Interception::numOfMethods) lastMethod)) /**< Last used interception from previous frame. */
 {
-  option(InterceptBall)
+  auto replaceJumpWithWalk = [&](const unsigned interceptionMethods) -> bool
   {
-    initial_state(chooseAction)
+    return interceptionMethods & bit(Interception::walk) && // walking is allowed
+    theFieldInterceptBall.timeUntilIntersectsOwnYAxis * 1000.f < theBehaviorParameters.timeForJump; // jumping would be too late
+  };
+
+  auto getWalkRadius = [&]() -> float
+  {
+    return mapToRange(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, theBehaviorParameters.timeForIntercetionForMaxWalkRadius.min, theBehaviorParameters.timeForIntercetionForMaxWalkRadius.max, theBehaviorParameters.walkRadius.min, theBehaviorParameters.walkRadius.max);
+  };
+
+  auto getIntersectionAction = [&](const Interception::Method currentMethod, const unsigned interceptionMethods)
+  {
+    const float positionIntersectionYAxis = theFieldInterceptBall.intersectionPositionWithOwnYAxis.y();
+    unsigned filteredInterceptionMethods = interceptionMethods;
+
+    left = positionIntersectionYAxis > 0.f;
+
+    if(left)
+      filteredInterceptionMethods &= ~bit(Interception::jumpRight);
+    else
+      filteredInterceptionMethods &= ~bit(Interception::jumpLeft);
+    ASSERT(filteredInterceptionMethods != 0);
+
+    const float standHysterese = currentMethod == Interception::stand ? 40.f : 0.f;
+
+    if((filteredInterceptionMethods & bit(Interception::stand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.standRadius - standHysterese, theBehaviorParameters.standRadius + standHysterese) || filteredInterceptionMethods < (bit(Interception::stand) << 1)))
+      return Interception::stand;
+    if((filteredInterceptionMethods & bit(Interception::walk)) && (between<float>(positionIntersectionYAxis, -getWalkRadius(), getWalkRadius()) || filteredInterceptionMethods < (bit(Interception::walk) << 1)))
+      return Interception::walk;
+    if((filteredInterceptionMethods & bit(Interception::genuflectStand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || filteredInterceptionMethods < (bit(Interception::genuflectStand) << 1)))
+      return Interception::genuflectStand;
+    if((filteredInterceptionMethods & bit(Interception::genuflectStandDefender)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || filteredInterceptionMethods < (bit(Interception::genuflectStandDefender) << 1)))
+      return Interception::genuflectStandDefender;
+    if(!replaceJumpWithWalk(filteredInterceptionMethods) && (filteredInterceptionMethods & bit(Interception::jumpLeft)) && (positionIntersectionYAxis < theBehaviorParameters.jumpRadius || filteredInterceptionMethods < (bit(Interception::jumpLeft) << 1)))
+      return Interception::jumpLeft;
+    if(!replaceJumpWithWalk(filteredInterceptionMethods) && (filteredInterceptionMethods & bit(Interception::jumpRight)) && (positionIntersectionYAxis > -theBehaviorParameters.jumpRadius || filteredInterceptionMethods < (bit(Interception::jumpRight) << 1)))
+      return Interception::jumpRight;
+
+    ASSERT(filteredInterceptionMethods & bit(Interception::walk));
+    return Interception::walk;
+  };
+
+  common_transition
+  {
+    // TODO figure out if this is needed
+    /* if(!theFieldInterceptBall.interceptBall)
+      goto targetStand; */
+    // We can always switch if the keeper motion did not start yet or none was requested
+    if(!(theMotionInfo.isMotion(MotionPhase::keyframeMotion) &&
+         lastMethod == Interception::genuflectStand &&
+         lastMethod == Interception::jumpLeft && lastMethod == Interception::jumpRight))
     {
-      transition
+      switch(getIntersectionAction(lastMethod, interceptionMethods))
       {
-        ASSERT(state_time == 0);
-        ASSERT(p.interceptionMethods != 0);
-        const float positionIntersectionYAxis = theFieldBall.intersectionPositionWithOwnYAxis.y();
-
-        // TODO all thresholds should scale with the distance to the ball.
-        // For example we do not want to jump for a ball 1 mm in front of us, but we also do not want to jump for a ball 4 meters far away.
-
-        unsigned interceptionMethods = p.interceptionMethods;
-        left = positionIntersectionYAxis > 0.f;
-        if(left)
-          interceptionMethods &= ~bit(Interception::jumpRight);
-        else
-          interceptionMethods &= ~bit(Interception::jumpLeft);
-        ASSERT(interceptionMethods != 0);
-
-        if((interceptionMethods & bit(Interception::stand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.standRadius, theBehaviorParameters.standRadius) || interceptionMethods < (bit(Interception::stand) << 1)))
-          goto stand;
-
-        if((interceptionMethods & bit(Interception::walk)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.walkRadius, theBehaviorParameters.walkRadius) || interceptionMethods < (bit(Interception::walk) << 1)))
-          goto walk;
-
-        if((interceptionMethods & bit(Interception::genuflectStand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStand) << 1)))
+        case Interception::stand:
         {
-          if(p.allowDive)
+          if(lastMethod != Interception::stand)
+            goto stand;
+          break;
+        }
+        case Interception::walk:
+        {
+          if(lastMethod != Interception::walk)
+            goto walk;
+          break;
+        }
+        case Interception::genuflectStand:
+        {
+          if(lastMethod == Interception::genuflectStand)
+            break;
+          if(allowDive)
             goto genuflectStand;
           else
             goto audioGenuflect;
         }
-
-        if((interceptionMethods & bit(Interception::genuflectStandDefender)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStandDefender) << 1)))
+        case  Interception::genuflectStandDefender:
         {
-          if(p.allowDive)
+          if(lastMethod == Interception::genuflectStandDefender)
+            break;
+          if(allowDive)
             goto genuflectStandDefender;
           else
             goto audioGenuflect;
         }
-
-        if((interceptionMethods & bit(Interception::jumpLeft)) && (positionIntersectionYAxis < theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpLeft) << 1)))
+        case Interception::jumpLeft:
+        case Interception::jumpRight:
         {
-          if(p.allowDive)
+          if(lastMethod == Interception::jumpLeft || lastMethod == Interception::jumpRight)
+            break;
+          if(allowDive)
             goto keeperSitJump;
           else
             goto audioJump;
         }
-
-        if((interceptionMethods & bit(Interception::jumpRight)) && (positionIntersectionYAxis > -theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpRight) << 1)))
-        {
-          if(p.allowDive)
-            goto keeperSitJump;
-          else
-            goto audioJump;
-        }
-
-        ASSERT(interceptionMethods & bit(Interception::walk));
-        goto walk;
-      }
-    }
-
-    state(stand)
-    {
-      transition
-      {
-        if(!(theFieldBall.ballWasSeen(300) &&
-             between<float>(theFieldBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
-          goto targetStand;
-
-        const float positionIntersectionYAxis = theFieldBall.intersectionPositionWithOwnYAxis.y();
-        if(!between<float>(theFieldBall.intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.standRadius - 40.f, theBehaviorParameters.standRadius + 40.f) || !(p.interceptionMethods & bit(Interception::stand)))
-        {
-          unsigned interceptionMethods = p.interceptionMethods;
-          left = positionIntersectionYAxis > 0.f;
-          if(left)
-            interceptionMethods &= ~bit(Interception::jumpRight);
-          else
-            interceptionMethods &= ~bit(Interception::jumpLeft);
-          ASSERT(interceptionMethods != 0);
-
-          if((interceptionMethods & bit(Interception::walk)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.walkRadius, theBehaviorParameters.walkRadius)))
-            goto walk;
-
-          if((interceptionMethods & bit(Interception::genuflectStand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStand) << 1)))
-          {
-            if(p.allowDive)
-              goto genuflectStand;
-            else
-              goto audioGenuflect;
-          }
-
-          if((interceptionMethods & bit(Interception::genuflectStandDefender)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStandDefender) << 1)))
-          {
-            if(p.allowDive)
-              goto genuflectStandDefender;
-            else
-              goto audioGenuflect;
-          }
-
-          if((interceptionMethods & bit(Interception::jumpLeft)) && (positionIntersectionYAxis < theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpLeft) << 1)))
-          {
-            if(p.allowDive)
-              goto keeperSitJump;
-            else
-              goto audioJump;
-          }
-
-          if((interceptionMethods & bit(Interception::jumpRight)) && (positionIntersectionYAxis > -theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpRight) << 1)))
-          {
-            if(p.allowDive)
-              goto keeperSitJump;
-            else
-              goto audioJump;
-          }
-
-          if(interceptionMethods & bit(Interception::walk))
-            goto walk;
-        }
-
-        ASSERT(p.interceptionMethods & bit(Interception::stand));
-      }
-      action
-      {
-        theAnnotationSkill({.annotation = "Intercept Ball Stand!"});
-        theLookAtBallSkill();
-        theStandSkill();
-      }
-    }
-
-    state(walk)
-    {
-      transition
-      {
-        if(!(theFieldBall.ballWasSeen(300) &&
-             between<float>(theFieldBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
-          goto targetStand;
-
-        ASSERT(p.interceptionMethods != 0);
-        const float positionIntersectionYAxis = theFieldBall.intersectionPositionWithOwnYAxis.y();
-
-        unsigned interceptionMethods = p.interceptionMethods;
-        left = positionIntersectionYAxis > 0.f;
-        if(left)
-          interceptionMethods &= ~bit(Interception::jumpRight);
-        else
-          interceptionMethods &= ~bit(Interception::jumpLeft);
-        ASSERT(interceptionMethods != 0);
-
-        if((interceptionMethods & bit(Interception::stand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.standRadius, theBehaviorParameters.standRadius) || interceptionMethods < (bit(Interception::stand) << 1)))
-          goto stand;
-
-        if(!((interceptionMethods & bit(Interception::walk)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.walkRadius, theBehaviorParameters.walkRadius))))
-        {
-          if((interceptionMethods & bit(Interception::genuflectStand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStand) << 1)))
-          {
-            if(p.allowDive)
-              goto genuflectStand;
-            else
-              goto audioGenuflect;
-          }
-
-          if((interceptionMethods & bit(Interception::genuflectStandDefender)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.genuflectStandRadius, theBehaviorParameters.genuflectStandRadius) || interceptionMethods < (bit(Interception::genuflectStandDefender) << 1)))
-          {
-            if(p.allowDive)
-              goto genuflectStandDefender;
-            else
-              goto audioGenuflect;
-          }
-
-          if((interceptionMethods & bit(Interception::jumpLeft)) && (positionIntersectionYAxis < theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpLeft) << 1)))
-          {
-            if(p.allowDive)
-              goto keeperSitJump;
-            else
-              goto audioJump;
-          }
-
-          if((interceptionMethods & bit(Interception::jumpRight)) && (positionIntersectionYAxis > -theBehaviorParameters.jumpRadius || interceptionMethods < (bit(Interception::jumpRight) << 1)))
-          {
-            if(p.allowDive)
-              goto keeperSitJump;
-            else
-              goto audioJump;
-          }
-
-          ASSERT(interceptionMethods & bit(Interception::walk));
-        }
-      }
-      action
-      {
-        theAnnotationSkill({.annotation = "Intercept Ball Walk!"});
-        theLookAtBallSkill();
-        theWalkToPointSkill({.target = {0.f, 0.f, theFieldBall.intersectionPositionWithOwnYAxis.y()},
-                             .reduceWalkingSpeed = false,
-                             .disableAligning = true});
-      }
-    }
-
-    state(genuflectStand)
-    {
-      transition
-      {
-        if(p.allowGetUp && state_time > 2000 &&
-           !(between<float>(theFieldBall.intersectionPositionWithOwnYAxis.y(), -250.f, 250.f) &&
-             theFieldBall.ballWasSeen(300) &&
-             between<float>(theFieldBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
-          goto targetStand;
-      }
-      action
-      {
-        theAnnotationSkill({.annotation = left ? "Genuflect Left!" : "Genuflect Right!"});
-        theLookForwardSkill();
-        theDiveSkill({.request = left ? MotionRequest::Dive::squatArmsBackLeft : MotionRequest::Dive::squatArmsBackRight});
-      }
-    }
-
-    state(genuflectStandDefender)
-    {
-      transition
-      {
-        if(p.allowGetUp && state_time > 2000 &&
-           !(between<float>(theFieldBall.intersectionPositionWithOwnYAxis.y(), -250.f, 250.f) &&
-             theFieldBall.ballWasSeen(300) &&
-             between<float>(theFieldBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
-          goto targetStand;
-      }
-      action
-      {
-        theAnnotationSkill({.annotation = left ? "Genuflect Defender Left!" : "Genuflect Defender Right!"});
-        theLookForwardSkill();
-        theDiveSkill({.request = left ? MotionRequest::Dive::squatWideArmsBackLeft : MotionRequest::Dive::squatWideArmsBackRight});
-      }
-    }
-
-    state(keeperSitJump)
-    {
-      transition
-      {
-        if(p.allowGetUp && state_time > 2000)
-          goto targetStand;
-      }
-      action
-      {
-        theAnnotationSkill({.annotation = left ? "Keeper Jump Left!" : "Keeper Jump Right!"});
-        theLookAtBallSkill();
-        theDiveSkill({.request = left ? MotionRequest::Dive::jumpLeft : MotionRequest::Dive::jumpRight});
-      }
-    }
-
-    state(audioGenuflect)
-    {
-      transition
-      {
-        goto targetStand;
-      }
-      action
-      {
-        theSaySkill({.text = "Genuflect"});
-        theLookAtBallSkill();
-        theStandSkill();
-      }
-    }
-
-    state(audioJump)
-    {
-      transition
-      {
-        goto targetStand;
-      }
-      action
-      {
-        theSaySkill({.text = left ? "Jump left" : "Jump right"});
-        theLookAtBallSkill();
-        theStandSkill();
-      }
-    }
-
-    target_state(targetStand)
-    {
-      action
-      {
-        theLookAtBallSkill();
-        theStandSkill();
       }
     }
   }
 
-  bool left; /**< Whether the interception is left of the robot (right otherwise). */
-};
+  initial_state(chooseAction)
+  {
+    transition
+    {
+      ASSERT(state_time == 0);
+      ASSERT(interceptionMethods != 0);
+    }
+  }
 
-MAKE_SKILL_IMPLEMENTATION(InterceptBallImpl);
+  state(stand)
+  {
+    transition
+    {
+      if(!(theFieldBall.ballWasSeen(300) &&
+           between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
+        goto targetStand;
+
+      ASSERT(interceptionMethods & bit(Interception::stand));
+    }
+    action
+    {
+      lastMethod = Interception::stand;
+      Annotation({.annotation = "Intercept Ball Stand!"});
+      LookAtBall();
+      Stand();
+    }
+  }
+
+  state(walk)
+  {
+    transition
+    {
+      if(!(theFieldBall.ballWasSeen(300) &&
+           between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
+        goto targetStand;
+
+      ASSERT(interceptionMethods != 0);
+      ASSERT(interceptionMethods & bit(Interception::walk));
+    }
+    action
+    {
+      lastMethod = Interception::walk;
+      Annotation({.annotation = "Intercept Ball Walk!"});
+      LookAtBall();
+      WalkToPoint({.target = {0.f, 0.f, theFieldInterceptBall.intersectionPositionWithOwnYAxis.y()},
+                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange,
+                   .disableAligning = true});
+    }
+  }
+
+  state(genuflectStand)
+  {
+    transition
+    {
+      if(allowGetUp && state_time > 2000 &&
+         !(between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -250.f, 250.f) &&
+           theFieldBall.ballWasSeen(300) &&
+           between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
+        goto targetStand;
+    }
+    action
+    {
+      lastMethod = Interception::genuflectStand;
+      Annotation({.annotation = left ? "Genuflect Left!" : "Genuflect Right!"});
+      LookForward();
+      Dive({.request = left ? MotionRequest::Dive::squatArmsBackLeft : MotionRequest::Dive::squatArmsBackRight});
+    }
+  }
+
+  state(genuflectStandDefender)
+  {
+    transition
+    {
+      if(allowGetUp && state_time > 2000 &&
+         !(between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -250.f, 250.f) &&
+           theFieldBall.ballWasSeen(300) &&
+           between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.5f)))
+        goto targetStand;
+    }
+    action
+    {
+      lastMethod = Interception::genuflectStandDefender;
+      Annotation({.annotation = left ? "Genuflect Defender Left!" : "Genuflect Defender Right!"});
+      LookForward();
+      Dive({.request = left ? MotionRequest::Dive::squatWideArmsBackLeft : MotionRequest::Dive::squatWideArmsBackRight});
+    }
+  }
+
+  state(keeperSitJump)
+  {
+    transition
+    {
+      if(allowGetUp && state_time > 2000)
+        goto targetStand;
+    }
+    action
+    {
+      lastMethod = left ? Interception::jumpLeft : Interception::jumpRight;
+      Annotation({.annotation = left ? "Keeper Jump Left!" : "Keeper Jump Right!"});
+      LookAtBall();
+      Dive({.request = left ? MotionRequest::Dive::jumpLeft : MotionRequest::Dive::jumpRight});
+    }
+  }
+
+  state(audioGenuflect)
+  {
+    transition
+    {
+      goto targetStand;
+    }
+    action
+    {
+      lastMethod = Interception::genuflectStand;
+      Say({.text = "Genuflect"});
+      LookAtBall();
+      Stand();
+    }
+  }
+
+  state(audioJump)
+  {
+    transition
+    {
+      goto targetStand;
+    }
+    action
+    {
+      lastMethod = left ? Interception::jumpLeft : Interception::jumpRight;
+      Say({.text = left ? "Jump left" : "Jump right"});
+      LookAtBall();
+      Stand();
+    }
+  }
+
+  target_state(targetStand)
+  {
+    action
+    {
+      lastMethod = Interception::stand;
+      LookAtBall();
+      Stand();
+    }
+  }
+}

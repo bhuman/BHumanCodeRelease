@@ -31,6 +31,9 @@ WalkStepAdjustment::WalkStepAdjustment() :
   lastLargeBackwardStep = 0;
   lastNormalStep = 0;
   reduceWalkingSpeed = 0;
+
+  for(std::size_t i = 0; i < kneeBalanceFilter.buffer.capacity(); i++)
+    kneeBalanceFilter.update(0.01_deg * (i + 1)); // set up buffer to ensure it can move knee as fast as possible
 }
 
 void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float stepTime, const Vector2f& com, const FootOffset& footOffset,
@@ -50,7 +53,7 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
   ///////////////////////////////////
   // 1. Set allowed movement speed //
   ///////////////////////////////////
-
+  // const float stepTimeClipped = Rangef::ZeroOneRange().limit(stepTime);
   const float comX = com.x();
   float useMaxVelX = walkStepParams.maxVelX * Constants::motionCycleTime;
   float useMinVelX = walkStepParams.minVelX * Constants::motionCycleTime;
@@ -63,11 +66,16 @@ void WalkStepAdjustment::addBalance(Pose3f& left, Pose3f& right, const float ste
     useMinVelX = 0.f;
     useRemoveSpeedX = 0.f;
   }
-  if(swingFootHasGroundContact && !wrongSupportFoot)
+  else if(swingFootHasGroundContact && !wrongSupportFoot)
   {
     useMaxVelX = stepTime < 0.2f ? useMaxVelX : 0.f;
     useMinVelX = stepTime < 0.2f ? useMinVelX : 0.f;
     useRemoveSpeedX = stepTime < 0.2f ? useRemoveSpeedX : 0.f;
+  }
+  else if(stepTime > 1.0f)
+  {
+    const float ratio = mapToRange(stepTime, 1.0f, 1.35f, 1.f, 0.f);
+    useMaxVelX = ratio * useMaxVelX + (1.f - ratio) * useMinVelX;
   }
 
   if(lastLeft == Pose3f())
@@ -380,7 +388,6 @@ void WalkStepAdjustment::init(const WalkStepAdjustment& walkData, const bool res
 {
   swingRotXFilter.clear();
   swingRotYFilter.clear();
-
   if(reset)
   {
     kneeHipBalanceCounter = 0;
@@ -476,25 +483,39 @@ void WalkStepAdjustment::modifySwingFootRotation(Angle& swingRotationY, const An
   const Angle targetSoleRoll = (torsoFactorRoll * rollTarget + rollExecuteError * params.measuredErrorFactor) * sideFactor;
 
   const float gyroScaling = mapToRange(yGyro, params.gyroScaling.min, params.gyroScaling.max, 0_deg, Angle(1.f));
-
-  const Angle minGyroThreshold = !lastWasKneeBalance ? params.minGyro : Angle(mapToRange(delta, params.deltaRangeSecondStep.min, params.deltaRangeSecondStep.max, static_cast<float>(params.gyroScalingSecondStep.max), static_cast<float>(params.gyroScalingSecondStep.min)));
-
-  kneeBalanceActive |= stepRatio < mapToRange(1.f - gyroScaling, 0.f, 1.f, params.maxStepRatioToStart.min, params.maxStepRatioToStart.max) && // only able to activate at the beginning of a step, based on the gyro
-                       (lastWasKneeBalance ? true : delta < mapToRange(1.f - gyroScaling, 0.f, 1.f, params.deltaRange.min, params.deltaRange.max)) && // last was also knee balance -> true, else only activate if the step adjustment already needs to adjust backwards
-                       -(torsoRotationY + hipRotation) > mapToRange(gyroScaling, 0.f, 1.f, float(params.torsoRange.min), float(params.torsoRange.max)) && // torso rotation needs to be tilted backwards, based on the gyro
-                       yGyro < minGyroThreshold; // min gyro required
-
-  if(!kneeBalanceActive)
+  if(kneeBalanceActive || stepRatio < mapToRange(1.f - gyroScaling, 0.f, 1.f, params.maxStepRatioToStart.min, params.maxStepRatioToStart.max))
   {
-    swingRotYFilter.update(swingRotationY + limitAnkleSpeedPitch.limit(targetSolePitch - swingRotationY));
-    swingRotationY = swingRotYFilter.currentValue;
-    kneeBalanceFilter.update(0_deg);
+    const float useDeltaRangeValue = mapToRange(1.f - gyroScaling, 0.f, 1.f, params.deltaRange.min, params.deltaRange.max);
+    const float deltaScaling = Rangef::ZeroOneRange().limit(useDeltaRangeValue >= 0 ? 0.f : delta / useDeltaRangeValue);
+
+    const float torsoRangeValue = mapToRange(gyroScaling, 0.f, 1.f, float(params.torsoRange.min), float(params.torsoRange.max));
+    const float torsoTiltScaling = Rangef::ZeroOneRange().limit(torsoRangeValue <= 0 ? 0.f : -(torsoRotationY + hipRotation) / torsoRangeValue);
+    const float gyroScaling = params.scalingClipRange.limit(yGyro / params.minGyro);
+
+    const float sumScaling = deltaScaling + torsoTiltScaling + gyroScaling;
+
+    PLOT("module:WalkingEngine:WalkStepAdjustment:scaling:delta", deltaScaling);
+    PLOT("module:WalkingEngine:WalkStepAdjustment:scaling:torso", torsoTiltScaling);
+    PLOT("module:WalkingEngine:WalkStepAdjustment:scaling:gyro", gyroScaling);
+    PLOT("module:WalkingEngine:WalkStepAdjustment:scaling:sum", sumScaling);
+
+    kneeBalanceActive |= params.minMaxSumScaling.min <= sumScaling &&
+                         deltaScaling > 0.f && // All values must be > 0
+                         torsoTiltScaling > 0.f &&
+                         gyroScaling > 0.f;
+
+    if(kneeBalanceActive)
+      kneeBalanceFactor = mapToRange(sumScaling, params.minMaxSumScaling.min, params.minMaxSumScaling.max, 0.f, 1.f);
   }
-  else
+
   {
-    swingRotYFilter.update(0_deg);
+    swingRotYFilter.update(swingRotationY + limitAnkleSpeedPitch.limit((1.f - kneeBalanceFactor)*targetSolePitch - swingRotationY));
+    swingRotationY = swingRotYFilter.currentValue;
+  }
+
+  {
     const float otherTimeFactor = stepRatio < 0.65f ? 0.9f : (1.f - stepRatio);
-    const Angle targetSolePitch = std::max(otherTimeFactor * (pitchTarget + pitchExecuteError * params.measuredErrorFactor), 0.f);
+    const Angle targetSolePitch = kneeBalanceFactor * std::max(otherTimeFactor * (pitchTarget + pitchExecuteError * params.measuredErrorFactor), 0.f);
     if(targetSolePitch > 0.f)
     {
       const float torsoFactor = Rangef::ZeroOneRange().limit(sqr((torsoRotationY + hipRotation) / -5_deg));
@@ -509,6 +530,7 @@ void WalkStepAdjustment::modifySwingFootRotation(Angle& swingRotationY, const An
       kneeBalanceFilter.update(0_deg);
     }
   }
+
   PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationY", swingRotationY.toDegrees());
   PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationX", swingRotationX.toDegrees());
   swingRotXFilter.update(swingRotationX + limitAnkleSpeedRoll.limit(targetSoleRoll - swingRotationX));

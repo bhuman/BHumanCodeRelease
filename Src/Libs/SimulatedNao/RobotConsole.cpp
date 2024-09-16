@@ -30,6 +30,7 @@
 #include "Views/LogPlayerControlView.h"
 #include "Views/ModuleGraphView.h"
 #include "Views/PlotView.h"
+#include "Views/SACControlView.h"
 #include "Views/TimeView.h"
 
 #include <algorithm>
@@ -58,7 +59,6 @@ RobotConsole::RobotConsole(const Settings& settings, const std::string& robotNam
     joystickAxisMappings[i] = 0;
   }
   logPlayer.reserve(0xfffffffff); // max. 64 GB
-  joystick.init();
 }
 
 RobotConsole::~RobotConsole()
@@ -84,6 +84,7 @@ void RobotConsole::update()
 {
   setGlobals(); // this is called in GUI thread -> set globals for this thread
   handleJoystick();
+  handleSharedAutonomyMessages();
 
   if(!perThreadViewsAdded && !moduleInfo.config().empty())
   {
@@ -373,6 +374,14 @@ bool RobotConsole::handleConsoleLine(const std::string& line)
   {
     result = penalizeRobot(stream);
   }
+  else if(command == "sn")
+  {
+    result = sensorNoise(stream);
+  }
+  else if(command == "sac")
+  {
+    result = sharedAutonomyChallenge(stream);
+  }
   else if(command == "vfd")
   {
     PREREQUISITE(idModuleTable);
@@ -481,16 +490,31 @@ bool RobotConsole::handleForCommands(const std::string& command, In& stream,
   return true;
 }
 
+void RobotConsole::initJoystick()
+{
+  if(!joystick)
+  {
+    joystick = std::make_unique<Joystick>();
+    joystick->init();
+  }
+}
+
 void RobotConsole::handleJoystick()
 {
-  if(!joystick.update())
+  if(!joystick || !joystick->update())
     return; //return if no joystick was found
+
+  // Update joystick state
+  for(int axis = 0; axis < Joystick::numOfAxes; ++axis)
+    joystickState.axes[axis] = joystick->getAxisState(axis);
+  for(int button = Joystick::numOfButtons - 1; button >= 0; --button) // buttons 32..39 will be lost
+    joystickState.buttons = joystickState.buttons << 1 | static_cast<unsigned>(joystick->isButtonPressed(button));
 
   // handle joystick events
   unsigned int buttonId;
   bool pressed;
   bool buttonCommandExecuted(false);
-  while(joystick.getNextEvent(buttonId, pressed))
+  while(joystick->getNextEvent(buttonId, pressed))
   {
     ASSERT(buttonId < Joystick::numOfButtons);
     buttonCommandExecuted |= handleJoystickCommand(pressed ? joystickButtonPressCommand[buttonId] : joystickButtonReleaseCommand[buttonId]);
@@ -518,7 +542,7 @@ void RobotConsole::handleJoystick()
         {
           for(int i = 0; i < Joystick::numOfAxes; ++i)
           {
-            float d = joystick.getAxisState(i);
+            float d = joystick->getAxisState(i);
             float threshold = joystickAxisThresholds[i];
             if(d < -threshold)
               speeds[i] = (d + threshold) / (1 - threshold);
@@ -528,8 +552,8 @@ void RobotConsole::handleJoystick()
               speeds[i] = 0;
             if(joystickAxisMappings[i])
             {
-              bool pressed1 = joystick.isButtonPressed(joystickAxisMappings[i] & 0xffff);
-              bool pressed2 = joystick.isButtonPressed(joystickAxisMappings[i] >> 16);
+              bool pressed1 = joystick->isButtonPressed(joystickAxisMappings[i] & 0xffff);
+              bool pressed2 = joystick->isButtonPressed(joystickAxisMappings[i] >> 16);
               if(pressed1 != pressed2)
                 speeds[i] = pressed1 ? 1.f : -1.f;
             }
@@ -570,6 +594,44 @@ bool RobotConsole::handleJoystickCommand(const std::string& cmd)
     ctrl->printLn(cmd);
 
   return true;
+}
+
+void RobotConsole::handleSharedAutonomyMessages()
+{
+  if(!sharedAutonomyChannel)
+    return;
+
+  char buffer[25001];
+
+  // sending commands to the robot
+  if(Time::getRealTimeSince(timeSharedAutonomyRequestSent) >= 100)
+  {
+    timeSharedAutonomyRequestSent = Time::getRealSystemTime();
+    MessageQueue queue;
+    queue.setBuffer(buffer, 0, sizeof(buffer) - 1);
+    queue.bin(idSharedAutonomyRequest) << sharedAutonomyRequest;
+    if(joystick)
+      queue.bin(idJoystickState) << joystickState;
+    sharedAutonomyChannel->send(buffer, static_cast<int>(queue.end() - queue.begin()));
+  }
+
+  // receiving data from the robot
+  for(;;)
+  {
+    const int size = sharedAutonomyChannel->receive(buffer, sizeof(buffer));
+    if(size <= 0) // no packet available -> stop
+      break;
+    else if(static_cast<unsigned>(size) < sizeof(buffer))
+    {
+      MessageQueue queue;
+      queue.setBuffer(buffer, size);
+      if(!queue.empty() && (*queue.begin()).id() == idFrameBegin)
+      {
+        SYNC;
+        *debugSender << queue;
+      }
+    }
+  }
 }
 
 void RobotConsole::requestDebugData(const std::string& threadName, const std::string& name)
@@ -631,9 +693,6 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
 
       ++currentFrame;
       ThreadData& data = threadData[threadName];
-
-      if(incompleteImages.contains("CameraImage") != data.images.contains("CameraImage"))
-        updateCompletion = true;
 
       data.images.clear();
 
@@ -730,11 +789,6 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
       incompleteImages["CameraImage"].timestamp = ci.timestamp;
       return true;
     }
-    case idInertialSensorData:
-    {
-      stream >> inertialSensorData;
-      return true;
-    }
     case idJointCalibration:
     {
       stream >> jointCalibration;
@@ -768,6 +822,11 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
     case idMotionRequest:
       stream >> motionRequest;
       return true;
+    case idRawInertialSensorData:
+    {
+      stream >> rawInertialSensorData;
+      return true;
+    }
     case idStopwatch:
       threadData[threadName].timeInfo.handleMessage(message);
       return true;
@@ -905,7 +964,8 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
              >> Global::getSettings().location
              >> Global::getSettings().scenario
              >> Global::getSettings().playerNumber;
-      File::setSearchPath(Global::getSettings().getSearchPath());
+      Global::getSettings().updateSearchPath();
+      File::setSearchPath(Global::getSettings().searchPath);
       --waitingFor[idRobotName];
       return true;
     }
@@ -1098,8 +1158,8 @@ void RobotConsole::notifyDataViewsAboutSetStatus(const std::string& data, bool s
     {
       auto dataView = threadData.dataViews.find(data);
       if(dataView != threadData.dataViews.end())
-      dataView->second->notifyAboutSetStatus(set);
-}
+        dataView->second->notifyAboutSetStatus(set);
+    }
 }
 
 std::string RobotConsole::getPathForRepresentation(const std::string& representation) const
@@ -1335,6 +1395,7 @@ bool RobotConsole::get(In& stream, const std::string& threadName, bool first)
 
 bool RobotConsole::joystickCommand(In& stream)
 {
+  initJoystick();
   std::string command;
   stream >> command;
   if(command == "show")
@@ -1405,6 +1466,7 @@ bool RobotConsole::joystickCommand(In& stream)
 
 bool RobotConsole::joystickMaps(In& stream)
 {
+  initJoystick();
   int axis, button1, button2;
   stream >> axis >> button1 >> button2;
   if(axis > 0 && axis <= Joystick::numOfAxes && button1 >= 0 && button1 <= Joystick::numOfButtons && button2 > 0 && button2 <= Joystick::numOfButtons)
@@ -1417,6 +1479,7 @@ bool RobotConsole::joystickMaps(In& stream)
 
 bool RobotConsole::joystickSpeeds(In& stream)
 {
+  initJoystick();
   int id;
   stream >> id;
   if(id > 0 && id <= Joystick::numOfAxes)
@@ -1522,11 +1585,11 @@ bool RobotConsole::log(In& stream)
       while(!option.empty())
       {
         FOREACH_ENUM(MessageID, i)
-        if(option == TypeRegistry::getEnumName(i))
-        {
-          messageIDs.push_back(i);
-          goto found;
-        }
+          if(option == TypeRegistry::getEnumName(i))
+          {
+            messageIDs.push_back(i);
+            goto found;
+          }
 
         return false;
       found:
@@ -2062,8 +2125,8 @@ bool RobotConsole::penalizeRobot(In& stream)
   std::string command;
   stream >> command;
   FOREACH_ENUM(GameController::Penalty, i)
-  if(command == TypeRegistry::getEnumName(i))
-    return ctrl->gameController.penalty(robot, i);
+    if(command == TypeRegistry::getEnumName(i))
+      return ctrl->gameController.penalty(robot, i);
   return false;
 }
 
@@ -2123,6 +2186,27 @@ bool RobotConsole::saveImage(In& stream, std::string threadName)
                                       filename, number, exportMode);
     return false;
   }
+}
+
+bool RobotConsole::sensorNoise(In& stream)
+{
+  std::string option;
+  std::string command;
+  stream >> command;
+  if(command == "whiteNoise" || command == "timeDelay" || command == "discretization")
+  {
+    option = command;
+    stream >> command;
+  }
+  if(!command.empty() && command != "on" && command != "off")
+    return false;
+  if(option.empty() || option == "whiteNoise")
+    simulatedRobot->enableSensorWhiteNoise(command != "off");
+  if(option.empty() || option == "timeDelay")
+    simulatedRobot->enableSensorDelay(command != "off");
+  if(option.empty() || option == "discretization")
+    simulatedRobot->enableSensorDiscretization(command != "off");
+  return true;
 }
 
 bool RobotConsole::set(In& stream, const std::string& threadName)
@@ -2244,6 +2328,42 @@ bool RobotConsole::set(In& stream, const std::string& threadName)
   return false;
 }
 
+bool RobotConsole::sharedAutonomyChallenge(In& stream)
+{
+  if(sharedAutonomyChannel)
+    return false; // already started
+  initJoystick();
+  std::string mode;
+  bool view = false;
+  stream >> mode;
+  if(mode == "view")
+  {
+    view = true;
+    stream >> mode;
+  }
+  int team;
+  std::string bcastAddr;
+  stream >> team >> bcastAddr;
+  if(team <= 0 || team > 254)
+    return false;
+  else if(mode == "local" && bcastAddr.empty())
+  {
+    sharedAutonomyChannel = std::make_unique<SharedAutonomyChannel>();
+    sharedAutonomyChannel->startLocal(10100 + team, 13);
+  }
+  else if(mode == "remote" && !bcastAddr.empty())
+  {
+    sharedAutonomyChannel = std::make_unique<SharedAutonomyChannel>();
+    sharedAutonomyChannel->start(10100 + team, bcastAddr);
+  }
+  else
+    return false;
+  if(view)
+    ctrl->addView(new SACControlView(QString::fromStdString(robotName) + ".sac.ChallengeControl", *this),
+                  QString::fromStdString(robotName) + ".sac", 0);
+  return true;
+}
+
 bool RobotConsole::viewDrawing(In& stream, RobotConsole::Views& views, const char* type)
 {
   bool found = false;
@@ -2337,8 +2457,15 @@ bool RobotConsole::viewDrawing(In& stream, RobotConsole::Views& views, const cha
 bool RobotConsole::viewField(In& stream, const std::string& threadName)
 {
   std::string name;
+  bool force = false;
   stream >> name;
-  if(fieldViews.find(name) != fieldViews.end())
+  if(name == "force")
+  {
+    force = true;
+    stream >> name;
+  }
+
+  if(!force && fieldViews.find(name) != fieldViews.end())
     ctrl->printLn("View already exists. Specify a different name.");
   else
   {

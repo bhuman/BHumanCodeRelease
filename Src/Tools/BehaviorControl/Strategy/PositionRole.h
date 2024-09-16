@@ -19,9 +19,11 @@ public:
   ENUM(Type,
   {,
     goalkeeper,
+    attackingGoalkeeper,
     defender,
     midfielder,
     forward,
+    sacPasser,
   });
 
   ENUM(Side,
@@ -56,10 +58,11 @@ public:
    * @param side The (y-)side on which to choose a position (only if that is unambiguous from the tactic).
    * @param basePose The base pose set by the tactic.
    * @param baseArea The region in the Voronoi diagram of the base poses in the tactic.
+   * @param self The agent which executes the role.
    * @param teammates The other agents in the team.
    * @return The target pose on field.
    */
-  virtual Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agents& teammates);
+  virtual Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agent& self, const Agents& teammates);
 
   /**
    * Defines tolerance thresholds relative to the target pose in which the agent should not walk.

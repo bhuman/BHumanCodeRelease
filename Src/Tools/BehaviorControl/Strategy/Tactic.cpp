@@ -39,6 +39,11 @@ Tactic::Position::Type Tactic::Position::mirror(Type type)
 
 Tactic::Position::Position(Type type, Pose2f pose): type(type), pose(pose) {}
 
+bool Tactic::Position::isGoalkeeper(Tactic::Position::Type type)
+{
+  return type == Tactic::Position::attackingGoalkeeper || type == Tactic::Position::goalkeeper;
+}
+
 Tactic::Position::Type Tactic::Position::mirrorIf(Type type, bool doIt)
 {
   return doIt ? mirror(type) : type;
@@ -64,7 +69,7 @@ void Tactic::verify([[maybe_unused]] Type tactic) const
 
   for(const PriorityGroup& priorityGroup : priorityGroups)
     for(const Position::Type position : priorityGroup.positions)
-      if(position == Position::goalkeeper)
+      if(Tactic::Position::isGoalkeeper(position))
         FAIL("The goalkeeper position appears in a priority group within tactic " << TypeRegistry::getEnumName(tactic) << ".");
       else if(!existingPositions[position])
         FAIL("The position " << TypeRegistry::getEnumName(position) << " appears in a priority group but is not defined within tactic " << TypeRegistry::getEnumName(tactic) << ".");
@@ -72,7 +77,7 @@ void Tactic::verify([[maybe_unused]] Type tactic) const
         ++existingPositions[position];
 
   FOREACH_ENUM(Position::Type, position)
-    if(position != Position::goalkeeper)
+    if(!Tactic::Position::isGoalkeeper(position))
     {
       if(existingPositions[position] == 1)
         FAIL("The position " << TypeRegistry::getEnumName(position) << " does not appear in a priority group within tactic " << TypeRegistry::getEnumName(tactic) << ".");
@@ -208,8 +213,8 @@ std::vector<std::vector<Vector2f>> Tactic::generateVoronoiDiagram(const std::vec
 {
   ASSERT(Blackboard::getInstance().exists("FieldDimensions"));
   FieldDimensions& theFieldDimensions = static_cast<FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-  const float xMax = theFieldDimensions.xPosOpponentGroundLine;
-  const float yMax = theFieldDimensions.yPosLeftSideline;
+  const float xMax = theFieldDimensions.xPosOpponentGoalLine;
+  const float yMax = theFieldDimensions.yPosLeftTouchline;
 
   const int numOfPositions = static_cast<int>(positions.size());
   std::vector<std::vector<Vector2f>> voronoiRegions(numOfPositions);

@@ -63,6 +63,28 @@ STREAMABLE(FieldBall,
   Vector2f recentBallEndPositionRelative(const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
 
   /**
+   * Returns the ball's propagated position in field coordinates, i.e. the position where it will come to a stop.
+   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * @param t Time to propagate the ball into the future.
+   * @param ballSeenTimeout See recentBallPositionOnField.
+   * @param ballDisappearedTimeout See recentBallPositionOnField.
+   * @ballFriction The ball friction (negative force)  (in m/s^2)
+   * @return Position of the ball's propagated position in field coordinates.
+   */
+  Vector2f recentBallPropagatedPositionOnField(const float t, const float friction, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
+
+  /**
+   * Returns the ball's propagated position in relative coordinates, i.e. the position where it will come to a stop.
+   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * @param t Time to propagate the ball into the future.
+   * @param ballSeenTimeout See recentBallPositionOnField.
+   * @param ballDisappearedTimeout See recentBallPositionOnField.
+   * @ballFriction The ball friction (negative force)  (in m/s^2)
+   * @return Position of the ball's propagated position in relative coordinates.
+   */
+  Vector2f recentBallPropagatedPositionRelative(const float t, const float friction, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
+
+  /**
    * Obtains the ball's position in field coordinates as well as robot coordinates.
    * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
    * @param ballPositionOnField Is filled with the ball position in field coordinates.
@@ -91,7 +113,7 @@ STREAMABLE(FieldBall,
   /**
    * Implements the decision whether to favor the teammates ball over the own one.
    * If ball has been seen by the robot within the given timeout or the global team
-   * ball is invalid, this method will return true, otherwise false.
+   * ball is invalid, this method will return false, otherwise true.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @return True, if the teammates ball should be used, false otherwise
@@ -111,22 +133,18 @@ STREAMABLE(FieldBall,
   (Vector2f)(Vector2f::Zero()) teamPositionRelative,      /**< The ball position in relative robot coordinates, as estimated by the whole team */
   (Vector2f)(Vector2f::Zero()) teamEndPositionOnField,    /**< The ball end position (i.e. where it comes to a stop) in global field coordinates, as estimated by the whole team */
   (Vector2f)(Vector2f::Zero()) teamEndPositionRelative,   /**< The ball end position (i.e. where it comes to a stop) in relative robot coordinates, as estimated by the whole team */
-  (Vector2f)(Vector2f::Zero()) interceptedEndPositionOnField, /**< The ball end position after interception in global field coordinates */
-  (Vector2f)(Vector2f::Zero()) interceptedEndPositionRelative, /**< The ball end position after interception in relative coordinates */
-  (bool)(false) interceptBall,                          /**< if the rolling ball can be intercepted */
+  (Vector2f)(Vector2f::Zero()) velocityOnField,           /**< The ball velocity in global field coordinates */
+  (Vector2f)(Vector2f::Zero()) velocityRelative,          /**< The ball velocity in relative robot coordinates */
+  (Vector2f)(Vector2f::Zero()) teamVelocityOnField,       /**< The ball velocity in global field coordinates, as estimated by the whole team */
+  (Vector2f)(Vector2f::Zero()) teamVelocityRelative,      /**< The ball velocity in relative robot coordinates, as estimated by the whole team */
   (int)(0) timeSinceBallWasSeen,                          /**< Yes, you guessed it */
   (int)(0) timeSinceBallDisappeared,                      /**< Yes, you guessed it */
   (bool)(false) teammatesBallIsValid,                     /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOpponentGoal,             /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOwnGoal,                  /**< Yes, you guessed it */
   (bool)(false) isInsideOwnPenaltyArea,                   /**< Yes, you guessed it */
-  (float)(0.f) distanceToOwnPenaltyArea,                  /**< Yes, you guessed it. If the ball is inside the area, member is set to 0.f. If the position is unknown, member is set to -1.f.*/
-  (Vector2f)(Vector2f::Zero()) intersectionPositionWithOwnYAxis,          /**< The position (in local coordinates) at which a rolling ball will pass the robot. Vector2f::Zero(), if this will not happen. */
-  (Vector2f)(Vector2f::Zero()) intersectionPositionWithOwnXAxis,          /**< The position (in local coordinates) at which a rolling ball will pass the robot. Vector2f::Zero(), if this will not happen. */
-  (float)(std::numeric_limits<float>::max()) timeUntilIntersectsOwnYAxis, /**< The time until a rolling ball will pass the robot. float::max, if this will not happen. */
-  (float)(std::numeric_limits<float>::max()) timeUntilIntersectsOwnXAxis, /**< The time until a rolling ball will pass the robot. float::max, if this will not happen. */
-  (bool)(false) teammatesBallNewerThanOwnBall,                            /**< is my ball older than the teams? only to use in intern function, do not get it from here*/
+  (float)(0.f) distanceToOwnPenaltyArea,                  /**< Yes, you guessed it. If the ball is inside the area, member is set to 0.f. If the position is unknown, member is set to -1.f. */
+  (bool)(false) teammatesBallNewerThanOwnBall,            /**< Is my ball older than the team's? Only to use in internal function, do not get it from here */
   (bool)(false) ballPositionConsistentWithGameState,      /**< Is the ball position consistent with the ball drop in positions of the current game state? */
-  (bool)(false) teamBallPositionConsistentWithGameState,  /**< Is the team ball position consistent with the ball drop in positions of the current game state?  */
-  (unsigned int)(0) lastInterceptBall,
+  (bool)(false) teamBallPositionConsistentWithGameState,  /**< Is the team ball position consistent with the ball drop in positions of the current game state? */
 });

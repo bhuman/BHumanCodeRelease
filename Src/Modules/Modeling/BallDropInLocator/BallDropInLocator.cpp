@@ -45,10 +45,10 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
   }
   if(ballDropInModel.dropInTypes & bit(BallDropInModel::ownCornerKick))
   {
-    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOpponentGroundLine,
-      outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
-    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOpponentGroundLine,
-      outLeft ? theFieldDimensions.yPosRightSideline : theFieldDimensions.yPosLeftSideline);
+    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOpponentGoalLine,
+      outLeft ? theFieldDimensions.yPosLeftTouchline : theFieldDimensions.yPosRightTouchline);
+    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOpponentGoalLine,
+      outLeft ? theFieldDimensions.yPosRightTouchline : theFieldDimensions.yPosLeftTouchline);
   }
   if(ballDropInModel.dropInTypes & bit(BallDropInModel::opponentGoalKick))
   {
@@ -59,17 +59,17 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
   }
   if(ballDropInModel.dropInTypes & bit(BallDropInModel::opponentCornerKick))
   {
-    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOwnGroundLine,
-      outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
-    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOwnGroundLine,
-      outLeft ? theFieldDimensions.yPosRightSideline : theFieldDimensions.yPosLeftSideline);
+    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOwnGoalLine,
+      outLeft ? theFieldDimensions.yPosLeftTouchline : theFieldDimensions.yPosRightTouchline);
+    ballDropInModel.dropInPositions.emplace_back(theFieldDimensions.xPosOwnGoalLine,
+      outLeft ? theFieldDimensions.yPosRightTouchline : theFieldDimensions.yPosLeftTouchline);
   }
   if(ballDropInModel.dropInTypes & bit(BallDropInModel::kickIn))
   {
     ballDropInModel.dropInPositions.emplace_back(
       clip(useOutPosition ? ballDropInModel.outPosition.x() : predictedOutPosition.x(),
-           theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.xPosOpponentGroundLine),
-      outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
+           theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.xPosOpponentGoalLine),
+      outLeft ? theFieldDimensions.yPosLeftTouchline : theFieldDimensions.yPosRightTouchline);
   }
   ballDropInModel.isValid = useOutPosition || theGameState.isGoalKick() || theGameState.isCornerKick() || theGameState.isKickIn();
 
@@ -114,16 +114,16 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
       const bool movingToLeft = ballVelocityOnField.y() > 0.f;
       const bool movingToOpponent = ballVelocityOnField.x() > 0.f;
       const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius;
-      const Geometry::Line sideline(Vector2f(0.f, movingToLeft ? (theFieldDimensions.yPosLeftSideline + offset) : (theFieldDimensions.yPosRightSideline - offset)), Vector2f(1.f, 0.f));
-      const Geometry::Line groundLine(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGroundLine + offset) : (theFieldDimensions.xPosOwnGroundLine - offset), 0.f), Vector2f(0.f, 1.f));
+      const Geometry::Line touchline(Vector2f(0.f, movingToLeft ? (theFieldDimensions.yPosLeftTouchline + offset) : (theFieldDimensions.yPosRightTouchline - offset)), Vector2f(1.f, 0.f));
+      const Geometry::Line goalLine(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGoalLine + offset) : (theFieldDimensions.xPosOwnGoalLine - offset), 0.f), Vector2f(0.f, 1.f));
       const Geometry::Line ballDirection(ballPositionOnField, ballVelocityOnField);
       ballDropInModel.ballDirection = ballDirection.direction;
       Vector2f intersection;
-      if(Geometry::getIntersectionOfLines(ballDirection, sideline, intersection) &&
-         intersection.x() >= theFieldDimensions.xPosOwnGroundLine - offset && intersection.x() <= theFieldDimensions.xPosOpponentGroundLine + offset)
+      if(Geometry::getIntersectionOfLines(ballDirection, touchline, intersection) &&
+         intersection.x() >= theFieldDimensions.xPosOwnGoalLine - offset && intersection.x() <= theFieldDimensions.xPosOpponentGoalLine + offset)
         predictedOutPosition = intersection;
-      else if(Geometry::getIntersectionOfLines(ballDirection, groundLine, intersection) &&
-              intersection.y() >= theFieldDimensions.yPosRightSideline - offset && intersection.y() <= theFieldDimensions.yPosLeftSideline + offset)
+      else if(Geometry::getIntersectionOfLines(ballDirection, goalLine, intersection) &&
+              intersection.y() >= theFieldDimensions.yPosRightTouchline - offset && intersection.y() <= theFieldDimensions.yPosLeftTouchline + offset)
         predictedOutPosition = intersection;
     }
     useOutPosition = false;
@@ -136,8 +136,8 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
     ballDropInModel.lastTimeWhenBallOutWasObserved = theFrameInfo.time;
     if(!theGameState.isFreeKick() && !theGameState.isPenaltyKick())
     {
-      if(ballPositionOnField.y() < theFieldDimensions.yPosLeftSideline &&
-         ballPositionOnField.y() > theFieldDimensions.yPosRightSideline)
+      if(ballPositionOnField.y() < theFieldDimensions.yPosLeftTouchline &&
+         ballPositionOnField.y() > theFieldDimensions.yPosRightTouchline)
       {
         if(ballPositionOnField.x() > 0.f)
           ballDropInModel.dropInTypes = bit(BallDropInModel::ownCornerKick) | bit(BallDropInModel::opponentGoalKick);

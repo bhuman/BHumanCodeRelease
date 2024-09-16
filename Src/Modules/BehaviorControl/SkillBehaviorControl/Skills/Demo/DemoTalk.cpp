@@ -1,67 +1,68 @@
 /**
  * @file DemoTalk.cpp
  *
- * This file implements an implementation of the DemoTalk skill.
+ * This file implements the DemoTalk skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Platform/SystemCall.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(DemoTalkImpl,
-{,
-  IMPLEMENTS(DemoTalk),
-  CALLS(LookAtAngles),
-  CALLS(Stand),
-  REQUIRES(EnhancedKeyStates),
-  REQUIRES(FrameInfo),
-  DEFINES_PARAMETERS(
-  {,
-    (int)(1000) delayBeforeTalking, /**< This amount of time is waited after pressing the head button until the sound is actually played.*/
-  }),
-});
-
-class DemoTalkImpl : public DemoTalkImplBase
+option((SkillBehaviorControl) DemoTalk)
 {
-  void execute(const DemoTalk&) override
+  action
   {
-    theLookAtAnglesSkill({.pan = 0.f,
-                          .tilt = 25_deg});
-    theStandSkill({.high = true});
-    if(idle)
+    LookAtAngles({.pan = 0.f,
+                  .tilt = 25_deg});
+    Stand({.high = true});
+    DemoTalkWaitForKey();
+  }
+}
+
+option((SkillBehaviorControl) DemoTalkWaitForKey)
+{
+  initial_state(waiting)
+  {
+    transition
     {
       if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 1)
-        delaySound("demo1.wav");
+        goto talk1;
       else if(theEnhancedKeyStates.hitStreak[KeyStates::headMiddle] == 1)
-        delaySound("demo2.wav");
+        goto talk2;
       else if(theEnhancedKeyStates.hitStreak[KeyStates::headRear] == 1)
-        delaySound("demo3.wav");
+        goto talk3;
     }
-    else if(theFrameInfo.getTimeSince(timeWhenStartedWaiting) > delayBeforeTalking)
+  }
+
+  state(talk1) {transition {if(action_done) goto waiting;} action {DemoWaitAndPlay({.soundName = "demo1.wav"});}}
+  state(talk2) {transition {if(action_done) goto waiting;} action {DemoWaitAndPlay({.soundName = "demo2.wav"});}}
+  state(talk3) {transition {if(action_done) goto waiting;} action {DemoWaitAndPlay({.soundName = "demo3.wav"});}}
+}
+
+option((SkillBehaviorControl) DemoWaitAndPlay,
+       args((const std::string&) soundName),
+       defs((int)(1000) delayBeforeTalking))
+{
+  initial_state(waiting)
+  {
+    transition
     {
-      SystemCall::playSound(soundName);
-      idle = true;
+      if(state_time > delayBeforeTalking)
+        goto playBack;
     }
   }
 
-  void reset(const DemoTalk&) override
+  state(playBack)
   {
-    idle = true;
+    transition
+    {
+      goto done;
+    }
+    action
+    {
+      SystemCall::playSound(soundName.c_str());
+    }
   }
 
-  void delaySound(const char* name)
-  {
-    idle = false;
-    timeWhenStartedWaiting = theFrameInfo.time;
-    soundName = name;
-  }
-
-  bool idle; /**< Whether the robot should say nothing. */
-  unsigned timeWhenStartedWaiting; /**< The timestamp when a talking action was requested. */
-  const char* soundName; /**< The sound that should be played in the future. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(DemoTalkImpl);
+  target_state(done) {}
+}

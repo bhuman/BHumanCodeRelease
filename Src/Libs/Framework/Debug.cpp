@@ -154,7 +154,12 @@ bool Debug::main()
   // Send messages to the threads
 #ifndef TARGET_ROBOT
   for(DebugSender<MessageQueue>& sender : senders)
-    sender.send(true);
+  {
+    DEBUG_RESPONSE("async")
+      sender.send(false);
+    else
+      sender.send(true);
+  }
   debugSender->send();
 #else
   for(DebugSender<MessageQueue>& sender : senders)
@@ -251,7 +256,6 @@ void Debug::removeRepetitions()
     }
   });
 }
-
 
 bool Debug::handleMessage(MessageQueue::Message message)
 {

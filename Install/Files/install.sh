@@ -92,7 +92,7 @@ NOTIF_WRITING_ERROR=110
 NOTIF_WRITTEN_DATA_INTEGRITY=111
 NOTIF_FACTORY_RESET=120
 # no notification for factory reset failure here,
-# if something went wrong during that step, it wil be detected and handled in the main system.
+# if something went wrong during that step, it will be detected and handled in the main system.
 # NOTIF_FACTORY_RESET_ERROR=
 
 : ${_DEBUG:="true"}

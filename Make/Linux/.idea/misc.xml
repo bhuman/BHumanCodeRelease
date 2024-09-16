@@ -12,12 +12,15 @@
       <file path="$PROJECT_DIR$/../../Build" />
       <file path="$PROJECT_DIR$/../../Config/Logs" />
       <file path="$PROJECT_DIR$/../../Install" />
+      <file path="$PROJECT_DIR$/../../Util/BehaviorOscillationVisualizer" />
       <file path="$PROJECT_DIR$/../../Util/Buildchain" />
       <file path="$PROJECT_DIR$/../../Util/CABSL" />
-      <file path="$PROJECT_DIR$/../../Util/CallTool" />
       <file path="$PROJECT_DIR$/../../Util/CodeRelease" />
       <file path="$PROJECT_DIR$/../../Util/CompiledNN" />
+      <file path="$PROJECT_DIR$/../../Util/CompiledNN2ONNX" />
       <file path="$PROJECT_DIR$/../../Util/GameController" />
+      <file path="$PROJECT_DIR$/../../Util/HardwareAccess" />
+      <file path="$PROJECT_DIR$/../../Util/MD5" />
       <file path="$PROJECT_DIR$/../../Util/ModelConverters" />
       <file path="$PROJECT_DIR$/../../Util/SimRobot/Build" />
       <file path="$PROJECT_DIR$/../../Util/SimRobot/Util" />
@@ -28,8 +31,12 @@
       <file path="$PROJECT_DIR$/../../Util/gtest" />
       <file path="$PROJECT_DIR$/../../Util/hdf5" />
       <file path="$PROJECT_DIR$/../../Util/libjpeg" />
+      <file path="$PROJECT_DIR$/../../Util/onnxruntime" />
+      <file path="$PROJECT_DIR$/../../Util/pybind11" />
       <file path="$PROJECT_DIR$/../../Util/qtpropertybrowser" />
       <file path="$PROJECT_DIR$/../../Util/snappy" />
+      <file path="$PROJECT_DIR$/../../Util/sse2neon" />
+      <file path="$PROJECT_DIR$/../../Util/voronoi" />
     </excludeRoots>
   </component>
   <component name="JavaScriptSettings">

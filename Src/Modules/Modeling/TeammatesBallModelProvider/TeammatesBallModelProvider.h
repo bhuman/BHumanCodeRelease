@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -25,15 +25,14 @@ MODULE(TeammatesBallModelProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(TeamData),
+  REQUIRES(ReceivedTeamMessages),
   REQUIRES(WorldModelPrediction),
   PROVIDES(TeammatesBallModel),
   LOADS_PARAMETERS(
   {,
-    (int) inactivityInvalidationTimeSpan,     /**< Minimum time to go back in ball buffer (in case of a problem) */
     (int) ballLastSeenTimeout,                /**< After this amount of time (in ms), a ball is not considered anymore */
     (int) ballDisappearedTimeout,             /**< After this amount of time (in ms), a disappeared ball is not valid anymore */
-    (int) timestampTolerance,                 /**< Maximum difference (in ms) between two timestamps to still considered to be the same*/
+    (int) timestampTolerance,                 /**< Maximum difference (in ms) between two timestamps to still considered to be the same */
   }),
 });
 

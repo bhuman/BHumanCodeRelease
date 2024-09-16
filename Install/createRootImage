@@ -15,7 +15,7 @@ rootDir="/tmp/b-human-root"
 naoOPN=""
 naoImage="/tmp/nao-image.ext3"
 naoImageDir="/tmp/nao-image-dir"
-rootImage="${baseDir}/root.ext3"
+rootImage="${baseDir}/root-$(date +%Y-%m-%d).ext3"
 
 usage() {
   echo "usage:"
@@ -103,7 +103,7 @@ set -eu
 DEBIAN_FRONTEND=noninteractive apt-get update -y
 DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y alsa gdb htop i2c-tools libusb-1.0-0 openssh-server pciutils rsync ubuntu-minimal vim wpasupplicant
+DEBIAN_FRONTEND=noninteractive apt-get install -y alsa gdb htop i2c-tools libssl3 libusb-1.0-0 openssh-server pciutils rsync ubuntu-minimal vim wpasupplicant
 
 # wpa_supplicant does not need to run by itself, it will be started by netplan if necessary.
 systemctl disable wpa_supplicant.service

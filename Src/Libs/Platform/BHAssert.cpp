@@ -41,7 +41,7 @@ void Assert::print(const char* file, int line, const std::string& message)
 {
 #ifdef WINDOWS
   const std::string expandedMessage = std::string(file) + ":" + std::to_string(line) + ": " + message + "\n";
-  OutputDebugString(expandedMessage.c_str());
+  OutputDebugStringA(expandedMessage.c_str());
 #else
   std::cerr << file << ":" << line << ": " << message << std::endl;
 #endif
@@ -51,6 +51,8 @@ void Assert::abort()
 {
 #ifdef WINDOWS
   __debugbreak();
+#elif defined MACOS && defined __x86_64__
+  __builtin_trap();
 #else
   ::abort();
 #endif

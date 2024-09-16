@@ -23,6 +23,7 @@ MODULE(ECImageProvider,
   LOADS_PARAMETERS(
   {,
     (bool) disableColor,
+    (bool) extractChroma,
   }),
 });
 
@@ -42,6 +43,14 @@ private:
   void update(OptionalECImage& theOptionalECImage) override;
   void compileE();
   void compileEC();
+  /**
+   * Extracts single channel chromacity images.
+   * As chromacity is only in half resolution in width dimension due to YUYV encoding of the camera,
+   * the extracted image get provided in half resolution (width and height).
+   * Therefore the values are linearly interpolated in the height dimension.
+   * @param eCImage
+   */
+  void extractChromaticity(ECImage& eCImage);
 
 public:
   ~ECImageProvider();

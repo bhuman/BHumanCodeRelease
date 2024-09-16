@@ -9,38 +9,54 @@ if [ "`uname`" = "Darwin" ]; then
   WORDSTART="[[:<:]]"
 fi
 
-grep -ER "^(MAKE_MODULE|SKILL_IMPLEMENTATION)\(" \
-| sed 's%:.*%%' \
-| sort \
-| while read CPP; do
-  H="${CPP%.*}.h"
-  if [ ! -f "$H" ]; then
-    H="$CPP"
-    CPP=
-  fi
-  PROVIDES="$(grep "^ *PROVIDES" "$H" | sed -e 's%^[^(]*(%%' -e 's%).*%%' | sort)"
-  MATCH="$(tr <<<"$PROVIDES" '\n' '|' | sed -e 's%|$%%' -e 's%^$%SOMETHING_THAT_NEVER_OCCURS%')"
-  REQUIRES="$(grep -E "^ *(REQUIRES|USES)" "$H" | sed -e 's%^[^(]*(%%' -e 's%).*%%' | grep -vE "$MATCH" | sort)"
-  MATCH="$(tr <<<"$REQUIRES" '\n' '|' | sed 's%|$%%')"
-  OTHER=
-  if [ ! -z "$(grep 'SkillBehaviorControl\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/Options" -name "*.h")"
-  elif [ ! -z "$(grep 'FallDownStateProvider\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(dirname "$CPP")/Options.h"
-  elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
-  elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
-    OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
-  fi
-  USED="$(cat $H $CPP $OTHER \
-  | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
-  | tr '|' '\n' \
-  | grep -E "^the($MATCH)$" \
+UNUSED="$(
+  grep -R "^MAKE_MODULE(" \
+  | sed 's%:.*%%' \
   | sort \
-  | uniq \
-  | sed 's%^the%%')"
-  DIFF="$(diff --side-by-side --suppress-common-lines <(echo "$REQUIRES") <(echo "$USED"))"
-  if [ ! -z "$DIFF" ]; then
-    echo "$H: $(sed <<<"$DIFF" 's%	.*%%' | tr '\n' ',' | sed 's%,$%%')"
-  fi
-done
+  | while read CPP; do
+    H="${CPP%.*}.h"
+    if [ ! -f "$H" ]; then
+      H="$CPP"
+      CPP=
+    fi
+    PROVIDES="$(grep "^ *PROVIDES" "$H" | sed -e 's%^[^(]*(%%' -e 's%).*%%' | sort)"
+    MATCH="$(tr <<<"$PROVIDES" '\n' '|' | sed -e 's%|$%%' -e 's%^$%SOMETHING_THAT_NEVER_OCCURS%')"
+    REQUIRES="$(
+      (
+        grep -E "^ *(REQUIRES|USES)" "$H" | sed -e 's%^[^(]*(%%' -e 's%).*%%'
+        if [ ! -z "$(grep 'StrategyBehaviorControl\.cpp' <<<"$CPP")" ]; then
+          grep -E "^ *_\(" "../Tools/BehaviorControl/Strategy/BehaviorBase.h" | sed -e 's%^[^(]*(%%' -e 's%).*%%'
+        fi
+      ) | grep -vE "$MATCH" | sort | uniq)"
+    MATCH="$(tr <<<"$REQUIRES" '\n' '|' | sed 's%|$%%')"
+    OTHER=
+    if [ ! -z "$(grep 'SkillBehaviorControl\.cpp' <<<"$CPP")" ]; then
+      OTHER="$(find "$(dirname "$CPP")/Options"  "$(dirname "$CPP")/Skills" -name "*.h" -o -name "*.cpp")"
+    elif [ ! -z "$(grep 'StrategyBehaviorControl\.cpp' <<<"$CPP")" ]; then
+      OTHER="$(find "$(dirname "$CPP")" -name "*.h" -o -name "*.cpp")"
+      CPP=
+    elif [ ! -z "$(grep 'FallDownStateProvider\.cpp' <<<"$CPP")" ]; then
+      OTHER="$(dirname "$CPP")/Options.h"
+    elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
+      OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
+    elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
+      OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
+    fi
+    USED="$(cat $H $CPP $OTHER \
+    | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \
+    | tr '|' '\n' \
+    | grep -E "^the($MATCH)$" \
+    | sort \
+    | uniq \
+    | sed 's%^the%%')"
+    DIFF="$(diff --side-by-side --suppress-common-lines <(echo "$REQUIRES") <(echo "$USED"))"
+    if [ ! -z "$DIFF" ]; then
+      echo "$H: Unused requirement(s) $(sed <<<"$DIFF" 's%	.*%, %' | tr -d '\n' | sed 's%, $%%')"
+    fi
+  done
+)"
+
+if [ ! -z "$UNUSED" ]; then
+  echo "$UNUSED"
+  exit 1
+fi

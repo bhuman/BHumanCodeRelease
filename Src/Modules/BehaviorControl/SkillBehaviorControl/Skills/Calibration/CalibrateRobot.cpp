@@ -1,25 +1,19 @@
 /**
  * @file CalibrateRobot.cpp
  *
- *
  * @author Lukas Plecher
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/Configuration/CalibrationRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(CalibrateRobotImpl,
-{,
-  IMPLEMENTS(CalibrateRobot),
-  MODIFIES(CalibrationRequest),
-});
-
-class CalibrateRobotImpl : public CalibrateRobotImplBase
+option((SkillBehaviorControl) CalibrateRobot,
+       args((const CalibrationRequest&) request))
 {
-  void execute(const CalibrateRobot& p) override
+  initial_state(execute)
   {
-    theCalibrationRequest = p.request;
+    action
+    {
+      theCalibrationRequest = request;
+    }
   }
-};
-
-MAKE_SKILL_IMPLEMENTATION(CalibrateRobotImpl);
+}

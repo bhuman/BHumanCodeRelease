@@ -8,91 +8,143 @@
 
 #pragma once
 
-#include "Libs/Math/Random.h"
+#include "Math/Random.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/ClearTarget.h"
+#include "Representations/BehaviorControl/DribbleTarget.h"
+#include "Representations/BehaviorControl/ExpectedGoals.h"
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/GoaliePose.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
+#include "Representations/BehaviorControl/FieldRating.h"
 #include "Representations/BehaviorControl/IllegalAreas.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/InitialToReady.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
+#include "Representations/BehaviorControl/Libraries/LibLookActive.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
+#include "Representations/BehaviorControl/Libraries/LibWalk.h"
+#include "Representations/BehaviorControl/PathPlanner.h"
+#include "Representations/BehaviorControl/PassEvaluation.h"
+#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/TeamData.h"
-#include "Representations/Communication/RefereeSignal.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/CalibrationRequest.h"
+#include "Representations/Configuration/CameraCalibration.h"
+#include "Representations/Configuration/CameraCalibrationStatus.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Configuration/HeadLimits.h"
+#include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Configuration/KickInfo.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/Modeling/BallLostModel.h"
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
+#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/MotionControl/HeadMotionInfo.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
 #include "Representations/Perception/RefereePercept/RefereePercept.h"
+#include "Representations/Sensing/ArmContactModel.h"
+#include "Representations/Sensing/FallDownState.h"
+#include "Representations/Sensing/FootBumperState.h"
+#include "Representations/Sensing/IMUValueState.h"
+#include "Tools/BehaviorControl/HeadOrientation.h"
 #include "Tools/BehaviorControl/Strategy/PositionRole.h"
+#include "Tools/Motion/ReduceWalkSpeedType.h"
 #include "Debugging/Annotation.h"
 #include "Framework/Module.h"
 #include "Platform/SystemCall.h"
 #include <regex> // not needed in header, but would otherwise be broken by CABSL
+#include "Tools/BehaviorControl/Cabsl.h"
+
+#ifndef FULL_HEADER
+#include "SpeedUp.h"
+#endif
 
 class SkillBehaviorControl;
 
-#include "Representations/BehaviorControl/Skills.h"
-#ifdef __INTELLISENSE__
-#define INTELLISENSE_PREFIX SkillBehaviorControl::
-#endif
-#include "Tools/Cabsl.h"
-
 MODULE(SkillBehaviorControl,
 {,
+  REQUIRES(ArmContactModel),
+  REQUIRES(ArmMotionInfo),
+  REQUIRES(BallLostModel),
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(BehaviorParameters),
+  USES(CameraCalibration),
+  USES(CameraCalibrationStatus),
   REQUIRES(CameraInfo),
-  REQUIRES(CameraMatrix),
   REQUIRES(CameraStatus),
+  REQUIRES(ClearTarget),
   REQUIRES(DamageConfigurationBody),
+  REQUIRES(DribbleTarget),
   REQUIRES(EnhancedKeyStates),
+  REQUIRES(ExpectedGoals),
   REQUIRES(ExtendedGameState),
+  REQUIRES(FallDownState),
   REQUIRES(FieldBall),
+  REQUIRES(FieldInterceptBall),
   REQUIRES(FieldDimensions),
+  REQUIRES(FieldRating),
+  REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(GoaliePose),
+  REQUIRES(GlobalOpponentsModel),
+  REQUIRES(GlobalTeammatesModel),
+  REQUIRES(IMUValueState),
+  REQUIRES(HeadLimits),
+  REQUIRES(HeadMotionInfo),
   REQUIRES(IllegalAreas),
+  USES(IMUCalibration),
+  REQUIRES(IndirectKick),
+  REQUIRES(InitialToReady),
+  REQUIRES(JointAngles),
   REQUIRES(JointSensorData),
   REQUIRES(KickInfo),
   REQUIRES(LibCheck),
   REQUIRES(LibDemo),
+  REQUIRES(LibLookActive),
   REQUIRES(LibPosition),
+  REQUIRES(LibWalk),
   REQUIRES(MotionInfo),
   REQUIRES(ObstaclesFieldPercept),
   REQUIRES(ObstacleModel),
   REQUIRES(OdometryData),
+  REQUIRES(PassEvaluation),
+  REQUIRES(PathPlanner),
   REQUIRES(RefereePercept),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotHealth),
   REQUIRES(RobotPose),
+  REQUIRES(SharedAutonomyRequest),
   REQUIRES(SkillRequest),
   REQUIRES(StrategyStatus),
   REQUIRES(TeamData),
   REQUIRES(TeammatesBallModel),
+  REQUIRES(WalkingEngineOutput),
   PROVIDES(ActivationGraph),
   REQUIRES(ActivationGraph),
   PROVIDES(ArmMotionRequest),
@@ -101,26 +153,20 @@ MODULE(SkillBehaviorControl,
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
   PROVIDES(OptionalImageRequest),
-  PROVIDES(RefereeSignal),
   LOADS_PARAMETERS(
   {,
-    (std::vector<Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options,
-    (std::vector<Cabsl<SkillBehaviorControl>::OptionInfos::Option>) playingOptions,
-    (bool) useNewHandleCatchBallBehavior,
+    (std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options,
+    (std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) playingOptions,
+    (int) continueReceivePassTime, /**< If the teammate no longer communicates a pass, continue receive pass for this time. */
+    (int) ignoreReceivePassAfterTime, /**< If the communicated pass is too old, ignore it. */
   }),
 });
 
-class SkillBehaviorControl : public SkillBehaviorControlBase, public Cabsl<SkillBehaviorControl>
+class SkillBehaviorControl : public SkillBehaviorControlBase, public cabsl::Cabsl<SkillBehaviorControl>
 {
 public:
   /** Constructor. */
   SkillBehaviorControl();
-
-  /**
-   * Creates extended module info (union of this module's info and requirements of all skills).
-   * @return The extended module info.
-   */
-  static std::vector<ModuleBase::Info> getExtModuleInfo();
 
 private:
   /**
@@ -165,12 +211,11 @@ private:
    */
   void update(OptionalImageRequest& optionalImageRequest) override { optionalImageRequest = theOptionalImageRequest; }
 
-  /**
-   * Updates the referee signal.
-   * @param refereeSignal The provided referee signal.
-   */
-  void update(RefereeSignal& refereeSignal) override { refereeSignal = theRefereeSignal; }
+  unsigned lastReceivePassRequestTimestamp = 0;
+  int receivePassPlayerNumber = -1;
+  bool isSlowingDownLookActive = false;
 
+protected:
   /** Executes the skill request. */
   void executeRequest();
 
@@ -182,28 +227,14 @@ private:
   HeadMotionRequest theHeadMotionRequest; /**< The head motion request that is modified by the behavior. */
   MotionRequest theMotionRequest; /**< The motion request that is modified by the behavior. */
   OptionalImageRequest theOptionalImageRequest; /**< The request that decides whether an optional image should be send or not */
-  RefereeSignal theRefereeSignal; /**< The referee signal that should be sent to the GameController. */
 
-  SkillRegistry theSkillRegistry; /**< The manager of all skills. */
-
-#include "Representations/BehaviorControl/SkillStubs.h"
-#include "Options/PlaySoccer.h"
-#include "Options/HandleAnyPlaceDemo.h"
-#include "Options/HandleCatchBall.h"
-#include "Options/HandleCatchBall2023.h"
-#include "Options/HandleGameState.h"
-#include "Options/HandleGoalkeeperCatchBall.h"
-#include "Options/HandleIllegalAreas.h"
-#include "Options/HandlePenaltyKick.h"
-#include "Options/HandlePenaltyShootout.h"
-#include "Options/HandlePhotoMode.h"
-#include "Options/HandlePhysicalRobot.h"
-#include "Options/HandlePlayerState.h"
-#include "Options/HandleRefereeSignal.h"
-#include "Options/HandleReplayWalk.h"
-#include "Options/HandleStrikerLostBall.h"
-#include "Options/PenaltyShootout/PenaltyKeeper.h"
-#include "Options/PenaltyShootout/PenaltyTaker.h"
-#include "Options/HandleCameraCalibrationDataCollection.h"
-#include "Options/HandleReturnFromSideline.h"
+#include "Options/Options.h"
+#include "Skills/Arms/Arms.h"
+#include "Skills/Ball/Ball.h"
+#include "Skills/Calibration/Calibration.h"
+#include "Skills/Demo/Demo.h"
+#include "Skills/Head/Head.h"
+#include "Skills/Output/Output.h"
+#include "Skills/Support/Support.h"
+#include "Skills/Walk/Walk.h"
 };

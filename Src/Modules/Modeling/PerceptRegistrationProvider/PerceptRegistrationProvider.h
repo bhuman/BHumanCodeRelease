@@ -20,6 +20,8 @@
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
+#include "Representations/Perception/FieldFeatures/PenaltyAreaAndGoalArea.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Framework/Module.h"
 
 MODULE(PerceptRegistrationProvider,
@@ -29,8 +31,10 @@ MODULE(PerceptRegistrationProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLineIntersections),
   REQUIRES(FieldLines),
+  REQUIRES(GoalPostsPercept),
   REQUIRES(PenaltyMarkPercept),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
+  REQUIRES(PenaltyAreaAndGoalArea),
   PROVIDES(PerceptRegistration),
   LOADS_PARAMETERS(
   {,
@@ -44,7 +48,6 @@ MODULE(PerceptRegistrationProvider,
     (bool) useIntersectionDirections,                 /**< If set to false, the directions of intersections are ignored in the matching process. */
   }),
 });
-
 
 /**
  * @class PerceptRegistrationProvider
@@ -79,14 +82,14 @@ private:
       dir = end - start;
       length = dir.norm();
       dir.normalize();
-      isCenterLine = start.x() == 0.f && end.x() == 0.f;
+      isHalfwayLine = start.x() == 0.f && end.x() == 0.f;
     }
 
-    Vector2f start;    /**< The starting point of the line. */
-    Vector2f end;      /**< The ending point of the line. */
-    Vector2f dir;      /**< The normalized direction of the line (from starting point). */
-    float length;      /**< The length of the line. */
-    bool isCenterLine; /**< True, if the line is the center line. False otherwise. */
+    Vector2f start;     /**< The starting point of the line. */
+    Vector2f end;       /**< The ending point of the line. */
+    Vector2f dir;       /**< The normalized direction of the line (from starting point). */
+    float length;       /**< The length of the line. */
+    bool isHalfwayLine; /**< True, if the line is the halfway line. False otherwise. */
   };
 
   Vector2f ownPenaltyMarkWorldModel;                          /**< Original position of own penalty mark (in field coordinates) */
@@ -135,13 +138,13 @@ private:
   void registerSingleAbsolutePoseMeasurement(const Pose2f& pose, const FieldFeature& measurement, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements);
 
   /**
-  * A FieldFeature is - in most cases - ambiguous. This functions tries to find the
-  * most likely of the two possibilities.
-  * @param robotPose The assumed current robot pose
-  * @param fieldFeature The absolute pose measurement / field feature representation
-  * @param pickedPose A reference to a post. The more likely of the two hypotheses will be assigned to it.
-  * @return true, if one the two hypotheses appears to be more likely than the other one. false, if not.
-  */
+   * A FieldFeature is - in most cases - ambiguous. This functions tries to find the
+   * most likely of the two possibilities.
+   * @param robotPose The assumed current robot pose
+   * @param fieldFeature The absolute pose measurement / field feature representation
+   * @param pickedPose A reference to a post. The more likely of the two hypotheses will be assigned to it.
+   * @return true, if one the two hypotheses appears to be more likely than the other one. false, if not.
+   */
   bool pickPoseFromFieldFeature(const Pose2f& robotPose, const FieldFeature& fieldFeature, Pose2f& pickedPose) const;
 
   /**
@@ -187,7 +190,7 @@ private:
    * @param intersectionPercept The position of the perceived intersection (in robot coordinates)
    * @param intersectionWorldModel The position of the real intersection (in field coordinates)
    * @return true, if a matching intersection was found
-  */
+   */
   bool getCorrespondingIntersection(const Pose2f& pose, const FieldLineIntersections::Intersection& intersectionPercept, Vector2f& intersectionWorldModel) const;
 
   /**
@@ -198,7 +201,7 @@ private:
    * @param intersectionPercept The position of the perceived intersection (in robot coordinates)
    * @param intersectionWorldModel The position of the real intersection (in field coordinates)
    * @return true, if a matching intersection was found
-  */
+   */
   bool getCorrespondingIntersectionNoDirections(const Pose2f& pose, const FieldLineIntersections::Intersection& intersectionPercept, Vector2f& intersectionWorldModel) const;
 
   /**
@@ -219,7 +222,7 @@ private:
    * @param lineLength The length of the line
    * @param isPartOfCenterCircle Set to true by this function, if the given line appears to be on the center circle.
    * @return A pointer to the line entry in the world model (if a normal line was found) or a nullptr (otherwise). Special case: If the line is on the center circle, nullptr is returned, too, but isPartOfCenterCircle is set to true
-  */
+   */
   const WorldModelFieldLine* getPointerToCorrespondingLineInWorldModel(const Pose2f& pose, const Vector2f& start, const Vector2f& end, float lineLength, bool& isPartOfCenterCircle) const;
 
   /**
@@ -239,6 +242,6 @@ private:
    * @param length The length of the line
    * @param point The point from which the distance to the line is computed
    * @return The distance from the point to the line
-  */
+   */
   float getSqrDistanceToLineSegment(const Vector2f& base, const Vector2f& dir, float length, const Vector2f& point) const;
 };

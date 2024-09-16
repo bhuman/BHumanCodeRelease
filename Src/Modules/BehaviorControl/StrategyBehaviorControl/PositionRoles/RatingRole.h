@@ -1,7 +1,7 @@
 /**
  * @file RatingRole.h
  *
- * This file declares the RatingRole a base class for position roles based on maximising a rating function.
+ * This file declares the RatingRole a base class for position roles based on maximizing a rating function.
  * It tries to maximize a rating function.
  * For that it uses gradient ascent.
  *
@@ -12,7 +12,7 @@
 
 #include "Tools/BehaviorControl/Strategy/PositionRole.h"
 #include "Tools/BehaviorControl/KickSelection.h"
-#include "Math/RingBufferWithSum.h"
+#include "Tools/BehaviorControl/Strategy/Agent.h"
 
 class RatingRole : public PositionRole
 {
@@ -26,7 +26,8 @@ class RatingRole : public PositionRole
     (ColorRGBA)(213, 17, 48) worstEvaluationColor, /**< Red color in RGB corresponding to a pass evaluation value of 0 in the heatmap */
     (ColorRGBA)(0, 104, 180) bestEvaluationColor, /**< Blue color in RGB corresponding to a pass evaluation value of 1 in the heatmap */
     (unsigned)(20) positionBufferSize, /**< The size of the position buffer. */
-    (float)(1000.f) baseDeviation, /**< The deviation around the base pose from where to draw sample points for random new initialisation */
+    (float)(1000.f) baseDeviation, /**< The deviation around the base pose from where to draw sample points for random new initialization */
+    (float)(1.2f) lastPosBonus, /**< Hysteresis for last position rating. */
 
     // start and stop thresholds (can (and some should) be overridden by the explicit role)
     (float)(0.f) startThreshold, /**< the rating has to be at least this much better at the destination (normalized for the target pose) to start moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
@@ -38,7 +39,7 @@ class RatingRole : public PositionRole
     (float)(150.f) stopTranslationThreshold, /**< threshold for how much the translation pose can differ to stop non the less */
   });
 
-  Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agents& teammates) override;
+  Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agent& self, const Agents& teammates) override;
 
   //returns true if the current pose is not good enough, so we should adapt
   bool shouldStart(const Pose2f& target) const override;
@@ -64,10 +65,10 @@ class RatingRole : public PositionRole
   bool changedRole = true;
   Vector2f pos = Vector2f::Zero();
 
-  const Vector2f opponentGoal = Vector2f(theFieldDimensions.xPosOpponentGroundLine, 0.f);
+  const Vector2f opponentGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f);
 
   //needed for drawing
-  Vector2f upperFieldCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
+  Vector2f upperFieldCorner = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
   Vector2f gridCornerLower; /**< Corner point with smallest coordinates for the heatmap to be to be drawn */
   Vector2f gridCornerUpper; /**< Corner point with largest coordinates for the heatmap to be drawn */
   Vector2i cellsNumber; /**< Number of grid cells on the corresponding axis, or resolution for the heatmap */
@@ -85,6 +86,7 @@ protected:
   Vector2f base;
   std::vector<Vector2f> region;
   Vector2f ball;
+  Agent agent; //The agent which executes the role.
 
   bool drawHeatmap = false;
 

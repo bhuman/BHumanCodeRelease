@@ -50,6 +50,7 @@ protected:
   friend class DrawingWidget;
   friend class ImageWidget;
   friend class FieldWidget;
+  friend class SACFieldWidget;
 };
 
 /** The widget that is placed in the client area of the dock widget. */
@@ -122,9 +123,10 @@ protected:
   bool event(QEvent* event) override;
 
   /**
-   * Sets the transform in the \c painter .
+   * Sets the transform.
+   * @param painter The painter the transform is set in.
    */
-  void updateTransform();
+  void updateTransform(QPainter& painter);
 
   /**
    * Paint all drawings that are active.

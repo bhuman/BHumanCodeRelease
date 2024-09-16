@@ -17,6 +17,8 @@ void ECImageProvider::update(ECImage& ecImage)
   ecImage.grayscaled.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.saturated.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.hued.setResolution(theCameraInfo.width, theCameraInfo.height);
+  ecImage.blueChromaticity.setResolution(theCameraInfo.width / 2, theCameraInfo.height / 2);
+  ecImage.redChromaticity.setResolution(theCameraInfo.width / 2, theCameraInfo.height / 2);
 
   if(theCameraImage.timestamp > 10 && static_cast<int>(theCameraImage.width) == theCameraInfo.width / 2)
   {
@@ -33,6 +35,8 @@ void ECImageProvider::update(ECImage& ecImage)
 
       ecFunc(theCameraInfo.width * theCameraInfo.height / 16, theCameraImage[0], ecImage.grayscaled[0], ecImage.saturated[0], ecImage.hued[0]);
     }
+    if(extractChroma)
+      extractChromaticity(ecImage);
     ecImage.timestamp = theCameraImage.timestamp;
   }
 }
@@ -387,6 +391,8 @@ void ECImageProvider::update(ECImage& ecImage)
   ecImage.grayscaled.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.saturated.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.hued.setResolution(theCameraInfo.width, theCameraInfo.height);
+  ecImage.blueChromaticity.setResolution(theCameraInfo.width / 2, theCameraInfo.height / 2);
+  ecImage.redChromaticity.setResolution(theCameraInfo.width / 2, theCameraInfo.height / 2);
 
   if(theCameraImage.timestamp > 10 && static_cast<int>(theCameraImage.width) == theCameraInfo.width / 2)
   {
@@ -395,6 +401,8 @@ void ECImageProvider::update(ECImage& ecImage)
       updateSSE<true, _supportsAVX2>(src, theCameraImage.width, theCameraImage.height, ecImage.grayscaled, ecImage.hued, ecImage.saturated);
     else
       updateSSE<false, _supportsAVX2>(src, theCameraImage.width, theCameraImage.height, ecImage.grayscaled, ecImage.hued, ecImage.saturated);
+    if(extractChroma)
+      extractChromaticity(ecImage);
     ecImage.timestamp = theCameraImage.timestamp;
   }
 }
@@ -402,6 +410,27 @@ void ECImageProvider::update(ECImage& ecImage)
 ECImageProvider::~ECImageProvider() {}
 
 #endif
+
+void ECImageProvider::extractChromaticity(ECImage& eCImage)
+{
+  ASSERT(theCameraImage.width == static_cast<unsigned int>(theCameraInfo.width / 2));
+  STOPWATCH("module:ECImageProvider:extractChromaticity")
+  {
+    PixelTypes::GrayscaledPixel* uPos = eCImage.blueChromaticity[0];
+    PixelTypes::GrayscaledPixel* vPos = eCImage.redChromaticity[0];
+    const PixelTypes::YUYVPixel* yuyvUpperRowPos = theCameraImage[0];
+    const PixelTypes::YUYVPixel* yuyvLowerRowPos = theCameraImage[0] + theCameraImage.width;
+    // += theCameraImage.width to alternate iterating and skipping rows
+    for(unsigned int yPos = 0; yPos < theCameraImage.height; yPos += 2, yuyvUpperRowPos += theCameraImage.width, yuyvLowerRowPos += theCameraImage.width)
+    {
+      for(unsigned int xPos = 0; xPos < theCameraImage.width; ++xPos, ++yuyvUpperRowPos, ++yuyvLowerRowPos, ++uPos, ++vPos)
+      {
+        *uPos = (yuyvUpperRowPos->u + yuyvLowerRowPos->u) >> 1;
+        *vPos = (yuyvUpperRowPos->v + yuyvLowerRowPos->v) >> 1;
+      }
+    }
+  }
+}
 
 void ECImageProvider::update(OptionalECImage& theOptionalECImage)
 {

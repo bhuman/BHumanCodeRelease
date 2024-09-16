@@ -100,7 +100,7 @@ bool Joystick::init()
     CFDictionaryRef maskArray[2];
     maskArray[0] = Joystick::Private::copyDevicesMask(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
     maskArray[1] = Joystick::Private::copyDevicesMask(kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
-    CFArrayRef mask = CFArrayCreate(NULL, (const void**)maskArray, 2, NULL);
+    CFArrayRef mask = CFArrayCreate(nullptr, reinterpret_cast<const void**>(maskArray), 2, nullptr);
     IOHIDManagerSetDeviceMatchingMultiple(static_cast<IOHIDManagerRef>(const_cast<void*>(p->hidManager)), mask);
     CFRelease(mask);
     CFRelease(maskArray[0]);
@@ -150,6 +150,8 @@ bool Joystick::init()
                     {
                       CFRetain(elem);
                       int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
+                      if(std::abs(axis - 4) == 1)
+                        axis = 8 - axis;
                       p->axisIds[axis] = elem;
                       p->axisMin[axis] = static_cast<int>(IOHIDElementGetLogicalMin(elem));
                       p->axisMax[axis] = static_cast<int>(IOHIDElementGetLogicalMax(elem));

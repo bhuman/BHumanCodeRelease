@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Representations/MotionControl/OdometryData.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesPerceptorData.h"
 #include "Framework/Module.h"

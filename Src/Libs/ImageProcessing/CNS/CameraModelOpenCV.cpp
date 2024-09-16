@@ -154,7 +154,7 @@ void CameraModelOpenCV::distort(double& xDist, double& yDist, double x, double y
     return;
   }
   double r2 = x * x + y * y;
-  if(r2 > rMax * rMax) // signularity or not unique
+  if(r2 > rMax * rMax) // singularity or not unique
   {
     xDist = numeric_limits<float>::quiet_NaN();
     yDist = numeric_limits<float>::quiet_NaN();
@@ -172,7 +172,7 @@ void CameraModelOpenCV::distort(double& xDist, double& yDist, double x, double y
 void CameraModelOpenCV::distort(double& xDist, double& yDist, Eigen::Matrix2d& jac, double x, double y) const
 {
   double r2 = x * x + y * y;
-  if(r2 > rMax * rMax) // signularity or not unique
+  if(r2 > rMax * rMax) // singularity or not unique
   {
     xDist = numeric_limits<float>::quiet_NaN();
     yDist = numeric_limits<float>::quiet_NaN();
@@ -203,7 +203,7 @@ void CameraModelOpenCV::undistort(double& xUndist, double& yUndist, double x, do
     return;
   }
   double r2 = x * x + y * y;
-  if(r2 > rMaxPrime * rMaxPrime) // signularity or not unique
+  if(r2 > rMaxPrime * rMaxPrime) // singularity or not unique
   {
     xUndist = numeric_limits<float>::quiet_NaN();
     yUndist = numeric_limits<float>::quiet_NaN();

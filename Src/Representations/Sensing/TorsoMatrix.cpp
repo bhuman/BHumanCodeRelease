@@ -1,28 +1,6 @@
 #include "TorsoMatrix.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Debugging/Plot.h"
-#include "Math/Rotation.h"
-
-void TorsoMatrix::setTorsoMatrix(const InertialData& theInertialData, const RobotModel& theRobotModel, const GroundContactState& theGroundContactState)
-{
-  const Vector3f axis(theInertialData.angle.x(), theInertialData.angle.y(), 0.0f);
-  const RotationMatrix torsoRotation = Rotation::AngleAxis::unpack(axis);
-
-  // calculate "center of hip" position from left foot
-  const Vector3f fromLeftFoot = -torsoRotation * theRobotModel.soleLeft.translation;
-
-  // calculate "center of hip" position from right foot
-  const Vector3f fromRightFoot = -torsoRotation * theRobotModel.soleRight.translation;
-
-  // and construct the matrix
-  translation << 0.5f * (fromLeftFoot.head<2>() + fromRightFoot.head<2>()), std::max(fromLeftFoot.z(), fromRightFoot.z());
-  rotation = torsoRotation;
-
-  covariance << Matrix3f::Zero(), Matrix3f::Zero(), Matrix3f::Zero(), theInertialData.orientation3DCov;
-
-  // valid?
-  isValid = theGroundContactState.contact;
-}
 
 void TorsoMatrix::draw()
 {

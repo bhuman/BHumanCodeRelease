@@ -17,7 +17,9 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
   // Predict robot pose:
   worldModelPrediction.robotPose = theRobotPose + theOdometer.odometryOffset;
 
-  // Update kick time, if ball speed increased and ball was near
+  // Update kick time, if ball speed increased and ball was near.
+  // This is necessary, as the ball model might have a changed velocity due to a kick but was not
+  // seen after kicking. The model was changed by code for handling contacts.
   if((theBallModel.estimate.velocity.norm() > ballSpeedAtLastExecution) &&
      theBallModel.estimate.position.norm() < 400.f)
   {
@@ -54,11 +56,6 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
       : Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f);
     worldModelPrediction.ballPosition = theRobotPose.inverse() * knownBallPosition;
     worldModelPrediction.ballVelocity = Vector2f::Zero();
-    worldModelPrediction.ballIsPredictedByRule = true;
-  }
-  else
-  {
-    worldModelPrediction.ballIsPredictedByRule = false;
   }
 
   worldModelPrediction.timeWhenBallLastSeen = theBallModel.timeWhenLastSeen;

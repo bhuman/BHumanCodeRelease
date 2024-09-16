@@ -16,14 +16,14 @@
 #include "Math/Rotation.h"
 
 bool InverseKinematic::calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Vector2f& bodyRotation,
-                                     JointAngles& jointAngles, const RobotDimensions& robotDimensions, float ratio)
+                                     JointAngles& jointAngles, const RobotDimensions& robotDimensions, float legLengthThreshold, float ratio)
 {
   const Quaternionf bodyRot = Rotation::aroundX(bodyRotation.x()) * Rotation::aroundY(bodyRotation.y());
-  return calcLegJoints(positionLeft, positionRight, bodyRot, jointAngles, robotDimensions, ratio);
+  return calcLegJoints(positionLeft, positionRight, bodyRot, jointAngles, robotDimensions, legLengthThreshold, ratio);
 }
 
 bool InverseKinematic::calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation,
-                                     JointAngles& jointAngles, const RobotDimensions& robotDimensions, float ratio)
+                                     JointAngles& jointAngles, const RobotDimensions& robotDimensions, float legLengthThreshold, float ratio)
 {
   static const Pose3f rotPi_4 = RotationMatrix::aroundX(pi_4);
   static const Pose3f rotMinusPi_4 = RotationMatrix::aroundX(-pi_4);
@@ -87,7 +87,7 @@ bool InverseKinematic::calcLegJoints(const Pose3f& positionLeft, const Pose3f& p
   jointAngles.angles[Joints::rAnkleRoll] = std::asin(-rFootRotationC2.y());
   const float maxLen = h1 + h2;
 
-  return hl <= maxLen &&  hr <= maxLen;
+  return hl <= maxLen + legLengthThreshold && hr <= maxLen + legLengthThreshold;
 }
 
 void InverseKinematic::calcHeadJoints(const Vector3f& position, const Angle imageTilt, const RobotDimensions& robotDimensions,
@@ -159,8 +159,8 @@ unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Vector3f& el
 unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Pose3f& handPose, const RobotDimensions& robotDimensions,
                                          const JointLimits& jointLimits, JointAngles& jointAngles)
 {
-  const Vector3f elbowPositon = handPose * Vector3f(-robotDimensions.handOffset.x() - robotDimensions.xOffsetElbowToWrist, 0.f, 0.f);
-  return calcArmJoints(arm, elbowPositon, handPose.translation, robotDimensions, jointLimits, jointAngles);
+  const Vector3f elbowPosition = handPose * Vector3f(-robotDimensions.handOffset.x() - robotDimensions.xOffsetElbowToWrist, 0.f, 0.f);
+  return calcArmJoints(arm, elbowPosition, handPose.translation, robotDimensions, jointLimits, jointAngles);
 }
 
 //this is not correct for the normal purpose, but for pointing it is

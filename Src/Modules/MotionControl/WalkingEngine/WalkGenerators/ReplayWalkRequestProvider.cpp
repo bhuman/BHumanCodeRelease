@@ -129,9 +129,15 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
       replayRequest.walkKickStep = walkKickStep;
       replayRequest.isWalkKickPhase = wasInWalkKick;
       if(wasInWalkKick)
+      {
         replayRequest.step = step; // for InWalkKick use the calculated one
+        replayRequest.walkKickStep.isReplayWalkRequest = true;
+      }
       else
+      {
         replayRequest.step = actualLastStepTarget; // otherwise use the one from the log
+        replayRequest.walkKickStep.currentKickVariant = std::optional<WalkKickVariant>(); // set empty
+      }
       motionRequests[currentWalkRequest].walkRequests.push_back(replayRequest);
       lastSaveTimestamp = theFrameInfo.time;
       OUTPUT_TEXT("recorded");

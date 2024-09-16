@@ -11,6 +11,7 @@
 
 #include "Math/Boundary.h"
 #include "Math/Pose2f.h"
+#include "Math/Pose3f.h"
 #include "Streaming/Enum.h"
 #include "Streaming/AutoStreamable.h"
 #include "Math/Geometry.h"
@@ -21,27 +22,30 @@ STREAMABLE(SimpleFieldDimensions,
   (float) xPosOpponentFieldBorder,
   (float) xPosOpponentGoal,
   (float) xPosOpponentGoalPost,
-  (float) xPosOpponentGroundLine,
+  (float) xPosOpponentGoalLine,
   (float) xPosOpponentPenaltyArea,
   (float) xPosOpponentPenaltyMark,
   (float) xPosPenaltyStrikerStartPosition,
-  (float) xPosHalfWayLine,
+  (float) xPosHalfwayLine,
   (float) xPosOwnPenaltyArea,
   (float) xPosOwnPenaltyMark,
-  (float) xPosOwnGroundLine,
+  (float) xPosOwnGoalLine,
   (float) xPosOwnGoalPost,
   (float) xPosOwnGoal,
   (float) xPosOwnFieldBorder,
   (float) xPosOpponentGoalArea,
   (float) xPosOwnGoalArea,
+  (float) xPosReturnFromPenalty,
 
   (float) yPosLeftFieldBorder,
-  (float) yPosLeftSideline,
+  (float) yPosLeftReturnFromPenalty,
+  (float) yPosLeftTouchline,
   (float) yPosLeftPenaltyArea,
   (float) yPosLeftGoal,
   (float) yPosRightGoal,
   (float) yPosRightPenaltyArea,
-  (float) yPosRightSideline,
+  (float) yPosRightTouchline,
+  (float) yPosRightReturnFromPenalty,
   (float) yPosRightFieldBorder,
   (float) yPosLeftGoalArea,
   (float) yPosRightGoalArea,
@@ -156,7 +160,7 @@ public:
    */
   bool isInsideField(const Vector2f& p) const
   {
-    return p.x() <= xPosOpponentGroundLine && p.x() >= xPosOwnGroundLine && p.y() <= yPosLeftSideline && p.y() >= yPosRightSideline;
+    return p.x() <= xPosOpponentGoalLine && p.x() >= xPosOwnGoalLine && p.y() <= yPosLeftTouchline && p.y() >= yPosRightTouchline;
   }
 
   /**
@@ -164,7 +168,7 @@ public:
   */
   bool isInsideOwnHalf(const Vector2f& p) const
   {
-    return p.x() <= xPosHalfWayLine && p.x() >= xPosOwnGroundLine && p.y() <= yPosLeftSideline && p.y() >= yPosRightSideline;
+    return p.x() <= xPosHalfwayLine && p.x() >= xPosOwnGoalLine && p.y() <= yPosLeftTouchline && p.y() >= yPosRightTouchline;
   }
 
   /**
@@ -175,14 +179,14 @@ public:
   float clipToField(Vector2f& v) const
   {
     const Vector2f old = v;
-    if(v.x() > xPosOpponentGroundLine)
-      v.x() = xPosOpponentGroundLine;
-    else if(v.x() < xPosOwnGroundLine)
-      v.x() = xPosOwnGroundLine;
-    if(v.y() > yPosLeftSideline)
-      v.y() = yPosLeftSideline;
-    else if(v.y() < yPosRightSideline)
-      v.y() = yPosRightSideline;
+    if(v.x() > xPosOpponentGoalLine)
+      v.x() = xPosOpponentGoalLine;
+    else if(v.x() < xPosOwnGoalLine)
+      v.x() = xPosOwnGoalLine;
+    if(v.y() > yPosLeftTouchline)
+      v.y() = yPosLeftTouchline;
+    else if(v.y() < yPosRightTouchline)
+      v.y() = yPosRightTouchline;
     return (v - old).norm();
   }
 
@@ -202,6 +206,11 @@ public:
    * The method draws the field lines.
    */
   void draw() const;
+
+  /**
+   * The method draws the field in 3D.
+   */
+  void draw3D() const;
 
   /**
    * Draws the goal frame.

@@ -9,7 +9,7 @@
  * 2.1 check if a FallPhase should start or if the current MotionPhase is done
  * 2.2 create a new MotionPhase based on the MotionRequest
  * 2.3 create a new MotionPhase based on the previous one
- * 2.4 decide which one to use (follow up MotionPhases are prioritised)
+ * 2.4 decide which one to use (follow up MotionPhases are prioritized)
  * 3. calculate head angles (if current MotionPhase allows it)
  * 4. calculate the current arm joint angles (if current MotionPhase allows it)
  * 5. calculate the current (other) joint angles
@@ -20,8 +20,7 @@
 
 #pragma once
 
-#include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
-#include "Representations/MotionControl/CalibrationGenerator.h"
+#include "Representations/MotionControl/PhotoModeGenerator.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -34,6 +33,7 @@
 #include "Representations/MotionControl/DiveGenerator.h"
 #include "Representations/MotionControl/DribbleGenerator.h"
 #include "Representations/MotionControl/FallGenerator.h"
+#include "Representations/MotionControl/FreezeGenerator.h"
 #include "Representations/MotionControl/GetUpGenerator.h"
 #include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
@@ -50,6 +50,7 @@
 #include "Representations/MotionControl/WalkAtAbsoluteSpeedGenerator.h"
 #include "Representations/MotionControl/WalkAtRelativeSpeedGenerator.h"
 #include "Representations/MotionControl/WalkGenerator.h"
+#include "Representations/MotionControl/WalkOutOfBallDirection.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
 #include "Representations/MotionControl/WalkToBallAndKickGenerator.h"
 #include "Representations/Sensing/FallDownState.h"
@@ -60,11 +61,14 @@
 #include "Tools/Motion/MotionGenerator.h"
 #include "Tools/Motion/MotionPhase.h"
 
+struct UpperFrameInfo;
+struct LowerFrameInfo;
+
 MODULE(MotionEngine,
 {,
   REQUIRES(ArmKeyFrameGenerator),
   REQUIRES(ArmMotionRequest),
-  REQUIRES(CalibrationGenerator),
+  REQUIRES(PhotoModeGenerator),
   REQUIRES(CognitionFrameInfo),
   REQUIRES(UpperFrameInfo),
   REQUIRES(LowerFrameInfo),
@@ -74,6 +78,7 @@ MODULE(MotionEngine,
   REQUIRES(FallDownState),
   REQUIRES(FallGenerator),
   REQUIRES(FrameInfo),
+  REQUIRES(FreezeGenerator),
   REQUIRES(GetUpGenerator),
   REQUIRES(GyroOffset),
   REQUIRES(HeadMotionGenerator),
@@ -95,6 +100,7 @@ MODULE(MotionEngine,
   REQUIRES(WalkAtAbsoluteSpeedGenerator),
   REQUIRES(WalkAtRelativeSpeedGenerator),
   REQUIRES(WalkGenerator),
+  REQUIRES(WalkOutOfBallDirection),
   REQUIRES(WalkToPoseGenerator),
   REQUIRES(WalkToBallAndKickGenerator),
   PROVIDES(JointRequest),
@@ -108,8 +114,8 @@ MODULE(MotionEngine,
     (int)(3000) emergencySitDownDelay, /**< If no new data from Cognition arrived for this duration, the robot sits down. */
     (int)(100) brokenJointAutomaticStiffness, /**< If a broken joint is detected, reduce its stiffness. TODO set it to a lower value after tests on real NAO! */
     (std::vector<Joints::Joint>)({Joints::lAnkleRoll, Joints::rAnkleRoll}) brokenJointsReducesStiffnessList, /**< Only automatically reduce stiffness of those joints. */
-    (Vector2a)(20_deg, 50_deg) uprightAngle,
-    (int)(5000) uprightWarningTime,
+    (Vector2a)(20_deg, 30_deg) uprightAngle,
+    (int)(10000) uprightWarningTime,
   }),
 });
 

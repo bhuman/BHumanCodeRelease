@@ -4,7 +4,7 @@
 * Implementation of a module that tries to find the combination of
 * a penalty mark and the line of the penalty area that is
 * closest to it (the line between penalty mark and the field's
-* center line) in the current field percepts. This is the combination
+* halfway line) in the current field percepts. This is the combination
 * that this module is looking for:
 *
 *                  (goal)

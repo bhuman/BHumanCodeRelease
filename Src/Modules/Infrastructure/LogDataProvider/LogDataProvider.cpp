@@ -57,14 +57,13 @@ void LogDataProvider::update(CameraImage& cameraImage)
     }
   }
 
-  static const float distance = 300.f;
+  static const float distance = 500.f;
 
   DECLARE_DEBUG_DRAWING3D("representation:CameraImage", "camera");
   IMAGE3D("representation:CameraImage", distance, 0, 0, 0, 0, 0,
           distance * theCameraInfo.width / theCameraInfo.focalLength,
           distance * theCameraInfo.height / theCameraInfo.focalLength,
           cameraImage);
-  DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(cameraImage));
 }
 
 void LogDataProvider::update(GroundTruthOdometryData& groundTruthOdometryData)
@@ -153,7 +152,8 @@ bool LogDataProvider::isFrameDataComplete(bool ack)
   {
     if(ack)
     {
-      OUTPUT(idLogResponse, bin, '\0');
+      if(SystemCall::getMode() == SystemCall::logFileReplay)
+        OUTPUT(idLogResponse, bin, '\0');
       theInstance->frameDataComplete = false;
     }
     return true;

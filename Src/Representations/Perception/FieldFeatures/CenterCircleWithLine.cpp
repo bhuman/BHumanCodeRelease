@@ -2,7 +2,7 @@
 * @file CenterCircleWithLine.cpp
 *
 * Implementation of a struct that represents the combination of
-* the center circle and the center line crossing the circle:
+* the center circle and the halfway line crossing the circle:
 *
 *                   _____
 *                  *     *      (ugly, I know)

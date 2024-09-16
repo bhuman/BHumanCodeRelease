@@ -6,6 +6,7 @@
  * @author Jan Fiedler
  */
 
+#include "Cognition.h"
 #include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
 #include "Representations/Communication/BHumanMessageOutputGenerator.h"
@@ -31,7 +32,8 @@ Cognition::~Cognition()
 bool Cognition::beforeFrame()
 {
   // Currently replaying a log file?
-  const bool replay = SystemCall::getMode() == SystemCall::logFileReplay && LogDataProvider::exists();
+  const bool replay = (SystemCall::getMode() == SystemCall::logFileReplay || SystemCall::getMode() == SystemCall::remoteRobot)
+                      && LogDataProvider::exists();
 
   // During replay if there is no new frame and no delayed frame, there is nothing to process
   if(replay && !LogDataProvider::isFrameDataComplete(false) && !delayedLogCounter)

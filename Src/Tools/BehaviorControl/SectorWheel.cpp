@@ -12,12 +12,12 @@
 #include <cmath>
 #include <limits>
 
-void SectorWheel::begin(const Vector2f& positionOnField)
+void SectorWheel::begin(const Vector2f& positionOnField, float distance)
 {
   this->positionOnField = positionOnField;
 
   wheel.clear();
-  wheel.emplace_back(Rangea(-pi, pi), std::numeric_limits<float>::max(), Sector::free);
+  wheel.emplace_back(Rangea(-pi, pi), distance, Sector::free);
 }
 
 const std::list<SectorWheel::Sector>& SectorWheel::finish()
@@ -99,10 +99,9 @@ void SectorWheel::addSector(const Rangea& angleRange, float distance, Sector::Ty
   addSectorNormalized(angleRange, distance, type);
 }
 
-
 /**
-* @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
-*/
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ */
 void SectorWheel::addSectorNormalized(const Rangea& angleRange, float distance, Sector::Type type)
 {
   if(angleRange.max == angleRange.min)

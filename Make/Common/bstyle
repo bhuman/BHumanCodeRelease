@@ -26,8 +26,6 @@ fi
 -e "/^$/N;/^\n$/D" | sed \
 -e "/#include/s%\\\\%/%g" \
 -e "s%\(^ *\)MODULE(%\1struct MODULE %" \
--e "s%\(^ *\)CARD(%\1struct CARD %" \
--e "s%\(^ *\)SKILL_IMPLEMENTATION(%\1struct SKILL_IMPLEMENTATION %" \
 -e "s%\(^ *\)DECLARE_REPRESENTATIONS_AND_MAP(%\1struct DECLARE_REPRESENTATIONS_AND_MAP%" \
 -e "s%\(^ *\)DEFINES_PARAMETERS(%\1struct DEFINES_PARAMETERS%" \
 -e "s%\(^ *\)LOADS_PARAMETERS(%\1struct LOADS_PARAMETERS%" \
@@ -67,6 +65,7 @@ fi
 -e "s%${WORDSTART}float$WORDEND\( *[*&][*&]*\)%float_LAMBDA_HACK int\1%g" \
 -e "s%${WORDSTART}short$WORDEND\( *[*&][*&]*\)%short_LAMBDA_HACK int\1%g" \
 -e "s%${WORDSTART}unsigned$WORDEND\( *[*&][*&]*\)%unsigned_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}auto$WORDEND\( *[*&][*&]*\)%auto_LAMBDA_HACK int\1%g" \
 | tr '\t' '\n' \
 | "$ASTYLE" \
 --style=allman \
@@ -86,8 +85,6 @@ fi
 | tr -d '\r' \
 | sed \
 -e "s%\(^ *\)struct MODULE %\1MODULE(%" \
--e "s%\(^ *\)struct CARD %\1CARD(%" \
--e "s%\(^ *\)struct SKILL_IMPLEMENTATION %\1SKILL_IMPLEMENTATION(%" \
 -e "s%\(^ *\)struct DECLARE_REPRESENTATIONS_AND_MAP%\1DECLARE_REPRESENTATIONS_AND_MAP(%" \
 -e "s%\(^ *\)struct DEFINES_PARAMETERS%\1DEFINES_PARAMETERS(%" \
 -e "s%\(^ *\)struct LOADS_PARAMETERS%\1LOADS_PARAMETERS(%" \

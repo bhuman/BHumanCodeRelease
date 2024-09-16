@@ -13,12 +13,12 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/InertialSensorData.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Tools/Cabsl.h"
+#include "Tools/BehaviorControl/Cabsl.h"
 
 MODULE(FallDownStateProvider,
 {,
@@ -59,7 +59,7 @@ MODULE(FallDownStateProvider,
   }),
 });
 
-class FallDownStateProvider : public FallDownStateProviderBase, public Cabsl<FallDownStateProvider>
+class FallDownStateProvider : public FallDownStateProviderBase, public cabsl::Cabsl<FallDownStateProvider>
 {
 public:
   FallDownStateProvider();
@@ -71,6 +71,7 @@ private:
   bool toUpright; /**< Are all conditions for a return to upright from a fall met? */
   bool isPickedUp; /**< Are all conditions for a return to picked up from a fall met? */
   bool useTorsoOrientation; /**< Torso orientation is big enough to be used. */
+  bool disablePickUp; /**< For simulated robots, pick up is disabled. */
   const InertialSensorData* theSensorData; /**< Pointer to the sensor data.*/
   FallDownState* theFallDownState; /**< Pointer to the fall down state updated.*/
   FallDownState::Direction direction; /**< The fall direction. Always computed, even if not falling. */

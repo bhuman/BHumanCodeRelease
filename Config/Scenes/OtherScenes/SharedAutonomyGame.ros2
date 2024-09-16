@@ -1,0 +1,70 @@
+<Simulation>
+
+  <Include href="../Includes/NaoV6H25.rsi2"/>
+  <Include href="../Includes/Ball2016SPL.rsi2"/>
+  <Include href="../Includes/Field2020SPL.rsi2"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="teams">
+      <Compound name="B-Human">
+        <Compound name="5"/>
+        <Compound name="black"/>
+        <Compound name="purple"/>
+      </Compound>
+      <Compound name="B-Team">
+        <Compound name="70"/>
+        <Compound name="red"/>
+        <Compound name="blue"/>
+      </Compound>
+    </Compound>
+
+    <Compound name="robots">
+      <Body ref="Nao" name="robot1">
+        <Translation x="2" y="-3" z="320mm"/>
+        <Rotation z="-90degree"/>
+        <Set name="NaoColor" value="black"/>
+      </Body>
+      <Body ref="Nao" name="robot2">
+        <Translation x="1" y="-3" z="320mm"/>
+        <Rotation z="-90degree"/>
+        <Set name="NaoColor" value="black"/>
+      </Body>
+      <Body ref="Nao" name="robot21">
+        <Translation x="-4.5" z="320mm"/>
+        <Set name="NaoColor" value="blue"/>
+      </Body>
+      <Body ref="Nao" name="robot22">
+        <Translation x="-3.3" y="-0.35" z="320mm"/>
+        <Set name="NaoColor" value="red"/>
+      </Body>
+    </Compound>
+
+    <Compound name="extras"/>
+
+    <Compound name="puppets">
+      <Body ref="Nao" name="remoteAttacker">
+        <Translation x="1000mm" z="-1000mm"/>
+        <Set name="NaoColor" value="black"/>
+      </Body>
+      <Body ref="Nao" name="remoteDefender">
+        <Translation x="-1000mm" z="-1000mm"/>
+        <Set name="NaoColor" value="red"/>
+      </Body>
+    </Compound>
+
+    <Compound name="balls">
+      <Body ref="ball">
+        <Translation z="1m"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+    <Compound name="scenarios">
+      <Compound name="SharedAutonomyAttacker"/>
+      <Compound name="SharedAutonomyDefender"/>
+    </Compound>
+  </Scene>
+</Simulation>

@@ -12,9 +12,11 @@
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Streaming/EnumIndexedArray.h"
 #include "RobotParts/Joints.h"
 #include <SimRobotCore2.h>
+#include <random>
 
 class SimulatedRobot3D : public SimulatedRobot
 {
@@ -30,10 +32,17 @@ protected:
   void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const override;
   void setJointRequest(const JointRequest& jointRequest) const override;
   void toggleCamera() override;
-  void getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData) override;
+  void getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& rawInertialSensorData) override;
   void getAndSetMotionData(const MotionRequest& motionRequest, MotionInfo& motionInfo) override;
-  void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation) override;
+  void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation, bool resetDynamics) override;
   void enablePhysics(bool enable) override;
+  void enableGravity(bool enable) override;
+
+  void enableSensorWhiteNoise(const bool enable) override;
+
+  void enableSensorDelay(const bool enable) override;
+
+  void enableSensorDiscretization(const bool enable) override;
   bool getPose2f(const SimRobot::Object* obj, Pose2f& pose) const override;
   void getPose3f(const SimRobot::Object* obj, Pose3f& pose) const override;
 
@@ -56,7 +65,36 @@ private:
   ENUM_INDEXED_ARRAY(CameraInfo, CameraInfo::Camera) cameraInfos; /**< Information about the upper camera. */
   RobotDimensions robotDimensions;
 
-  const Angle jointVariance = 0.00064_deg;  /**< Variance of a joint measurement (in deg²). */
+  std::random_device rand {};
+  std::default_random_engine randomGenerator {rand()};
+  std::normal_distribution<float> generalNormalDistribution {0.f, 1.f};
+
+  bool newGyroMeasurement = false;
+
   const Angle gyroVariance = 0.00000387f; /**< Variance of the gyro (in (rad / s)²). */
   const float accVariance = 0.000374f; /**< White noise variance of the accelerometer measurements (in (m/s²)²). */
+
+  const Angle jointDiscretizationStep = 360_deg / (1 << 12);
+
+  bool useWhiteNoise = true; /**< If true white noise is applied to the sensor readings. */
+  bool useTimeDelay = true; /**< If true a time delay of the sensor data is simulated. This includes the simulation of alternating new data from the IMU. */
+  bool useDiscretization = true; /**< If true the discretization of the sensor data is simulated. */
+
+  RawInertialSensorData lastInertialData; /**< Inertial data from the last frame that was skipped */
+
+  /**
+   * Discretizes the value if this type of distortion is active.
+   * @param value value to discretize
+   * @param discretizationStep step size of the discretization
+   * @return the discretized value
+   */
+  float applyDiscretization(float value, float discretizationStep) const;
+
+  /**
+   * Applies Gaussian noise to the given value if this type of distortion is active.
+   * @param value base value to add Gaussian noise to
+   * @param variance variance of the added distortion
+   * @return value + noise
+   */
+  float applyWhiteNoise(float value, float variance);
 };

@@ -29,7 +29,7 @@ option(Root)
       }
       else if(!torsoUpright)
         goto staggering;
-      else if(!theGroundContactState.contact)
+      else if(!theGroundContactState.contact && !disablePickUp)
         goto uprightToPickedUp;
       else if(toSquatting)
       {
@@ -159,7 +159,7 @@ option(Root)
         say("Upright");
         goto upright;
       }
-      else if(!theGroundContactState.contact)
+      else if(!theGroundContactState.contact && !disablePickUp)
         goto squattingToPickedUp;
     }
     action

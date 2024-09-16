@@ -1,4 +1,7 @@
 #!/bin/bash
+# Download calibration files from an actual robot.
+# The files are then stored in the configuration
+# directory for that robot.
 
 basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
 
@@ -32,4 +35,8 @@ bodyName=$(echo $robotNames | cut -d " " -f 2)
 files=("Config/Robots/$headName/$bodyName/cameraCalibration.cfg"
        "Config/Robots/$bodyName/Body/imuCalibration.cfg")
 
-rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "nao@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"
+if [ "$(uname)" == "Darwin" ]; then
+  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "nao@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"
+else
+  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" nao@$ip${files[*]//Config/:Config} "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"
+fi

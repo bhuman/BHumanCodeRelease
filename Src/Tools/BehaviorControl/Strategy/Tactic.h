@@ -19,8 +19,12 @@ STREAMABLE(Tactic,
   ENUM(Type,
   {,
     none,
+    t011,
+    t020,
     t123,
+    t100,
     t222,
+    t033,
   });
 
   STREAMABLE(Position,
@@ -29,6 +33,7 @@ STREAMABLE(Tactic,
     {,
       none,
       goalkeeper,
+      attackingGoalkeeper,
       defender,
       defenderL,
       defenderR,
@@ -40,6 +45,7 @@ STREAMABLE(Tactic,
       forwardM,
       forwardL,
       forwardR,
+      sacPasser,
     });
 
     Position() = default;
@@ -58,7 +64,14 @@ STREAMABLE(Tactic,
      * @param doIt Whether to actually mirror the type.
      * @return The mirrored (or not) type.
      */
-    static Type mirrorIf(Type type, bool doIt),
+    static Type mirrorIf(Type type, bool doIt);
+
+    /**
+     * Checks whether the position type is a goalkeeper (attackingGoalkeeper or goalkeeper).
+     * @param type The input type
+     * @return True if its a goalkeeper of any kind (attackingGoalkeeper or goalkeeper) else False.
+     */
+    static bool isGoalkeeper(Tactic::Position::Type type),
 
     (Type)(none) type, /**< The position type which is defined here. */
     (Pose2f) pose, /**< The "home" pose of this position. */

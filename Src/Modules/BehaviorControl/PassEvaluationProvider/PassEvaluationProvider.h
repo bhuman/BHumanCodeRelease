@@ -62,26 +62,24 @@ private:
   bool calcPassTargetInField = true;
   bool calcShotLineFree = true;
   bool calcShotDistance = true;
+  bool isPositioningDrawing = false;
   unsigned int lastUpdateParameters;
-  Vector2f ballOnField;
-  Angle ballToLeftGoalPost;
-  Angle ballToRightGoalPost;
-  Angle ballToLeftGoalArea;
-  Angle ballToRightGoalArea;
   Vector2f leftGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal - theBallSpecification.radius * 2.f);
   Vector2f rightGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal + theBallSpecification.radius * 2.f);
-  Vector2f opponentFieldCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
-  Vector2f ownFieldCorner = Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline);
+  Vector2f opponentFieldCorner = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
+  Vector2f ownFieldCorner = Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline);
   std::vector<Vector2f> opponentsOnField;
   Vector2i cellsNumber; /**< Resolution for the heatmap i.e. number of grid cells on the corresponding axis */
   std::vector<ColorRGBA> cellColors;
 
   /**
-   * Estimates the probability that a pass from the current ball position to the given target position would be successful, taking into account the known obstacles.
+   * Estimates the probability that a pass from a given start position (e.g. the current ball position) to a given target position would be successful, taking into account the known obstacles.
+   * @param baseOnField The start position to pass from.
    * @param pointOnField The target position to pass to.
+   * @param Is the rating for the positioning role?
    * @return The estimated probability of a successful pass.
    */
-  float getRating(const Vector2f& pointOnField);
+  float getRating(const Vector2f& baseOnField, const Vector2f& targetOnField, const bool isPositioning);
 
   /**
    * Updates the member variables related to the ball and obstacles only once per frame.
@@ -90,26 +88,29 @@ private:
 
   /**
    * Updates minimum distance of the obstacles to the target itself as well as the line from the ball to the target.
-   * @param pointOnField The target position to pass to.
+   * @param baseOnField The start position to pass from.
+   * @param targetOnField The target position to pass to.
    * @param obstacleOnField The obstacle to check the distance for.
    * @param minDistToTarget The distance of the closest obstacle to the target position (could be updated by reference).
    * @param minDistToLine The distance of the closest obstacle to the line from the ball to the target position (could be updated by reference).
    */
-  void updateMinDistances(const Vector2f& pointOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine) const;
+  void updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine) const;
 
   /**
    * Estimates the probability that the position is not blocking a teammate's direct shot at the opponent's goal.
-   * @param pointOnField The target position to pass to.
+   * @param baseOnField The start position to pass from.
+   * @param targetOnField The target position to pass to.
    * @return Probability that the point is outside of the angular range of the ball to the goal posts.
    */
-  float isShotLineFree(const Vector2f& pointOnField) const;
+  float isShotLineFree(const Vector2f& baseOnField, const Vector2f& targetOnField) const;
 
   /**
    * Estimates the probability that the distance from the ball to the target is within the range of a kick.
-   * @param pointOnField The target position to pass to.
+   * @param baseOnField The start position to pass from.
+   * @param targetOnField The target position to pass to.
    * @return Probability that there is a suitable kick.
    */
-  float isTargetInRange(const Vector2f& pointOnField) const;
+  float isTargetInRange(const Vector2f& baseOnField, const Vector2f& targetOnField) const;
 
   /**
    * Calculates distance from a given point to the closest field border.

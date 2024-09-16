@@ -28,7 +28,19 @@ namespace Drawings3D
     sphere,
     ellipsoid,
     cylinder,
-    image
+    image,
+    renderOptions
+  };
+
+  /**
+   * Bit masks for render options.
+   * They can be passed to RENDER_OPTIONS3D.
+   */
+  enum RenderOption : unsigned char
+  {
+    disableTransparency = 1, /**< The drawing skips the pass with 50% transparency. */
+    disableOpacity = 2, /**< The drawing skips the pass with 100% opacity. */
+    disableDepth = 4, /**< The drawing will be overwritten by anything drawn afterwards. */
   };
 };
 
@@ -276,8 +288,8 @@ class DrawingManager3D : public DrawingManager {};
  * The translation is the last thing done (after rotating and scaling).
  * @param id The drawing the translation should be applied to.
  * @param x mms to translate in x direction.
- * @param y mms to translate in x direction.
- * @param z mms to translate in x direction.
+ * @param y mms to translate in y direction.
+ * @param z mms to translate in z direction.
  */
 #define TRANSLATE3D(id, x, y, z) \
   do \
@@ -469,7 +481,7 @@ class DrawingManager3D : public DrawingManager {};
  * A macro that adds a circle to a drawing.
  * @param id The drawing to which the circle will be added.
  * @param origin The pose of the circle center point
- *            Note: The circle will be created around the x-axis.
+ *            Note: The circle will be created around the z-axis.
  * @param radius The radius of the circle.
  * @param wideness Defines the wideness of the circle.
  * @param color The color of the circle.
@@ -478,8 +490,8 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      Vector3f from = (origin).translated(Vector3f(-(wideness) / 2,f, 0, 0)).translation; \
-      Vector3f to = (origin).translated(Vector3f((wideness) / 2.f, 0, 0)).translation; \
+      Vector3f from = (origin).translated(Vector3f(0, 0, -(wideness) / 2.f)).translation; \
+      Vector3f to = (origin).translated(Vector3f(0, 0, (wideness) / 2.f)).translation; \
       CYLINDERLINE3D(id, from, to, radius, color); \
     } \
   while(false)
@@ -539,6 +551,75 @@ class DrawingManager3D : public DrawingManager {};
     } \
   while(false)
 
+/**
+ * Draw a horizontal ring sector.
+ * @param id The drawing to which the ring sector will be added.
+ * @param center The position of the center of the ring.
+ * @param minAngle The smaller angle of the sector.
+ * @param maxAngle The bigger angle of the sector. If it is smaller than minAngle,
+ *                 2pi will be added automatically.
+ * @param minRadius The inner radius of the ring.
+ * @param maxRadius The outer radius of the ring.
+ * @param color The color in which the sector is drawn.
+ */
+#define RING_SECTOR3D(id, center, minAngle, maxAngle, minRadius, maxRadius, color) \
+  do \
+    COMPLEX_DRAWING3D(id) \
+    { \
+      const auto _quad = [](const Vector3f& _center, float _minAngle, float _maxAngle, float _minRadius, float _maxRadius, const ColorRGBA& _color) \
+      { \
+        const Vector3f _points[4] = \
+        { \
+          {_center.x() + std::cos(_minAngle) * _minRadius, _center.y() + std::sin(_minAngle) * _minRadius, _center.z()}, \
+          {_center.x() + std::cos(_minAngle) * _maxRadius, _center.y() + std::sin(_minAngle) * _maxRadius, _center.z()}, \
+          {_center.x() + std::cos(_maxAngle) * _maxRadius, _center.y() + std::sin(_maxAngle) * _maxRadius, _center.z()}, \
+          {_center.x() + std::cos(_maxAngle) * _minRadius, _center.y() + std::sin(_maxAngle) * _minRadius, _center.z()} \
+        }; \
+        QUAD3D(id, _points[0], _points[1], _points[2], _points[3], _color); \
+      }; \
+      const Vector3f& _center = static_cast<const Vector3f&>(center); \
+      const float _minAngle = static_cast<Angle>(minAngle); \
+      float _maxAngle = static_cast<float>(maxAngle); \
+      const float _minRadius = static_cast<float>(minRadius); \
+      const float _maxRadius = static_cast<float>(maxRadius); \
+      const ColorRGBA& _color = static_cast<const ColorRGBA&>(color); \
+      if(_maxAngle < _minAngle) \
+        _maxAngle += pi2; \
+      const float _step = pi2 / 32.f; \
+      const float _minFull = std::ceil(_minAngle / _step) * _step; \
+      const float _maxFull = std::floor(_maxAngle / _step) * _step; \
+      if(_maxFull <= _minFull + 0.0001f) \
+        _quad(_center, _minAngle, _maxAngle, _minRadius, _maxRadius, _color); \
+      else \
+      { \
+        if(_minAngle < _minFull - 0.0001f) \
+          _quad(_center, _minAngle, _minFull, _minRadius, _maxRadius, _color); \
+        float _angle = _minFull; \
+        for(; _angle <= _maxFull - _step; _angle += _step) \
+          _quad(_center, _angle, _angle + _step, _minRadius, _maxRadius, _color); \
+        if(_angle < _maxAngle - 0.0001f) \
+          _quad(_center, _angle, _maxAngle, _minRadius, _maxRadius, _color); \
+      } \
+    } \
+  while(false)
+
+/**
+ * Specify specific rendering options for a drawing.
+ * @param id The drawing in which the options will be set.
+ * @param options The bits for the different options. Currently, only
+ *                Drawings3D::disableTransparency is supported.
+ */
+#define RENDER_OPTIONS3D(id, options) \
+  do \
+    COMPLEX_DRAWING3D(id) \
+    { \
+      OUTPUT(idDebugDrawing3D, bin, \
+        static_cast<char>(Drawings3D::renderOptions) << \
+        Global::getDrawingManager3D().getDrawingId(id) << \
+        static_cast<char>(options)); \
+    } \
+  while(false)
+
 #else
 //Ignore everything
 #define DEBUG_DRAWING3D(id, type) if(false)
@@ -564,4 +645,6 @@ class DrawingManager3D : public DrawingManager {};
 #define CYLINDERARROW3D(id, from, to, radius, arrowLen, arrowRadius, color) static_cast<void>(0)
 #define IMAGE3D(id, x, y, z, a, b, c, width, height, i) static_cast<void>(0)
 #define FOOT3D(id, pose, left, color) static_cast<void>(0)
+#define RING_SECTOR3D(id, center, minAngle, maxAngle, minRadius, maxRadius, color) static_cast<void>(0)
+#define RENDER_OPTIONS3D(id, options) static_cast<void>(0)
 #endif

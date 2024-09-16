@@ -1,0 +1,6 @@
+#!/bin/bash
+# Start the version of SimRobot that was compiled most recently and
+# connect to the remote-controlled robot in the Shared Autonomy
+# Challenge. Locally, the robot is shown wearing a black jersey.
+
+source "$(dirname "$(which "$0")")/sacRed" $*

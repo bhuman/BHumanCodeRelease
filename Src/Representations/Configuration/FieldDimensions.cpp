@@ -14,11 +14,10 @@
 #include "Math/Eigen.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Debugging/Modify.h"
 #include "Framework/Blackboard.h"
 #include <algorithm>
-
-using namespace std;
 
 /**
  * Helper struct that supports the use of symbolic values in float fields.
@@ -59,8 +58,8 @@ protected:
     const auto i = values.find(buf);
     if(i != values.end())
       value = i->second * sign;
-    else if(!buf.empty() && (isdigit(buf[0]) || buf[0] == '.'))
-      value = static_cast<float>(strtod(buf.c_str(), nullptr)) * sign;
+    else if(!buf.empty() && (std::isdigit(buf[0]) || buf[0] == '.'))
+      value = static_cast<float>(std::strtod(buf.c_str(), nullptr)) * sign;
     else
       OUTPUT_ERROR("fieldDimensions.cfg: Unknown symbol '" << buf << "'");
 
@@ -134,10 +133,10 @@ void FieldDimensions::drawLines() const
   DEBUG_DRAWING("field lines", "drawingOnField")
   {
     const ColorRGBA lineColor(224, 224, 224);
-    for(vector<LinesTable::Line>::const_iterator i = fieldLines.lines.begin(); i != fieldLines.lines.end(); ++i)
+    for(const LinesTable::Line& line : fieldLines.lines)
     {
-      if(!i->isPartOfCircle)
-        LINE("field lines", i->from.x(), i->from.y(), i->to.x(), i->to.y(), fieldLinesWidth, Drawings::solidPen, lineColor);
+      if(!line.isPartOfCircle)
+        LINE("field lines", line.from.x(), line.from.y(), line.to.x(), line.to.y(), fieldLinesWidth, Drawings::solidPen, lineColor);
     }
 
     CIRCLE("field lines", centerCircle.center.x(), centerCircle.center.y(), centerCircle.radius, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
@@ -192,14 +191,14 @@ void FieldDimensions::drawPolygons() const
       const ColorRGBA& opp = colors[gameState.opponentTeam.fieldPlayerColor];
 
       Vector2f goal[4];
-      goal[0] = Vector2f(xPosOwnGroundLine - fieldLinesWidth * 0.5f, yPosLeftGoal);
-      goal[1] = Vector2f(xPosOwnGroundLine - fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[0] = Vector2f(xPosOwnGoalLine - fieldLinesWidth * 0.5f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOwnGoalLine - fieldLinesWidth * 0.5f, yPosRightGoal);
       goal[2] = Vector2f(xPosOwnGoal, yPosRightGoal);
       goal[3] = Vector2f(xPosOwnGoal, yPosLeftGoal);
       POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, own, Drawings::solidBrush, own);
 
-      goal[0] = Vector2f(xPosOpponentGroundLine + fieldLinesWidth * 0.5f, yPosLeftGoal);
-      goal[1] = Vector2f(xPosOpponentGroundLine + fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[0] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth * 0.5f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth * 0.5f, yPosRightGoal);
       goal[2] = Vector2f(xPosOpponentGoal, yPosRightGoal);
       goal[3] = Vector2f(xPosOpponentGoal, yPosLeftGoal);
       POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, opp, Drawings::solidBrush, opp);
@@ -247,8 +246,8 @@ void FieldDimensions::drawDimensions(bool showValues) const
               + (showValues ? std::string(" = ") + std::to_string(static_cast<int>(length)) + " mm": ""));
   };
 
-  drawX(0, (yPosLeftFieldBorder + yPosLeftSideline) / 2.f, xPosOpponentFieldBorder, xText, "xPosOpponentFieldBorder");
-  drawX(0, (yPosLeftSideline + yPosLeftPenaltyArea) / 2.f, xPosOpponentGroundLine, xText, "xPosOpponentGroundLine");
+  drawX(0, (yPosLeftFieldBorder + yPosLeftTouchline) / 2.f, xPosOpponentFieldBorder, xText, "xPosOpponentFieldBorder");
+  drawX(0, (yPosLeftTouchline + yPosLeftPenaltyArea) / 2.f, xPosOpponentGoalLine, xText, "xPosOpponentGoalLine");
   drawX(0, (yPosLeftPenaltyArea + yPosLeftGoalArea) / 2.f, xPosOpponentPenaltyArea, xText, "xPosOpponentPenaltyArea");
   if(xPosOpponentGoalArea != xPosOpponentPenaltyArea)
     drawX(0, (yPosLeftGoalArea + yPosLeftGoal) / 2.f, xPosOpponentGoalArea, xText, "xPosOpponentGoalArea");
@@ -256,15 +255,83 @@ void FieldDimensions::drawDimensions(bool showValues) const
   drawX(0, 0, xPosOpponentPenaltyMark, xText, "xPosOpponentPenaltyMark");
   drawX(0, yPosRightGoal, xPosOpponentGoalPost, xText, "xPosOpponentGoalPost");
   drawY((xPosOwnFieldBorder + xPosOwnGoal) / 2.f, 0, yPosLeftFieldBorder, 0, "yPosLeftFieldBorder");
-  drawY((xPosOwnGoal + xPosOwnGroundLine) / 2.f, 0, yPosLeftGoal, 0, "yPosLeftGoal");
+  drawY((xPosOwnGoal + xPosOwnGoalLine) / 2.f, 0, yPosLeftGoal, 0, "yPosLeftGoal");
   if(yPosLeftGoalArea != yPosLeftPenaltyArea)
-    drawY((xPosOwnGroundLine + xPosOwnGoalArea) / 2.f, 0, yPosLeftGoalArea, 0, "yPosLeftGoalArea");
+    drawY((xPosOwnGoalLine + xPosOwnGoalArea) / 2.f, 0, yPosLeftGoalArea, 0, "yPosLeftGoalArea");
   drawY((xPosOwnGoalArea + xPosOwnPenaltyArea) / 2.f, 0, yPosLeftPenaltyArea, 0, "yPosLeftPenaltyArea");
-  drawY((xPosOwnPenaltyArea - centerCircleRadius) / 2.f, 0, yPosLeftSideline, 0, "yPosLeftSideline");
+  drawY((xPosOwnPenaltyArea - centerCircleRadius) / 2.f, 0, yPosLeftTouchline, 0, "yPosLeftTouchline");
   drawY(-centerCircleRadius, -centerCircleRadius, centerCircleRadius, 0, "centerCircleRadius");
   drawY(xPosOwnGoalPost + goalPostRadius + ends, yPosRightGoal - goalPostRadius, goalPostRadius, ends, "goalPostRadius");
   drawY(xPosOwnPenaltyMark + fieldLinesWidth / 2.f + ends, -penaltyMarkSize / 2.f, penaltyMarkSize, ends, "penaltyMarkSize");
   drawY(xPosOwnPenaltyArea + fieldLinesWidth / 2.f + ends, yPosRightPenaltyArea - fieldLinesWidth / 2.f, fieldLinesWidth, ends, "fieldLinesWidth");
+}
+
+void FieldDimensions::draw3D() const
+{
+  DEBUG_DRAWING3D("representation:FieldDimensions", "robot")
+  {
+    RENDER_OPTIONS3D("representation:FieldDimensions", Drawings3D::disableTransparency);
+
+    const ColorRGBA fieldColor(0, 70, 0);
+    const ColorRGBA lineColor(224, 224, 224);
+
+    // Carpet
+    {
+      const Vector3f points[4] =
+      {
+        {xPosOpponentFieldBorder, yPosRightFieldBorder, -1.f},
+        {xPosOpponentFieldBorder, yPosLeftFieldBorder, -1.f},
+        {xPosOwnFieldBorder, yPosLeftFieldBorder, -1.f},
+        {xPosOwnFieldBorder, yPosRightFieldBorder, -1.f}
+      };
+      QUAD3D("representation:FieldDimensions", points[0], points[1], points[2], points[3], fieldColor);
+    }
+
+    // Lines
+    for(const LinesTable::Line& line : fieldLines.lines)
+    {
+      const float length = (line.to - line.from).norm();
+      const Pose2f turn((line.to - line.from).angle(), line.from);
+      const Vector2f relative[4] =
+      {
+        {(line.isPartOfCircle ? 0.1f : 0.5f) * -fieldLinesWidth, fieldLinesWidth / 2.f},
+        {(line.isPartOfCircle ? 0.1f : 0.5f) * -fieldLinesWidth, -fieldLinesWidth / 2.f},
+        {length + (line.isPartOfCircle ? 0.1f : 0.5f) * fieldLinesWidth, -fieldLinesWidth / 2.f},
+        {length + (line.isPartOfCircle ? 0.1f : 0.5f) * fieldLinesWidth, fieldLinesWidth / 2.f}
+      };
+      const Vector2f points[4] =
+      {
+        turn * relative[0],
+        turn * relative[1],
+        turn * relative[2],
+        turn * relative[3]
+      };
+      QUAD3D("representation:FieldDimensions",
+             Vector3f(points[0].x(), points[0].y(), 0.f),
+             Vector3f(points[1].x(), points[1].y(), 0.f),
+             Vector3f(points[2].x(), points[2].y(), 0.f),
+             Vector3f(points[3].x(), points[3].y(), 0.f),
+             lineColor);
+    }
+
+    // Goals
+    {
+      const Vector3f points[6] =
+      {
+        {xPosOwnGoalPost, yPosLeftGoal, goalHeight / 2.f},
+        {xPosOwnGoalPost, yPosRightGoal, goalHeight / 2.f},
+        {xPosOpponentGoalPost, yPosLeftGoal, goalHeight / 2.f},
+        {xPosOpponentGoalPost, yPosRightGoal, goalHeight / 2.f},
+        {xPosOwnGoalPost, 0.f, goalHeight - goalPostRadius},
+        {xPosOpponentGoalPost, 0.f, goalHeight - goalPostRadius}
+      };
+      for(int i = 0; i < 4; ++i)
+        CYLINDER3D("representation:FieldDimensions", points[i].x(), points[i].y(), points[i].z(), 0, 0, 0, goalPostRadius, goalHeight, lineColor);
+      for(int i = 4; i < 6; ++i)
+        CYLINDER3D("representation:FieldDimensions", points[i].x(), points[i].y(), points[i].z(), 90_deg, 0, 0, goalPostRadius,
+                   yPosLeftGoal - yPosRightGoal, lineColor);
+    }
+  }
 }
 
 void FieldDimensions::LinesTable::push(const Vector2f& from, const Vector2f& to, bool isPartOfCircle)
@@ -281,7 +348,7 @@ void FieldDimensions::LinesTable::pushCircle(const Vector2f& center, float radiu
   Vector2f p1, p2;
   for(float a = 0; a <= pi_4; a += pi2 / numOfSegments)
   {
-    p1 = Vector2f(sin(a), cos(a)) * radius;
+    p1 = Vector2f(std::sin(a), std::cos(a)) * radius;
     if(a > 0)
     {
       push(center + p1, center + p2, true);
@@ -310,7 +377,7 @@ void FieldDimensions::read(In& stream)
 #else
     const char* filename = "field_dimensions.json";
 #endif
-    InMapFile jsonStream(filename, ~0);
+    InMapFile jsonStream(filename, ~bit(InMap::unusedAttribute));
     if(jsonStream.exists())
     {
       STREAMABLE(Dimensions,
@@ -351,9 +418,12 @@ void FieldDimensions::read(In& stream)
       }) dimsOpt;
 
       jsonStream >> dims;
-      InMapFile(filename, ~bit(InMap::missingAttribute)) >> dimsOpt;
+      InMapFile(filename, ~(bit(InMap::missingAttribute) | bit(InMap::unusedAttribute))) >> dimsOpt;
 
       const float lineWidth = 0.05f;
+      // The rulebook says this offset from the touchline should be 0.5m.
+      // However, it should be at least 0.2m inwards from the carpet border, unless the border strip is too narrow.
+      const float returnFromPenaltyOffsetY = std::clamp(dims.field.borderStripWidth - 0.2f, 0.f, 0.5f);
 
       // pre-define some values and use a template for field dimensions to generate everything else
       theStream = new InSymbolicMapFile(dimsOpt.field.goalBoxAreaLength != -1.f
@@ -364,12 +434,13 @@ void FieldDimensions::read(In& stream)
         {"xPosOpponentFieldBorder", dims.field.length * 500.f + dims.field.borderStripWidth * 1000.f},
         {"xPosOpponentGoal", dims.field.length * 500.f - lineWidth * 500.f + dims.goal.depth * 1000.f},
         {"xPosOpponentGoalPost", dims.field.length * 500.f + lineWidth * 500.f},
-        {"xPosOpponentGroundLine", dims.field.length * 500.f},
+        {"xPosOpponentGoalLine", dims.field.length * 500.f},
         {"xPosOpponentPenaltyArea", dims.field.length * 500.f - dims.field.penaltyAreaLength * 1000.f},
         {"xPosOpponentPenaltyMark", dims.field.length * 500.f - dims.field.penaltyCrossDistance * 1000.f},
         {"xPosOpponentGoalArea", dims.field.length * 500.f - dimsOpt.field.goalBoxAreaLength * 1000.f},
-        {"yPosLeftFieldBorder", dims.field.width * 500.f + dims.field.borderStripWidth * 1000},
-        {"yPosLeftSideline", dims.field.width * 500.f},
+        {"yPosLeftFieldBorder", dims.field.width * 500.f + dims.field.borderStripWidth * 1000.f},
+        {"yPosLeftReturnFromPenalty", dims.field.width * 500.f + returnFromPenaltyOffsetY * 1000.f},
+        {"yPosLeftTouchline", dims.field.width * 500.f},
         {"yPosLeftPenaltyArea", dims.field.penaltyAreaWidth * 500.f},
         {"yPosLeftGoal", dims.goal.innerWidth * 500.f + dims.goal.postDiameter * 500.f},
         {"yPosLeftGoalArea", dimsOpt.field.goalBoxAreaWidth * 500.f},

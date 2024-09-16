@@ -31,10 +31,16 @@ static void onSrcIgnore(j_decompress_ptr) {}
 
 JPEGImage::JPEGImage(const CameraImage& src)
 {
-  *this = src;
+  fromCameraImage(src);
 }
 
 JPEGImage& JPEGImage::operator=(const CameraImage& src)
+{
+  fromCameraImage(src);
+  return *this;
+}
+
+void JPEGImage::fromCameraImage(const CameraImage& src, int quality)
 {
   allocator.resize(src.width * src.height * sizeof(CameraImage::PixelType));
   width = src.width;
@@ -62,7 +68,7 @@ JPEGImage& JPEGImage::operator=(const CameraImage& src)
   cInfo.jpeg_color_space = JCS_CMYK;
   jpeg_set_defaults(&cInfo);
   cInfo.dct_method = JDCT_FASTEST;
-  jpeg_set_quality(&cInfo, 75, true);
+  jpeg_set_quality(&cInfo, quality, true);
 
   jpeg_start_compress(&cInfo, true);
 
@@ -73,10 +79,8 @@ JPEGImage& JPEGImage::operator=(const CameraImage& src)
   }
 
   jpeg_finish_compress(&cInfo);
-  size = unsigned((char unsigned*)cInfo.dest->next_output_byte - allocator.data());
+  size = static_cast<unsigned>(static_cast<char unsigned*>(cInfo.dest->next_output_byte) - allocator.data());
   jpeg_destroy_compress(&cInfo);
-
-  return *this;
 }
 
 void JPEGImage::toCameraImage(CameraImage& dest) const

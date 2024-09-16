@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/BehaviorControl/FieldRating.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
@@ -22,10 +23,11 @@
 
 MODULE(FieldRatingProvider,
 {,
-  REQUIRES(FieldBall),
+  REQUIRES(FieldInterceptBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GlobalTeammatesModel),
+  REQUIRES(IndirectKick),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   PROVIDES(FieldRating),
@@ -50,6 +52,7 @@ MODULE(FieldRatingProvider,
 
     // opponentGoal
     (float)(1.5f) attractValue, // max possible attract value for the potentialfield
+    (float)(-750) indirectGoalOffset, // If a goal shot is not allowed, shift the target position by this amount in the x-axis
     (float) attractRange, // if distance exceeds this range, the potentialfield has no influence
 
     // teammate
@@ -59,7 +62,7 @@ MODULE(FieldRatingProvider,
     (float)(500.f) minTeammatePassDistance, // teammate must stand at least this distance far away from us
     (float)(2000.f) maxTeammatePassDistance, // if teammate stands this far away (or more) then the rating is not reduced
     (float)(1000.f) teammateMinDistanceToObstacle,
-    (int)(1000) estimateTeamateIntoFuture, /**< Estimate the teammates position this much into the future (in ms). */
+    (int)(1000) estimateTeammateIntoFuture, /**< Estimate the teammates position this much into the future (in ms). */
     (float)(500.f) interpolationZoneInOwnHalf,
 
     // pass target
@@ -112,13 +115,14 @@ public:
 
 private:
 
-  bool fieldBorderDrawing;
-  bool goalDrawing;
-  bool goalAngleDrawing;
-  bool opponentDrawing;
-  bool teammateDrawing;
-  bool ballNearDrawing;
-  bool passTargetDrawing;
+  bool fieldBorderDrawing = false;
+  bool goalDrawing = false;
+  bool goalAngleDrawing = false;
+  bool opponentDrawing = false;
+  bool teammateDrawing = false;
+  bool ballNearDrawing = false;
+  bool passTargetDrawing = false;
+  bool modifyDrawingRating = false;
 
   // TODO what does RTV mean? I wrote this code, but have no idea, lol
   float fieldBorderRTV;

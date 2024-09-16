@@ -46,8 +46,6 @@ void BallContactCheckerProvider::update(BallContactChecker& ballContactChecker)
       return false;
     if(!theMotionInfo.isMotionStable)
       return false;
-    if(theWorldModelPrediction.ballIsPredictedByRule)
-       return false;
     return handleCollisionWithFeet(leftFootCenter, rightFootCenter, p, v, lastP, contactInfo);
   };
 }
@@ -136,16 +134,12 @@ bool BallContactCheckerProvider::handleCollisionWithFeet(const Vector2f& leftFoo
   // it is still possible that the ball is within the foot circles
   // if so, calculate a ball shift vector
   Vector2f ballShift = Vector2f::Zero();
-  if((ballPosition - leftFootCenter).squaredNorm() < sqr(assumedRadius))
-  {
-    Vector2f tmp = ballPosition - leftFootCenter;
-    ballShift += tmp.normalize(assumedRadius - (ballPosition - leftFootCenter).norm());
-  }
-  if((ballPosition - rightFootCenter).squaredNorm() < sqr(assumedRadius))
-  {
-    Vector2f tmp = ballPosition - rightFootCenter;
-    ballShift += tmp.normalize(assumedRadius - (ballPosition - rightFootCenter).norm());
-  }
+  const Vector2f ballPositionInLeftFootCenter = ballPosition - leftFootCenter;
+  const Vector2f ballPositionInRightFootCenter = ballPosition - rightFootCenter;
+  if(ballPositionInLeftFootCenter.squaredNorm() < sqr(assumedRadius))
+    ballShift += ballPositionInLeftFootCenter.normalized(assumedRadius - ballPositionInLeftFootCenter.norm());
+  if(ballPositionInRightFootCenter.squaredNorm() < sqr(assumedRadius))
+    ballShift += ballPositionInRightFootCenter.normalized(assumedRadius - ballPositionInRightFootCenter.norm());
   ballPosition += ballShift;
 
   // Compute new position and velocity

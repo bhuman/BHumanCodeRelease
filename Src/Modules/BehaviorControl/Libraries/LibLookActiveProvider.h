@@ -7,8 +7,8 @@
 #include "Framework/Module.h"
 #include "Debugging/Debugging.h"
 #include "Debugging/DebugDrawings.h"
+#include "Representations/BehaviorControl/AgentStates.h"
 #include "Representations/BehaviorControl/Libraries/LibLookActive.h"
-#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/HeadLimits.h"
@@ -28,6 +28,7 @@
 
 MODULE(LibLookActiveProvider,
 {,
+  REQUIRES(AgentStates),
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   USES(CameraCalibration),
@@ -41,7 +42,6 @@ MODULE(LibLookActiveProvider,
   REQUIRES(RobotDimensions),
   REQUIRES(RobotPose),
   REQUIRES(TeammatesBallModel),
-  REQUIRES(LibTeammates),
   REQUIRES(MotionInfo),
   REQUIRES(TorsoMatrix),
   PROVIDES(LibLookActive),
@@ -84,7 +84,7 @@ private:
 
   Angle calculatePan(const bool forceBall);
   Angle calculateTilt(const bool forceBall, const bool onlyOwnBall) const;
-  Angle calculateSpeed(const bool forceBall, const float targetPan) const;
+  Angle calculateSpeed(const bool forceBall, const float targetPan, const float slowdownFactor) const;
 
   bool shouldLookAtBall() const;
 
@@ -102,6 +102,6 @@ private:
   RingBufferWithSum<float, 180> translationSpeedBuffer;
   RingBufferWithSum<Angle, 120> rotationSpeedBuffer;
   void calculateSpeedFactors();
-  HeadTarget calculateHeadTarget(const bool withBall, const bool ignoreBall, const bool withOwnBall, bool fixTilt);
+  HeadTarget calculateHeadTarget(const bool withBall, const bool ignoreBall, const bool withOwnBall, bool fixTilt, float slowdownFactor);
   void update(LibLookActive& libLookActive) override;
 };

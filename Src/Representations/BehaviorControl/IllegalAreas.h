@@ -54,13 +54,13 @@ STREAMABLE(IllegalAreas,
   FUNCTION(bool(const Vector2f& positionOnField, float margin)) willPositionBeIllegal;
 
   /**
-   * Checks whether a given position will be illegal in the given periode of time.
+   * Checks whether a given position will be illegal in the given period of time.
    * @param positionOnField A position to check (assumed to be a point with no spatial extent).
    * @param margin A positive number extends the illegal areas.
-   * @param duration A periode of time to check if the current position will be illegal in that time.
-   * @return Whether the position will be illegal in the given periode of time.
+   * @param duration A period of time to check if the current position will be illegal in that time.
+   * @return Whether the position will be illegal in the given period of time.
    */
-  FUNCTION(bool(const Vector2f& positionOnField, float margin, float duration)) willPositionBeIllegalIn;
+  FUNCTION(bool(const Vector2f& positionOnField, float margin, int duration)) willPositionBeIllegalIn;
 
   /**
    * Checks whether two given positions on the field are within the same illegal area.

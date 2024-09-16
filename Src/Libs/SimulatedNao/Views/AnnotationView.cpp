@@ -242,7 +242,7 @@ void AnnotationWidget::applyFilter()
 void AnnotationWidget::simStop()
 {
 #ifdef MACOS
-  runInMainThread([=]{view.application->simStop();});
+  runInMainThread([this]{view.application->simStop();});
 #else
   view.application->simStop();
 #endif

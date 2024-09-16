@@ -86,8 +86,12 @@ class ObstacleHypothesis : public Obstacle
    */
   void measurement(const ObstacleHypothesis& measurement, const float weightedSum);
 
-  /** Trying to identify the type of the obstacle. */
-  void considerType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold);
+  /** Trying to identify the type of the obstacle. Sets the team. upright, and type attributes.
+   * @param measurement A new measurement of an obstacle
+   * @param teamThreshold Frickle parameter configured in module
+   * @param uprightThreshold Frickle parameter configured in module
+   */
+  void determineAndSetType(const ObstacleHypothesis& measurement, const int teamThreshold, const int uprightThreshold);
 
   /**
    * Whether the field boundary is further as this obstacle.

@@ -16,6 +16,7 @@ set_property(TARGET Tests PROPERTY FOLDER Apps)
 set_property(TARGET Tests PROPERTY MACOSX_BUNDLE_INFO_PLIST "${TESTS_ROOT_DIR}/Info.plist")
 set_property(TARGET Tests PROPERTY XCODE_GENERATE_SCHEME ON)
 set_property(TARGET Tests PROPERTY XCODE_PRODUCT_TYPE "com.apple.product-type.bundle.unit-test")
+set_property(TARGET Tests PROPERTY XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@loader_path/../../../../../../../Util/onnxruntime/lib/${PLATFORM}")
 
 target_include_directories(Tests PRIVATE "${TESTS_ROOT_DIR}")
 
@@ -23,6 +24,7 @@ if(MACOS)
   target_link_libraries(Tests PRIVATE ${APP_KIT_FRAMEWORK})
 endif()
 
+target_link_libraries(Tests PRIVATE B-Human)
 target_link_libraries(Tests PRIVATE Framework)
 target_link_libraries(Tests PRIVATE Math)
 target_link_libraries(Tests PRIVATE Platform)

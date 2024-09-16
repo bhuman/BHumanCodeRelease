@@ -27,7 +27,9 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
   MODIFY_ONCE("module:IMUCalibrationProvider:forceUpdate", update);
   if(update || (theCalibrationRequest.serialNumberIMUCalibration > imuCalibration.serialNumberIMUCalibration && isStandingStill()))
   {
-    imuCalibration.rotation = Quaternionf(imuCalibration.rotation) * (Rotation::Euler::fromAngles(-theInertialSensorData.angle.x() + theInertialData.angle.x(), -theInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
+    imuCalibration.rotation = Quaternionf(imuCalibration.rotation) *
+                              (Rotation::Euler::fromAngles(-theRawInertialSensorData.angle.x() + theInertialData.angle.x(),
+                                                           -theRawInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
     imuCalibration.serialNumberIMUCalibration = theCalibrationRequest.serialNumberIMUCalibration;
     imuCalibration.isCalibrated = true;
     //save the calibration
@@ -51,7 +53,9 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
     {
       calibrationStarted = theFrameInfo.time;
       tempIMUCalibration = imuCalibration;
-      tempIMUCalibration.rotation = Quaternionf(tempIMUCalibration.rotation) * (Rotation::Euler::fromAngles(-theInertialSensorData.angle.x() + theInertialData.angle.x(), -theInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
+      const Vector3f accAngles = Rotation::AngleAxis::pack(AngleAxisf(Rotation::removeZRotation(Quaternionf::FromTwoVectors(theIMUValueState.accValues.mean.normalized(), Vector3f(0.f, 0.f, 1.f)))));
+      tempIMUCalibration.rotation = (Rotation::Euler::fromAngles(-theRawInertialSensorData.angle.x() + accAngles.x(),
+                                                                 -theRawInertialSensorData.angle.y() + accAngles.y(), 0));
     }
   }
   else
@@ -60,5 +64,5 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
 
 bool IMUCalibrationProvider::isStandingStill()
 {
-  return theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) > minStandStillTime && theGroundContactState.contact;
+  return theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) > minStandStillTime && theGroundContactState.contact;
 }

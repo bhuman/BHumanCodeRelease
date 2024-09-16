@@ -1,88 +1,40 @@
 /**
  * @file Defender.h
  *
- * This file declares the defender role.
+ * This file declares the Defender role.
+ * It tries to maximize a rating function.
  *
- * @author Arne Hasselbring
+ * @author Yannik Meinken
  */
 
 #pragma once
 
-#include "Tools/BehaviorControl/Strategy/PositionRole.h"
-#include "Streaming/AutoStreamable.h"
+#include "RatingRole.h"
+#include "Tools/BehaviorControl/KickSelection.h"
+#include "Math/RingBufferWithSum.h"
 
-class Defender : public PositionRole
+class Defender : public RatingRole
 {
   STREAMABLE(Parameters,
   {,
-    (float)(500.f) minXDiffToBeClearForward, /**< The minimum radius offset to the back circle to be considered actually forward. */
-    (float)(600.f) defenderRoyaleDistanceToGoalArea, /**< The minimum distance that a defender must have to the goal area. */
-    (float)(850.f) defenderRoyaleForwardDistanceToBall, /**< The minimum distance that a forward defender must have to the ball. */
-    (float)(1.3f) standOffsetMultiplierToAdjustGoalieDefenderLineDistance, /**< A factor. */
-    (Rangef)(2500.f, 6500.f) ballDistanceInterpolationRange, /**< Interpolate thresholds based on the distance to the ball. */
-    (Rangea)(8_deg, 15_deg) rotationThresholdRange, /**< Interpolate rotation threshold between these values. */
-    (Rangef)(250.f, 350.f) translationXThresholdRange, /**< Interpolate translation threshold between these values. */
-    (Rangef)(150.f, 250.f) translationYThresholdRange, /**< Interpolate translation threshold between these values. */
-    (Angle)(3_deg) shouldStopRotation, /**< Stop walking if orientation to the target is less than this value. */
-    (Vector2f)(100.f, 50.f) shouldStopTranslation, /**< Stop walking if translation to the target is less than this value. */
-    (float)(3000.f) annotationTime, /**< Wait this long between annotations. */
+    (float)(2000.f) sigmaBase, /**< standard deviation for rating dependent on base position */
+    (float)(1000.f) sigmaTeam, /**< standard deviation for rating dependent on distance to teammates */
+    (float)(600.f) sigmaBorder, /**< standard deviation for rating dependent on distance to field border */
+    (float)(500.f) sigmaMark, /**< standard deviation for rating dependent on distance mark position */
+    (float)(0.2f) minMarkRating, /**< minimal value of the mark rating */
+    (float)(750.f) distToMarkedRobot, /**< The minimum distance a robot must have to the marked robot. */
+    (float)(750.f) sigmaBallLine, /**< standard deviation for rating dependent on distance to the line from the ball to the goal */
+    (float)(0.2f) minGoalLineRating, /**< minimal value of the rating dependent on the distance from the line between ball and goal */
+    (float)(1000.f) sigmaCommunication, /**< standard deviation for rating dependent on the last target position */
+    (float)(0.5f) minCommunicationRating, /**< minimal value of the rating depending on the last target position */
+    (float)(0.3f) startThreshold, /**< the rating has to be at least this much better (normalized to the new found one) at the destination to start moving */
+    (float)(0.1f) stopThreshold, /**< if the rating is not at least this much better (normalized to the new found one) at the destination stop moving */
   });
 
   void preProcess() override;
 
-  Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agents& teammates) override;
-
-  Pose2f tolerance() const override;
-
-  bool shouldStop(const Pose2f& target) const override;
-
-  /**
-   * Calculates the best position of the royale defender.
-   * @param isLeftDefender Whether the robot should position left (right otherwise).
-   * @return The royale defender position.
-   */
-  Vector2f calcDefenderRoyalePosition(const bool isLeftDefender) const;
-
-  /**
-   * Returns the position it is given, but creates drawings for it.
-   * @param position The position to return.
-   * @return The position this function is given.
-   */
-  const Vector2f& returnPositionWithDraw(const Vector2f& position) const;
-
-  /**
-   * Calculates whether this robot should take a forward position.
-   * @param radius The resulting distance from the own goal center.
-   * @param isLeftDefender Whether this defender is left (right otherwise).
-   * @param secondDefenderNumber The number of the other defender.
-   * @param maxRadius The maximum radius that a defender can have.
-   * @param minRadius The minimum radius that a defender must have.
-   * @param ballPositionField The position of the ball.
-   * @return Whether the defender should be forward.
-   */
-  bool isRoyalePositionForward(float& radius, const bool isLeftDefender, const Agent* otherDefender,
-                               const float maxRadius, const float minRadius, const Vector2f& ballPositionField) const;
-
-  /**
-   * Calculates a BOb line.
-   * @param isLeftDefender Whether the BOb line is calculated for a left defender.
-   * @param radius The radius from the goal center at which the defender should be.
-   * @param bobLine The resulting line is added to this list.
-   */
-  void calcDefenderBObLine(const bool isLeftDefender, const float radius, std::vector<Geometry::Line>& bobLine) const;
-
-  /**
-   * Calculates if the defender should be left.
-   * @param wasLeft Whether the defender was left in the last frame.
-   * @return true to position left (false to position right).
-   */
-  bool calcDefenderRoyaleIsLeft(const bool wasLeft) const;
-
-  bool returnIsLeftWithDraw(const bool leftArrow) const;
+  //computes the rating for a given point
+  float rating(const Vector2f& pos) const override;
 
   Parameters p;
-
-  const Agent* otherDefender = nullptr;
-  const Agent* goalkeeper = nullptr;
-  unsigned int annotationTimestamp = 0;
 };

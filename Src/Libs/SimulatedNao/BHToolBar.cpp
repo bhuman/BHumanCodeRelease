@@ -43,7 +43,7 @@ QMenu* BHToolBar::createUserMenu() const
 void BHToolBar::requestStand(bool active)
 {
   QAction* pAction = qobject_cast<QAction*>(sender());
-  QWidget* menu = pAction->parentWidget();
+  QWidget* menu = qobject_cast<QWidget*>(pAction->parent());
   QAction* standAction = nullptr;
   QAction* sitDownAction = nullptr;
   if(menu)
@@ -61,7 +61,7 @@ void BHToolBar::requestStand(bool active)
 void BHToolBar::requestSitDown(bool active)
 {
   QAction* pAction = qobject_cast<QAction*>(sender());
-  QWidget* menu = pAction->parentWidget();
+  QWidget* menu = qobject_cast<QWidget*>(pAction->parent());
   QAction* standAction = nullptr;
   QAction* sitDownAction = nullptr;
   if(menu)

@@ -39,5 +39,5 @@ namespace KickLengthConverter
    * @param length The requested length.
    * @return The resulting kick power (1 for kicks with constant length).
    */
-  float kickLengthToPower(const KickInfo::KickType kickType, float length, Angle direction, const KickInfo& theKickInfo);
+  float kickLengthToPower(const KickInfo::KickType kickType, const float length, const Angle direction, const KickInfo& theKickInfo);
 }

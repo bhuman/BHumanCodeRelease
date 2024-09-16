@@ -8,7 +8,11 @@
  */
 
 #include "PerceptionProviders.h"
+#include "Framework/Module.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraStatus.h"
+#include "Representations/Infrastructure/JPEGImage.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
@@ -21,8 +25,31 @@
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
+#include "Threads/Cognition.h"
+
+// The perception threads already draw these representations
+#undef _MODULE_DRAW
+#define _MODULE_DRAW(...)
+
+// Require both aliases and provide representation
+#define SELECTS(Representation) \
+  REQUIRES(Lower##Representation), \
+  REQUIRES(Upper##Representation), \
+  PROVIDES(Representation)
+
+MODULE(PerceptionImageCoordinateSystemProvider,
+{,
+  REQUIRES(CameraInfo),
+  SELECTS(ImageCoordinateSystem),
+});
 
 MAKE_MODULE(PerceptionImageCoordinateSystemProvider);
+
+class PerceptionImageCoordinateSystemProvider : public PerceptionImageCoordinateSystemProviderBase
+{
+  void update(ImageCoordinateSystem& theImageCoordinateSystem) override;
+};
 
 void PerceptionImageCoordinateSystemProvider::update(ImageCoordinateSystem& theImageCoordinateSystem)
 {
@@ -74,9 +101,12 @@ ALIAS(CirclePercept);
 ALIAS(FieldBoundary);
 ALIAS(FieldLines);
 ALIAS(FieldLineIntersections);
+ALIAS(GoalPostsPercept);
 ALIAS(IntersectionsPercept);
+ALIAS(JPEGImage);
 ALIAS(LinesPercept);
 ALIAS(ObstaclesFieldPercept);
+ALIAS(ObstaclesImagePercept);
 ALIAS(OptionalECImage);
 ALIAS(PenaltyMarkPercept);
 ALIAS(RobotCameraMatrix);

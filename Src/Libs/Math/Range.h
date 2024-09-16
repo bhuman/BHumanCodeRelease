@@ -134,7 +134,7 @@ STREAMABLE(Range,
   /**
    * The function returns the size of the range.
    * Note that the function is not able to handle circular angle range, i.e. max < min (except for Rangea).
-   * @return The difference between the lower limit and the higher limit.
+   * @return The difference between the lower limit and the upper limit.
    */
   constexpr T getSize() const {return max - min;}
 
@@ -196,11 +196,22 @@ T Range<T>::scale(T t, const Range<T>& tRange) const
 
 /**
  * The function returns the size of the angle range.
- * Note that the function is able to handle circular angle range, i.e. max < min.
- * @return The difference between the lower limit and the higher limit.
+ * Note that the function is able to handle a circular angle range, i.e. max < min.
+ * @return The difference between the lower limit and the upper limit.
  */
 template<>
 constexpr Angle Rangea::getSize() const
 {
-  return max - (min - (min > max ? Angle(Constants::pi2) : 0_deg));
+  return max - min + (min > max ? Angle(Constants::pi2) : 0_deg);
+}
+
+/**
+ * The function returns the center of the range.
+ * Note that the function is able to handle a circular angle range, i.e. max < min.
+ * @return The center.
+ */
+template<>
+constexpr Angle Rangea::getCenter() const
+{
+  return Angle::normalize(min + getSize() / 2.f);
 }

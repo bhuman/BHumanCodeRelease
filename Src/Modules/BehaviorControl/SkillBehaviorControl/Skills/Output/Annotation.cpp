@@ -1,37 +1,38 @@
 /**
  * @file Annotation.cpp
  *
- * This file implements the implementation of the Annotation skill.
+ * This file implements the Annotation skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Skills.h"
+#include "SkillBehaviorControl.h"
 #include "Debugging/Annotation.h"
-#include <string>
 
-SKILL_IMPLEMENTATION(AnnotationImpl,
-{,
-  IMPLEMENTS(Annotation),
-});
-
-class AnnotationImpl : public AnnotationImplBase
+option((SkillBehaviorControl) Annotation,
+       args((const std::string&) annotation),
+       vars((std::string)("") lastAnnotationSent))
 {
-  void execute(const Annotation& p) override
+  initial_state(execute)
   {
-    if(p.annotation != lastAnnotationSent)
+    transition
     {
-      ANNOTATION("Behavior", p.annotation);
-      lastAnnotationSent = p.annotation;
+      if(annotation == lastAnnotationSent)
+        goto done;
+    }
+    action
+    {
+      ANNOTATION("Behavior", annotation);
+      lastAnnotationSent = annotation;
     }
   }
 
-  void reset(const Annotation&) override
+  target_state(done)
   {
-    lastAnnotationSent.clear();
+    transition
+    {
+      if(annotation != lastAnnotationSent)
+        goto execute;
+    }
   }
-
-  std::string lastAnnotationSent; /**< The last annotation sent. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(AnnotationImpl);
+}

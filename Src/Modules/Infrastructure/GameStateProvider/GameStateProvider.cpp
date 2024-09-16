@@ -47,7 +47,10 @@ void GameStateProvider::update(GameState& gameState)
     setToCalibration();
 
   DEBUG_RESPONSE_ONCE("module:GameStateProvider:active")
+  {
     setToActive();
+    timeOfLastIntegratedGameControllerData = theFrameInfo.time - 1;
+  }
 
   if(gameState.state != GameState::afterHalf)
     timeWhenStateNotAfterHalf = theFrameInfo.time;
@@ -113,7 +116,7 @@ void GameStateProvider::update(GameState& gameState)
         //       the last whistle which would have made us switch to READY, because it could be that the
         //       *original* whistle which triggered the transition to READY was wrong, but a *later* whistle
         //       was true.
-        if(gameState.gameControllerActive && theGameControllerData.state != STATE_READY &&
+        if(gameState.gameControllerActive && theGameControllerData.state != STATE_READY && !gameState.kickOffSetupFromTouchlines &&
            (theFrameInfo.getTimeSince(gameState.timeWhenStateStarted) > goalSignalDelay + gameControllerOperatorDelay ||
             (theGameControllerData.setPlay != SET_PLAY_NONE && theFrameInfo.getTimeSince(gameState.timeWhenStateStarted) > gameControllerOperatorDelay)))
         {
@@ -147,6 +150,7 @@ void GameStateProvider::update(GameState& gameState)
           gameState.timeWhenStateEnds = 0;
         }
 
+        // A guessed PLAYING state is reverted if a player has been penalized for illegalPosition or the ball returned to a legal position.
         auto gameControllerState = convertGameControllerDataToState(theGameControllerData);
         if(GameState::isFreeKick(gameControllerState) &&
            ((*std::max_element(illegalPositionTimestampsOwnTeam.begin(), illegalPositionTimestampsOwnTeam.end()) > gameState.timeWhenStateStarted &&
@@ -154,23 +158,37 @@ void GameStateProvider::update(GameState& gameState)
             (*std::max_element(illegalPositionTimestampsOpponentTeam.begin(), illegalPositionTimestampsOpponentTeam.end()) > gameState.timeWhenStateStarted &&
              GameState::isForOwnTeam(gameControllerState)) ||
             theFrameInfo.getTimeSince(gameState.timeWhenStateStarted) > gameControllerOperatorDelay ||
-               (checkBallLegal(gameControllerState, confidenceIntervalToLegalPositionNotFree) &&
-                !GameState::isPushingFreeKick(gameControllerState))))
+            (checkBallLegal(gameControllerState, confidenceIntervalToLegalPositionNotFree) &&
+             !GameState::isPushingFreeKick(gameControllerState))))
         {
           gameStateOverridden = false;
           gameState.state = gameControllerState;
           gameState.timeWhenStateStarted = timeWhenStateStartedBeforeBallMoved;
           gameState.timeWhenStateEnds = gameState.timeWhenStateStarted + freeKickDuration;
         }
+
+        // A guessed PLAYING state is reverted to penaltyKick if a player has been penalized for illegalPosition.
+        // The gameControllerOperatorDelay is not considered, because the game controller might still send SET to hide the whistle
+        if((GameState::isPenaltyKick(gameControllerState) && !GameState::isReady(gameControllerState)) &&
+           (*std::max_element(illegalPositionTimestampsOwnTeam.begin(), illegalPositionTimestampsOwnTeam.end()) > gameState.timeWhenStateStarted ||
+            *std::max_element(illegalPositionTimestampsOpponentTeam.begin(), illegalPositionTimestampsOpponentTeam.end()) > gameState.timeWhenStateStarted))
+        {
+          gameState.state = GameState::isForOwnTeam(gameControllerState) ? GameState::ownPenaltyKick : GameState::opponentPenaltyKick;
+          gameState.timeWhenStateStarted = timeWhenStateStartedBeforeBallMoved;
+          gameState.timeWhenStateEnds = gameState.timeWhenStateStarted + penaltyKickDuration;
+        }
         break;
     }
   }
 
-  // A kick-off is over once either the ball has moved or the time has elapsed.
-  if((gameState.state == GameState::ownKickOff || gameState.state == GameState::opponentKickOff) &&
-     (checkBallHasMoved(gameState) || theFrameInfo.time >= gameState.timeWhenStateEnds))
+  // A kick-off or penalty-kick is over once either the ball has moved, is no longer on a legal position or the time has elapsed.
+  if((gameState.state == GameState::ownKickOff || gameState.state == GameState::opponentKickOff || gameState.state == GameState::ownPenaltyKick ||
+      gameState.state == GameState::opponentPenaltyKick) &&
+     (checkBallHasMoved(gameState) || theFrameInfo.time >= gameState.timeWhenStateEnds ||
+      !checkBallLegal(gameState.state, confidenceIntervalToLegalPositionFree)))
   {
     gameStateOverridden = true;
+    timeWhenStateStartedBeforeBallMoved = gameState.timeWhenStateStarted;
     gameState.state = GameState::playing;
     gameState.timeWhenStateStarted = theFrameInfo.time;
     gameState.timeWhenStateEnds = 0;
@@ -195,8 +213,10 @@ void GameStateProvider::update(GameState& gameState)
           gameStateOverridden = true;
           timeWhenStateStartedBeforeBallMoved = gameState.timeWhenStateStarted;
           gameState.timeWhenStateStarted = theFrameInfo.time;
+          gameState.timeWhenStateEnds = 0;
           gameState.state = GameState::playing;
         }
+        [[fallthrough]];
       case GameState::playing:
       case GameState::ownKickOff:
       case GameState::opponentKickOff:
@@ -206,15 +226,17 @@ void GameStateProvider::update(GameState& gameState)
         // There is a "cooldown period" in which whistles are ignored to avoid confusion with the whistle that started PLAYING.
         // Since goals from penalty kicks can be scored quicker, the have a different (shorter) cooldown period.
         if(checkWhistleForGoal &&
-           checkForWhistle(minWhistleTimestamp
+            checkForWhistle(std::max(minWhistleTimestamp
                            + ((gameState.state == GameState::ownPenaltyKick || gameState.state == GameState::opponentPenaltyKick)
-                              ? ignoreWhistleAfterPenaltyKick : ignoreWhistleAfterKickOff)) &&
-           (theFrameInfo.getTimeSince(theBallInGoal.lastTimeInGoal) <= acceptBallInGoalDelay || !checkBallForGoal))
+                              ? ignoreWhistleAfterPenaltyKick : ignoreWhistleAfterKickOff),
+                                     theBallInGoal.lastTimeInGoal > acceptWhistleBeforeGoal ? theBallInGoal.lastTimeInGoal - acceptWhistleBeforeGoal : 0u),
+                            gameState.gameControllerActive) &&
+            (theFrameInfo.getTimeSince(theBallInGoal.lastTimeInGoal) <= acceptBallInGoalDelay || !checkBallForGoal))
         {
           // Remember start of previous state in case the whistle detection turns out to be wrong.
           gameStateOverridden = true;
           timeWhenStateStartedBeforeWhistle = gameState.timeWhenStateStarted;
-          gameState.kickOffSetupFromSidelines = false;
+          gameState.kickOffSetupFromTouchlines = false;
           gameState.state = theBallInGoal.inOwnGoal ? GameState::setupOwnKickOff : GameState::setupOpponentKickOff;
           gameState.timeWhenStateStarted = theFrameInfo.time;
           gameState.timeWhenStateEnds = gameState.timeWhenStateStarted + kickOffSetupDuration;
@@ -228,7 +250,7 @@ void GameStateProvider::update(GameState& gameState)
       case GameState::waitForOpponentPenaltyKick:
       case GameState::waitForOwnPenaltyShot:
       case GameState::waitForOpponentPenaltyShot:
-        if(checkForWhistle(minWhistleTimestamp))
+        if(checkForWhistle(minWhistleTimestamp, gameState.gameControllerActive))
         {
           // Remember start of previous state in case the whistle detection turns out to be wrong.
           gameStateOverridden = true;
@@ -264,6 +286,17 @@ void GameStateProvider::update(GameState& gameState)
     }
   }
 
+  // Transition from Initial to Ready
+  if(gameState.state == GameState::standby && theInitialToReady.isTransition())
+  {
+    const bool isKickingTeam = theGameControllerData.kickingTeam == Global::getSettings().teamNumber;
+    gameState.state = isKickingTeam ? GameState::setupOwnKickOff : GameState::setupOpponentKickOff;
+    gameState.timeWhenStateStarted = theFrameInfo.time;
+    gameState.timeWhenStateEnds = gameState.timeWhenStateStarted + kickOffSetupDuration;
+    gameState.kickOffSetupFromTouchlines = true;
+    gameStateOverridden = true;
+  }
+
   if(useGameControllerData)
   {
     gameState.competitionPhase = static_cast<GameState::CompetitionPhase>(theGameControllerData.competitionPhase);
@@ -282,8 +315,8 @@ void GameStateProvider::update(GameState& gameState)
     auto gameControllerState = convertGameControllerDataToState(theGameControllerData);
     // When the guessed state and the state from the GameController match, we can trust the GameController again.
     gameStateOverridden &= gameState.state != gameControllerState;
-    // States other than SET or PLAYING are always true.
-    gameStateOverridden &= GameState::isSet(gameControllerState) || GameState::isPlaying(gameControllerState);
+    // States other than SET, PLAYING or STANDBY are always true.
+    gameStateOverridden &= GameState::isSet(gameControllerState) || GameState::isPlaying(gameControllerState) || gameControllerState == GameState::standby;
     // SET is true when switching there from READY.
     gameStateOverridden &= !GameState::isSet(gameControllerState) || !gameState.isReady();
     // Free Kicks are mostly true, but not if we guess READY (because it might be that the GameController still sends a free kick when a goal is scored).
@@ -295,10 +328,10 @@ void GameStateProvider::update(GameState& gameState)
          (!gameState.isPlaying() && GameState::isPlaying(gameControllerState)))
         minWhistleTimestamp = theFrameInfo.time;
 
-      // kickOffSetupFromSidelines: We are switching from some INITIAL state to READY and we already integrated a GameController packet recently.
+      // kickOffSetupFromTouchlines: We are switching from some INITIAL state to READY and we already integrated a GameController packet recently.
       if((gameControllerState == GameState::setupOwnKickOff || gameControllerState == GameState::setupOpponentKickOff) &&
          gameState.isInitial() && theFrameInfo.getTimeSince(timeOfLastIntegratedGameControllerData) < gameControllerTimeout)
-        gameState.kickOffSetupFromSidelines = true;
+        gameState.kickOffSetupFromTouchlines = true;
 
       // Actually set the new state and associated timestamps:
       gameState.state = gameControllerState;
@@ -307,11 +340,13 @@ void GameStateProvider::update(GameState& gameState)
       {
         case GameState::setupOwnKickOff:
         case GameState::setupOpponentKickOff:
-          // Switching to READY while changing the score means we haven't heard the whistle after a goal.
-          // In that case, the state actually began earlier.
+          // Switching to READY while changing the score means we haven't heard the whistle after a goal
+          // or switching to READY when the KickOff-Setup starts from the touchline means we haven't detected the referee gesture.
+          // In those cases, the state actually began earlier.
           if(!theGameControllerData.isTrueData &&
-             (theGameControllerData.teams[ownTeamIndex].score != gameState.ownTeam.score ||
-              theGameControllerData.teams[1 - ownTeamIndex].score != gameState.opponentTeam.score))
+             ((theGameControllerData.teams[ownTeamIndex].score != gameState.ownTeam.score ||
+               theGameControllerData.teams[1 - ownTeamIndex].score != gameState.opponentTeam.score) ||
+              gameState.kickOffSetupFromTouchlines))
             gameState.timeWhenStateStarted -= (kickOffSetupDuration - theGameControllerData.secondaryTime * 1000);
           gameState.timeWhenStateEnds = gameState.timeWhenStateStarted + kickOffSetupDuration;
           break;
@@ -379,6 +414,11 @@ void GameStateProvider::update(GameState& gameState)
         gameState.timeWhenPlayerStateStarted = theFrameInfo.time;
     }
 
+    gameState.timeWhenPenaltyEnds = gameState.isPenalized()
+                                    ? theGameControllerData.timeLastPacketReceived
+                                      + theGameControllerData.teams[ownTeamIndex].players[Global::getSettings().playerNumber - 1].secsTillUnpenalised * 1000
+                                    : 0;
+
     timeOfLastIntegratedGameControllerData = theGameControllerData.timeLastPacketReceived;
   }
   else if(!gameState.gameControllerActive)
@@ -442,6 +482,7 @@ void GameStateProvider::update(GameState& gameState)
           gameState.state = GameState::beforeHalf;
           gameState.timeWhenStateStarted = theFrameInfo.time;
           gameState.timeWhenStateEnds = 0;
+          SystemCall::say("Soccer");
         }
       }
     }
@@ -454,7 +495,7 @@ void GameStateProvider::update(GameState& gameState)
   }
 
   if(gameState.state != GameState::setupOwnKickOff && gameState.state != GameState::setupOpponentKickOff)
-    gameState.kickOffSetupFromSidelines = false;
+    gameState.kickOffSetupFromTouchlines = false;
 }
 
 void GameStateProvider::reset(GameState& gameState)
@@ -474,16 +515,16 @@ void GameStateProvider::reset(GameState& gameState)
   minWhistleTimestamp = 0;
 }
 
-bool GameStateProvider::checkForWhistle(unsigned from) const
+bool GameStateProvider::checkForWhistle(unsigned from, bool useGameControllerData) const
 {
   std::vector<const Whistle*> data;
   int numOfChannels = 0;
   int numOfMissingChannels = 0;
-  size_t voters = 0;
+  size_t numOfVoters = 0;
 
   if(theWhistle.channelsUsedForWhistleDetection > 0)
   {
-    ++voters;
+    ++numOfVoters;
     numOfChannels += theWhistle.channelsUsedForWhistleDetection;
     if(theWhistle.lastTimeWhistleDetected > from)
       data.emplace_back(&theWhistle);
@@ -492,7 +533,7 @@ bool GameStateProvider::checkForWhistle(unsigned from) const
   for(const Teammate& teammate : theTeamData.teammates)
     if(teammate.theWhistle.channelsUsedForWhistleDetection > 0)
     {
-      ++voters;
+      ++numOfVoters;
       if(teammate.theWhistle.lastTimeWhistleDetected > from)
       {
         numOfChannels += teammate.theWhistle.channelsUsedForWhistleDetection;
@@ -502,10 +543,22 @@ bool GameStateProvider::checkForWhistle(unsigned from) const
         numOfMissingChannels += teammate.theWhistle.channelsUsedForWhistleDetection;
     }
 
-  if(data.size() < minVotersForWhistle && data.size() < voters)
+  if(useGameControllerData)
+  {
+    size_t numOfPlayers = 0;
+    const RoboCup::TeamInfo& ownTeam = theGameControllerData.teams[theGameControllerData.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1];
+    for(int i = 0; i < MAX_NUM_PLAYERS; ++i)
+      if(ownTeam.players[i].penalty == PENALTY_NONE)
+        ++numOfPlayers;
+    const size_t numOfMissingPlayers = numOfPlayers - std::min(numOfPlayers, theTeamData.teammates.size() + 1);
+    numOfVoters += numOfMissingPlayers;
+    numOfMissingChannels += static_cast<int>(2 * numOfMissingPlayers); // Assume that unknown teammates use 2 channels
+  }
+
+  if(data.size() < minVotersForWhistle && data.size() < numOfVoters)
   {
     const size_t missing = minVotersForWhistle - data.size();
-    numOfChannels += static_cast<int>(missing * numOfMissingChannels / (voters - data.size())); // Approximate number of missing channels
+    numOfChannels += static_cast<int>(missing * numOfMissingChannels / (numOfVoters - data.size())); // Approximate number of missing channels
   }
 
   std::sort(data.begin(), data.end(),
@@ -535,9 +588,14 @@ bool GameStateProvider::checkForWhistle(unsigned from) const
 
 bool GameStateProvider::checkBallHasMoved(const GameState& gameState) const
 {
-  // Did I kick the ball?
-  if(theMotionInfo.lastKickTimestamp > gameState.timeWhenStateStarted)
+  // Did anyone kick the ball?
+  if(theMotionInfo.lastKickTimestamp > gameState.timeWhenStateStarted ||
+     (Global::getSettings().scenario != "SharedAutonomyDefender" &&
+      std::any_of(theTeamData.teammates.begin(), theTeamData.teammates.end(),
+                 [&](const Teammate& teammate)
+                 { return teammate.theIndirectKick.lastKickTimestamp > gameState.timeWhenStateStarted; })))
     return true;
+
   // Is the ball (significantly) closer to me than it could be, given that I am legally positioned?
   // -> theBallModel.timeWhenLastSeen == theFrameInfo.time can't be used because the ball model is (or at least can be) from the previous frame (USES).
   if(gameState.state == GameState::opponentKickOff &&
@@ -585,7 +643,7 @@ bool GameStateProvider::checkBallHasMoved(const GameState& gameState) const
 bool GameStateProvider::checkBallLegal(const GameState::State& gameState, const float confidenceIntervalToLegalPosition) const
 {
   if(theBallModel.timeWhenLastSeen > theFrameInfo.time - 500
-     && GameState::isFreeKick(gameState) &&
+     && (GameState::isFreeKick(gameState) || gameState == GameState::ownPenaltyKick || gameState == GameState::opponentPenaltyKick) &&
      !GameState::isPushingFreeKick(gameState)) // only in these cases the ball position is constrained (kick of as well but the above code deals with that case)
   {
     const Vector2f globalBall = theRobotPose * theBallModel.estimate.position;
@@ -596,7 +654,7 @@ bool GameStateProvider::checkBallLegal(const GameState::State& gameState, const 
     //rotate covariance matrix
     cov = Covariance::rotateCovarianceMatrix(cov, theRobotPose.rotation);
 
-    //add covariance of the localisation
+    //add covariance of the localization
     // todo: think about how to incorporate rotational uncertainty
     cov += theRobotPose.covariance.block<2, 2>(0, 0);
 
@@ -605,7 +663,7 @@ bool GameStateProvider::checkBallLegal(const GameState::State& gameState, const 
     //get the direction to the nearest legal position
     Vector2f direction(0.f, 0.f);
     if(GameState::isKickIn(gameState))
-      direction << 0.f, (globalBall.y() > 0 ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline) - globalBall.y();
+      direction << 0.f, (globalBall.y() > 0 ? theFieldDimensions.yPosLeftTouchline : theFieldDimensions.yPosRightTouchline) - globalBall.y();
     else if(GameState::isGoalKick(gameState))
     {
       direction.y() = (globalBall.y() > 0 ? theFieldDimensions.yPosLeftGoalArea : theFieldDimensions.yPosRightGoalArea) - globalBall.y();
@@ -616,11 +674,19 @@ bool GameStateProvider::checkBallLegal(const GameState::State& gameState, const 
     }
     else if(GameState::isCornerKick(gameState))
     {
-      direction.y() = (globalBall.y() > 0 ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline) - globalBall.y();
+      direction.y() = (globalBall.y() > 0 ? theFieldDimensions.yPosLeftTouchline : theFieldDimensions.yPosRightTouchline) - globalBall.y();
       if(GameState::isForOpponentTeam(gameState))
-        direction.x() = theFieldDimensions.xPosOwnGroundLine - globalBall.x();
+        direction.x() = theFieldDimensions.xPosOwnGoalLine - globalBall.x();
       else
-        direction.x() = theFieldDimensions.xPosOpponentGroundLine - globalBall.x();
+        direction.x() = theFieldDimensions.xPosOpponentGoalLine - globalBall.x();
+    }
+    else if(gameState == GameState::ownPenaltyKick)
+    {
+      direction = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0) - globalBall;
+    }
+    else if(gameState == GameState::opponentPenaltyKick)
+    {
+      direction = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0) - globalBall;
     }
     // ball is exactly on a legal position
     if(direction.squaredNorm() == 0.f)
@@ -681,7 +747,7 @@ void GameStateProvider::updateBallBuffer(const GameState& gameState)
 
   // Remove balls when the camera matrix is likely to be unstable.
   // If this should someday also work if the robot is walking, the ball buffer would need odometry updates.
-  if(theMotionInfo.executedPhase != MotionPhase::stand || theGyroState.notMovingSinceTimestamp == theGyroState.timestamp)
+  if(theMotionInfo.executedPhase != MotionPhase::stand || theIMUValueState.gyroValues.stableSinceTimestamp == theIMUValueState.timestamp)
     ballPositions.clear();
   else if(theBallModel.timeWhenLastSeen > lastBallAddedToBuffer + ballSaveInterval)
   {
@@ -760,6 +826,11 @@ GameState::State GameStateProvider::convertGameControllerDataToState(const GameC
   {
     ASSERT(gameControllerData.setPlay == SET_PLAY_NONE);
     return GameState::beforeHalf;
+  }
+  else if(gameControllerData.state == STATE_STANDBY)
+  {
+    ASSERT(gameControllerData.setPlay == SET_PLAY_NONE);
+    return GameState::standby;
   }
   else if(gameControllerData.state == STATE_READY)
   {
@@ -844,6 +915,8 @@ GameState::PlayerState GameStateProvider::convertPenaltyToPlayerState(decltype(R
       return GameState::penalizedIllegalPositionInSet;
     case PENALTY_SPL_PLAYER_STANCE:
       return GameState::penalizedPlayerStance;
+    case PENALTY_SPL_ILLEGAL_MOTION_IN_STANDBY:
+      return GameState::penalizedIllegalMotionInStandby;
     case PENALTY_SUBSTITUTE:
       return GameState::substitute;
     case PENALTY_NONE:

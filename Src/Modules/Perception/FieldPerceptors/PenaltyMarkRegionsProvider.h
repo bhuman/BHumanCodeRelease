@@ -118,7 +118,7 @@ class PenaltyMarkRegionsProvider : public PenaltyMarkRegionsProviderBase
    * @param xStep The distance between neighboring low-res scan lines.
    * @param searchRegions The regions that should be searched for the center of a penalty mark.
    */
-  void analyseRegions(unsigned short upperBound, int xStep, std::vector<Boundaryi>& searchRegions);
+  void analyzeRegions(unsigned short upperBound, int xStep, std::vector<Boundaryi>& searchRegions);
 
 public:
   PenaltyMarkRegionsProvider() {regions.reserve(1000);}

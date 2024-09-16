@@ -28,7 +28,7 @@ namespace IISC
    * @return false if the calculation failed
    */
   [[nodiscard]] bool calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle,
-      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification,
+      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const BallSpecification& theBallSpecification,
       const Angle greenEdge = 60_deg);
 
   /**

@@ -27,17 +27,7 @@ namespace KickSelection
    */
   inline Pose2f calcOptimalKickPoseForTargetAngleRange(const Rangea& targetAngleRange, const Pose2f& robotPose, const Vector2f& ballPosition, const Vector2f& ballOffset, Angle rotationOffset)
   {
-    const Vector2f ballInRobot = robotPose.inverse() * ballPosition + ballOffset;
-    const float distance = ballInRobot.norm();
-    Angle targetAngle = 0.f;
-    if(distance > 600.f)
-      targetAngle = ballInRobot.angle();
-    else if(distance > 100.f)
-    {
-      const float rotationRatio = std::sqrt((distance - 100.f) / (600.f - 100.f));
-      targetAngle = (Vector2f(1.f - rotationRatio, 0.f) + ballInRobot.normalized() * rotationRatio).angle();
-    }
-    targetAngle = Angle::normalize(robotPose.rotation + targetAngle - rotationOffset);
+    Angle targetAngle = Angle::normalize(robotPose.rotation - rotationOffset);
     if(!targetAngleRange.isInside(targetAngle))
       targetAngle = std::abs(Angle::normalize(targetAngle - targetAngleRange.min)) < std::abs(Angle::normalize(targetAngle - targetAngleRange.max)) ? targetAngleRange.min : targetAngleRange.max;
     Pose2f kickPose(targetAngle, ballPosition);
@@ -92,13 +82,15 @@ namespace KickSelection
    * @param receiverPosition The position of the robot that receives the pass on the field.
    * @param goalPosition The position of the opponent goal on the field.
    * @param maxVisionAngle Points of interest should be inside the range of the robot's orientation +- this angle.
-   * @param magicalFactor Robot should be oriented with this percentage in the angular range between the ball and the opponent goal in order to receive and redirect the ball.
+   * @param magicalFactor Robot should be oriented with this percentage in the angular range between the ball and the opponent goal in order to receive and redirect the ball. Higher means more in the direction of the goal.
    * @return Absolute rotation on field.
    *
    * @author Jo Lienhoop
    * @author Yannik Meinken
    */
-  inline Angle calculateTargetRotation(const Vector2f& ballPosition, const Vector2f& receiverPosition, const Vector2f& goalPosition, Angle maxVisionAngle = 60_deg, const float magicalFactor = 0.5f)
+  inline Angle
+  calculateTargetRotation(const Vector2f& ballPosition, const Vector2f& receiverPosition, const Vector2f& goalPosition, Angle maxVisionAngle = 60_deg,
+                          const float magicalFactor = 0.5f)
   {
     Angle receiverToGoal = (goalPosition - receiverPosition).angle();
     Angle receiverToBall = (ballPosition - receiverPosition).angle();

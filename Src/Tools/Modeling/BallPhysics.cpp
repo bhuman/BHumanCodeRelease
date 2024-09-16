@@ -69,7 +69,7 @@ void BallPhysics::applyFrictionToPositionAndVelocity(Vector2f& p, Vector2f& v, f
 float BallPhysics::timeForDistance(const Vector2f& v, float distance, float ballFriction)
 {
   ASSERT(ballFriction < 0.f);
-  if(getEndPosition(Vector2f::Zero(), v, ballFriction).norm() < distance)
+  if(getEndPosition(Vector2f::Zero(), v, ballFriction).squaredNorm() < sqr(distance))
   {
     return std::numeric_limits<float>::max();
   }

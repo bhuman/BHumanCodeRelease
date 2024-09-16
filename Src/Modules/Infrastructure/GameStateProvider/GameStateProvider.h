@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/InitialToReady.h"
 #include "Representations/Communication/GameControllerData.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
@@ -19,7 +20,7 @@
 #include "Representations/Modeling/BallInGoal.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 #include "Math/RingBuffer.h"
 
@@ -33,7 +34,8 @@ MODULE(GameStateProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameControllerData),
-  REQUIRES(GyroState),
+  REQUIRES(IMUValueState),
+  REQUIRES(InitialToReady),
   REQUIRES(MotionInfo),
   USES(RobotPose),
   REQUIRES(TeamData),
@@ -57,6 +59,7 @@ MODULE(GameStateProvider,
     (int) ignoreWhistleAfterPenaltyKick, /**< Time whistles are ignored after switching to PLAYING after the begin of a penalty kick (in ms). */
     (bool) checkWhistleForGoal, /**< Use the whistle to transition to the READY state after a goal. */
     (bool) checkBallForGoal, /**< Check the ball position in addition to the whistle when transitioning to the READY state after a goal. */
+    (unsigned) acceptWhistleBeforeGoal, /**< Whistles less than this before the ball was seen in goal are still accepted. */
     (int) gameControllerOperatorDelay, /**< Delay with which the operator of the GameController enters the referee's decisions. */
     (int) acceptBallInGoalDelay, /**< Time since when a ball must have been seen in a goal to accept as a valid goal when referee whistles (in ms). */
     (int) acceptPastWhistleDelay, /**< How old can whistles be to be accepted after canceling READY (in ms)? */
@@ -93,9 +96,11 @@ class GameStateProvider : public GameStateProviderBase
    * Checks whether a whistle was heard. It is checked whether the average confidence of all
    * players that actually listened and heard a whistle in a certain time window is high enough.
    * @param from Lower timestamp bound to accept whistles.
+   * @param useGameControllerData Look at GameController data to determine which
+   *                              teammates are available.
    * @return Did the team hear a whistle?
    */
-  bool checkForWhistle(unsigned from) const;
+  bool checkForWhistle(unsigned from, bool useGameControllerData) const;
 
   /**
    * Checks whether the ball has moved during the current state.
@@ -113,7 +118,7 @@ class GameStateProvider : public GameStateProviderBase
 
   /**
    * Checks whether the ball is on a position that is considered legal in the given state
-   * The cases for kickOffs are not (yet) considered as there are handled by "checkBallHasMoved"
+   * The cases for kickOffs are not (yet) considered as they are handled by "checkBallHasMoved"
    * @param gameState The gameState for which to check
    * @param confidenceIntervalToLegalPosition The confidence interval inside which the ball is still considered legal
    * @return true if the ball is at a plausible position for the given state, false otherwise

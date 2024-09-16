@@ -31,9 +31,10 @@ public:
 
   /**
    * This function determines whether the logger should be currently logging.
+   * @param wasLogging Whether the logger was logging in the previous frame.
    * @return Whether the logger ...
    */
-  virtual bool shouldLog() const = 0;
+  virtual bool shouldLog(bool wasLogging) const = 0;
 
   /**
    * This function determines a part of the name a log file. It is called by the logger when a new log file

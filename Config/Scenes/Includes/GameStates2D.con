@@ -4,6 +4,7 @@ dr module:GameStateProvider:active
 
 # use keyboard to set different game states
 jc press 9 gc initial # Shift+Ctrl+I
+jc press 20 gc standby # Shift+Ctrl+T
 jc press 18 gc ready # Shift+Ctrl+R
 jc press 19 gc set # Shift+Ctrl+S
 jc press 16 gc playing # Shift+Ctrl+P

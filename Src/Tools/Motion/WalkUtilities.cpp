@@ -1,3 +1,4 @@
+#include "Libs/MathBase/BHMath.h"
 #include "Tools/Motion/WalkUtilities.h"
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
@@ -12,7 +13,7 @@ namespace WalkUtilities
   {
     const Rangea maxRange(-Constants::pi, Constants::pi);
 
-    const Angle angleFocus = targetOfInterest.angle();
+    const Angle angleFocus = (targetOfInterest - shiftBallPosition).angle();
     const Rangea angleFocusRange(maxTargetFocusAngle.min + angleFocus, maxTargetFocusAngle.max + angleFocus);
 
     Angle walkDirection = useModTarget ? modTargetInSCS.translation.angle() : targetInSCS.translation.angle();
@@ -72,11 +73,20 @@ namespace WalkUtilities
     }
 
     // Finally determine the rotation
-    modTargetInSCS.rotation = useFocusRange->limit(sideWalkRange.limit(walkDirection + sideOffset));
+    modTargetInSCS.rotation = sideWalkRange.limit(walkDirection + sideOffset);
+    if(!useFocusRange->isInside(modTargetInSCS.rotation))  // if not inside, clip it into the vision range with some buffer range
+      modTargetInSCS.rotation = Rangea(useFocusRange->min + extraFocusShiftIfBallNotInVision, useFocusRange->max - extraFocusShiftIfBallNotInVision).limit(modTargetInSCS.rotation);
 
     // Optimize rotation to allow max translation steps
     if(isLeftPhase != (modTargetInSCS.translation.y() < 0.f) && std::abs(modTargetInSCS.translation.y()) > 20.f)
-      modTargetInSCS.rotation = theWalkGenerator.getStepRotationRange(isLeftPhase, walkSpeedRatio, modTargetInSCS.translation, isFastWalk, lastPhase, true).limit(modTargetInSCS.rotation);
+      modTargetInSCS.rotation = theWalkGenerator.getStepRotationRange(isLeftPhase, walkSpeedRatio, modTargetInSCS.translation, isFastWalk, lastPhase, true, false).limit(modTargetInSCS.rotation);
+
+    if(targetInSCS.translation.squaredNorm() < sqr(300.f))
+    {
+      const Angle originalRotation = modTargetInSCS.rotation;
+      const float interpolation = Rangef::ZeroOneRange().limit(std::max(0.f, std::abs((targetOfInterest.rotated(-targetInSCS.rotation)).angle()) - 45_deg) / 20_deg);
+      modTargetInSCS.rotation = originalRotation * interpolation + (1.f - interpolation) * Rangea(std::min(0_deg, targetInSCS.rotation), std::max(0_deg, targetInSCS.rotation)).limit(modTargetInSCS.rotation);
+    }
   }
 
   void calcDiagonal(const WalkGenerator& theWalkGenerator, const WalkingEngineOutput& walkOutput, const Pose2f walkSpeedRatio, const Pose2f& targetInSCS,
@@ -120,17 +130,13 @@ namespace WalkUtilities
 
     const Angle diff1 = std::abs(targetAngleAtModTranslation - angleFocusRange.limit(targetAngleAtModTranslation));
     const Angle diff2 = std::abs(targetAngleAtModTranslation - mirrorAngleFocusRange.limit(targetAngleAtModTranslation));
-    modTargetInSCS.rotation = diff1 < diff2 ? Angle::normalize(angleFocusRange.limit(walkDirection)) : Angle::normalize(mirrorAngleFocusRange.limit(walkDirection));
-
-    // Optimize walk path to prevent walking on a circle path
-    if(std::abs(modTargetInSCS.translation.y()) > 200.f && modTargetInSCS.translation.x() > 200.f && std::abs(modTargetInSCS.rotation - walkDirection) < 5_deg)
-    {
-      const Angle modAngle = modTargetInSCS.translation.angle();
-      modTargetInSCS.translation.rotate(((modAngle > 0 ? 1.f : -1.f) * 2.f * walkDiagonalAngle) - modAngle);
-    }
+    const Rangea& useFocusRange = diff1 < diff2 ? angleFocusRange : mirrorAngleFocusRange;
+    modTargetInSCS.rotation = walkDirection;
+    if(!useFocusRange.isInside(modTargetInSCS.rotation))   // if not inside, clip it into the vision range with some buffer range
+      modTargetInSCS.rotation = Rangea(useFocusRange.min + extraFocusShiftIfBallNotInVision, useFocusRange.max - extraFocusShiftIfBallNotInVision).limit(modTargetInSCS.rotation);
 
     // Optimize rotation to allow max translation steps
     if(isLeftPhase != (modTargetInSCS.translation.y() < 0.f) && std::abs(modTargetInSCS.translation.y()) > 20.f)
-      modTargetInSCS.rotation = theWalkGenerator.getStepRotationRange(isLeftPhase, walkSpeedRatio, modTargetInSCS.translation, isFastWalk, lastPhase, true).limit(modTargetInSCS.rotation);
+      modTargetInSCS.rotation = theWalkGenerator.getStepRotationRange(isLeftPhase, walkSpeedRatio, modTargetInSCS.translation, isFastWalk, lastPhase, true, false).limit(modTargetInSCS.rotation);
   }
 }

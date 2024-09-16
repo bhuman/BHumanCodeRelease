@@ -5,21 +5,19 @@
 	<key>Kind</key>
 	<string>Xcode.IDEFoundation.TextSubstitutionFileTemplateKind</string>
 	<key>Description</key>
-	<string>An empty option.</string>
+	<string>An empty option that is defined in an implementation file.</string>
 	<key>Summary</key>
-	<string>An empty option.</string>
+	<string>An empty option implementation.</string>
 	<key>SortOrder</key>
 	<string>34</string>
 	<key>AllowedTypes</key>
 	<array>
-		<string>public.c-plus-plus-header</string>
+		<string>public.c-plus-plus-source</string>
 	</array>
-	<key>BuildableType</key>
-	<string>None</string>
 	<key>DefaultCompletionName</key>
-	<string>Header</string>
+	<string>File</string>
 	<key>MainTemplateFile</key>
-	<string>___FILEBASENAME___.h</string>
+	<string>___FILEBASENAME___.cpp</string>
 	<key>Options</key>
 	<array>
 		<dict>
@@ -31,6 +29,20 @@
 			<string>Option Name:</string>
 			<key>Description</key>
 			<string>The name of the option to create</string>
+			<key>Type</key>
+			<string>text</string>
+			<key>NotPersisted</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>Identifier</key>
+			<string>behavior</string>
+			<key>Required</key>
+			<true/>
+			<key>Name</key>
+			<string>Behavior Class:</string>
+			<key>Description</key>
+			<string>The behavior class the option belongs to</string>
 			<key>Type</key>
 			<string>text</string>
 			<key>NotPersisted</key>

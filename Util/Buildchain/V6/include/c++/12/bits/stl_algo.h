@@ -4991,15 +4991,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
       if (__first == __last)
 	return;
 
-      // __stable_sort_adaptive sorts the range in two halves,
-      // so the buffer only needs to fit half the range at once.
-      _TmpBuf __buf(__first, (__last - __first + 1) / 2);
-
-      if (__buf.begin() == 0)
-	std::__inplace_stable_sort(__first, __last, __comp);
-      else
-	std::__stable_sort_adaptive(__first, __last, __buf.begin(),
-				    _DistanceType(__buf.size()), __comp);
+      std::__inplace_stable_sort(__first, __last, __comp);
     }
 
   /**

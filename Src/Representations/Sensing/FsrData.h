@@ -18,7 +18,7 @@ STREAMABLE(SolePressureInfo,
   (unsigned int)(0) leftPressure, // Last time stamp the left side had pressure
   (unsigned int)(0) rightPressure, // Last time stamp the right side had pressure
   (unsigned int)(0) hasPressure, // Last time stamp when foot had pressure
-  (unsigned int)(0) hasPressureSince, // Time stamp the last time the the foot regained pressure
+  (unsigned int)(0) hasPressureSince, // Time stamp the last time the foot regained pressure
   (float)(0.f) sagittalRatio, // Ratio between forward and backward pressure
   (float)(0.f) lateralRatio, // Ratio between left and right pressure
   (float)(0.f) totals, /**< % mass pressing on the feet, based on the max measured pressure */

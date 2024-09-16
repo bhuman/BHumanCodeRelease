@@ -28,16 +28,16 @@ STREAMABLE(ObstaclesFieldPercept,
     opponentGoalkeeper, /**< Jersey of the opponent team's goalkeeper found. */
   });
 
-  /** Representation for a single obstalce */
+  /** Representation for a single obstacle */
   STREAMABLE(Obstacle,
   {,
-    (Vector2f) center,           /**< Obstacle's center in robot-relative coordinates (in mm) */
-    (Vector2f) left,             /**< Obstacle's left edge in robot-relative coordinates (in mm) */
-    (Vector2f) right,            /**< Obstacle's right edge in robot-relative coordinates (in mm) */
-    (bool) fallen,               /**< Is the obstacle a player lying on the field? */
-    (Type)(Type::unknown) type,  /**< The type of the obstacle */
-    (float)(0.f) probability,    /**< The type's probability */
-    (Matrix2f) covariance,       /**< The covariance of the center's measurement */
+    (Vector2f)(Vector2f::Zero()) center,     /**< Obstacle's center in robot-relative coordinates (in mm) */
+    (Vector2f)(Vector2f::Zero()) left,       /**< Obstacle's left edge in robot-relative coordinates (in mm) */
+    (Vector2f)(Vector2f::Zero()) right,      /**< Obstacle's right edge in robot-relative coordinates (in mm) */
+    (bool)(false) fallen,                    /**< Is the obstacle a player lying on the field? */
+    (Type)(Type::unknown) type,              /**< The type of the obstacle */
+    (float)(0.f) confidence,                 /**< The type's confidence */
+    (Matrix2f)(Matrix2f::Zero()) covariance, /**< The covariance of the center's measurement */
   });
 
   /** Draws this percept. */

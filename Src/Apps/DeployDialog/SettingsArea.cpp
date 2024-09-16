@@ -115,7 +115,7 @@ SettingsArea::SettingsArea(Presets& presets, QDialog* dialog, RobotsTable* table
   deployButton->setFocusPolicy(Qt::StrongFocus);
   deployButton->setDefault(true);
   connect(deployButton, &QPushButton::clicked, dialog, &QDialog::accept);
-  auto updateDeployButton = [=]
+  auto updateDeployButton = [=, this]
   {
     deployButton->setText(mode == robots ? "Deploy" : mode == image ? "Write" : logsMode == justDelete ? "Delete" : "Download");
     if(mode == image)
@@ -144,7 +144,7 @@ SettingsArea::SettingsArea(Presets& presets, QDialog* dialog, RobotsTable* table
   modesWidget->addTab(createRobotsTab(), "Robots");
   modesWidget->addTab(createImageTab(), "Image");
   modesWidget->addTab(createLogsTab(updateDeployButton), "Logs");
-  auto selectMode = [=](int index)
+  auto selectMode = [=, this](int index)
   {
     mode = static_cast<Mode>(index);
     updateDeployButton();
@@ -183,7 +183,7 @@ QWidget* SettingsArea::createPresetTabs()
   for(Presets::Preset* preset : presets.teams)
     widget->addTab(createPresetTab(preset), preset->name.c_str());
 
-  auto selectPreset = [=](int index)
+  auto selectPreset = [=, this](int index)
   {
     presetIndex = index;
     selectedPreset = presets.teams[index];
@@ -198,7 +198,7 @@ QWidget* SettingsArea::createPresetTabs()
                           "QToolButton:hover {background-color: rgba(128, 128, 128, 64)}");
 #endif
 
-  connect(widget->tabBar(), &QTabBar::tabMoved, [=](int from, int to)
+  connect(widget->tabBar(), &QTabBar::tabMoved, [=, this](int from, int to)
   {
     Presets::Preset* temp = presets.teams[from];
     presets.teams.erase(presets.teams.begin() + from);
@@ -207,11 +207,11 @@ QWidget* SettingsArea::createPresetTabs()
     selectPreset(widget->currentIndex());
   });
 
-  connect(widget->tabBar(), &QTabBar::customContextMenuRequested, [=](const QPoint& point)
+  connect(widget->tabBar(), &QTabBar::customContextMenuRequested, [=, this](const QPoint& point)
   {
     const int index = tabBar->tabAt(point);
 
-    auto editName = [=](int index)
+    auto editName = [=, this](int index)
     {
       LineEdit* lineEdit = new LineEdit(tabBar->tabText(index));
       tabBar->setTabText(index, "");
@@ -222,7 +222,7 @@ QWidget* SettingsArea::createPresetTabs()
       tabBar->setFocusPolicy(Qt::NoFocus);
       lineEdit->selectAll();
       lineEdit->setFocus(Qt::OtherFocusReason);
-      connect(lineEdit, &QLineEdit::editingFinished, [=]
+      connect(lineEdit, &QLineEdit::editingFinished, [=, this]
       {
         tabBar->setTabText(index, lineEdit->text());
         presets.teams[index]->name = lineEdit->text().toStdString();
@@ -235,7 +235,7 @@ QWidget* SettingsArea::createPresetTabs()
     QMenu menu("Team", this);
 
     QAction* duplicate = new QAction("&Duplicate", this);
-    connect(duplicate, &QAction::triggered, [=]
+    connect(duplicate, &QAction::triggered, [=, this]
     {
       presets.teams.emplace_back(new Presets::Preset(*presets.teams[index]));
       table->addPreset(static_cast<int>(presets.teams.back()->players.size()));
@@ -247,7 +247,7 @@ QWidget* SettingsArea::createPresetTabs()
 
     QAction* remove = new QAction("&Delete", this);
     remove->setEnabled(tabBar->count() > 1);
-    connect(remove, &QAction::triggered, [=]
+    connect(remove, &QAction::triggered, [=, this]
     {
       table->removePreset(index);
       delete presets.teams[index];
@@ -291,7 +291,7 @@ QWidget* SettingsArea::createPresetTab(Presets::Preset* preset)
       teamSelector->setCurrentIndex(teamSelector->count() - 1);
   }
   teamSelector->setMaximumWidth(settingsFieldWidth);
-  connect(teamSelector, &QComboBox::currentTextChanged, this, [=](const QString& team) {preset->number = this->teams[team.toStdString()];});
+  connect(teamSelector, &QComboBox::currentTextChanged, this, [=, this](const QString& team) {preset->number = this->teams[team.toStdString()];});
   layout->addRow("Team", teamSelector);
 
   const QStringList colors = {"black", "blue", "brown", "gray", "green", "orange", "purple", "red", "white", "yellow"};
@@ -431,13 +431,13 @@ QWidget* SettingsArea::createLogsTab(const std::function<void()>& updateDeployBu
   QRadioButton* downloadSelector = new QRadioButton("Download");
   downloadSelector->setChecked(logsMode == download);
   downloadSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(downloadSelector, &QRadioButton::toggled, [=](bool checked) {if(checked) logsMode = download; updateDeployButton();});
+  connect(downloadSelector, &QRadioButton::toggled, [=, this](bool checked) {if(checked) logsMode = download; updateDeployButton();});
   rowLayout->addWidget(downloadSelector);
 
   QRadioButton* deleteSelector = new QRadioButton("Delete");
   deleteSelector->setChecked(logsMode == justDelete);
   deleteSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(deleteSelector, &QRadioButton::toggled, [=](bool checked) {if(checked) logsMode = justDelete; updateDeployButton();});
+  connect(deleteSelector, &QRadioButton::toggled, [=, this](bool checked) {if(checked) logsMode = justDelete; updateDeployButton();});
   rowLayout->addWidget(deleteSelector);
 
   // Hack: Without this, the buttons are not aligned correctly
@@ -447,7 +447,7 @@ QWidget* SettingsArea::createLogsTab(const std::function<void()>& updateDeployBu
   QRadioButton* downloadAndDeleteSelector = new QRadioButton("Download and delete");
   downloadAndDeleteSelector->setChecked(logsMode == downloadAndDelete);
   downloadAndDeleteSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(downloadAndDeleteSelector, &QRadioButton::toggled, [=](bool checked) {if(checked) logsMode = downloadAndDelete; updateDeployButton();});
+  connect(downloadAndDeleteSelector, &QRadioButton::toggled, [=, this](bool checked) {if(checked) logsMode = downloadAndDelete; updateDeployButton();});
   rowLayout->addWidget(downloadAndDeleteSelector);
 
   return widget;

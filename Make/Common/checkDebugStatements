@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+# Checks whether the passed files have lines that contain a list of strings (here: C++ debug statements).
+# It prints the file path and lines containing a debug statement, that is not commented out.
+# It is used as a pre-commit hook that fails (exit code 1) if any debug statement was found in the staged files. It passes (exit code 0) otherwise.
+
+import io
+import sys
+
+debug_statements = ["OUTPUT_TEXT", "OUTPUT_WARNING", "OUTPUT_ERROR"]
+
+def check_for_debug_statements(src_file):
+  has_debug_statements = False
+
+  with io.open(src_file, mode="r", encoding="utf-8", errors="ignore") as file:
+    for index, line in enumerate(file):
+      if line.strip().startswith("//"):
+        continue # Skip commented out lines
+      if any(text in line for text in debug_statements):
+        has_debug_statements = True
+        print(f"{src_file}: Debug statement in line {index + 1}:\n{line}")
+
+  return has_debug_statements
+
+
+def main():
+  has_debug_statements = False
+
+  for file in sys.argv[1:]:
+    has_debug_statements |= check_for_debug_statements(file)
+
+  if has_debug_statements:
+    print("If you really want to include these debug statement(s) in your commit, you can skip this hook with $SKIP=check-debug-statements git commit")
+
+  return 1 if has_debug_statements else 0
+
+
+if __name__ == "__main__":
+  sys.exit(main())

@@ -22,6 +22,6 @@ STREAMABLE(CirclePercept,
   void verify() const,
 
   (Vector2f)(Vector2f::Zero()) pos, /**< The position of the center of the center circle in field coordinates */
-  (Matrix2f) cov,                   /**< The covariance of the center circle "measurement" */
+  (Matrix2f)((Matrix2f() << 1.f, 0.f, 0.f, 1.f).finished()) cov,  /**< The covariance of the center circle "measurement" */
   (bool)(false) wasSeen,            /**< Has the percept been seen in the last frame? */
 });

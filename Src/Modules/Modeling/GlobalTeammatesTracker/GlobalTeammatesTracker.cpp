@@ -19,14 +19,14 @@ GlobalTeammatesTracker::GlobalTeammatesTracker()
   // and when returning from a penalty.
   // The exact positions depend on the referees, thus the hardcoded values
   // here are rough guesses that should cover most situations.
-  const Geometry::Rect penaltyPlacementLeftOwn  (Vector2f(-1000.f, theFieldDimensions.yPosLeftSideline + 200.f),
+  const Geometry::Rect penaltyPlacementLeftOwn  (Vector2f(-1000.f, theFieldDimensions.yPosLeftTouchline + 200.f),
                                               Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftFieldBorder + 100.f));
-  const Geometry::Rect penaltyPlacementRightOwn (Vector2f(-1000.f, theFieldDimensions.yPosRightSideline - 200.f),
+  const Geometry::Rect penaltyPlacementRightOwn (Vector2f(-1000.f, theFieldDimensions.yPosRightTouchline - 200.f),
                                               Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightFieldBorder - 100.f));
-  const Geometry::Rect returnFromPenaltyLeftOwn (Vector2f(theFieldDimensions.xPosOwnPenaltyMark - 700.f, theFieldDimensions.yPosLeftSideline - 200),
-                                              Vector2f(theFieldDimensions.xPosOwnPenaltyMark + 700.f, theFieldDimensions.yPosLeftSideline + 400.f));
-  const Geometry::Rect returnFromPenaltyRightOwn(Vector2f(theFieldDimensions.xPosOwnPenaltyMark - 700.f, theFieldDimensions.yPosRightSideline - 400.f),
-                                              Vector2f(theFieldDimensions.xPosOwnPenaltyMark + 700.f, theFieldDimensions.yPosRightSideline+200));
+  const Geometry::Rect returnFromPenaltyLeftOwn (Vector2f(theFieldDimensions.xPosReturnFromPenalty - 700.f, theFieldDimensions.yPosLeftReturnFromPenalty - 400.f),
+                                              Vector2f(theFieldDimensions.xPosReturnFromPenalty + 700.f, theFieldDimensions.yPosLeftReturnFromPenalty + 200.f));
+  const Geometry::Rect returnFromPenaltyRightOwn(Vector2f(theFieldDimensions.xPosReturnFromPenalty - 700.f, theFieldDimensions.yPosRightReturnFromPenalty - 200.f),
+                                              Vector2f(theFieldDimensions.xPosReturnFromPenalty + 700.f, theFieldDimensions.yPosRightReturnFromPenalty + 400.f));
   penalizedRobotZonesOwnTeam.push_back(penaltyPlacementLeftOwn);
   penalizedRobotZonesOwnTeam.push_back(penaltyPlacementRightOwn);
   returnFromPenaltyZonesOwnTeam.push_back(returnFromPenaltyLeftOwn);

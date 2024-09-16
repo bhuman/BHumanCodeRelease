@@ -17,14 +17,11 @@ EnergySavingProvider::EnergySavingProvider()
 
 void EnergySavingProvider::update(EnergySaving& energySaving)
 {
+  // TODO write this code in cabsl ...
   // reset if no engine is using the energy saving mode
-  if(state == State::deactive)
+  if(!isActive)
     energySaving.shutDown();
-  else
-  {
-    lastState = state;
-    state = State::deactive;
-  }
+  isActive = false;
 
   energySaving.shutDown = [this, &energySaving]
   {
@@ -41,8 +38,9 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
     energySaving.state = EnergyState::resetState;
   };
 
-  energySaving.applyHeatAdjustment = [this, &energySaving](JointRequest& request, bool adjustLeftLeg, bool adjustRightLeg, bool adjustLeftArm, bool adjustRightArm, const bool standHigh, const bool accuratePositions)
+  energySaving.applyHeatAdjustment = [this, &energySaving](JointRequest& request, bool adjustLeftLeg, bool adjustRightLeg, bool adjustLeftArm, bool adjustRightArm, const bool standHigh, const bool onlyBaseOffset)
   {
+    isActive = true;
     usedResetInterpolation = theMotionInfo.isMotion(MotionPhase::stand) ? resetTimeNormal : resetTimeSlow;
     adjustLeftArm &= theArmMotionInfo.isKeyframeMotion(Arms::left, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::left] == ArmMotionRequest::none;
     adjustRightArm &= theArmMotionInfo.isKeyframeMotion(Arms::right, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::right] == ArmMotionRequest::none;
@@ -56,14 +54,13 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
       }
       else
         jointBaseOffset.angles.fill(0_deg);
+      interpolateBaseOffsetStartTimestamp = theFrameInfo.time;
     };
 
     auto applyBaseJointOffset = [&]
     {
       FOREACH_ENUM(Joints::Joint, joint)
-      {
-        request.angles[joint] += jointBaseOffset.angles[joint];
-      }
+        request.angles[joint] += jointBaseOffset.angles[joint] * Rangef::ZeroOneRange().limit(theFrameInfo.getTimeSince(interpolateBaseOffsetStartTimestamp) / baseOffsetInterpolationTime);
     };
 
     auto waitingFunc = [this, &energySaving]
@@ -93,6 +90,8 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
       {
         std::fill(emergencyChangeCounter.begin(), emergencyChangeCounter.end(), stepsBeforeEmergencyStep);
         energySaving.offsets.fill(0_deg);
+        std::fill(lastBaseOffset.begin(), lastBaseOffset.end(), 0_deg);
+        std::fill(lastOffsets.begin(), lastOffsets.end(), 0_deg);
         if(theFrameInfo.getTimeSince(motionChangeTimestamp) > motionChangeWaitTime)
         {
           hasGroundContact = theGroundContactState.contact;
@@ -142,132 +141,63 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
       }
     };
 
-    // Energy Saving Move is active
-    if(!accuratePositions)
+    switch(energySaving.state)
     {
-      state = State::energySaving;
-      if(lastState == State::accuratePosition)
+      case EnergyState::off:
       {
         lastOffsets = energySaving.offsets;
         lastBaseOffset = jointBaseOffset.angles;
-        energySaving.state = EnergyState::resetState;
+        hasGroundContact = theGroundContactState.contact;
+        setInitialOffset();
+        applyBaseJointOffset();
+        energySaving.state = EnergyState::waiting;
+        break; // Skip this break to go directly to waiting?
       }
-
-      switch(energySaving.state)
+      case EnergyState::waiting:
       {
-        case EnergyState::off:
-        {
-          setInitialOffset();
-          applyBaseJointOffset();
-          energySaving.state = EnergyState::waiting;
-          break; // Skip this break to go directly to waiting?
-        }
-        case EnergyState::waiting:
-        {
-          //wait a moment to make sure the robot reached it new position
+        //wait a moment to make sure the robot reached it new position
+        lastOffsets = energySaving.offsets;
+        lastBaseOffset = jointBaseOffset.angles;
+        if(!onlyBaseOffset)
           waitingFunc();
-          applyBaseJointOffset();
+        applyBaseJointOffset();
+        if(workingPreFunc())
           break;
-        }
-        case EnergyState::working:
-        {
-          applyBaseJointOffset();
-          if(workingPreFunc())
-            break;
-          //Adjust once in a while
-          if(theFrameInfo.getTimeSince(adjustTimestamp) > adjustWaitTime)
-          {
-            adjustTimestamp = theFrameInfo.time;
-            std::vector<Angle> jointDiffs(Joints::numOfJoints);
-            std::size_t lastJoint = !adjustOnlyOneLegJoint ? Joints::numOfJoints : Joints::firstLeftLegJoint;
-            // Only adjust the leg joint with the highest current
-            if(adjustOnlyOneLegJoint)
-              applyJointEnergySaving(theFilteredCurrent.legJointWithHighestCurrent, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
-            for(std::size_t i = 0; i < lastJoint; i++)
-            {
-              applyJointEnergySaving(i, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
-            }
-            //cap the offsets and count how many offsets are capped. If too many are capped, reset the offsets
-            workingPostFunc();
-          }
-          break;
-        }
-        case EnergyState::resetState:
-        {
-          resetFunc();
-          applyBaseJointOffset();
-          break;
-        }
+        break;
       }
-    }
-    // Calibration Mode is active
-    else
-    {
-      state = State::accuratePosition;
-      if(lastState == State::energySaving)
+      case EnergyState::working:
       {
         lastOffsets = energySaving.offsets;
         lastBaseOffset = jointBaseOffset.angles;
-        energySaving.state = EnergyState::resetState;
-      }
-
-      switch(energySaving.state)
-      {
-        case EnergyState::waiting:
-        {
-          //wait a moment to make sure the robot reached it new position
-          waitingFunc();
+        applyBaseJointOffset();
+        if(workingPreFunc())
           break;
-        }
-        case EnergyState::working:
+        //Adjust once in a while
+        if(theFrameInfo.getTimeSince(adjustTimestamp) > adjustWaitTime)
         {
-          if(workingPreFunc())
-            break;
-          //Adjust once in a while
-          if(theFrameInfo.getTimeSince(adjustTimestamp) > adjustWaitTime)
+          adjustTimestamp = theFrameInfo.time;
+          std::vector<Angle> jointDiffs(Joints::numOfJoints);
+          std::size_t lastJoint = !adjustOnlyOneLegJoint ? Joints::numOfJoints : Joints::firstLeftLegJoint;
+          // Only adjust the leg joint with the highest current
+          if(adjustOnlyOneLegJoint)
+            applyJointEnergySaving(theFilteredCurrent.legJointWithHighestCurrent, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
+          for(std::size_t i = 0; i < lastJoint; i++)
           {
-            adjustTimestamp = theFrameInfo.time;
-            std::vector<Angle> jointDiffs(Joints::numOfJoints);
-            for(size_t i = 0; i < energySaving.offsets.size(); i++)
-            {
-              if(i < Joints::firstLegJoint)
-                continue;
-
-              jointDiffs[i] = request.angles[i] - theJointAngles.angles[i];
-              if(minGearStep < std::abs(jointDiffs[i]))
-              {
-                //It can happen, that the offset changes around the current measured joint value.
-                //In such a case, we adjust by maxGearStep, because if the joint moved a bit more,
-                //the current often jumps down to a low value.
-                emergencyChangeCounter[i] -= 1;
-                if(emergencyChangeCounter[i] <= 0)
-                {
-                  energySaving.offsets[i] += maxGearStepLegs;
-                  emergencyChangeCounter[i] = stepsBeforeEmergencyStep;
-                }
-                else
-                {
-                  //adjust step is smaller than the minimal step the gears can do
-                  //this help to reach a better optimal offset
-                  //check if we can do a big step to adjust the arm as fast as possible
-                  Angle dif = std::abs(jointDiffs[i]);
-                  Angle step = dif > maxGearStepLegs && i >= Joints::firstLegJoint ? maxGearStepLegs : Angle(minGearStep / 2.f);
-                  energySaving.offsets[i] += (jointDiffs[i] > 0 ? 1 : -1) * step;
-                }
-              }
-            }
-            //cap the offsets and count how many offsets are capped. If too many are capped, reset the offsets
-            workingPostFunc();
+            applyJointEnergySaving(i, energySaving, request, adjustLeftLeg, adjustRightLeg, adjustLeftArm, adjustRightArm, standHigh, jointDiffs);
           }
-          break;
+          //cap the offsets and count how many offsets are capped. If too many are capped, reset the offsets
+          workingPostFunc();
         }
-        case EnergyState::resetState:
-        {
-          resetFunc();
-          break;
-        }
+        break;
+      }
+      case EnergyState::resetState:
+      {
+        resetFunc();
+        applyBaseJointOffset();
+        break;
       }
     }
+
     FOREACH_ENUM(Joints::Joint, joint)
       request.angles[joint] += energySaving.offsets[joint];
   };

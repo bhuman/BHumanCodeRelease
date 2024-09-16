@@ -11,8 +11,17 @@ cd "$(dirname "$(which "$0")")/../.."
 # Separate them by '|'.
 USED="$(
   (
-    grep -R "^ *LOADS_PARAMETERS" Src/* \
+    grep -R "^ *LOADS_PARAMETERS(" Src/* \
     | sed -e 's%.*/%%' -e 's%\..*%%'
+    grep -R "^ *load(" Src/* \
+    | sed -e 's%[^:]*/%option%' -e 's%\..*%%'
+    grep -R '\.cfg"' Src/* \
+    | tr '"' '\n' \
+    | grep '.\.cfg$' \
+    | grep -v ' ' \
+    | sed -e 's%.*/%%' -e 's%\.cfg$%%'
+    grep -R "^ *load(" Src/* \
+    | sed -e 's%.*/%option%' -e 's%\..*%%'
     grep -R '\.cfg"' Src/* \
     | tr '"' '\n' \
     | grep '.\.cfg$' \
@@ -28,9 +37,16 @@ USED="$(
 )"
 
 # Find configuration file name stems, exclude all that are used.
+UNUSED="$(
 (
   find Config -name "*.cfg" ! -path 'Config/Behavior/*' \
   | sed -e 's%.*/%%' -e 's%\..*%%' \
   | sort | uniq | sed 's%Impl$%%' \
 ) \
-| grep -viE "^($USED)$" | sed 's%$%.cfg%'
+| grep -viE "^($USED)$" | sed -e 's%$%.cfg%' -e 's/^/Unused configuration file: /'
+)"
+
+if [ ! -z "$UNUSED" ]; then
+  echo "$UNUSED"
+  exit 1
+fi

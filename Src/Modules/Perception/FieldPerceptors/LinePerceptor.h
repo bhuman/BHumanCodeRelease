@@ -65,8 +65,6 @@ MODULE(LinePerceptor,
     (Angle) minCircleAngleBetweenSpots,      /**< minimum angular distance around the circle center that has to be spanned by a circle candidate */
     (unsigned int) minSpotsOnCircle,         /**< minimum number of spots on the center circle */
     (float) minCircleWhiteRatio,             /**< minimum ratio of white pixels in the center circle */
-    (float) sqrCircleClusterRadius,          /**< squared radius for clustering center circle candidates */
-    (unsigned) minCircleClusterSize,         /**< minimum size of a cluster to be considered a valid circle candidate */
     (bool) trimLines,                        /**< whether lines extended by robots shall be trimmed */
     (bool) trimLinesCalibration,
     (int) maxWidthImage,                     /**< maximum width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks*/
@@ -190,9 +188,9 @@ private:
     }
 
     /**
-    * Calculates how much of a circle corresponding to this candidate lies between the outermost fieldSpots.
-    * @return Portion of the candidate that is between the outermost fieldSpots expressed as an angle.
-    */
+     * Calculates how much of a circle corresponding to this candidate lies between the outermost fieldSpots.
+     * @return Portion of the candidate that is between the outermost fieldSpots expressed as an angle.
+     */
     Angle circlePartInImage() const
     {
       Vector2f referenceVector = fieldSpots[0] - center;
@@ -233,22 +231,10 @@ private:
     }
   };
 
-  /**
-   * Structure for clustering center circle candidates.
-   */
-  struct CircleCluster
-  {
-    Vector2f center;
-    std::vector<Vector2f> centers;
-
-    CircleCluster(const Vector2f& center) : center(center) { centers.emplace_back(center); }
-  };
-
   std::vector<std::vector<Spot>> spotsH;
   std::vector<std::vector<Spot>> spotsV;
   std::vector<Candidate> candidates;
   std::vector<CircleCandidate, Eigen::aligned_allocator<CircleCandidate>> circleCandidates;
-  std::vector<CircleCluster> clusters;
 
   /** distance in mm where the field next to the line is sampled during white checks */
   const float whiteCheckDistance = theFieldDimensions.fieldLinesWidth * 2;
@@ -335,13 +321,6 @@ private:
    * @return whether the candidate is valid before and after the correction
    */
   bool correctCircle(CircleCandidate& circle) const;
-
-  /**
-   * Adds the given potential circle center to a center circle cluster.
-   *
-   * @param center potential circle center coordinates
-   */
-  void clusterCircleCenter(const Vector2f& center);
 
   /**
    * Sets a flag on all lines in the LinePercept that lie on the detected center
@@ -436,6 +415,5 @@ public:
     spotsV.reserve(20);
     candidates.reserve(50);
     circleCandidates.reserve(50);
-    clusters.reserve(20);
   }
 };

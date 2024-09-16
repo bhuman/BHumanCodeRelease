@@ -26,7 +26,7 @@ set(MATHBASE_SOURCES
 
 add_library(MathBase${TARGET_SUFFIX} OBJECT ${MATHBASE_SOURCES})
 target_sources(MathBase${TARGET_SUFFIX} INTERFACE $<TARGET_OBJECTS:Platform${TARGET_SUFFIX}>)
-if(WINDOWS AND (NOT PYTHON_ONLY))
+if(WINDOWS AND NOT MINIMAL_PROJECT)
   target_sources(MathBase${TARGET_SUFFIX} INTERFACE "${BHUMAN_PREFIX}/Util/Buildchain/Windows/Visualizers/Angle.natvis")
 endif()
 set_property(TARGET MathBase${TARGET_SUFFIX} PROPERTY FOLDER "Libs/${TARGET_SUFFIX}")

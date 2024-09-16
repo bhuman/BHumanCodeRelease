@@ -21,6 +21,7 @@
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 
@@ -34,6 +35,7 @@ MODULE(OracledPerceptsProvider,
   REQUIRES(MeasurementCovariance),
   PROVIDES(BallPercept),
   PROVIDES(CirclePercept),
+  PROVIDES(GoalPostsPercept),
   PROVIDES(LinesPercept),
   PROVIDES(ObstaclesFieldPercept),
   PROVIDES(ObstaclesImagePercept),
@@ -59,6 +61,10 @@ MODULE(OracledPerceptsProvider,
     (float) playerMaxVisibleDistance,                /**< Maximum distance until which this object can be seen */
     (float) playerRecognitionRate,                   /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (float) playerFalsePositiveRate,                 /**< Likelihood of perceiving a false positive when no player was seen */
+    (bool)  applyNearGoalPostNoise,                  /**< Activate / Deactivate noise for goal post percepts */
+    (float) nearGoalPostPosInImageStdDev,            /**< Standard deviation of error in pixels (x as well as y) */
+    (float) nearGoalPostMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
+    (float) nearGoalPostRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (bool)  applyPenaltyMarkNoise,                   /**< Activate / Deactivate noise for penalty marks */
     (float) penaltyMarkPosInImageStdDev,             /**< Standard deviation of error in pixels (x as well as y) */
     (float) penaltyMarkMaxVisibleDistance,           /**< Maximum distance until which this object can be seen */
@@ -94,6 +100,11 @@ private:
   void update(BallPercept& ballPercept) override;
   void trueBallPercept(BallPercept& ballPercept);
   void falseBallPercept(BallPercept& ballPercept);
+
+  /** One main function, might be called every cycle
+   * @param goalPostsPercept The data struct to be filled
+   */
+  void update(GoalPostsPercept& goalPostsPercept) override;
 
   /** One main function, might be called every cycle
    * @param linesPercept The data struct to be filled

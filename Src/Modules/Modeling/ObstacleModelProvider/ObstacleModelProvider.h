@@ -94,7 +94,7 @@ MODULE(ObstacleModelProvider,
     (unsigned) minSamplesForCalculation,       /**< The minimum samples for velocity calculation. */
     (int) minVelocityForMotionDetection,       /**< Minimum valid speed of a robot in mm/s. */
     (int) maxVelocityForMotionDetection,       /**< Maximum valid speed of a robot in mm/s. */
-    // ObstacleHypothesis::considerType
+    // ObstacleHypothesis::determineAndSetType
     (int) teamThreshold,                       /**< Only switch team if this threshold is reached. */
     (int) uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
   }),

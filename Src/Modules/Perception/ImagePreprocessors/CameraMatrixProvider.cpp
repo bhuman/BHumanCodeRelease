@@ -18,8 +18,10 @@ void CameraMatrixProvider::update(CameraMatrix& cameraMatrix)
   cameraMatrix.isValid = theTorsoMatrix.isValid && theMotionInfo.isMotionStable &&
                          (theFallDownState.state == FallDownState::upright ||
                           theFallDownState.state == FallDownState::squatting) &&
-                         theFrameInfo.getTimeSince(theJointSensorData.timestamp) < 500 &&
-                         (!theGameState.isPenalized() || theGameState.playerState == GameState::penalizedIllegalMotionInSet);
+                          theFrameInfo.getTimeSince(theJointAngles.timestamp) < 500 &&
+                         (!theGameState.isPenalized() ||
+                          theGameState.playerState == GameState::penalizedIllegalMotionInSet ||
+                          theGameState.playerState == GameState::penalizedIllegalMotionInStandby);
 
   DEBUG_DRAWING("module:CameraMatrixProvider:calibrationHelper", "drawingOnImage") drawFieldLines(cameraMatrix);
   DEBUG_DRAWING3D("module:CameraMatrixProvider:cameraMatrix", "field")

@@ -29,7 +29,9 @@ void ExtendedGameStateProvider::update(ExtendedGameState& extendedGameState)
   {
     if(playerStateLastFrame == GameState::penalizedManual)
       extendedGameState.returnFromManualPenalty = true;
-    else if(GameState::isPenalized(playerStateLastFrame) && playerStateLastFrame != GameState::penalizedIllegalMotionInSet &&
+    else if(GameState::isPenalized(playerStateLastFrame) &&
+            playerStateLastFrame != GameState::penalizedIllegalMotionInSet &&
+            playerStateLastFrame != GameState::penalizedIllegalMotionInStandby &&
             theFrameInfo.getTimeSince(timeWhenPenalized) > (playerStateLastFrame == GameState::penalizedIllegalPositionInSet ? minPenaltyTimeIPS : minPenaltyTime))
       extendedGameState.returnFromGameControllerPenalty = true;
   }

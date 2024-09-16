@@ -91,11 +91,9 @@ copy()
   echo "updating bhuman"
   rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0 ../../Config/. nao@$REMOTE:/home/nao/Config
 
-  # set playback volume and reset capture value to 75%
+  # set playback volume
   echo "setting volume to $VOLUME%"
-  CAPTURE_VOLUME=75
-  echo "setting capture volume to $CAPTURE_VOLUME%"
-  ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setvolume $VOLUME $CAPTURE_VOLUME"
+  ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setvolume $VOLUME"
 
   # set settings on robot
   SEDFLAGS="$(settingsReplacements)"

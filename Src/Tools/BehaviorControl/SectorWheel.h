@@ -42,8 +42,9 @@ public:
   /**
    * Calculates the wheel for a given center position (e.g. hypothetical ball position).
    * @param positionOnField The center position.
+   * @param distance The distance from the wheel center at which this sector ends. Defaults to float::max.
    */
-  void begin(const Vector2f& positionOnField);
+  void begin(const Vector2f& positionOnField, float distance = std::numeric_limits<float>::max());
 
   /**
    * Post-processes and returns the calculated wheel.
@@ -122,7 +123,7 @@ inline SectorWheel::Sector::Sector(const Rangea& angleRange, float distance, Typ
     for(const auto& sector : wheel) \
     { \
       ColorRGBA color; \
-      switch (sector.type) \
+      switch(sector.type) \
       { \
         case SectorWheel::Sector::free: \
           color = ColorRGBA(0, 255, 0, 125); \

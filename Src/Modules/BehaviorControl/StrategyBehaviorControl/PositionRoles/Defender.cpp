@@ -1,345 +1,99 @@
 /**
  * @file Defender.cpp
  *
- * This file implements the defender role.
+ * This file implements the Defender role.
+ * Tries to cover as much space as possible by staying far away from the teammates and the field border while not deviate to much from the base pose.
+ * It tries to maximize a rating function that is manly based on the distance to the closest teammate.
  *
- * @author Jesse Richter-Klug
- * @author Arne Hasselbring
+ * @author Yannik Meinken
  */
 
 #include "Defender.h"
-#include "Tools/BehaviorControl/Strategy/Agent.h"
-#include "Debugging/DebugDrawings.h"
-#include "Debugging/Modify.h"
-#include "Debugging/Annotation.h"
+#include "Math/Geometry.h"
 
 void Defender::preProcess()
 {
-  MODIFY("parameters:behavior:Defender", p);
-  DECLARE_DEBUG_DRAWING("behavior:Defender:position", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("behavior:Defender:coverage", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("behavior:Defender:isLeft", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("behavior:Defender:bobLines", "drawingOnField");
+  RatingRole::preProcess();
+  DECLARE_DEBUG_DRAWING("behavior:Defender:communicatedPosition", "drawingOnField");
+  MODIFY("behavior:Defender", p);
+
+  //override parameters of the base class
+  RatingRole::p.startThreshold = p.startThreshold;
+  RatingRole::p.stopThreshold = p.stopThreshold;
 }
 
-Pose2f Defender::position(Side side, const Pose2f& basePose, const std::vector<Vector2f>&, const Agents& teammates)
+float Defender::rating(const Vector2f& pos) const
 {
-  if(theGameState.isGoalKick() && theGameState.isForOwnTeam())
-    return basePose;
+  //outside the Voronoi region, the rating is 0
+  if(!Geometry::isPointInsideConvexPolygon(region.data(), static_cast<int>(region.size()), pos))
+    return 0.f;
 
-  goalkeeper = teammates.byPosition(Tactic::Position::goalkeeper);
-  if(side == unspecified || side == center)
+  //get distance to next field border
+  const float borderDistance = std::min(std::max(0.f, theFieldDimensions.xPosOpponentGoalLine - std::abs(pos.x())),
+                                        std::max(0.f, theFieldDimensions.yPosLeftTouchline - std::abs(pos.y())));
+
+  //better rating far away from the field border
+  const float borderRating = 1.f - std::exp(-0.5f * sqr(borderDistance) / sqr(p.sigmaBorder));
+
+  //get the rating based on the nearest teammate
+  float rating = 1;
+  if(!theGlobalTeammatesModel.teammates.empty())
   {
-    otherDefender = nullptr;
-    side = calcDefenderRoyaleIsLeft(theRobotPose.translation.y() >= 0.f) ? left : right;
-  }
-  else if(side == left)
-    otherDefender = teammates.byPosition(Tactic::Position::defenderR);
-  else
-    otherDefender = teammates.byPosition(Tactic::Position::defenderL);
+    auto firstTeammate = theGlobalTeammatesModel.teammates.cbegin();
+    float minTeammateDistanceSquared = (pos - firstTeammate->pose.translation).squaredNorm();
 
-  Vector2f targetOnField = calcDefenderRoyalePosition(side == left);
-  if(theFieldDimensions.clipToField(targetOnField) > 0.f && theFrameInfo.getTimeSince(annotationTimestamp) > p.annotationTime)
-  {
-    annotationTimestamp = theFrameInfo.time;
-    ANNOTATION("behavior:role:Defender", "Clipped defender position into field");
-  }
-
-  return Pose2f((theFieldBall.recentBallPositionOnField() - targetOnField).angle(), targetOnField);
-}
-
-Pose2f Defender::tolerance() const
-{
-  const float distanceFactor = mapToRange(theFieldBall.recentBallPositionRelative().norm(), p.ballDistanceInterpolationRange.min, p.ballDistanceInterpolationRange.max, 0.f, 1.f);
-  const Angle rotationThreshold = distanceFactor * p.rotationThresholdRange.max + (1.f - distanceFactor) * p.rotationThresholdRange.min;
-  const float translationXThreshold = distanceFactor * p.translationXThresholdRange.max + (1.f - distanceFactor) * p.translationXThresholdRange.min;
-  const float translationYThreshold = distanceFactor * p.translationYThresholdRange.max + (1.f - distanceFactor) * p.translationYThresholdRange.min;
-  return Pose2f(rotationThreshold, translationXThreshold, translationYThreshold);
-}
-
-bool Defender::shouldStop(const Pose2f& target) const
-{
-  const Pose2f error = target.inverse() * theRobotPose;
-  return std::abs(error.rotation) < p.shouldStopRotation &&
-         std::abs(error.translation.x()) < p.shouldStopTranslation.x() &&
-         std::abs(error.translation.y()) < p.shouldStopTranslation.y();
-}
-
-Vector2f Defender::calcDefenderRoyalePosition(const bool isLeftDefender) const
-{
-  const Vector2f ballPositionField(theFieldBall.recentBallPositionOnField());
-
-  const Vector2f leftUpperDefenderGoalArea(theFieldDimensions.xPosOwnGoalArea + p.defenderRoyaleDistanceToGoalArea,
-                                           theFieldDimensions.yPosLeftGoalArea + p.defenderRoyaleDistanceToGoalArea);
-  const Vector2f rightUpperDefenderGoalArea(theFieldDimensions.xPosOwnGoalArea + p.defenderRoyaleDistanceToGoalArea,
-                                            theFieldDimensions.yPosRightGoalArea - p.defenderRoyaleDistanceToGoalArea);
-
-  LINE("behavior:Defender:position", leftUpperDefenderGoalArea.x(), leftUpperDefenderGoalArea.y(), rightUpperDefenderGoalArea.x(), rightUpperDefenderGoalArea.y(), 20, Drawings::dottedPen, ColorRGBA::gray);
-
-  const Vector2f circleBase(theFieldDimensions.xPosOwnGroundLine, 0.f);
-  const float minRadius((circleBase - leftUpperDefenderGoalArea).norm());
-  const float maxRadius(theFieldDimensions.yPosLeftSideline);
-
-  CIRCLE("behavior:Defender:position", circleBase.x(), circleBase.y(), minRadius, 20, Drawings::dashedPen, ColorRGBA::gray, Drawings::noPen, ColorRGBA::black);
-  CIRCLE("behavior:Defender:position", circleBase.x(), circleBase.y(), maxRadius, 20, Drawings::dashedPen, ColorRGBA::gray, Drawings::noPen, ColorRGBA::black);
-
-  const Geometry::Line cutLine(Pose2f(-pi_2, leftUpperDefenderGoalArea));
-  Vector2f firstIntersection;
-  Vector2f secondIntersection;
-
-  const Angle minAngleMayChangeSide((Vector2f(theFieldDimensions.xPosOwnGroundLine - (theFieldDimensions.xPosOwnGroundLine - theFieldDimensions.xPosOwnPenaltyArea), theFieldDimensions.yPosLeftSideline) - circleBase).angle());
-  const Angle minAngleMustChangeSide((Vector2f(theFieldDimensions.xPosOwnPenaltyArea + (theFieldDimensions.xPosOwnGroundLine - theFieldDimensions.xPosOwnPenaltyArea) / 3, theFieldDimensions.yPosLeftSideline) - circleBase).angle());
-  const Angle ballAngle((ballPositionField - circleBase).angle());
-
-  const bool single = !otherDefender;
-
-  float radius(minRadius);
-  const bool forward = !single && isRoyalePositionForward(radius, isLeftDefender, otherDefender, maxRadius, minRadius, ballPositionField);
-
-  std::vector<Vector2f> intersections;
-  std::vector<Geometry::Line> calcLines;
-
-  if((isLeftDefender && ballAngle < minAngleMustChangeSide) || (!isLeftDefender && ballAngle > -minAngleMustChangeSide))
-    calcDefenderBObLine(isLeftDefender, radius, calcLines);
-
-  if((isLeftDefender && ballAngle > minAngleMayChangeSide) || (!isLeftDefender && ballAngle < -minAngleMayChangeSide))
-    calcDefenderBObLine(!isLeftDefender, radius, calcLines);
-
-  ASSERT(!calcLines.empty());
-
-  CIRCLE("behavior:Defender:position", circleBase.x(), circleBase.y(), radius, 20, Drawings::solidPen, forward ? ColorRGBA::red : ColorRGBA::orange, Drawings::noPen, ColorRGBA::black);
-
-  for(const Geometry::Line& positionLine : calcLines)
-  {
-    const Geometry::Circle circle(circleBase, radius);
-    VERIFY(Geometry::getIntersectionOfLineAndCircle(positionLine, circle, firstIntersection, secondIntersection) == 2);
-    Vector2f intersection((firstIntersection - ballPositionField).squaredNorm() < (secondIntersection - ballPositionField).squaredNorm() ? firstIntersection : secondIntersection);
-
-    LINE("behavior:Defender:position", positionLine.base.x(), positionLine.base.y(), positionLine.base.x() + positionLine.direction.x(), positionLine.base.y() + positionLine.direction.y(), 20, Drawings::solidPen, isLeftDefender ? ColorRGBA::yellow : ColorRGBA::blue);
-    CROSS("behavior:Defender:position", intersection.x(), intersection.y(), 100, 20, Drawings::solidPen, ColorRGBA::gray);
-
-    if(!forward && intersection.x() > leftUpperDefenderGoalArea.x())
-      VERIFY(Geometry::getIntersectionOfLines(positionLine, cutLine, intersection));
-
-    CROSS("behavior:Defender:position", intersection.x(), intersection.y(), 100, 20, Drawings::solidPen, ColorRGBA::gray);
-
-    if(!single)
+    for(auto t = ++theGlobalTeammatesModel.teammates.cbegin(); t != theGlobalTeammatesModel.teammates.cend(); t++)
     {
-      if(isLeftDefender)
-      {
-        const float minYForLeft(theFieldDimensions.yPosRightGoal / 2);
-        const Geometry::Line minYForLeftLine(Pose2f(0.f, minYForLeft));
-        if(minYForLeft > intersection.y())
-        {
-          VERIFY(Geometry::getIntersectionOfLines(positionLine, minYForLeftLine, intersection));
-          if(leftUpperDefenderGoalArea.x() > intersection.x())
-            intersection.x() = leftUpperDefenderGoalArea.x();
-        }
-      }
-      else
-      {
-        const float maxYForRight(theFieldDimensions.yPosLeftGoal / 2);
-        const Geometry::Line maxYForRightLine(Pose2f(0.f, maxYForRight));
-        if(maxYForRight < intersection.y())
-        {
-          VERIFY(Geometry::getIntersectionOfLines(positionLine, maxYForRightLine, intersection));
-          if(leftUpperDefenderGoalArea.x() > intersection.x())
-            intersection.x() = leftUpperDefenderGoalArea.x();
-        }
-      }
+      const float d = (pos - t->pose.translation).squaredNorm();
+      if(d < minTeammateDistanceSquared)
+        minTeammateDistanceSquared = d;
     }
 
-    CROSS("behavior:Defender:position", intersection.x(), intersection.y(), 100, 20, Drawings::solidPen, isLeftDefender ? ColorRGBA::yellow : ColorRGBA::blue);
-    intersections.push_back(intersection);
+    //better rating far away from teammates
+    rating = 1.f - std::exp(-0.5f * minTeammateDistanceSquared / sqr(p.sigmaTeam));
   }
 
-  ASSERT(!intersections.empty());
-  const Vector2f intersection(intersections.size() == 1 || (intersections[0] - theRobotPose.translation).squaredNorm() < (intersections[1] - theRobotPose.translation).squaredNorm()
-                              ? intersections[0]
-                              : intersections[1]);
-  return returnPositionWithDraw(intersection);
-}
+  // rating based on the distance to the base pose. Closer to base pose is better
+  const float baseRating = std::exp(-0.5f * (pos - base).squaredNorm() / sqr(p.sigmaBase));
 
-const Vector2f& Defender::returnPositionWithDraw(const Vector2f& position) const
-{
-  COMPLEX_DRAWING("behavior:Defender:coverage")
+  // get the rating based on potentially marked opponents
+  float markRating = p.minMarkRating;
+  for(const auto& opponent : theGlobalOpponentsModel.opponents)
   {
-    const Vector2f gloBallPos = theRobotPose * theFieldBall.positionRelative; // todo????
+    const Vector2f gloObstacleToBlock = opponent.position;
 
-    const Vector2f offset = Vector2f(0.f, 1.f).rotate((gloBallPos - position).angle());
+    // compute the 'ideal' position to mark this opponent
+    const Vector2f markPosition =
+      gloObstacleToBlock + (Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f) - gloObstacleToBlock).normalized(p.distToMarkedRobot);
 
-    const float standRange = 80.f;
-    const float genuflectRange = 200.f;
-    const float jumpRange = 600.f;
+    // rating based on the distance to the ideal mark position for this opponent
+    float localMarkRating = (1.f - p.minMarkRating) * std::exp(-0.5f * (pos - markPosition).squaredNorm() / sqr(p.sigmaMark));
+    localMarkRating *= (1 - theExpectedGoals.getOpponentRating(opponent.position)); // higher rating if the opponent is a good position to score
 
-    auto drawOffset = [&](const float range, [[maybe_unused]] const ColorRGBA color)
-    {
-      const Vector2f rangeOffset = offset.normalized(range);
-      const Vector2f defenderLeft = position + rangeOffset;
-      const Vector2f defenderRight = position - rangeOffset;
-
-      const Geometry::Line leftLine(gloBallPos, defenderLeft - gloBallPos);
-      const Geometry::Line rightLine(gloBallPos, defenderRight - gloBallPos);
-
-      const Vector2f bottomLeft(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline);
-      const Vector2f topRight(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
-
-      Vector2f useLeft;
-      Vector2f useRight;
-
-      Vector2f intersection1;
-      Vector2f intersection2;
-      if(!Geometry::getIntersectionPointsOfLineAndRectangle(bottomLeft, topRight, leftLine, intersection1, intersection2))
-        return;
-      useLeft = (intersection1 - position).squaredNorm() < (intersection1 - gloBallPos).squaredNorm() ? intersection1 : intersection2;
-
-      if(!Geometry::getIntersectionPointsOfLineAndRectangle(bottomLeft, topRight, rightLine, intersection1, intersection2))
-        return;
-      useRight = (intersection1 - position).squaredNorm() < (intersection1 - gloBallPos).squaredNorm() ? intersection1 : intersection2;
-
-      const Vector2f points[4] = { defenderLeft, defenderRight, useRight, useLeft };
-      POLYGON("behavior:Defender:coverage", 4, points, 10, Drawings::noPen, color, Drawings::solidBrush, color);
-    };
-
-    const Vector2f points[3] = { gloBallPos, Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightGoal), Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftGoal) };
-    POLYGON("behavior:Defender:coverage", 3, points, 10, Drawings::noPen, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50), Drawings::solidBrush, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50));
-
-    drawOffset(jumpRange, ColorRGBA(ColorRGBA::orange.r, ColorRGBA::orange.g, ColorRGBA::orange.b, 50));
-    drawOffset(genuflectRange, ColorRGBA(ColorRGBA::violet.r, ColorRGBA::violet.g, ColorRGBA::violet.b, 100));
-    drawOffset(standRange, ColorRGBA(ColorRGBA::green.r, ColorRGBA::green.g, ColorRGBA::green.b, 200));
+    // combine ratings for all opponents. It could potentially add up to above 1
+    markRating += localMarkRating;
   }
-  return position;
-}
+  // clip mark rating as it could be added up to above 1
+  markRating = std::min(1.f, markRating);
 
-bool Defender::isRoyalePositionForward(float& radius, const bool isLeftDefender, const Agent* otherDefender,
-                                       const float maxRadius, const float minRadius, const Vector2f& ballPositionField) const
-{
-  bool forward(ballPositionField.x() > theFieldDimensions.centerCircleRadius);
+  // rating based on the distance to the line between ball and own goal
+  float goalLineRating = p.minGoalLineRating;
+  const Vector2f ballOnField = theFieldBall.recentBallPositionOnField();
+  Geometry::Line ballToGoal = Geometry::Line(ballOnField, Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f) - ballOnField);
 
-  const float actualRadius((Pose2f(theFieldDimensions.xPosOwnGroundLine, 0.f).inverse() * theRobotPose.translation).norm());
-  const bool actualForward(actualRadius - minRadius > p.minXDiffToBeClearForward);
-
-  const Pose2f secondDefenderPosition(otherDefender->pose);
-  const float secondDefenderRadius((Pose2f(theFieldDimensions.xPosOwnGroundLine, 0.f).inverse() * secondDefenderPosition.translation).norm());
-  const bool isSecondDefenderForward(secondDefenderRadius - minRadius > p.minXDiffToBeClearForward);
-
-  if(actualForward != isSecondDefenderForward || (!actualForward && !forward))
-    forward = actualForward;
-  else if((std::abs(theRobotPose.rotation) < pi_4 && std::abs(secondDefenderPosition.rotation) > pi3_4) ||
-          (std::abs(theRobotPose.rotation) > pi3_4 && std::abs(secondDefenderPosition.rotation) < pi_4))
-    forward = std::abs(theRobotPose.rotation) < pi_4;
-  else
-    forward = isLeftDefender ? ballPositionField.y() > 0.f : ballPositionField.y() < 0.f;
-
-  if(forward)
-    radius = std::min(maxRadius, std::max((Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f) - ballPositionField).norm() - p.defenderRoyaleForwardDistanceToBall, minRadius));
-  else
-    radius = minRadius;
-
-  return forward;
-}
-
-void Defender::calcDefenderBObLine(const bool isLeftDefender, const float radius, std::vector<Geometry::Line>& bobLine) const
-{
-  const bool isKeeperOnField = goalkeeper && theLibPosition.isInOwnPenaltyArea(goalkeeper->currentPosition);
-  const bool single(!otherDefender);
-
-  if(!isKeeperOnField && single)
+  // only positions between the ball and goal are valid
+  if(pos.x() < ballOnField.x())
   {
-    bobLine.emplace_back(theGoaliePose.goaliePoseField);
-    return;
+    const float distanceBallToGoalLine = Geometry::getDistanceToLine(ballToGoal, pos);
+    goalLineRating += (1 - p.minGoalLineRating) * std::exp(-0.5f * sqr(distanceBallToGoalLine) / sqr(p.sigmaBallLine));
   }
 
-  const float sign = isLeftDefender ? 1.f : -1.f;
+  // Positions near the last communicated target pose are better
+  const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
+  const float communicationRating = p.minCommunicationRating +
+                                    (1.f - p.minCommunicationRating) * std::exp(-0.5f * (pos - lastTargetInWorld).squaredNorm() / sqr(p.sigmaCommunication));
+  CROSS("behavior:Defender:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
-  const Vector2f ballPositionField(theFieldBall.recentBallPositionOnField());
-  const Geometry::Line groundLine(Pose2f(pi_2, theFieldDimensions.xPosOwnGroundLine, 0.f));
-
-  const Vector2f outerGoaliePoint = theGoaliePose.goaliePoseField * Vector2f(0.f, sign * theBehaviorParameters.standRadius);
-  const Vector2f goalPost(theFieldDimensions.xPosOwnGoalPost, isLeftDefender ? theFieldDimensions.yPosLeftGoal : theFieldDimensions.yPosRightGoal);
-
-  /// that case we want (cover the center between goalie and goal post)
-  const Geometry::Line ballOuterGoalieLine(ballPositionField, outerGoaliePoint - ballPositionField);
-  const bool isOptimumValid = isLeftDefender == Geometry::isPointLeftOfLine(outerGoaliePoint, ballPositionField, goalPost);
-  const Vector2f centerPoint = (goalPost + outerGoaliePoint) / 2.f;
-  const Angle positionAngleOptimum = (centerPoint - ballPositionField).angle();
-  RAY("behavior:Defender:bobLines", ballPositionField, positionAngleOptimum, 10, Drawings::solidPen, isOptimumValid ? ColorRGBA::white : ColorRGBA::gray);
-
-  const float coverageOffsetToGoalie = sign * theBehaviorParameters.standRadius * p.standOffsetMultiplierToAdjustGoalieDefenderLineDistance;
-  const Vector2f outerGoalieOffsetPoint = theGoaliePose.goaliePoseField * Vector2f(0.f, coverageOffsetToGoalie);
-  const Vector2f positionOffsetToGoalieAnchorPoint = ballPositionField + (outerGoalieOffsetPoint - theGoaliePose.goaliePoseField.translation);
-  const Angle positionOffsetToGoalieAngle = (outerGoalieOffsetPoint - ballPositionField).angle(); //ball position is right here
-  RAY("behavior:Defender:bobLines", positionOffsetToGoalieAnchorPoint, positionOffsetToGoalieAngle, 10, Drawings::solidPen, ColorRGBA::green);
-
-  const Vector2f positionGenuOffsetToGoalPostAnchorPoint = ballPositionField - Vector2f(0.f, sign * theBehaviorParameters.genuflectRadius).rotate(theGoaliePose.goaliePoseField.rotation);
-  const Angle positionGenuOffsetToGoalPostAngle = (goalPost - ballPositionField).angle();
-  RAY("behavior:Defender:bobLines", positionGenuOffsetToGoalPostAnchorPoint, positionGenuOffsetToGoalPostAngle, 10, Drawings::solidPen, ColorRGBA::magenta);
-
-  const Vector2f circleBase(theFieldDimensions.xPosOwnGroundLine, 0.f);
-  const Geometry::Circle circle(circleBase, radius);
-  auto getComparableIntersectionAngleWithCircle = [&](const Geometry::Line& line, Angle& intersectionAngle)
-  {
-    Vector2f intersection1, intersection2;
-    if(Geometry::getIntersectionOfLineAndCircle(line, circle, intersection1, intersection2) != 2)
-      return false;
-
-    if((ballPositionField - intersection1).squaredNorm() > (ballPositionField - intersection2).squaredNorm())
-      intersectionAngle = (intersection2 - circleBase).angle() * sign;
-    else
-      intersectionAngle = (intersection1 - circleBase).angle() * sign;
-
-    return true;
-  };
-
-  const Geometry::Line optimumLine(Pose2f(positionAngleOptimum, ballPositionField));
-  const Geometry::Line nextToPostLine(Pose2f(positionGenuOffsetToGoalPostAngle, positionGenuOffsetToGoalPostAnchorPoint));
-  const Geometry::Line nextToGoalieLine(Pose2f(positionOffsetToGoalieAngle, positionOffsetToGoalieAnchorPoint));
-
-  Angle comparablePositionAngleOptimum, comparablePositionOffsetToGoalieAngle, comparablePositionGenuOffsetToGoalPostAngle;
-  VERIFY((!isOptimumValid || getComparableIntersectionAngleWithCircle(optimumLine, comparablePositionAngleOptimum))
-         && getComparableIntersectionAngleWithCircle(nextToPostLine, comparablePositionGenuOffsetToGoalPostAngle)
-         && getComparableIntersectionAngleWithCircle(nextToGoalieLine, comparablePositionOffsetToGoalieAngle));
-
-  if(isOptimumValid
-     && comparablePositionAngleOptimum > comparablePositionOffsetToGoalieAngle
-     && comparablePositionAngleOptimum > comparablePositionGenuOffsetToGoalPostAngle)
-    bobLine.emplace_back(Pose2f(positionAngleOptimum, ballPositionField));
-  else if(comparablePositionOffsetToGoalieAngle > comparablePositionGenuOffsetToGoalPostAngle)
-    bobLine.emplace_back(Pose2f(positionOffsetToGoalieAngle, positionOffsetToGoalieAnchorPoint));
-  else
-    bobLine.emplace_back(Pose2f(positionGenuOffsetToGoalPostAngle, positionGenuOffsetToGoalPostAnchorPoint));
-}
-
-bool Defender::calcDefenderRoyaleIsLeft(const bool wasLeft) const
-{
-  const Vector2f ballPositionOnField(theFieldBall.recentBallPositionOnField());
-
-  DRAW_ROBOT_POSE("behavior:Defender:isLeft", theRobotPose, ColorRGBA::magenta);
-  DRAW_TEXT("behavior:Defender:isLeft", 0.f, 0.f, 150, wasLeft ? ColorRGBA::yellow : ColorRGBA::blue, "wasLeft = " << wasLeft);
-
-  LINE("behavior:Defender:isLeft", theFieldDimensions.xPosOwnGroundLine, 0.f, 0.f, theFieldDimensions.yPosLeftSideline, 20, Drawings::solidPen, ColorRGBA::gray);
-  LINE("behavior:Defender:isLeft", theFieldDimensions.xPosOwnGroundLine, 0.f, 0.f, theFieldDimensions.yPosRightSideline, 20, Drawings::solidPen, ColorRGBA::gray);
-
-  //the ball is far left -> left
-  if(Geometry::isPointLeftOfLine(Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f),
-                                 Vector2f(0.f, theFieldDimensions.yPosLeftSideline), ballPositionOnField))
-    return returnIsLeftWithDraw(true);
-  //the ball ist far right -> right
-  if(!Geometry::isPointLeftOfLine(Vector2f(theFieldDimensions.xPosOwnGroundLine, 0.f),
-                                  Vector2f(0.f, theFieldDimensions.yPosRightSideline), ballPositionOnField))
-    return returnIsLeftWithDraw(false);
-  //else we stay on our side
-  return returnIsLeftWithDraw(wasLeft);
-}
-
-bool Defender::returnIsLeftWithDraw(const bool leftArrow) const
-{
-  COMPLEX_DRAWING("behavior:Defender:isLeft")
-  {
-    const Vector2f offSet(Vector2f(500, 0.f).rotate(theRobotPose.rotation + (leftArrow ? pi_2 : -pi_2)));
-    const Vector2f endPos(theRobotPose.translation + offSet);
-
-    ARROW("behavior:Defender:isLeft", theRobotPose.translation.x(), theRobotPose.translation.y(), endPos.x(), endPos.y(), 20, Drawings::solidPen, leftArrow ? ColorRGBA::yellow : ColorRGBA::blue);
-  }
-  return leftArrow;
+  //combine the ratings
+  return rating * baseRating * borderRating * markRating * goalLineRating * communicationRating;
 }

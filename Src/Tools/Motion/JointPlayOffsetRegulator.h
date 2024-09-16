@@ -6,8 +6,8 @@
  * different forces like the weight of the robot), but the actually requested position not that good.
  *
  * For example assume the AnklePitch is at position -30deg and the request it at -25deg,
- * but the joint is currently stuck and can not move positiv. If the request changes to -20deg (more positiv),
- * then the measured position will not change. BUT if the request changes to -30deg (more negativ),
+ * but the joint is currently stuck and can not move positive. If the request changes to -20deg (more positive),
+ * then the measured position will not change. BUT if the request changes to -30deg (more negative),
  * then the measured position will approximately change by the requested change of -5deg. Meaning
  * the measured position will be -35deg afterwards, because that is how the motors work.
  *

@@ -28,7 +28,8 @@ namespace LeastSquares
       m.col(1) = v.cwiseProduct(v);
       m(0, 2) = v.x() * v.y();
       return m;
-    }) {}
+    }/*lambda ends here*/)
+    {} //empty body
 
     /**
      * Fits a line through all the points that were added to the LineFitter.

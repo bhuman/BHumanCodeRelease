@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2023 B-Human.  All rights reserved.
+Copyright (c) 2024 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup
@@ -49,18 +49,18 @@ are met:
         robocup-nao@lists.robocup.org) at least one month before
         the first competition in which it is used. The announcement
         shall name which parts of this code are used.
-      
+
     If the code usage is not limited to single components, such
     as the ball detection or the self-localization, but consists
     of major parts of the B-Human system, we consider the team
     to use "derived software" and the following additional
     conditions apply:
-      
+
       - The announcement on the SPL mailing list shall also contain
         a description of the own contribution that addresses the
-        criteria set by the SPL rule book (in the 2023 SPL rules
+        criteria set by the SPL rule book (in the 2024 SPL rules
         described in section A.1 of
-        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2023.pdf).
+        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2024.pdf).
 
       - For each year, the derived software as used in the last
         RoboCup competition game in that year, including the
@@ -84,3 +84,11 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+------------------------------------------------------------------
+
+This product includes software developed by Nao Devils
+(see LicenseNaoDevils.txt, https://naodevils.de).
+The above terms do not apply to these files.
+
+------------------------------------------------------------------

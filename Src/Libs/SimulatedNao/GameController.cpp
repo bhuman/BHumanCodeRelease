@@ -20,7 +20,7 @@ const float GameController::footLength = 120.f;
 const float GameController::dropHeight = 350.f;
 
 GameController::GameController() :
-  theTeamMessageChannel(new TeamMessageChannel[2]{{inTeamMessages, outTeamMessage}, {inTeamMessages, outTeamMessage}})
+  theTeamMessageChannel(new TeamMessageChannel[2]{{inTeamMessage, outTeamMessage}, {inTeamMessage, outTeamMessage}})
 {
   gameControllerData.packetNumber = 0;
   gameControllerData.competitionPhase = COMPETITION_PHASE_ROUNDROBIN;
@@ -38,6 +38,7 @@ GameController::GameController() :
       robots[i * MAX_NUM_PLAYERS + j].info = &gameControllerData.teams[i].players[j];
   // Force reloading of the field dimensions (they cannot be loaded here because the file search path is not available yet).
   fieldDimensions.xPosOwnPenaltyMark = 0.f;
+  resetBallContacts();
 }
 
 GameController::~GameController()
@@ -79,6 +80,20 @@ bool GameController::initial()
   timeBeforeCurrentState = 0;
   timeWhenStateBegan = Time::getCurrentSystemTime();
   gameControllerData.state = STATE_INITIAL;
+  gameControllerData.setPlay = SET_PLAY_NONE;
+  kickOffReason = kickOffReasonHalf;
+  return true;
+}
+
+bool GameController::standby()
+{
+  if(gameControllerData.gamePhase != GAME_PHASE_NORMAL)
+    return false;
+  if(gameControllerData.state == STATE_STANDBY)
+    return true;
+
+  timeWhenStateBegan = Time::getCurrentSystemTime();
+  gameControllerData.state = STATE_STANDBY;
   gameControllerData.setPlay = SET_PLAY_NONE;
   kickOffReason = kickOffReasonHalf;
   return true;
@@ -140,6 +155,7 @@ bool GameController::playing()
 
   timeWhenStateBegan = Time::getCurrentSystemTime();
   gameControllerData.state = STATE_PLAYING;
+  resetBallContacts();
 
   whistle.confidenceOfLastWhistleDetection = 2.f;
   whistle.channelsUsedForWhistleDetection = 2;
@@ -194,6 +210,15 @@ bool GameController::competitionTypeChallengeShield()
   return true;
 }
 
+bool GameController::competitionTypeSharedAutonomyChallenge()
+{
+  if(gameControllerData.state != STATE_INITIAL)
+    return false;
+  gameControllerData.competitionType = COMPETITION_TYPE_SHARED_AUTONOMY;
+  initTeams(2, 1200, {0, 1});
+  return true;
+}
+
 bool GameController::globalGameStuck(int side)
 {
   if(gameControllerData.gamePhase != GAME_PHASE_NORMAL)
@@ -213,8 +238,13 @@ bool GameController::goal(int side)
     return false;
   if(gameControllerData.gamePhase == GAME_PHASE_PENALTYSHOOT && gameControllerData.kickingTeam != gameControllerData.teams[side].teamNumber)
     return false;
-  ++gameControllerData.teams[side].score;
-  if(gameControllerData.gamePhase == GAME_PHASE_PENALTYSHOOT)
+  gameControllerData.teams[side].score += gameControllerData.competitionType == COMPETITION_TYPE_SHARED_AUTONOMY ? 2 : 1;
+  if(gameControllerData.competitionType == COMPETITION_TYPE_SHARED_AUTONOMY)
+  {
+    kickOffReason = kickOffReasonGoal;
+    VERIFY(finished());
+  }
+  else if(gameControllerData.gamePhase == GAME_PHASE_PENALTYSHOOT)
   {
     kickOffReason = kickOffReasonPenalty;
     VERIFY(finished());
@@ -240,6 +270,7 @@ bool GameController::goalKick(int side)
   timeWhenSetPlayBegan = Time::getCurrentSystemTime();
   gameControllerData.setPlay = SET_PLAY_GOAL_KICK;
   gameControllerData.kickingTeam = gameControllerData.teams[side].teamNumber;
+  resetBallContacts();
   return true;
 }
 
@@ -250,6 +281,7 @@ bool GameController::pushingFreeKick(int side)
   timeWhenSetPlayBegan = Time::getCurrentSystemTime();
   gameControllerData.setPlay = SET_PLAY_PUSHING_FREE_KICK;
   gameControllerData.kickingTeam = gameControllerData.teams[side].teamNumber;
+  resetBallContacts();
   return true;
 }
 
@@ -260,6 +292,7 @@ bool GameController::cornerKick(int side)
   timeWhenSetPlayBegan = Time::getCurrentSystemTime();
   gameControllerData.setPlay = SET_PLAY_CORNER_KICK;
   gameControllerData.kickingTeam = gameControllerData.teams[side].teamNumber;
+  resetBallContacts();
   return true;
 }
 
@@ -270,6 +303,7 @@ bool GameController::kickIn(int side)
   timeWhenSetPlayBegan = Time::getCurrentSystemTime();
   gameControllerData.setPlay = SET_PLAY_KICK_IN;
   gameControllerData.kickingTeam = gameControllerData.teams[side].teamNumber;
+  resetBallContacts();
   return true;
 }
 
@@ -281,6 +315,7 @@ bool GameController::penaltyKick(int side)
   gameControllerData.setPlay = SET_PLAY_PENALTY_KICK;
   gameControllerData.kickingTeam = gameControllerData.teams[side].teamNumber;
   kickOffReason = kickOffReasonPenalty;
+  resetBallContacts();
   return ready();
 }
 
@@ -367,13 +402,13 @@ bool GameController::checkIllegalPositionInSet(int robot) const
   const bool isKickingTeam = gameControllerData.kickingTeam == gameControllerData.teams[isFirstTeam ? 0 : 1].teamNumber;
   const bool isGoalkeeper = robot == 0 || robot == numOfRobots / 2;
   const bool isPenaltyKick = gameControllerData.setPlay == SET_PLAY_PENALTY_KICK;
-  const bool notOnField = r.lastPose.translation.y() < fieldDimensions.yPosRightSideline - footLength ||
-                          r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline + footLength ||
-                          r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundLine - footLength ||
-                          r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundLine + footLength;
+  const bool notOnField = r.lastPose.translation.y() < fieldDimensions.yPosRightTouchline - footLength ||
+                          r.lastPose.translation.y() > fieldDimensions.yPosLeftTouchline + footLength ||
+                          r.lastPose.translation.x() < fieldDimensions.xPosOwnGoalLine - footLength ||
+                          r.lastPose.translation.x() > fieldDimensions.xPosOpponentGoalLine + footLength;
   const bool inOpponentHalf = isFirstTeam ? (r.lastPose.translation.x() < footLength) : (r.lastPose.translation.x() > -footLength);
   const bool inCenterCircle = r.lastPose.translation.squaredNorm() < sqr(fieldDimensions.centerCircleRadius + footLength);
-  const bool notOnOwnGoalLine = std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine)) > footLength ||
+  const bool notOnOwnGoalLine = std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGoalLine : fieldDimensions.xPosOwnGoalLine)) > footLength ||
                                 r.lastPose.translation.y() > fieldDimensions.yPosLeftGoal || r.lastPose.translation.y() < fieldDimensions.yPosRightGoal;
   const bool inOpponentPenaltyArea = r.lastPose.translation.y() > fieldDimensions.yPosRightPenaltyArea - footLength && r.lastPose.translation.y() < fieldDimensions.yPosLeftPenaltyArea + footLength &&
                                      (isFirstTeam ? (r.lastPose.translation.x() < fieldDimensions.xPosOwnPenaltyArea + footLength) : (r.lastPose.translation.x() > fieldDimensions.xPosOpponentPenaltyArea - footLength));
@@ -404,6 +439,24 @@ bool GameController::checkIllegalPositionInSet(int robot) const
 
 void GameController::update()
 {
+  for(int i = 0; i < numOfRobots; ++i)
+  {
+    Robot& r = robots[i];
+    if(r.simulatedRobot)
+    {
+      Pose2f pose;
+      r.simulatedRobot->getRobotPose(pose);
+      if(i < numOfRobots / 2)
+        pose = Pose2f(pi) + pose;
+      if((pose.translation - r.lastPose.translation).squaredNorm() > sqr(5.f) ||
+         std::abs(Angle::normalize(pose.rotation - r.lastPose.rotation)) > 0.05f)
+      {
+        timeWhenLastRobotMoved = Time::getCurrentSystemTime();
+        r.lastPose = pose;
+      }
+    }
+  }
+
   if(lastState != STATE_SET && gameControllerData.state == STATE_SET)
   {
     if(automatic & bit(penalizeIllegalPositionInSet) && gameControllerData.gamePhase != GAME_PHASE_PENALTYSHOOT)
@@ -432,19 +485,6 @@ void GameController::update()
   for(int i = 0; i < numOfRobots; ++i)
   {
     Robot& r = robots[i];
-    if(r.simulatedRobot)
-    {
-      Pose2f pose;
-      r.simulatedRobot->getRobotPose(pose);
-      if(i < numOfRobots / 2)
-        pose = Pose2f(pi) + pose;
-      if((pose.translation - r.lastPose.translation).squaredNorm() > sqr(5.f) ||
-         std::abs(Angle::normalize(pose.rotation - r.lastPose.rotation)) > 0.05f)
-      {
-        timeWhenLastRobotMoved = Time::getCurrentSystemTime();
-        r.lastPose = pose;
-      }
-    }
 
     // Prepare numbers for illegal positioning.
     if(automatic & bit(penalizeIllegalPosition))
@@ -496,7 +536,7 @@ void GameController::update()
         // The goalkeeper is only allowed to stand on the goal line.
         // (but if it's outside the penalty area, that's okay, too, because that will happen when it's unpenalized during a penalty kick).
         if(!isKickingTeam && i == (isFirstTeam ? 0 : numOfRobots / 2) &&
-           std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine)) < footLength &&
+           std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGoalLine : fieldDimensions.xPosOwnGoalLine)) < footLength &&
            r.lastPose.translation.y() < fieldDimensions.yPosLeftGoal && r.lastPose.translation.y() > fieldDimensions.yPosRightGoal)
           return false;
         // No other defender may be in there.
@@ -551,8 +591,9 @@ void GameController::update()
 
     if(automatic & bit(placePlayers) && r.info->penalty != PENALTY_NONE && r.lastPenalty == PENALTY_NONE && r.simulatedRobot)
     {
-      placeForPenalty(i, fieldDimensions.xPosOpponentPenaltyMark,
-                      fieldDimensions.yPosRightFieldBorder + 100.f, -pi_2);
+      placeForPenalty(i, -fieldDimensions.xPosReturnFromPenalty,
+                      r.lastPose.translation.y() > 0.f ? fieldDimensions.yPosLeftReturnFromPenalty : fieldDimensions.yPosRightReturnFromPenalty,
+                      r.lastPose.translation.y() > 0.f ? -pi_2 : pi_2);
     }
 
     if(r.info->penalty != PENALTY_NONE)
@@ -573,16 +614,8 @@ void GameController::update()
         if(gameControllerData.kickingTeam == gameControllerData.teams[i < numOfRobots / 2 ? 0 : 1].teamNumber)
           newPose.translate(fieldDimensions.xPosPenaltyStrikerStartPosition, 0.f);
         else
-          newPose.translate(fieldDimensions.xPosOwnGroundLine, 0.f);
+          newPose.translate(fieldDimensions.xPosOwnGoalLine, 0.f);
         r.simulatedRobot->moveRobot(Vector3f(newPose.translation.x(), newPose.translation.y(), dropHeight), Vector3f(0.f, 0.f, newPose.rotation), true);
-      }
-      else
-      {
-        Vector2f ballPos = Vector2f::Zero();
-        r.simulatedRobot->getAbsoluteBallPosition(ballPos);
-        placeForPenalty(i, fieldDimensions.xPosOpponentPenaltyMark,
-                        ballPos.y() >= 0.f ? fieldDimensions.yPosRightSideline : fieldDimensions.yPosLeftSideline,
-                        ballPos.y() >= 0.f ? pi_2 : -pi_2);
       }
     }
 
@@ -617,6 +650,7 @@ void GameController::update()
       break;
 
     case STATE_PLAYING:
+      const bool wasPenaltyKick = gameControllerData.setPlay == SET_PLAY_PENALTY_KICK;
       if(gameControllerData.setPlay != SET_PLAY_NONE && (gameControllerData.setPlay != SET_PLAY_PENALTY_KICK ?
                                                          Time::getTimeSince(timeWhenSetPlayBegan) >= freeKickTime * 1000 :
                                                          Time::getTimeSince(timeWhenStateBegan) >= penaltyShotTime * 1000))
@@ -625,6 +659,9 @@ void GameController::update()
       if(automatic & bit(freeKickComplete) && gameControllerData.setPlay != SET_PLAY_NONE &&
          lastBallContactTime > (gameControllerData.setPlay != SET_PLAY_PENALTY_KICK ? timeWhenSetPlayBegan + 500 : timeWhenStateBegan) && (gameControllerData.kickingTeam == gameControllerData.teams[0].teamNumber) != (lastBallContactPose.rotation == 0.f))
         VERIFY(playing());
+
+      if(wasPenaltyKick)
+        ballContacts[gameControllerData.kickingTeam == gameControllerData.teams[0].teamNumber ? 0 : 1] = 1;
 
       if(automatic & bit(ballOut))
       {
@@ -645,23 +682,23 @@ void GameController::update()
             case goalBySecondTeam:
               VERIFY(goal(1));
               break;
-            case outByFirstTeam:
-              VERIFY(kickIn(1));
-              break;
-            case outBySecondTeam:
+            case kickInFirstTeam:
               VERIFY(kickIn(0));
               break;
-            case ownGoalOutByFirstTeam:
-              VERIFY(cornerKick(1));
+            case kickInSecondTeam:
+              VERIFY(kickIn(1));
               break;
-            case ownGoalOutBySecondTeam:
+            case cornerKickFirstTeam:
               VERIFY(cornerKick(0));
               break;
-            case opponentGoalOutByFirstTeam:
-              VERIFY(goalKick(1));
+            case cornerKickSecondTeam:
+              VERIFY(cornerKick(1));
               break;
-            case opponentGoalOutBySecondTeam:
+            case goalKickFirstTeam:
               VERIFY(goalKick(0));
+              break;
+            case goalKickSecondTeam:
+              VERIFY(goalKick(1));
               break;
             default:
               break;
@@ -672,7 +709,8 @@ void GameController::update()
 
   auto getRemainingGameTime = [this](bool real)
   {
-    const int duration = gameControllerData.gamePhase == GAME_PHASE_NORMAL ? halfTime : penaltyShotTime;
+    const int duration = gameControllerData.competitionType == COMPETITION_TYPE_SHARED_AUTONOMY ? sharedAutonomyChallengeHalfTime
+                         : gameControllerData.gamePhase == GAME_PHASE_NORMAL ? halfTime : penaltyShotTime;
     const int timePlayed = gameControllerData.state == STATE_INITIAL
                            || ((gameControllerData.state == STATE_READY || gameControllerData.state == STATE_SET)
                                && ((gameControllerData.competitionPhase == COMPETITION_PHASE_PLAYOFF &&
@@ -698,7 +736,7 @@ void GameController::update()
     gameControllerData.secondaryTime = static_cast<int16_t>(penaltyShotTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
   else if(gameControllerData.state == STATE_PLAYING && gameControllerData.setPlay != SET_PLAY_NONE)
     gameControllerData.secondaryTime = static_cast<int16_t>(freeKickTime - Time::getTimeSince(timeWhenSetPlayBegan) / 1000);
-  else if((automatic & bit(kickOffDelay)) && gameControllerData.state == STATE_PLAYING && gameControllerData.gamePhase != GAME_PHASE_PENALTYSHOOT && kickOffTime >= Time::getTimeSince(timeWhenStateBegan) / 1000)
+  else if((automatic & bit(kickOffDelay)) && gameControllerData.state == STATE_PLAYING && kickOffReason != kickOffReasonPenalty && kickOffTime >= Time::getTimeSince(timeWhenStateBegan) / 1000)
     gameControllerData.secondaryTime = static_cast<int16_t>(kickOffTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
   else
     gameControllerData.secondaryTime = 0;
@@ -707,10 +745,8 @@ void GameController::update()
 
   for(int team = 0; team < 2; ++team)
   {
-    theTeamMessageChannel[team].receive();
-    while(!inTeamMessages.empty())
+    while(theTeamMessageChannel[team].receive())
     {
-      inTeamMessages.removeFront();
       if(gameControllerData.gamePhase != GAME_PHASE_PENALTYSHOOT
          && gameControllerData.state != STATE_INITIAL
          && gameControllerData.state != STATE_FINISHED
@@ -734,23 +770,38 @@ void GameController::resetPenaltyTimes()
     robot.timeWhenPenalized = 0;
 }
 
+void GameController::resetBallContacts()
+{
+  for(auto& ballContact : ballContacts)
+    ballContact = 0;
+  lastBallContactRobots[0] = lastBallContactRobots[1] = nullptr;
+}
+
 GameController::BallOut GameController::updateBall()
 {
   BallOut result = notOut;
   Vector2f ballPos;
   if(!SimulatedRobot::getAbsoluteBallPosition(ballPos))
     return result;
+
   const Vector2f ballInnerEdge(ballPos.x() - sgn(ballPos.x()) * (ballSpecification.radius + fieldDimensions.fieldLinesWidth / 2.f),
                                ballPos.y() - sgn(ballPos.y()) * (ballSpecification.radius + fieldDimensions.fieldLinesWidth / 2.f));
   if(!fieldDimensions.isInsideField(ballInnerEdge))
   {
-    if(std::abs(ballPos.y()) < fieldDimensions.yPosLeftGoal) // goal
+    // Goals can be scored in penalty shootouts, without having touched the ball (opponent own goals),
+    // or with at least two robots having touched the ball.
+    const int ballContact = ballContacts[static_cast<int>(ballPos.x() > 0.f)];
+    const bool canScore = (gameControllerData.gamePhase == GAME_PHASE_PENALTYSHOOT || !ballContact || (ballContact & (ballContact - 1)) != 0)
+                          && (gameControllerData.competitionType != COMPETITION_TYPE_SHARED_AUTONOMY
+                              || (ballPos.x() < 0.f && (!lastBallContactRobots[0] || SimulatedRobot::getNumber(lastBallContactRobots[0]) & 1)));
+    const bool insideGoal = std::abs(ballPos.y()) < fieldDimensions.yPosLeftGoal;
+    if(insideGoal && canScore) // goal
       result = ballPos.x() > 0.f ? goalBySecondTeam : goalByFirstTeam;
     else
     {
-      if(std::abs(ballPos.x()) > fieldDimensions.xPosOpponentGroundLine)
+      if(std::abs(ballPos.x()) > fieldDimensions.xPosOpponentGoalLine)
       {
-        if((ballPos.x() > 0.f) == (lastBallContactPose.rotation == 0.f)) // goal kick
+        if((ballPos.x() > 0.f) == (lastBallContactPose.rotation == 0.f) || insideGoal) // goal kick
         {
           ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGoalArea : fieldDimensions.xPosOwnGoalArea;
 
@@ -759,35 +810,35 @@ GameController::BallOut GameController::updateBall()
           else
             ballPos.y() = fieldDimensions.yPosLeftGoalArea;
 
-          result = lastBallContactPose.rotation == 0.f ? opponentGoalOutBySecondTeam : opponentGoalOutByFirstTeam;
+          result = ballPos.x() > 0.f ? goalKickFirstTeam : goalKickSecondTeam;
         }
         else // corner kick
         {
-          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine;
+          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGoalLine : fieldDimensions.xPosOwnGoalLine;
 
           if(ballPos.y() < 0.f)
-            ballPos.y() = fieldDimensions.yPosRightSideline;
+            ballPos.y() = fieldDimensions.yPosRightTouchline;
           else
-            ballPos.y() = fieldDimensions.yPosLeftSideline;
+            ballPos.y() = fieldDimensions.yPosLeftTouchline;
 
-          result = lastBallContactPose.rotation == 0.f ? ownGoalOutBySecondTeam : ownGoalOutByFirstTeam;
+          result = ballPos.x() > 0.f ? cornerKickSecondTeam : cornerKickFirstTeam;
         }
       }
       else // kick in
       {
         float x = ballPos.x();
-        if(x < fieldDimensions.xPosOwnGroundLine)
-          x = fieldDimensions.xPosOwnGroundLine; // clip
-        else if(x > fieldDimensions.xPosOpponentGroundLine)
-          x = fieldDimensions.xPosOpponentGroundLine; // clip
+        if(x < fieldDimensions.xPosOwnGoalLine)
+          x = fieldDimensions.xPosOwnGoalLine; // clip
+        else if(x > fieldDimensions.xPosOpponentGoalLine)
+          x = fieldDimensions.xPosOpponentGoalLine; // clip
         ballPos.x() = x;
 
         if(ballPos.y() < 0.f)
-          ballPos.y() = fieldDimensions.yPosRightSideline;
+          ballPos.y() = fieldDimensions.yPosRightTouchline;
         else
-          ballPos.y() = fieldDimensions.yPosLeftSideline;
+          ballPos.y() = fieldDimensions.yPosLeftTouchline;
 
-        result = lastBallContactPose.rotation == 0.f ? outBySecondTeam : outByFirstTeam;
+        result = lastBallContactPose.rotation == 0.f ? kickInFirstTeam : kickInSecondTeam;
       }
 
       SimulatedRobot::moveBall(Vector3f(ballPos.x(), ballPos.y(), 100.f), true);
@@ -798,8 +849,26 @@ GameController::BallOut GameController::updateBall()
 
 void GameController::setLastBallContactRobot(SimRobot::Object* robot)
 {
-  lastBallContactPose = Pose2f(SimulatedRobot::isFirstTeam(robot) ? pi : 0.f, SimulatedRobot::getPosition(robot));
+  const size_t teamIndex = 1 - static_cast<size_t>(SimulatedRobot::isFirstTeam(robot));
+  int& ballContact = ballContacts[teamIndex];
+  if((ballContact & 1) && ballContact > 1 && Time::getTimeSince(lastBallContactTime) > 100)
+    ballContact &= ~1;
+  ballContact |= 1 << SimulatedRobot::getNumber(robot);
+
+  // In the Shared Autonomy Challenge, a team gets a point for playing a pass.
+  // - This ball contact is by a different robot from the same team
+  // - The last ball contact was by the same team
+  // - The distance between the ball contacts is more than 1 m
+  if(gameControllerData.competitionType == COMPETITION_TYPE_SHARED_AUTONOMY
+     && lastBallContactRobots[teamIndex]
+     && robot != lastBallContactRobots[teamIndex]
+     && !teamIndex == (lastBallContactPose.rotation != 0.f)
+     && (SimulatedRobot::getPosition(robot) - lastBallContactPose.translation).norm() > 1000.f)
+    ++gameControllerData.teams[teamIndex].score;
+
+  lastBallContactPose = Pose2f(teamIndex ? 0.f : pi, SimulatedRobot::getPosition(robot));
   lastBallContactTime = Time::getCurrentSystemTime();
+  lastBallContactRobots[teamIndex] = robot;
 }
 
 void GameController::getGameControllerData(GameControllerData& gameControllerData)
@@ -827,15 +896,16 @@ void GameController::getWhistle(Whistle& whistle)
   whistle = this->whistle;
 }
 
-void GameController::initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget)
+void GameController::initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget, const std::array<uint8_t, 2>& goalkeepers)
 {
   gameControllerData.playersPerTeam = robotsPlaying;
   for(auto& teamInfo : gameControllerData.teams)
   {
-    teamInfo.goalkeeper = 1;
+    const ptrdiff_t side = &teamInfo - gameControllerData.teams;
+    teamInfo.goalkeeper = goalkeepers[side];
     teamInfo.messageBudget = messageBudget;
     for(int j = 0; j < MAX_NUM_PLAYERS; ++j)
       teamInfo.players[j].penalty = j >= robotsPlaying ? PENALTY_SUBSTITUTE
-                                    : robots[j].simulatedRobot ? PENALTY_NONE : PENALTY_SPL_REQUEST_FOR_PICKUP;
+                                    : robots[j + MAX_NUM_PLAYERS * side].simulatedRobot ? PENALTY_NONE : PENALTY_SPL_REQUEST_FOR_PICKUP;
   }
 }

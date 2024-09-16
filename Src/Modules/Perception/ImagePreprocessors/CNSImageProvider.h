@@ -19,7 +19,7 @@ MODULE(CNSImageProvider,
   PROVIDES_WITHOUT_MODIFY(CNSImage),
   LOADS_PARAMETERS(
   {,
-    (float) minContrast, /**< Gradiants below this threshold are ignored in a gradual way. */
+    (float) minContrast, /**< Gradients below this threshold are ignored in a gradual way. */
     (bool) fullImage, /**< Always compute complete CNS image. */
   }),
 });

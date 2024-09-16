@@ -7,4 +7,4 @@ echo --Switch Back to Replaying--
 echo set module:ReplayWalkRequestProvider:startRecord false
 echo
 echo --Save Recoding--
-echo get parameters:ReplayWalkRequestProvider save
+echo get module:ReplayWalkRequestProvider save

@@ -9,12 +9,13 @@
 
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/InitialToReady.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Tools/Communication/RobotStatus.h"
-#include "Tools/Communication/TeamMessageBuffer.h"
 #include "Streaming/AutoStreamable.h"
 
 STREAMABLE(ReceivedTeamMessage,
@@ -28,6 +29,8 @@ STREAMABLE(ReceivedTeamMessage,
   (BehaviorStatus) theBehaviorStatus,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,
+  (IndirectKick) theIndirectKick,
+  (InitialToReady) theInitialToReady,
 });
 
 STREAMABLE(ReceivedTeamMessages,

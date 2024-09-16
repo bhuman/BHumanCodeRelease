@@ -1,45 +1,45 @@
 /**
  * @file InterceptBallProvider.h
  *
- * This file declares a module that ...
+ * This file implements a module that intercepts the ball
  *
- * @author Florian Scholz
+ * @author Philip Reichenberg
  */
 
 #pragma once
 
 #include "Framework/Module.h"
-#include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/KickInfo.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/MotionControl/InterceptBallGenerator.h"
+#include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
-#include "Representations/MotionControl/WalkKickGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 
 MODULE(InterceptBallProvider,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(FieldBall),
+  REQUIRES(FieldInterceptBall),
   REQUIRES(OdometryDataPreview),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(RobotPose),
   REQUIRES(KickInfo),
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
-  REQUIRES(WalkKickGenerator),
   PROVIDES(InterceptBallGenerator),
-
   LOADS_PARAMETERS(
   {,
-    (float) timeOffset,
-    (float) footRectLengthOffset,
-    (float) footRectYOffset,
+    (Rangef) maxYShift, /**< Optimize interception point. */
+    (Rangef) maxXStep, /**< Optimize interception point. */
+    (Angle) maxRotationStep, /**< For intercepting, use this rotation threshold. */
+    (Angle) maxBallRollAngle, /**< Ball is rolling from a high angle, rotate the robot for better intercepting. */
+    (float) bestHitPoint, /**< Best point to intercept ball. */
+    (float) footTipYShift, /**< If not much time is left, the ball should be hit with the tip of one if the feet. But with the inner side of the foot. */
+    (float) preventSideKickTime, /**< If only this much time is left to intercept the ball, do not try it. */
   }),
 });
 
@@ -52,27 +52,36 @@ class InterceptBallProvider : public InterceptBallProviderBase
   void update(InterceptBallGenerator& theInterceptBallGenerator) override;
 
   /**
-   * This method is used to check the requested KickType
-   * @param kickType The requsted kicktype
-   * @return Wheather the requested KickType is allowed
+   * This method calculate how to intercept the ball
+   * @param motionRequest The motionRequest
+   * @param lastPhase The last motion
+   * @param isLeftPhase Next phase is a left one
+   * @param translationPolygon The translation polygon used for clipping
+   * @param oldStep Last intercept step
+   * @return The walk step
    */
-  bool checkKickType(KickInfo::KickType kickType);
+  Pose2f intercept(const MotionRequest& motionRequest, const MotionPhase* lastPhase, const bool isLeftPhase, const std::vector<Vector2f>& translationPolygon, const std::optional<Vector2f>& oldStep);
 
   /**
    * This method clips a provided pose such that the WalkingEngined doesn't complain
    * @param pose Pose to be clipped
    * @param isLeftPhase If the current phase is a left phase
    * @param lastPhase The last motion phase
-   * @param motionRequest The current motion request
+   * @param isIntercepting Is this intercepting or trying to kick the ball?
    */
-  void clipPose(Pose2f& pose, bool isLeftPhase, const MotionPhase& lastPhase, const MotionRequest& motionRequest);
+  void clipPose(Pose2f& pose, bool isLeftPhase, const MotionPhase& lastPhase, const bool isIntercepting);
 
-  Geometry::Rect leftFootRect; /**< The rectangle in front of the left foot */
-  Geometry::Rect rightFootRect; /**< The rectangle in front of the right foot */
+  /**
+   * This method clips a provided pose such that the WalkingEngined doesn't complain
+   * @param pose Pose to be clipped
+   * @param isLeftPhase If the current phase is a left phase
+   * @param translationPolygon The translationpolygon used for clipping
+   */
+  void clipPose(Pose2f& pose, bool isLeftPhase, const std::vector<Vector2f>& translationPolygon);
 
-  Vector2f leftFootBackRight; /**< The back right point of the left foot rectangle */
-  Vector2f leftFootFrontLeft; /**< The fron left point of the left foot rectangle */
+  bool calculatedRectangles = false; /**< Only calculate the rectangles once. */
 
-  Vector2f rightFootBackRight; /**< The right back point of the right foot rectangle */
-  Vector2f rightFootFrontLeft; /**< The fron left point of the right foot rectangle */
+  // Areas for just intercepting
+  Vector2f backRightIntercepting; /**< The back right point of the foot rectangle for intercepting */
+  Vector2f frontLeftIntercepting; /**< The from left point of the foot rectangle for intercepting */
 };

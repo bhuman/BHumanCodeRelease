@@ -9,6 +9,7 @@
 #pragma once
 
 #include "MathBase/Angle.h"
+#include "Platform/BHAssert.h"
 #include <type_traits>
 
 namespace impl
@@ -116,6 +117,20 @@ template<typename V>
 constexpr V sqr(const V& a) { return a * a; }
 
 /**
+ * Calculates the logit of a floating point value.
+ * The logit function is defined as logit(p) = log(p/(1-p)).
+ * @param a The value
+ * @return The logit of \c a.
+ */
+constexpr float logit(const float& a) {
+  ASSERT(a >= 0.f && a < 1.f);
+  if(a < 0.5f)
+    return std::log(a / (1.f - a));
+  else
+    return -std::log(1.f / a - 1.f);
+}
+
+/**
  * Defines a macro that returns a value, in which the specified bit is set.
  * @param t The bit to set. Must be in the range of [0 .. 31].
  * @return A 32 bit value in which the bit is set.
@@ -175,5 +190,6 @@ T mapToRange(const T val, const T minInput, const T maxInput, const T minOutput,
   const T sizeOfInputRange = maxInput - minInput;
   const T sizeOfOutputRange = maxOutput - minOutput;
   const float result = minOutput + (v - minInput) * sizeOfOutputRange / static_cast<float>(sizeOfInputRange);
+  ASSERT(std::isfinite(result));
   return static_cast<T>(result);
 }

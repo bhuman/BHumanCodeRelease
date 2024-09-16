@@ -23,12 +23,6 @@ vfd worldState representation:GameState:ownTeam
 mr GameControllerData default
 mr GameState default
 
-# Remove these lines when we have enough new log files with covariances :-)
-for Cognition mr FilteredBallPercepts off
-mr BallModel default
-mr CenterCircleWithLine default
-mr PenaltyMarkWithPenaltyAreaLine default
-
 log mr
 
 # enable behavior graph
@@ -39,7 +33,7 @@ dr representation:JointSensorData
 
 # send more data
 dr representation:JointRequest
-dr representation:InertialSensorData
+dr representation:RawInertialSensorData
 dr representation:FsrSensorData
 dr representation:SystemSensorData
 dr representation:KeyStates

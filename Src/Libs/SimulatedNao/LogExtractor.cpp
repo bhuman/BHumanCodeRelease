@@ -18,7 +18,7 @@
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JPEGImage.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Sensing/FallDownState.h"
@@ -257,7 +257,7 @@ bool LogExtractor::analyzeRobotStatus()
   {,
     JointAngles,
     FrameInfo,
-    InertialSensorData,
+    RawInertialSensorData,
   });
 
   RingBuffer<JointAngles, 5> angleList;
@@ -267,7 +267,7 @@ bool LogExtractor::analyzeRobotStatus()
 
   bool finished = goThroughLog(
                     representations,
-                    [&angleList, &theJointAngles, &lastGyro, &disconnectCounter, &theInertialSensorData, &frameCounter, &theFrameInfo](const std::string&)
+                    [&angleList, &theJointAngles, &lastGyro, &disconnectCounter, &theRawInertialSensorData, &frameCounter, &theFrameInfo](const std::string&)
   {
     frameCounter += 1; //for some reason the frameCounter can get desynced with the real frame number. Also is there a better way to get the log frame?
     //only continue, if the JointAngles have new data
@@ -275,10 +275,10 @@ bool LogExtractor::analyzeRobotStatus()
     disconnectCounter += 1;
     bool canContinue = false;
     //only continue, if the JointAngles have new data
-    if(theInertialSensorData.gyro != lastGyro)
+    if(theRawInertialSensorData.gyro != lastGyro)
     {
       disconnectCounter = 0;
-      lastGyro = theInertialSensorData.gyro;
+      lastGyro = theRawInertialSensorData.gyro;
     }
     if(disconnectCounter > 5)
       OUTPUT_TEXT("Gyros not updating at LogFrame: " << frameCounter);

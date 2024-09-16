@@ -35,12 +35,6 @@ class JointPlayTranslationProvider : public JointPlayTranslationProviderBase
 
   LowPassFilterPR offsetFilter[Joints::numOfJoints];
 
-  /**
-   * Convert the joint of type Joints::Joint to the type JointAnglesPred::Joint
-   * @return Was the convertion possible?
-   */
-  bool convertToPredictJoint(const Joints::Joint joint, JointAnglePred::Joint& predJoint);
-
 public:
   JointPlayTranslationProvider();
 };

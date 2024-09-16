@@ -33,7 +33,9 @@ MAKE_MODULE(TeamMessageHandler);
   _(BallModel); \
   _(Whistle); \
   _(BehaviorStatus); \
-  _(StrategyStatus);
+  _(StrategyStatus); \
+  _(IndirectKick); \
+  _(InitialToReady);
 
 struct TeamMessage
 {};
@@ -51,7 +53,7 @@ void TeamMessageHandler::regTeamMessage()
 }
 
 TeamMessageHandler::TeamMessageHandler() :
-  theTeamMessageChannel(inTeamMessages, outTeamMessage),
+  theTeamMessageChannel(inTeamMessage, outTeamMessage),
   theGameControllerRBS(theFrameInfo, theGameControllerData)
 {
   File f("teamMessage.def", "r");
@@ -71,24 +73,56 @@ TeamMessageHandler::TeamMessageHandler() :
 void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
 {
   DECLARE_PLOT("module:TeamMessageHandler:messageLength");
+  DECLARE_PLOT("module:TeamMessageHandler:budgetLimit");
   DECLARE_DEBUG_RESPONSE("module:TeamMessageHandler:statistics");
   MODIFY("module:TeamMessageHandler:statistics", statistics);
 
+  DEBUG_RESPONSE("module:TeamMessageHandler:budgetLimit")
+  {
+    const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
+    const int timeInNextHalf = theGameState.phase == GameState::firstHalf ? durationOfHalf : 0;
+    const int remainingTime = std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
+    const float ratio = Rangef::ZeroOneRange().limit(remainingTime / (durationOfHalf * 2.f));
+
+    PLOT("module:TeamMessageHandler:budgetLimit", overallMessageBudget * ratio + normalMessageReserve * (1.f - ratio));
+  }
+
+  PLOT("module:TeamMessageHandler:previewMessageBudget", ownModeledBudget);
+
   DEBUG_RESPONSE_ONCE("module:TeamMessageHandler:generateTCMPluginClass")
     teamCommunicationTypeRegistry.generateTCMPluginClass("BHumanMessage.java", static_cast<const CompressedTeamCommunication::RecordType*>(teamMessageType));
+
+  // Update ball constraint to send based on differences between the own ball and the team ball
+  const Vector2f ballEndPosition = BallPhysics::getEndPosition(theBallModel.estimate.position,
+                                   theBallModel.estimate.velocity,
+                                   theBallSpecification.friction);
+  const Vector2f teamBallEndPosition = theRobotPose.inverse() * BallPhysics::getEndPosition(theTeammatesBallModel.position,
+                                       theTeammatesBallModel.velocity,
+                                       theBallSpecification.friction);
+
+  if(!globalBearingsChanged(theRobotPose, ballEndPosition, theRobotPose, teamBallEndPosition, mapToRange(ballEndPosition.norm(), teamBallDistanceInterpolationRange.min, teamBallDistanceInterpolationRange.max, positionThreshold, teamBallMaxPositionThreshold)))
+    timeWhenBallWasNearTeamBall = theFrameInfo.time;
 
   outputGenerator.sendThisFrame = [this]
   {
     bool alwaysSend = this->alwaysSend;
     DEBUG_RESPONSE("module:TeamMessageHandler:alwaysSend")
       alwaysSend = true;
-    return (notInPlayDead() &&
-            !theGameState.isPenaltyShootout() &&
-            !theGameState.isPenalized() &&
-            ((alwaysSend && enoughTimePassed()) ||
-             ((theGameState.isReady() || theGameState.isSet() || theGameState.isPlaying()) && withinPriorityBudget() && whistleDetected()) ||
-             (enoughTimePassed() && theGameState.isPlaying() && robotPoseValid() && withinNormalBudget() &&
-              (behaviorStatusChanged() || robotStatusChanged() || strategyStatusChanged() || robotPoseChanged() || ballModelChanged() || teamBallOld()))));
+    const bool stateAllowsSending = notInPlayDead() && !theGameState.isPenaltyShootout()
+                                    && (!theGameState.isPenalized() || Global::getSettings().scenario.starts_with("SharedAutonomy"));
+    const bool alwaysSendAllowed = alwaysSend && enoughTimePassed();
+    const bool alwaysSendPlaying = alwaysSendInPlaying && enoughTimePassed() && theGameState.isPlaying() && withinPriorityBudget();
+    const bool gestureDetectedSend = (theGameState.state == GameState::standby || theGameState.isReady()) && theInitialToReady.gestureDetected && withinPriorityBudget();
+    const bool whistleDetectedSend = (theGameState.isReady() || theGameState.isSet() || theGameState.isPlaying()) && withinPriorityBudget() && whistleDetected();
+    const bool indirectKickChangedSend = theGameState.isPlaying() && withinPriorityBudget() && indirectKickChanged();
+    const bool canSendPriorityMessage = stateAllowsSending && (alwaysSendAllowed || alwaysSendPlaying || gestureDetectedSend || whistleDetectedSend || indirectKickChangedSend);
+    const bool normalChangeDetected = enoughTimePassed() && theGameState.isPlaying() && robotPoseValid() && withinNormalBudget() &&
+    (behaviorStatusChanged() || robotStatusChanged() || strategyStatusChanged() || robotPoseChanged() || ballModelChanged() || teamBallOld());
+
+    if(!canSendPriorityMessage && !normalChangeDetected)
+      setTimeDelay();
+
+    return canSendPriorityMessage || (normalChangeDetected && checkTimeDelay());
   };
 
   theRobotStatus.isUpright = (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting) &&
@@ -101,13 +135,15 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
     if(!writeMessage(outputGenerator, &outTeamMessage))
       return;
     theTeamMessageChannel.send();
+    setTimeDelay();
+    ownModeledBudget -= std::min(ownModeledBudget, 1u);
 
     // Plot length of message:
     PLOT("module:TeamMessageHandler:messageLength", outTeamMessage.length);
   };
 }
 
-bool TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Buffer::Container* const m)
+bool TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Container* const m)
 {
 #define SEND_PARTICLE(particle) \
   the##particle >> outputGenerator
@@ -152,8 +188,8 @@ bool TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenera
 
   DEBUG_RESPONSE("module:TeamMessageHandler:statistics")
   {
-    #define COUNT(name) \
-      statistics.count(#name, the##name != lastSent.the##name)
+#define COUNT(name) \
+  statistics.count(#name, the##name != lastSent.the##name)
 
     COUNT(RobotStatus.isUpright);
     // COUNT(BehaviorStatus.calibrationFinished);
@@ -176,10 +212,7 @@ bool TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenera
   }
 
   outputGenerator.sentMessages++;
-  if(theFrameInfo.getTimeSince(timeWhenLastSent) >= 2 * minSendInterval || theFrameInfo.time < timeWhenLastSent)
-    timeWhenLastSent = theFrameInfo.time;
-  else
-    timeWhenLastSent += minSendInterval;
+  timeWhenLastSent = theFrameInfo.time;
   backup(outputGenerator);
 
   return true;
@@ -187,19 +220,16 @@ bool TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenera
 
 void TeamMessageHandler::update(ReceivedTeamMessages& receivedTeamMessages)
 {
-  // read from team comm udp socket
-  theTeamMessageChannel.receive();
-
-  theGameControllerRBS.update();
-
-  // push teammate data in our system
+  // Reset representation (should contain only data from current frame).
   receivedTeamMessages.messages.clear();
   receivedTeamMessages.unsynchronizedMessages = 0;
-  while(!inTeamMessages.empty())
-  {
-    TeamMessageChannel::Buffer::Container* const m = inTeamMessages.takeBack();
 
-    if(readTeamMessage(m))
+  // Prepare timestamp conversion by updating the GameController packet buffer.
+  theGameControllerRBS.update();
+
+  while(theTeamMessageChannel.receive())
+  {
+    if(readTeamMessage(&inTeamMessage))
     {
       theGameControllerRBS << receivedMessageContainer;
 
@@ -210,6 +240,8 @@ void TeamMessageHandler::update(ReceivedTeamMessages& receivedTeamMessages)
         ++receivedTeamMessages.unsynchronizedMessages;
         continue;
       }
+
+      lastReceivedTimestamps[receivedMessageContainer.playerNumber - Settings::lowestValidPlayerNumber] = receivedMessageContainer.timestamp;
 
       receivedTeamMessages.messages.emplace_back();
       parseMessage(receivedTeamMessages.messages.back());
@@ -228,24 +260,58 @@ void TeamMessageHandler::update(ReceivedTeamMessages& receivedTeamMessages)
 
     ANNOTATION("intruder-alert", "error code: " << receivedMessageContainer.lastErrorCode);
   };
+
+  handleBudgetPreview(receivedTeamMessages);
 }
 
-#define PARSING_ERROR(outputText) { OUTPUT_ERROR(outputText); receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::parsingError; return false; }
-bool TeamMessageHandler::readTeamMessage(const TeamMessageChannel::Buffer::Container* const m)
+void TeamMessageHandler::handleBudgetPreview(ReceivedTeamMessages& receivedTeamMessages)
+{
+  // Budget update from GameController
+  if(theGameState.ownTeam.messageBudget != lastReceivedBudget)
+  {
+    // Reset own model
+    lastReceivedBudget = ownModeledBudget = theGameState.ownTeam.messageBudget;
+    // All messages until this moment, including messages in this frame, are assumed to be received by the GC too
+  }
+  else
+    ownModeledBudget -= std::min(ownModeledBudget, static_cast<unsigned>(receivedTeamMessages.messages.size()));
+}
+
+bool TeamMessageHandler::readTeamMessage(const TeamMessageChannel::Container* const m)
 {
   if(!receivedMessageContainer.read(m->data, m->length))
-    return (receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::magicNumberDidNotMatch) && false;
+  {
+    receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::magicNumberDidNotMatch;
+    return false;
+  }
 
   receivedMessageContainer.playerNumber &= 15;
 
 #ifndef SELF_TEST
   if(receivedMessageContainer.playerNumber == theGameState.playerNumber)
-    return (receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::myOwnMessage) && false;
+  {
+    receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::myOwnMessage;
+    return false;
+  }
 #endif // !SELF_TEST
 
   if(receivedMessageContainer.playerNumber < Settings::lowestValidPlayerNumber ||
      receivedMessageContainer.playerNumber > Settings::highestValidPlayerNumber)
-    PARSING_ERROR("Invalid robot number received");
+  {
+    receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::invalidPlayerNumber;
+    return false;
+  }
+
+  // Duplicate messages actually exist (cf. RoboCup German Open 2024). In that case, they arrived
+  // immediately after each other, but not necessarily in the same frame. It is unclear whether,
+  // if multiple messages are sent within a short timespan, those can overtake each other (such that
+  // at the receiving robot, the sequence looks like A B A B instead of A A B B).
+  const unsigned lastTimestamp = lastReceivedTimestamps[receivedMessageContainer.playerNumber - Settings::lowestValidPlayerNumber];
+  if(receivedMessageContainer.timestamp == lastTimestamp)
+  {
+    receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::duplicate;
+    return false;
+  }
 
   return true;
 }
@@ -289,12 +355,14 @@ bool TeamMessageHandler::globalBearingsChanged(const RobotPose& origin, const st
 }
 
 bool TeamMessageHandler::globalBearingsChanged(const RobotPose& origin, const Vector2f& offset,
-                                               const RobotPose& oldOrigin, const Vector2f& oldOffset) const
+                                               const RobotPose& oldOrigin, const Vector2f& oldOffset,
+                                               const std::optional<float>& positionalThreshold) const
 {
+  const float usedPositionThreshold = positionalThreshold.has_value() ? positionalThreshold.value() : positionThreshold;
   const Vector2f oldOffsetInCurrent = origin.inverse() * (oldOrigin * oldOffset);
   const Angle distanceAngle = Vector2f(offset.norm(), assumedObservationHeight).angle();
   const Angle oldDistanceAngle = Vector2f(oldOffsetInCurrent.norm(), assumedObservationHeight).angle();
-  return ((offset - oldOffsetInCurrent).norm() > positionThreshold &&
+  return ((offset - oldOffsetInCurrent).squaredNorm() > sqr(usedPositionThreshold) &&
           (offset.isZero() || oldOffsetInCurrent.isZero() ||
            offset.angleTo(oldOffsetInCurrent) > bearingThreshold ||
            std::abs(Angle::normalize(distanceAngle - oldDistanceAngle)) > bearingThreshold));
@@ -312,7 +380,7 @@ bool TeamMessageHandler::teammateBearingsChanged(const Vector2f& position, const
     const Vector2f oldOffset = oldPosition - estimatedPosition;
     const Angle distanceAngle = Vector2f(offset.norm(), assumedObservationHeight).angle();
     const Angle oldDistanceAngle = Vector2f(oldOffset.norm(), assumedObservationHeight).angle();
-    if((offset - oldOffset).norm() > positionThreshold &&
+    if((offset - oldOffset).squaredNorm() > sqr(positionThreshold) &&
        (offset.isZero() || oldOffset.isZero() ||
         offset.angleTo(oldOffset) > bearingThreshold ||
         std::abs(Angle::normalize(distanceAngle - oldDistanceAngle)) > bearingThreshold))
@@ -336,18 +404,36 @@ bool TeamMessageHandler::notInPlayDead() const
 #endif
 }
 
+bool TeamMessageHandler::checkTimeDelay() const
+{
+  // When switching to striker, sending is allowed without delay
+  // Otherwise wait 0.6 to 1.2 seconds to allow other robots to send important information
+  // TODO determine better parameters
+  // TODO 600 ms min delay, because we currently do not have a preview of the message budget.
+  // If we have -> could go down to 200 ms? But max should remain at 1200 ms?
+  return theFrameInfo.getTimeSince(timeWhenLastSendTryStarted) >
+         (Role::isActiveRole(theStrategyStatus.role) && !Role::isActiveRole(lastSent.theStrategyStatus.role) ?
+          sendDelayPlayBall :
+          mapToRange(static_cast<int>(theBallModel.estimate.position.norm()), ballDistanceRangeForDelay.min, ballDistanceRangeForDelay.max, sendDelayRange.min, sendDelayRange.max));
+}
+
+void TeamMessageHandler::setTimeDelay()
+{
+  timeWhenLastSendTryStarted = theFrameInfo.time;
+}
+
 bool TeamMessageHandler::withinNormalBudget() const
 {
   const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
   const int timeInNextHalf = theGameState.phase == GameState::firstHalf ? durationOfHalf : 0;
   const int remainingTime = std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
-  return (static_cast<int>(theGameState.ownTeam.messageBudget - normalMessageReserve) * durationOfHalf * 2 >
+  return (static_cast<int>(ownModeledBudget - normalMessageReserve) * durationOfHalf * 2 >
           static_cast<int>(overallMessageBudget - normalMessageReserve) * remainingTime);
 }
 
 bool TeamMessageHandler::withinPriorityBudget() const
 {
-  return theGameState.ownTeam.messageBudget > priorityMessageReserve;
+  return ownModeledBudget > priorityMessageReserve;
 }
 
 bool TeamMessageHandler::whistleDetected() const
@@ -374,6 +460,11 @@ bool TeamMessageHandler::robotStatusChanged() const
 
 bool TeamMessageHandler::strategyStatusChanged() const
 {
+  auto goalKeeperPositionSwitch = [](const Tactic::Position::Type position, const Tactic::Position::Type lastPosition) -> bool
+  {
+    return Tactic::Position::isGoalkeeper(position) && Tactic::Position::isGoalkeeper(lastPosition);
+  };
+
   return (theStrategyStatus.proposedTactic != lastSent.theStrategyStatus.proposedTactic ||
           // theStrategyStatus.acceptedTactic != lastSent.theStrategyStatus.acceptedTactic ||
           theStrategyStatus.proposedMirror != lastSent.theStrategyStatus.proposedMirror ||
@@ -381,7 +472,7 @@ bool TeamMessageHandler::strategyStatusChanged() const
           theStrategyStatus.proposedSetPlay != lastSent.theStrategyStatus.proposedSetPlay ||
           // theStrategyStatus.acceptedSetPlay != lastSent.theStrategyStatus.acceptedSetPlay ||
           // theStrategyStatus.setPlayStep != lastSent.theStrategyStatus.setPlayStep ||
-          theStrategyStatus.position != lastSent.theStrategyStatus.position ||
+          (theStrategyStatus.position != lastSent.theStrategyStatus.position && !goalKeeperPositionSwitch(theStrategyStatus.position, lastSent.theStrategyStatus.position)) ||
           theStrategyStatus.role != lastSent.theStrategyStatus.role);
 }
 
@@ -409,19 +500,17 @@ bool TeamMessageHandler::ballModelChanged() const
     return false;
   else
   {
-    const Vector2f ballEndPositon = BallPhysics::getEndPosition(theBallModel.estimate.position,
-                                                                theBallModel.estimate.velocity,
-                                                                theBallSpecification.friction);
-    const Vector2f oldBallEndPositon = BallPhysics::getEndPosition(lastSent.theBallModel.estimate.position,
-                                                                   lastSent.theBallModel.estimate.velocity,
-                                                                   theBallSpecification.friction);
-    const Vector2f teamBallEndPositon = theRobotPose.inverse() * BallPhysics::getEndPosition(theTeammatesBallModel.position,
-                                                                                             theTeammatesBallModel.velocity,
-                                                                                             theBallSpecification.friction);
-    return globalBearingsChanged(theRobotPose, ballEndPositon, lastSent.theRobotPose, oldBallEndPositon) &&
-           teammateBearingsChanged(theRobotPose * ballEndPositon, lastSent.theRobotPose * oldBallEndPositon) &&
+    const Vector2f ballEndPosition = BallPhysics::getEndPosition(theBallModel.estimate.position,
+                                                                 theBallModel.estimate.velocity,
+                                                                 theBallSpecification.friction);
+    const Vector2f oldBallEndPosition = BallPhysics::getEndPosition(lastSent.theBallModel.estimate.position,
+                                                                    lastSent.theBallModel.estimate.velocity,
+                                                                    theBallSpecification.friction);
+
+    return globalBearingsChanged(theRobotPose, ballEndPosition, lastSent.theRobotPose, oldBallEndPosition) &&
+           teammateBearingsChanged(theRobotPose * ballEndPosition, lastSent.theRobotPose * oldBallEndPosition) &&
            (!theTeammatesBallModel.isValid ||
-            globalBearingsChanged(theRobotPose, ballEndPositon, theRobotPose, teamBallEndPositon));
+            theFrameInfo.getTimeSince(timeWhenBallWasNearTeamBall) > minTimeBallIsNotNearTeamBall);
   }
 }
 
@@ -439,4 +528,9 @@ bool TeamMessageHandler::teamBallOld() const
                                              lastSent.theBallModel.timeWhenLastSeen);
 
   return theFrameInfo.getTimeSince(timeWhenLastSeen) > teamBallThresholdBase + theGameState.playerNumber * teamBallThresholdFactor;
+}
+
+bool TeamMessageHandler::indirectKickChanged() const
+{
+  return theIndirectKick.lastKickTimestamp > lastSent.theIndirectKick.lastKickTimestamp && !theIndirectKick.allowDirectKick && lastSent.theIndirectKick.lastKickTimestamp < theIndirectKick.lastSetPlayTime; // lastSetPlayTime checks every GameState change
 }

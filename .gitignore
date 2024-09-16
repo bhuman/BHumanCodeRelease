@@ -1,7 +1,9 @@
 .*
+!.editorconfig
 !.gitattributes
 !.gitignore
-!.editorconfig
+!.pre-commit-config.yaml
+!/Make/*/.vscode
 *~
 \#*\#
 .\#
@@ -11,6 +13,7 @@
 *.kdev4
 *.projectile
 *.iml
+*.opn
 GPATH
 GRTAGS
 GTAGS
@@ -34,4 +37,3 @@ Thumbs.db
 /Util/Buildchain/macOS/bin/cmake
 /Util/Buildchain/macOS/include
 /Util/Buildchain/macOS/lib
-/Util/WSL

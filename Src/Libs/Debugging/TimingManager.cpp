@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <vector>
 
-using namespace std;
-
 struct TimingManager::Pimpl
 {
   /**
@@ -28,11 +26,11 @@ struct TimingManager::Pimpl
    * value: If timer has been started but not stopped, yet: the start time.
    *        Else: the time between start and stop.
    */
-  unordered_map<const char*, unsigned long long> timing;
-  unordered_map<const char*, unsigned short> idTable; /**< Key: name of the stopwatch. Value: the id that is used when sending timing data over the network */
+  std::unordered_map<const char*, unsigned long long> timing;
+  std::unordered_map<const char*, unsigned short> idTable; /**< Key: name of the stopwatch. Value: the id that is used when sending timing data over the network */
   unsigned currentThreadStartTime = 0; /**< Timestamp of the current thread iteration */
   unsigned frameNo = 0; /**<  Number of the current frame*/
-  vector<const char*> watchNames; /**< Contains the names of the stopwatches */
+  std::vector<const char*> watchNames; /**< Contains the names of the stopwatches */
   MessageQueue data; /**< Contains the timing data in streamable format inbetween frames */
   bool dataPrepared = false; /**< True if data hs already been prepared this frame */
   int watchNameIndex = 0; /**< Every frame a few watch names are transmitted. This is the index of the watchname that is to be transmitted next */
@@ -77,8 +75,8 @@ void TimingManager::signalThreadStart()
   prvt->frameNo++;
   prvt->data.clear();
   prvt->dataPrepared = false;
-  for(const pair<const char* const, unsigned long long>& it : prvt->timing)
-    prvt->timing[it.first] = 0;
+  for(std::pair<const char* const, unsigned long long>& it : prvt->timing)
+    it.second = 0;
 }
 
 MessageQueue& TimingManager::getData()
@@ -119,7 +117,7 @@ void TimingManager::prepareData()
 
   // now write the data of all watches
   out << static_cast<unsigned short>(prvt->timing.size());
-  for(const pair<const char* const, unsigned long long>& it : prvt->timing)
+  for(const std::pair<const char* const, unsigned long long>& it : prvt->timing)
   {
     out << prvt->idTable[it.first];
     out << static_cast<unsigned>(it.second); // the cast is ok because the time between start and stop will never be bigger than an int...

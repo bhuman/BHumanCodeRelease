@@ -3,7 +3,7 @@
  *
  * Declaration of some tools for the SE3 Lie-group and the associated algebra se3
  *
- * The vector representation of elements from the algebra has the the translational parameters as the first three elements and the rotational als the next three
+ * The vector representation of elements from the algebra has the translational parameters as the first three elements and the rotational as the next three
  * [translation, rotation].transpose
  * this is important to construct the se3 element from the vector as well as for the construction of the adjoint matrix
  *
@@ -68,8 +68,8 @@ namespace SE3
   /**
    * Inverse of the exponential map
    * maps an element from SE3 to the vector representation of the tangent space se3
-   * @param x element from the group
+   * @param p element from the group
    * @return vector representation of the screw displacement necessary to get to the pose x
    */
-  Vector6f ln(const Pose3f& x);
+  Vector6f ln(const Pose3f& p);
 }

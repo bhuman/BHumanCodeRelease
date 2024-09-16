@@ -19,20 +19,29 @@
 
 #include "BallPerceptFilter.h"
 #include "Debugging/Annotation.h"
+#include "Debugging/Plot.h"
 #include "Tools/Modeling/BallLocatorTools.h"
 
 MAKE_MODULE(BallPerceptFilter);
 
 BallPerceptFilter::BallPerceptFilter() : timeBallWasBeenSeenInLowerCameraImage(0),
-                                         timeWhenLastKickWasExecuted(0), timeOfLastFilteredPercept(0),
-                                         timeOfLastPerceivedFieldFeature(0)
+                                         timeWhenLastKickWasExecuted(0), timeOfLastFilteredPercept(0), shakiness(0.f)
 {
 }
 
 void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 {
+  // Declare plots as drawing code is not always executed:
+  DECLARE_PLOT("module:BallPerceptFilter:angleBasedDistance");
+  DECLARE_PLOT("module:BallPerceptFilter:sizeBasedDistance");
+  DECLARE_PLOT("module:BallPerceptFilter:combinedDistance");
+
   // Reset percept:
   filteredBallPercepts.percepts.clear();
+
+  // Update and plot shakiness information
+  shakiness = 0.9f * shakiness + 0.1f * theIMUValueState.gyroValues.deviation.y();
+  PLOT("module:BallPerceptFilter:shakiness", shakiness);
 
   // Remove elements that are too old from buffers:
   while(bufferedSeenBalls.size() != 0)
@@ -60,8 +69,6 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
   // Update other internal stuff
   if(theMotionInfo.isKicking()) //&& theBallContactWithRobot.timeOfLastContact > timeWhenLastKickWasExecuted)
     timeWhenLastKickWasExecuted = theFrameInfo.time;
-  if(theFieldFeatureOverview.combinedStatus.lastSeen > timeOfLastPerceivedFieldFeature)
-    timeOfLastPerceivedFieldFeature = theFieldFeatureOverview.combinedStatus.lastSeen;
 
   // Do some first checks
   if(theBallPercept.status == BallPercept::notSeen)
@@ -71,9 +78,23 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
      (disableBallInOtherHalfForTesting && perceptIsInOtherHalf()))
     return;
 
+  Vector2f perceivedBallPosition = theBallPercept.positionOnField;
+  // Only do this for far away balls:
+  if(correctBallDistanceByPerceivedSize && theCameraInfo.camera == CameraInfo::upper)
+  {
+    const float usedShakiness = shakiness > 0.5f ? 0.5f : shakiness;
+    float sizeFactor = mapToRange(usedShakiness, 0.f, 0.5f, 0.f, 1.f);
+    float angleFactor = 1.f - sizeFactor;
+    const float sizeBasedDistance = 1.1f * Projection::getDistanceBySize(theCameraInfo, theBallSpecification.radius, theBallPercept.radiusInImage); // Multiply by 1.1, as size-based distance seems to underestimate the real distance. Hacky! ;-)
+    Vector2f sizeBasedBallPosition(theBallPercept.positionOnField);
+    sizeBasedBallPosition.normalize();
+    sizeBasedBallPosition *= sizeBasedDistance;
+    perceivedBallPosition = theBallPercept.positionOnField * angleFactor + sizeBasedBallPosition * sizeFactor;
+  }
+
   // If we have reached this part of the code, the ball percept contains information
   // that might be useful and that can be used for some computations.
-  const FilteredBallPercept fbp(theBallPercept.positionInImage, theBallPercept.positionOnField,
+  const FilteredBallPercept fbp(theBallPercept.positionInImage, perceivedBallPosition,
                                 theBallPercept.covarianceOnField, theBallPercept.radiusOnField, theFrameInfo.time);
   bufferedBalls.push_front(fbp);
 
@@ -126,15 +147,13 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
     if(theCameraInfo.camera == CameraInfo::lower)
       timeBallWasBeenSeenInLowerCameraImage = theFrameInfo.time;
   }
+  plotAndDraw();
 }
 
 bool BallPerceptFilter::perceptCanBeExcludedByLocalization()
 {
   // Not sure about position
   if(theRobotPose.quality != RobotPose::superb)
-    return false;
-  // Not seen cool stuff recently
-  if(theFrameInfo.getTimeSince(timeOfLastPerceivedFieldFeature) > fieldFeatureTimeout)
     return false;
   Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
   // Not in the field of play ...
@@ -153,6 +172,19 @@ bool BallPerceptFilter::perceptCanBeExcludedByLocalization()
 
 bool BallPerceptFilter::perceptIsInsideTeammateAndCanBeExcludedByTeamBall()
 {
+  // First perform some checks in image coordinates that cover the most typical cases for false positives.
+  // These should avoid to exclude real balls that fulfill the following conditions (which unfortunately happens quite often):
+  if(((theCameraInfo.camera == CameraInfo::lower && theBallPercept.positionInImage.y() > theBallPercept.radiusInImage) || // Percept does not intersect upper border of image from lower camera
+      (theCameraInfo.camera == CameraInfo::upper && theBallPercept.positionInImage.y() + theBallPercept.radiusInImage < theCameraInfo.height)) && // Percept does not intersect lower border of image from upper camera
+     (theBallPercept.positionInImage.x() > theBallPercept.radiusInImage) && // Percept does not intersect left border of image
+     (theBallPercept.positionInImage.x() + theBallPercept.radiusInImage < theCameraInfo.width) && // Percept does not intersect right border of image
+     !ballPerceptIntersectsObstaclesPercept()) // Percept does not intersect with any robot seen in this frame
+  {
+    // The ball appears to be at a position in the image that is has a low likelihood for causing any false positives.
+    // Thus, we do not perform the other checks and accept the percept.
+    return false;
+  }
+  // Now check against data from teammates:
   const Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
   // Check for each teammate, if ...
   for(auto const& teammate : theTeamData.teammates)
@@ -183,13 +215,26 @@ bool BallPerceptFilter::perceptIsInsideTeammateAndCanBeExcludedByTeamBall()
   return false;
 }
 
+bool BallPerceptFilter::ballPerceptIntersectsObstaclesPercept()
+{
+  for(const auto& o : theObstaclesImagePercept.obstacles)
+  {
+    // Two opposing corners of the obstacle rectangle:
+    const Vector2f topLeft(o.left, o.top);
+    const Vector2f bottomRight(o.right, o.bottom);
+    if(Geometry::circleIntersectsAxisAlignedRectangle(theBallPercept.positionInImage, theBallPercept.radiusInImage, topLeft, bottomRight))
+      return true;
+  }
+  return false;
+}
+
 bool BallPerceptFilter::perceptIsInOtherHalf()
 {
   const Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
   // Check, if the x components of both field coordinates have the same sign:
   if(sgn(ballOnField.x()) == sgn(theWorldModelPrediction.robotPose.translation.x()))
     return false;
-  // In case of different signs, it is sufficient, if robot or ball is close to the center line:
+  // In case of different signs, it is sufficient, if robot or ball is close to the halfway line:
   if(ballOnField.norm() <= toleranceForDisablingBallInOtherHalf ||
      theWorldModelPrediction.robotPose.translation.norm() <= toleranceForDisablingBallInOtherHalf)
     return false;
@@ -220,10 +265,22 @@ bool BallPerceptFilter::verifySeenBall()
     for(unsigned int i = 0; i < verificationCount; i++)
     {
       FilteredBallPercept& b = bufferedSeenBalls[i];
-      if((b.positionOnField - theBallPercept.positionOnField).norm() > verificationDistance &&
-         theWorldModelPrediction.ballVelocity.norm() <= 0.1f)
+      // Ball is too far away ...
+      if((b.positionOnField - theBallPercept.positionOnField).norm() > verificationDistance)
       {
-        return false;
+        // .. from almost stationary ball:
+        if(theWorldModelPrediction.ballVelocity.norm() <= 10.f)
+        {
+          return false;
+        }
+        // .. or from direction of a rolling ball
+        Geometry::Line ballTrajectory(b.positionOnField, theWorldModelPrediction.ballVelocity);
+        ballTrajectory.direction *= 3.f; // Possibility of higher velocity
+        const float dist = Geometry::getDistanceToEdge(ballTrajectory, theBallPercept.positionOnField);
+        if(dist > verificationDistance)
+        {
+          return false;
+        }
       }
     }
   }
@@ -279,7 +336,7 @@ bool BallPerceptFilter::robotRecentlyKickedAndThereAreGuessedBallsRollingAway()
   if(static_cast<int>(lastIndex + 1) < requiredNumberOfGuessBallsForKickDetection)
     return false;
   // If yes, these balls need to have decreasing distances (due to order in buffer) as we assume that the ball is rolling away
-  float distance = theFieldDimensions.xPosOpponentGroundLine * 4.f;;
+  float distance = theFieldDimensions.xPosOpponentGoalLine * 4.f;;
   for(unsigned int i = 0; i <= lastIndex; i++)
   {
     const float currentDistance = bufferedBalls[i].positionOnField.norm();
@@ -309,8 +366,8 @@ bool BallPerceptFilter::perceptsAreOnALineThatIsCompatibleToARollingBall()
   // Do we have enough balls in buffer?
   if(static_cast<int>(lastIndex + 1) < requiredNumberOfGuessBallsForMotionDetection)
     return false;
-  // If yes, checke, if the motion hypothesis is more likely than a hypothesis of a rolling ball.
-  // Furthermore the rolling ball needs to have a minimum velocity
+  // If yes, check, if the motion hypothesis is more likely than a hypothesis of a rolling ball.
+  // Furthermore, the rolling ball needs to have a minimum velocity.
   float stdDevStatic = computeStdDevOfStaticBallHypothesis(lastIndex);
   Vector2f velocity;
   float stdDevMoving = computeStdDevOfMovingBallHypothesis(lastIndex, velocity);
@@ -375,4 +432,21 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
 
   // Return error:
   return meanError * 1000.f; // in mm
+}
+
+void BallPerceptFilter::plotAndDraw()
+{
+  if(theBallPercept.status == BallPercept::seen && theCameraInfo.camera == CameraInfo::upper)
+  {
+    const float angleBasedDistance = theBallPercept.positionOnField.norm();
+    PLOT("module:BallPerceptFilter:angleBasedDistance", angleBasedDistance);
+    const float sizeBasedDistance = 1.1f * Projection::getDistanceBySize(theCameraInfo, theBallSpecification.radius, theBallPercept.radiusInImage);
+    PLOT("module:BallPerceptFilter:sizeBasedDistance", sizeBasedDistance);
+
+    const float usedShakiness = shakiness > 0.5f ? 0.5f : shakiness;
+    float sizeFactor = mapToRange(usedShakiness, 0.f, 0.5f, 0.f, 1.f);
+    float angleFactor = 1.f - sizeFactor;
+    const float combinedDistance = sizeFactor * sizeBasedDistance + angleFactor * angleBasedDistance;
+    PLOT("module:BallPerceptFilter:combinedDistance", combinedDistance);
+  }
 }

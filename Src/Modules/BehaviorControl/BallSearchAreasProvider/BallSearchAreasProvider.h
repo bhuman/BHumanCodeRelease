@@ -10,20 +10,17 @@
 
 #include "Framework/Module.h"
 #include "Math/Geometry.h"
-#include "Tools/Math/Transformation.h"
 #include "Representations/Modeling/BallDropInModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/ObstacleModel.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/BehaviorControl/BallSearchAreas.h"
-#include "Representations/BehaviorControl/IllegalAreas.h"
-#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
-#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Tools/BehaviorControl/SectorWheel.h"
+#include "Tools/Math/Projection.h"
 
 MODULE(BallSearchAreasProvider,
 {,
@@ -38,10 +35,12 @@ MODULE(BallSearchAreasProvider,
   PROVIDES(BallSearchAreas),
   DEFINES_PARAMETERS(
   {,
-    (int)(500)cellSize, /**< the size of the cells*/
-    (unsigned char)(120)heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
+    (unsigned)(500) cellWidth, /**< the width of the cells */
+    (unsigned)(500) cellHeight, /**< the height of the cells */
     (float)(3500.f) maxDistanceToCell, /**< the max distance to a cell. */
     (unsigned)(200) obstacleOffset, /**< offset to be added to the obstacle width in the sector wheel*/
+    (unsigned char)(90) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
+    (float)(6000.f) heatmapMaxTime, /**< The max time for the liniear interpolation of the heatmap. */
   }),
 });
 
@@ -53,20 +52,23 @@ public:
 private:
   unsigned cellCountX; /**< the number of the cells on field in x direction*/
   unsigned cellCountY; /**< the number of the cells on field in y direction*/
-  Vector2f bottomLeft; /**< the bottom left corner of the area of possible ball positions within a standard situation*/
-  Vector2f upperRight; /**< the upper right corner of the area of possible ball positions within a standard situation*/
-  const Geometry::Rect rectLeftOpponentCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea), Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftSideline)); /**< the rectangle for the left opponent corner*/
-  const Geometry::Rect rectRightOpponentCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightSideline), Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea)); /**< the rectangle for the right opponent corner*/
+  std::vector<BallSearchAreas::Cell> grid; /**< the grid for the complete field*/
 
-  const Geometry::Rect rectLeftOwnCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftSideline), Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea));
-  const Geometry::Rect rectRightOwnCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightGoalArea), Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightSideline));
+  const Geometry::Rect rectLeftOpponentCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea), Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftTouchline)); /**< the rectangle for the left opponent corner*/
+  const Geometry::Rect rectRightOpponentCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightTouchline), Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea)); /**< the rectangle for the right opponent corner*/
+
+  const Geometry::Rect rectLeftOwnCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftTouchline), Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea));
+  const Geometry::Rect rectRightOwnCorner = Geometry::Rect(Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightGoalArea), Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightTouchline));
 
   const Geometry::Rect rectOwnGoalArea = Geometry::Rect(Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftGoalArea), Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea));/**<the rectangle for the own goal area*/
-  std::vector<BallSearchAreas::Cell> grid; /**< the grid for the complete field*/
-  std::vector<SectorWheel::Sector> wheel; /**< the sector wheel contains areas around the robot that are covered by an obstacle and therefore could not be updated within the update method.*/
+  const Geometry::Rect rectOpponentGoalArea = Geometry::Rect(Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftGoalArea), Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea));/**<the rectangle for the own goal area*/
+
   std::vector<ColorRGBA> colorVector; /**< color vector for the heatmap*/
-  ColorRGBA worstGrade = ColorRGBA::black;
-  ColorRGBA bestGrade = ColorRGBA::yellow;
+
+  /**
+   * Initializes the grid.
+   */
+  void initializeGrid();
 
   /**
    * This method updates the ball search areas.
@@ -81,10 +83,10 @@ private:
   void draw();
 
   /**
-   * This Method returns the cells within the voroni region of the given robot
+   * This method returns the cells within the Voronoi region of the given robot
    * @param agent the robot
    */
-  std::vector<BallSearchAreas::Cell> getVoronoiGrid(const Agent& agent) const;
+  const std::vector<BallSearchAreas::Cell> getVoronoiGrid(const Agent& agent) const;
 
   /**
    * This method updates the timestamp within the given cell.
@@ -96,13 +98,13 @@ private:
    * This method returns if a given cell is in the view of the robot
    * @param cell the cell to be checked if it is inside of the view of the robot
    */
-  bool cellInView(const BallSearchAreas::Cell& cell) const;
+  bool cellInView(const BallSearchAreas::Cell& cell, const std::vector<Vector2f>& p) const;
 
   /**
-   * This method returns the distance between the robot and the cell.
+   * This method returns the squared distance between the robot and the cell.
    * @param cell the cell where the distance is checked
    */
-  float returnDistanceToCell(const BallSearchAreas::Cell& cell) const;
+  float returnDistanceToCellSqr(const BallSearchAreas::Cell& cell) const;
 
   /**
    * This method resets the timestamps of the obstacle grid, if the GameState is a
@@ -115,7 +117,7 @@ private:
    * Therefore the timestamp will be multiplied by the priority.
    * @param gridToSearch the grid to be filtered by the cell to be searched next
    */
-  const Vector2f positionCellToSearchNext(std::vector<BallSearchAreas::Cell>& gridToSearch) const;
+  const Vector2f positionCellToSearchNext(const std::vector<BallSearchAreas::Cell>& gridToSearch) const;
 
   /**
    * This method creates a sectorwheel around the robot for detecting obstacles in the sight of the searching robot

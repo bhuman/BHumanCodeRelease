@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Framework/Module.h"
+#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -30,6 +31,7 @@ STREAMABLE(JointPlayPair,
 
 MODULE(JointPlayProvider,
 {,
+  REQUIRES(DamageConfigurationBody),
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
   REQUIRES(JointAngles),

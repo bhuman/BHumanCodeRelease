@@ -10,18 +10,21 @@
 #pragma once
 
 #include "Representations/BehaviorControl/BallSearchAreas.h"
+#include "Representations/BehaviorControl/ClearTarget.h"
+#include "Representations/BehaviorControl/DribbleTarget.h"
 #include "Representations/BehaviorControl/ExpectedGoals.h"
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/GoaliePose.h"
+#include "Representations/BehaviorControl/FieldInterceptBall.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/PassEvaluation.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/BallDropInModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
+#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
@@ -33,19 +36,22 @@
   _(BallSearchAreas) \
   _(BallSpecification) \
   _(BehaviorParameters) \
+  _(ClearTarget) \
+  _(DribbleTarget) \
   _(ExpectedGoals) \
   _(FieldBall) \
+  _(FieldInterceptBall) \
   _(FieldDimensions) \
   _(FrameInfo) \
   _(GameState) \
-  _(GoaliePose) \
+  _(GlobalOpponentsModel) \
+  _(GlobalTeammatesModel) \
+  _(IndirectKick) \
   _(LibPosition) \
   _(MotionInfo) \
   _(PassEvaluation) \
   _(RobotPose) \
-  _(TeammatesBallModel) \
-  _(GlobalTeammatesModel) \
-  _(BallDropInModel)
+  _(TeammatesBallModel)
 
 class BehaviorBase
 {

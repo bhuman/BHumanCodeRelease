@@ -23,6 +23,6 @@ STREAMABLE(PenaltyMarkPercept,
 
   (Vector2i)(Vector2i::Zero()) positionInImage, /**< Position in the image. */
   (Vector2f)(Vector2f::Zero()) positionOnField, /**< Position relative to robot on the field. */
-  (Matrix2f) covarianceOnField,                 /**< The measurement covariance of positionOnField */
+  (Matrix2f)((Matrix2f() << 1.f, 0.f, 0.f, 1.f).finished()) covarianceOnField, /**< The measurement covariance of positionOnField */
   (bool)(false) wasSeen,                        /**< Indicates whether the feature has been seen in the last frame */
 });

@@ -12,8 +12,12 @@
 #include "Framework/Blackboard.h"
 #include "GlobalTeammatesModel.h"
 #include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Sensing/RobotModel.h"
 
 Vector2f GlobalTeammatesModel::TeammateEstimate::getFuturePosition(unsigned time) const
 {
@@ -76,6 +80,98 @@ void GlobalTeammatesModel::draw() const
       }
       DRAW_TEXT("representation:GlobalTeammatesModel", t.pose.translation.x() + 200, t.pose.translation.y(),
             250, ColorRGBA::white, t.playerNumber);
+    }
+  }
+
+  DEBUG_DRAWING("representation:GlobalTeammatesModel:walkTargets", "drawingOnField")
+  {
+    for(const TeammateEstimate& t : teammates)
+    {
+      const Vector2f walkTarget = t.pose * t.relativeWalkTarget;
+      LINE("representation:GlobalTeammatesModel:walkTargets", t.pose.translation.x(), t.pose.translation.y(), walkTarget.x(), walkTarget.y(),
+           10, Drawings::dashedPen, ColorRGBA::magenta);
+    }
+  }
+
+  DEBUG_DRAWING3D("representation:GlobalTeammatesModel", "robot")
+  {
+    if(Blackboard::getInstance().exists("GameState")
+       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("RobotModel")
+       && Blackboard::getInstance().exists("RobotPose"))
+    {
+      const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
+      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
+      const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
+      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      TRANSLATE3D("representation:GlobalTeammatesModel", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
+      ROTATE3D("representation:GlobalTeammatesModel", -orientation.x(), -orientation.y(), -orientation.z());
+      RENDER_OPTIONS3D("representation:GlobalTeammatesModel", Drawings3D::disableOpacity | Drawings3D::disableDepth);
+      ColorRGBA fieldPlayerColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.fieldPlayerColor));
+      ColorRGBA goalkeeperColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.goalkeeperColor));
+      fieldPlayerColor.a = goalkeeperColor.a = 128;
+      for(const TeammateEstimate& teammate : teammates)
+      {
+        const ColorRGBA color = teammate.playerNumber == theGameState.ownTeam.goalkeeperNumber ? goalkeeperColor : fieldPlayerColor;
+        ColorRGBA targetColor = color;
+        targetColor.a = 224;
+
+        const Pose2f walkTarget = theRobotPose.inverse() * teammate.pose * teammate.relativeWalkTarget;
+        const Vector2f points[] =
+        {
+          walkTarget * Vector2f(100.f, -20.f),
+          walkTarget * Vector2f(100.f, 20.f),
+          walkTarget * Vector2f(-100.f, 20.f),
+          walkTarget * Vector2f(-100.f, -20.f),
+          walkTarget * Vector2f(20.f, -100.f),
+          walkTarget * Vector2f(20.f, -20.f),
+          walkTarget * Vector2f(-20.f, -20.f),
+          walkTarget * Vector2f(-20.f, -100.f),
+          walkTarget * Vector2f(20.f, 20.f),
+          walkTarget * Vector2f(20.f, 100.f),
+          walkTarget * Vector2f(-20.f, 100.f),
+          walkTarget * Vector2f(-20.f, 20.f)
+        };
+
+        for(int i = 0; i < 12; i += 4)
+          QUAD3D("representation:GlobalTeammatesModel",
+                 Vector3f(points[i].x(), points[i].y(), 2.f),
+                 Vector3f(points[i + 1].x(), points[i + 1].y(), 2.f),
+                 Vector3f(points[i + 2].x(), points[i + 2].y(), 2.f),
+                 Vector3f(points[i + 3].x(), points[i + 3].y(), 2.f),
+                 targetColor);
+        const Vector2f position = theRobotPose.inverse() * teammate.pose.translation;
+        CYLINDER3D("representation:GlobalTeammatesModel", position.x(), position.y(), 290, 0, 0, 0, 100, 580, color);
+
+      }
+    }
+  }
+
+  DEBUG_DRAWING3D("representation:GlobalTeammatesModel:sectors", "robot")
+  {
+    if(Blackboard::getInstance().exists("GameState")
+       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("RobotModel")
+       && Blackboard::getInstance().exists("RobotPose"))
+    {
+      const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
+      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
+      const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
+      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      TRANSLATE3D("representation:GlobalTeammatesModel:sectors", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
+      ROTATE3D("representation:GlobalTeammatesModel:sectors", -orientation.x(), -orientation.y(), -orientation.z());
+      const ColorRGBA fieldPlayerColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.fieldPlayerColor));
+      const ColorRGBA goalkeeperColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.goalkeeperColor));
+      for(const TeammateEstimate& teammate : teammates)
+      {
+        const Vector2f position = theRobotPose.inverse() * teammate.pose.translation;
+        const Angle range = std::max(1_deg, static_cast<Angle>(std::asin(std::min(1.f, 100.f / position.norm()))));
+        const Angle angle = position.angle();
+        RING_SECTOR3D("representation:GlobalTeammatesModel:sectors", Vector3f(0, 0, 3.f), angle - range, angle + range, 140.f, 160.f,
+                      teammate.playerNumber == theGameState.ownTeam.goalkeeperNumber ? goalkeeperColor : fieldPlayerColor);
+      }
     }
   }
 }

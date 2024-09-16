@@ -67,8 +67,14 @@ void KeyframePhaseBase::waitForFallen()
     else
     {
       MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFrontGetUp], jointRequestOutput, static_cast<Joints::Joint>(0), Joints::numOfJoints);
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = 20;
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = 20;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = 30;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = 30;
+      jointRequestOutput.angles[Joints::lElbowRoll] = -40_deg;
+      jointRequestOutput.angles[Joints::rElbowRoll] = 40_deg;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lElbowRoll] = 20;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rElbowRoll] = 20;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lElbowYaw] = 0;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rElbowYaw] = 0;
     }
 
     jointRequestOutput.stiffnessData.stiffnesses[Joints::headYaw] = engine.safeFallParameters.headStiffness;
@@ -150,17 +156,15 @@ void KeyframePhaseBase::setNextJoints()
   // TODO just in case do some check?
   float useRatio = ratio;
   calculateJointDifference();
-  removePreviouseKeyframeJointCompensation();
+  removePreviousKeyframeJointCompensation();
   applyJointCompensation();
 
   targetJoints = lineJointRequest;
-  InterpolationType interpolationType = currentKeyframe.interpolationType == InterpolationType::Default
-                                        ? currentMotionBlock[0].interpolationType
-                                        : currentKeyframe.interpolationType;
+  ASSERT(currentKeyframe.interpolationType != InterpolationType::Default);
 
-  if(interpolationType == SinusMinToMax)
+  if(currentKeyframe.interpolationType == SinusMinToMax)
     useRatio = 0.5f * std::sin(ratio * Constants::pi - Constants::pi / 2.f) + 0.5f;
-  else if(interpolationType == SinusZeroToMax)
+  else if(currentKeyframe.interpolationType == SinusZeroToMax)
     useRatio = std::sin(ratio * Constants::pi / 2);
   MotionUtilities::interpolate(startJoints, targetJoints, useRatio, jointRequestOutput, engine.theJointAngles);
   FOREACH_ENUM(Joints::Joint, joint) // otherwise ignore gets overwritten and the motionCombinator can not set the ignored joints

@@ -124,7 +124,7 @@ void SetPlay::verify([[maybe_unused]] Type setPlay, const std::array<Tactic, Tac
 
   for(const Tactic::PriorityGroup& priorityGroup : priorityGroups)
     for(const Tactic::Position::Type position : priorityGroup.positions)
-      if(position == Tactic::Position::goalkeeper)
+      if(Tactic::Position::isGoalkeeper(position))
         FAIL("The goalkeeper position appears in a priority group within set play " << TypeRegistry::getEnumName(setPlay) << ".");
       else if(!existingPositions[position])
         FAIL("The position " << TypeRegistry::getEnumName(position) << " appears in a priority group in set play " << TypeRegistry::getEnumName(setPlay) << " but is not defined within tactic " << TypeRegistry::getEnumName(tactic) << ".");
@@ -132,7 +132,7 @@ void SetPlay::verify([[maybe_unused]] Type setPlay, const std::array<Tactic, Tac
         ++existingPositions[position];
 
   FOREACH_ENUM(Tactic::Position::Type, position)
-    if(position != Tactic::Position::goalkeeper)
+    if(!Tactic::Position::isGoalkeeper(position))
     {
       if(existingPositions[position] == 1)
         FAIL("The position " << TypeRegistry::getEnumName(position) << " does not appear in a priority group within set play " << TypeRegistry::getEnumName(setPlay) << ".");

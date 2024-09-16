@@ -1,6 +1,6 @@
 /**
  * @file EngineState.h
- * Contains the List of all available states of the getUpEngine.h
+ * Contains the List of all available states of the KeyframeMotionEngine
  *
  * @author Philip Reichenberg
  */

@@ -93,7 +93,7 @@ namespace ImageTransform
   }
 
   // writes the result of the affine transformation into dest, which has to be a buffer with a sufficient large size
-  void transform(const Image<PixelTypes::GrayscaledPixel>& src, float* destP, unsigned int dest_width, unsigned int dest_height, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f), const float defaultValue = 0.f)
+  void transform(const Image<PixelTypes::GrayscaledPixel>& src, float* destP, unsigned int dest_width, unsigned int dest_height, const Matrix3f& inverseTransformation, const Vector2f& relativeTransformationCenter = Vector2f(0.5f, 0.5f), const float defaultValue = 0.f)
   {
     const __m128 a0 = _mm_set1_ps(inverseTransformation(0, 0));
     const __m128 a1 = _mm_set1_ps(inverseTransformation(0, 1));
@@ -104,7 +104,7 @@ namespace ImageTransform
 
     const __m128 _0123 = _mm_setr_ps(0, 1.f, 2.f, 3.f);
 
-    const Vector2f transformationCenter = Vector2f(dest_width, dest_height).cwiseProduct(relativTransformationCenter);
+    const Vector2f transformationCenter = Vector2f(dest_width, dest_height).cwiseProduct(relativeTransformationCenter);
     //const Vector2i transformationCenter_i = transformationCenter.cast<int>();
     const float startX = -transformationCenter.x();
     //const float endX = dest.width - transformationCenter.x();
@@ -115,8 +115,8 @@ namespace ImageTransform
     const __m128 a0x4 = _mm_mul_ps(a0, _mm_set1_ps(4.f));
     const __m128 a3x4 = _mm_mul_ps(a3, _mm_set1_ps(4.f));
     //calculate the 0,0 transformation; which allows us to only accumulate afterwards
-    __m128 preCalculated_x_x_x_x_Dash = _mm_add_ps(_mm_set1_ps(src.width * relativTransformationCenter.x()), _mm_add_ps(_mm_add_ps(a2, _mm_mul_ps(_mm_set1_ps(startY), a1)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a0)));
-    __m128 preCalculated_y_y_y_y_Dash = _mm_add_ps(_mm_set1_ps(src.height * relativTransformationCenter.y()), _mm_add_ps(_mm_add_ps(a5, _mm_mul_ps(_mm_set1_ps(startY), a4)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a3)));
+    __m128 preCalculated_x_x_x_x_Dash = _mm_add_ps(_mm_set1_ps(src.width * relativeTransformationCenter.x()), _mm_add_ps(_mm_add_ps(a2, _mm_mul_ps(_mm_set1_ps(startY), a1)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a0)));
+    __m128 preCalculated_y_y_y_y_Dash = _mm_add_ps(_mm_set1_ps(src.height * relativeTransformationCenter.y()), _mm_add_ps(_mm_add_ps(a5, _mm_mul_ps(_mm_set1_ps(startY), a4)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a3)));
 
     ASSERT(dest_width % 4 == 0);
     for(unsigned y = 0; y < dest_height; ++y)
@@ -140,7 +140,7 @@ namespace ImageTransform
   }
 
   // just affine right now
-  void transform(const Image<unsigned char>& src, Image<float>& dest, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f))
+  void transform(const Image<unsigned char>& src, Image<float>& dest, const Matrix3f& inverseTransformation, const Vector2f& relativeTransformationCenter = Vector2f(0.5f, 0.5f))
   {
     const __m128 a0 = _mm_set1_ps(inverseTransformation(0, 0));
     const __m128 a1 = _mm_set1_ps(inverseTransformation(0, 1));
@@ -151,7 +151,7 @@ namespace ImageTransform
 
     const __m128 _0123 = _mm_setr_ps(0, 1.f, 2.f, 3.f);
 
-    const Vector2f transformationCenter = Vector2f(dest.width, dest.height).cwiseProduct(relativTransformationCenter);
+    const Vector2f transformationCenter = Vector2f(dest.width, dest.height).cwiseProduct(relativeTransformationCenter);
     //const Vector2i transformationCenter_i = transformationCenter.cast<int>();
     const float startX = -transformationCenter.x();
     //const float endX = dest.width - transformationCenter.x();
@@ -164,8 +164,8 @@ namespace ImageTransform
     const __m128 a0x4 = _mm_mul_ps(a0, _mm_set1_ps(4.f));
     const __m128 a3x4 = _mm_mul_ps(a3, _mm_set1_ps(4.f));
     //calculate the 0,0 transformation; which allows us to only accumulate afterwards
-    __m128 preCalculated_x_x_x_x_Dash = _mm_add_ps(_mm_set1_ps(src.width * relativTransformationCenter.x()), _mm_add_ps(_mm_add_ps(a2, _mm_mul_ps(_mm_set1_ps(startY), a1)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a0)));
-    __m128 preCalculated_y_y_y_y_Dash = _mm_add_ps(_mm_set1_ps(src.height * relativTransformationCenter.y()), _mm_add_ps(_mm_add_ps(a5, _mm_mul_ps(_mm_set1_ps(startY), a4)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a3)));
+    __m128 preCalculated_x_x_x_x_Dash = _mm_add_ps(_mm_set1_ps(src.width * relativeTransformationCenter.x()), _mm_add_ps(_mm_add_ps(a2, _mm_mul_ps(_mm_set1_ps(startY), a1)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a0)));
+    __m128 preCalculated_y_y_y_y_Dash = _mm_add_ps(_mm_set1_ps(src.height * relativeTransformationCenter.y()), _mm_add_ps(_mm_add_ps(a5, _mm_mul_ps(_mm_set1_ps(startY), a4)), _mm_mul_ps(_mm_add_ps(_mm_set1_ps(startX), _0123), a3)));
 
     ASSERT(dest.width % 4 == 0);
     for(unsigned y = 0; y < dest.height; ++y)
@@ -215,7 +215,7 @@ namespace ImageTransform
   void polarTransform(const Image<float>& src, Image<float>& dest)
   {
     // for normal images first
-    const float angelDiff = 2.f * pi / dest.width;
+    const float angleDiff = 2.f * pi / dest.width;
     const float rDiff = src.height / 2.f / dest.height;
 
     std::vector<float> precalcXDiff;
@@ -223,7 +223,7 @@ namespace ImageTransform
 
     for(unsigned i = 0; i < dest.width; ++i)
     {
-      const float angle = i * angelDiff;
+      const float angle = i * angleDiff;
       precalcXDiff.emplace_back(std::cos(angle) * rDiff);
       precalcYDiff.emplace_back(std::sin(angle) * rDiff);
     }
@@ -249,7 +249,7 @@ namespace ImageTransform
   void logPolarTransform(const Image<float>& src, Image<float>& dest)
   {
     // for normal images first
-    const float angelDiff = 2.f * pi / dest.width;
+    const float angleDiff = 2.f * pi / dest.width;
     const float rDiff = std::log2(src.height / 2.f) / dest.height;
 
     std::vector<float> precalcXDirection;
@@ -257,7 +257,7 @@ namespace ImageTransform
 
     for(unsigned i = 0; i < dest.width; ++i)
     {
-      const float angle = i * angelDiff;
+      const float angle = i * angleDiff;
       precalcXDirection.emplace_back(std::cos(angle));
       precalcYDirection.emplace_back(std::sin(angle));
     }
@@ -283,7 +283,7 @@ namespace ImageTransform
   //todo make just one method
   void halfImagePolarTransform(const Image<float>& src, Image<float>& dest)
   {
-    const float angelDiff = pi / dest.width;
+    const float angleDiff = pi / dest.width;
     const float rDiff = std::min(src.height / 2.f, 1.f * src.width) / dest.height;
 
     std::vector<float> precalcXDiff;
@@ -291,7 +291,7 @@ namespace ImageTransform
 
     for(int i = -static_cast<int>(dest.width) / 2; i < static_cast<int>(dest.width / 2); ++i)
     {
-      const float angle = i * angelDiff;
+      const float angle = i * angleDiff;
       precalcXDiff.emplace_back(std::cos(angle) * rDiff);
       precalcYDiff.emplace_back(std::sin(angle) * rDiff);
     }

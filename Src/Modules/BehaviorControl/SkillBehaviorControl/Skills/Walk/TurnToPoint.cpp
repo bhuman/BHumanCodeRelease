@@ -1,41 +1,38 @@
 /**
  * @file TurnToPoint.cpp
  *
- * This file implements an implementation of the TurnToPoint skill.
+ * This file implements the TurnToPoint skill.
  *
  * @author Nicole Schrader
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/OdometryData.h"
-#include "Math/Angle.h"
+#include "SkillBehaviorControl.h"
 #include <cmath>
 
-SKILL_IMPLEMENTATION(TurnToPointImpl,
-{,
-  IMPLEMENTS(TurnToPoint),
-  CALLS(TurnAngle),
-  REQUIRES(OdometryData),
-});
-
-class TurnToPointImpl : public TurnToPointImplBase
+option((SkillBehaviorControl) TurnToPoint,
+       args((const Vector2f&) target,
+            (Angle) margin))
 {
-  void execute(const TurnToPoint&) override
+  initial_state(execute)
   {
-    theTurnAngleSkill({.angle = rotation});
+    transition
+    {
+      if(action_done)
+        goto done;
+    }
+    action
+    {
+      TurnAngle({.angle = target.angle(),
+                 .margin = margin});
+    }
   }
 
-  void reset(const TurnToPoint& p) override
+  target_state(done)
   {
-    rotation = p.target.angle();
+    action
+    {
+      TurnAngle({.angle = target.angle(),
+                 .margin = margin});
+    }
   }
-
-  bool isDone(const TurnToPoint& p) const override
-  {
-    return std::abs(Angle::normalize(rotation - theOdometryData.rotation)) < p.margin;
-  }
-
-  Angle rotation; /**< The rotation that the robot should turn. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(TurnToPointImpl);
+}

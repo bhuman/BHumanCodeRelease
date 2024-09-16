@@ -8,60 +8,60 @@
  */
 
 #include "WalkToBallEngine.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Math/Geometry.h"
 #include "Tools/Motion/WalkUtilities.h"
+#include "Tools/Motion/Transformation.h"
 
 MAKE_MODULE(WalkToBallEngine);
 
+WalkToBallEngine::WalkToBallEngine()
+{
+  ASSERT(lastLeftOverRotation.capacity() == lastExecutedStepRotation.capacity());
+  for(std::size_t i = 0; i < lastExecutedStepRotation.capacity(); i++)
+  {
+    lastExecutedStepRotation.push_front(0_deg);
+    lastLeftOverRotation.push_front(0_deg);
+  }
+  rotationReductionPerDirectionChange = 1.f / static_cast<float>(lastLeftOverRotation.capacity() + 1);
+}
+
 void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
 {
+  DECLARE_DEBUG_DRAWING3D("module:WalkToBallEngine:stepSize", "field");
+
+  if(lastWalkStepUpdate != theWalkStepData.lastUpdate)
+  {
+    lastExecutedStepRotation.push_front(theWalkStepData.stepTarget.rotation);
+    lastLeftOverRotation.push_front(tempLastLeftOverRotation);
+    lastWalkStepUpdate = theWalkStepData.lastUpdate;
+  }
+
+  tempLastLeftOverRotation = !theWalkStepData.isLeftPhase ? theRobotModel.soleRight.rotation.getZAngle() : theRobotModel.soleLeft.rotation.getZAngle();
+
   walkToBallGenerator.createPhase = [this](const Pose2f& targetInSCS, const Vector2f& ballInSCS,
-                                           const int timeSinceBallWasSeen, const float distanceToBall,
+                                           const int timeSinceBallWasSeen, const Pose2f& scsCognition,
                                            const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                            const Pose2f& walkSpeed, const MotionPhase& lastPhase)
   {
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, targetInSCS);
-    const bool fastWalk = timeSinceBallWasSeen < minTimeSinceBallSeen && distanceToBall < 400.f;
+    const bool fastWalk = timeSinceBallWasSeen < minTimeSinceBallSeen && ballInSCS.squaredNorm() < sqr(400.f);
 
     if(!obstacleAvoidanceInSCS.path.empty())
       return theWalkToPoseGenerator.createPhaseToTarget(targetInSCS, obstacleAvoidanceInSCS, walkSpeed,
-                                                        isLeftPhase, lastPhase, fastWalk,
+                                                        isLeftPhase, lastPhase, scsCognition, fastWalk,
                                                         ballInSCS, timeSinceBallWasSeen < minTimeSinceBallSeen);
 
-    const float ballCircleRadius = std::max((targetInSCS.translation - ballInSCS).norm(), theBallSpecification.radius + 110.f + 50.f); // 110 = length of the foot in direction of the ball. Not using theRobotDimensions.footLength because this should be calculated. 50 = safety zone
+    const float ballCircleRadius = std::max((targetInSCS.translation - ballInSCS).norm(), theBallSpecification.radius + 110.f + 50.f) + // 110 = length of the foot in direction of the ball. Not using theRobotDimensions.footLength because this should be calculated. 50 = safety zone
+                                   mapToRange(static_cast<float>(timeSinceBallWasSeen), 50.f, 200.f, 0.f, theBallSpecification.radius);
     Pose2f modTargetInSCS = targetInSCS;
-
-    int intersections = 0;
-    // Only check ball collision when near the ball
-    if(ballInSCS.squaredNorm() < sqr(300.f))
-    {
-      // Based on the swing foot movement, check if the foot will collide with the ball. If so, do not use theWalkToPoseGenerator
-      const FootValues& foot = isLeftPhase ? theFootOffset.leftFoot : theFootOffset.rightFoot;
-      Vector2f shift(0.f, 0.f);
-      shift.x() = isLeftPhase ? -theRobotModel.soleLeft.translation.x() + theRobotModel.soleRight.translation.x() : theRobotModel.soleLeft.translation.x() - theRobotModel.soleRight.translation.x();
-      Vector2f intersection1, intersection2;
-      const Vector2f startPoint = shift + Vector2f(theFootOffset.forward, isLeftPhase ? foot.left : -foot.right);
-      const Vector2f endPoint = targetInSCS * Vector2f(theFootOffset.forward, isLeftPhase ? foot.left : -foot.right);
-      int intersections = Geometry::getIntersectionOfLineAndCircle(Geometry::Line(Vector2f(startPoint), (endPoint - startPoint).normalized()),
-                          Geometry::Circle(ballInSCS + shift, theBallSpecification.radius + 30.f), intersection1, intersection2);
-
-      // Based on the direction, we know if the collision is between the foot points or outside
-      const Angle pointDirection = intersections == 0 ? 0.f : (startPoint - endPoint).angle();
-      const Angle intersection1Angle = intersections == 0 ? 0.f : (intersection1 - endPoint).angle();
-      const Angle intersection2Angle = intersections == 0 ? 0.f : (intersection2 - endPoint).angle();
-
-      // 0.01deg as a small floating point inaccuracy
-      if(std::abs(intersection1Angle - pointDirection) > 0.01_deg && std::abs(intersection2Angle - pointDirection) > 0.01_deg)
-        intersections = 0;
-    }
-
     const Angle ballAngle = ballInSCS.angle();
     if((std::abs(Angle::normalize((ballInSCS - targetInSCS.translation).angle() - targetInSCS.translation.angle())) < 90_deg ||
-        std::abs(Angle::normalize(Angle::normalize(ballAngle - 180_deg) - (targetInSCS.translation - ballInSCS).angle())) < 45_deg) && intersections == 0)
+        std::abs(Angle::normalize(Angle::normalize(ballAngle - 180_deg) - (targetInSCS.translation - ballInSCS).angle())) < 45_deg))
     {
       // no tangents necessary, walk directly to kick pose
-      return theWalkToPoseGenerator.createPhaseToTarget(targetInSCS, obstacleAvoidanceInSCS, walkSpeed, isLeftPhase,
-                                                        lastPhase, fastWalk,
+      return theWalkToPoseGenerator.createPhaseToTarget(targetInSCS, obstacleAvoidanceInSCS, walkSpeed,
+                                                        isLeftPhase, lastPhase, scsCognition, fastWalk,
                                                         ballInSCS, timeSinceBallWasSeen < minTimeSinceBallSeen);
     }
     else
@@ -117,10 +117,27 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
       // In a rare case, the robot might switch the rotation direction with every step and therefore gets stuck.
       // This can be prevented by not allowing a rotation step.
       // It happens when the robot made a turn step, but now wants to hold the current orientation
+      auto shouldReduceStepRotation = [&](const Angle leftOverRotation, const Angle stepRotation)
+      {
+        // arbitrary values, difference should be small, the rotation itself large.
+        return std::abs(leftOverRotation + stepRotation / 2.f) < 5_deg && std::abs(stepRotation) > 10_deg;
+      };
+
+      float stepRotationReduction = 0.f;
+      for(std::size_t i = 0; i < lastExecutedStepRotation.capacity(); i++)
+      {
+        if(shouldReduceStepRotation(lastLeftOverRotation[i], lastExecutedStepRotation[i]))
+          stepRotationReduction += rotationReductionPerDirectionChange;
+        else
+          break;
+      }
+
       const Angle rotationWhenStopping = isLeftPhase ? theRobotModel.soleRight.rotation.getZAngle() : theRobotModel.soleLeft.rotation.getZAngle();
-      // arbitrary values, difference should be small, the rotation itself large.
-      if(std::abs(rotationWhenStopping + modTargetInSCS.rotation / 2.f) < 5_deg && std::abs(modTargetInSCS.rotation) > 10_deg)
-        modTargetInSCS.rotation = 0_deg;
+      if(shouldReduceStepRotation(rotationWhenStopping, modTargetInSCS.rotation))
+        stepRotationReduction += rotationReductionPerDirectionChange;
+      else
+        stepRotationReduction = 0.f;
+      modTargetInSCS.rotation *= Rangef::ZeroOneRange().limit((1.f - stepRotationReduction));
     }
 
     Pose2f step;
@@ -139,29 +156,18 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
         if(Geometry::isPointInsideConvexPolygon(translationPolygonNoCenter.data(), static_cast<int>(translationPolygonNoCenter.size()), Vector2f(0.f, 0.f)))
         {
           VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygonNoCenter, Geometry::Line(Vector2f(0.f, 0.f),
-                                                                 targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1));
+                                                                 targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1, false));
           step.translation = p1;
         }
         else
         {
-          Vector2f p1;
-          const Vector2f targetDirectionWithAvoidance = obstacleAvoidanceInSCS.avoidance + modTargetInSCS.translation.normalized(std::max(0.f, 1.f - obstacleAvoidanceInSCS.avoidance.norm()));
-          if(Geometry::isPointInsideConvexPolygon(translationPolygonNoCenter.data(), static_cast<int>(translationPolygonNoCenter.size()), Vector2f(0.f, 0.f)))
-          {
-            VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygonNoCenter, Geometry::Line(Vector2f(0.f, 0.f),
-                                                                   targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1));
-            step.translation = p1;
-          }
+          VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygon, Geometry::Line(Vector2f(0.f, 0.f),
+                                                                 targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1, false));
+          step.translation = p1;
+          if(translationPolygonNoCenter[0].x() < 0.f)
+            step.translation.x() = translationPolygonNoCenter[0].x();
           else
-          {
-            VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygon, Geometry::Line(Vector2f(0.f, 0.f),
-                                                                   targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1));
-            step.translation = p1;
-            if(translationPolygonNoCenter[0].x() < 0.f)
-              step.translation.x() = translationPolygonNoCenter[0].x();
-            else
-              step.translation.x() = translationPolygonNoCenter.back().x();
-          }
+            step.translation.x() = translationPolygonNoCenter.back().x();
         }
       }
       if(isLeftPhase == (step.translation.y() < 0.f))

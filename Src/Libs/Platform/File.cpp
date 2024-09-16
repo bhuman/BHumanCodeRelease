@@ -19,7 +19,7 @@
 #endif
 #endif
 
-thread_local std::list<std::string> File::searchPath;
+thread_local std::vector<std::string> File::searchPath;
 
 File::File(const std::string& name, const char* mode, bool tryAlternatives)
 {
@@ -56,9 +56,9 @@ std::list<std::string> File::getFullNames(const std::string& name)
   std::list<std::string> names;
   if((name[0] != '.' || (name.size() >= 2 && name[1] == '.')) && !isAbsolute(name)) // given path is relative to getBHDir()
   {
-    std::list<std::string> dirs = getConfigDirs();
-    for(std::string& dir : dirs)
+    for(const std::string& dir : searchPath)
       names.push_back(dir + name);
+    names.push_back(std::string(getBHDir()) + "/Config/" + name);
   }
   else
     names.push_back(name);
@@ -261,7 +261,7 @@ bool File::hasExtension(const std::string& path)
   return static_cast<int>(path.rfind('.')) > static_cast<int>(path.find_last_of("\\/"));
 }
 
-void File::setSearchPath(const std::list<std::string>& paths)
+void File::setSearchPath(const std::vector<std::string>& paths)
 {
   searchPath = paths;
 }
@@ -269,11 +269,4 @@ void File::setSearchPath(const std::list<std::string>& paths)
 void File::clearSearchPath()
 {
   searchPath.clear();
-}
-
-std::list<std::string> File::getConfigDirs()
-{
-  std::list<std::string> dirs = searchPath;
-  dirs.push_back(std::string(getBHDir()) + "/Config/");
-  return dirs;
 }

@@ -36,7 +36,7 @@ void LegacyMeasurementCovarianceProvider::update(MeasurementCovariance& measurem
     return out;
   };
 
-  measurementCovariance.transformWithCov = [&](const Vector2f& inImage, float z, Vector2f& inRobot, Matrix2f& covariance) -> bool
+  measurementCovariance.transformPointWithCov = [&](const Vector2f& inImage, float z, Vector2f& inRobot, Matrix2f& covariance) -> bool
   {
     return measurementCovariance.transformWithCovLegacy(inImage, z, currentDefaultRotationDeviation, inRobot, covariance);
   };

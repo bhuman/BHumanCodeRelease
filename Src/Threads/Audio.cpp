@@ -20,8 +20,5 @@ bool Audio::beforeFrame()
 
 bool Audio::afterFrame()
 {
-  if(!Blackboard::getInstance().exists("AudioData"))
-    Thread::sleep(static_cast<unsigned>(100));
-
   return BHExecutionUnit::afterFrame();
 }

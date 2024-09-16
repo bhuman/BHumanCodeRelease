@@ -7,9 +7,9 @@ for Lower Upper mr CameraInfo LogDataProvider
 for Lower Upper mr FrameInfo LogDataProvider
 for Motion mr FrameInfo LogDataProvider
 for Motion mr FsrSensorData LogDataProvider
-for Motion mr InertialSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
 for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
 mr JPEGImage off
 
 dr module:GameStateProvider:active

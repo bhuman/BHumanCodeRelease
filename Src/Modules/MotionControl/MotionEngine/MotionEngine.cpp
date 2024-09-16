@@ -13,6 +13,7 @@
 #include "Math/BHMath.h"
 #include "Math/Rotation.h"
 #include "Tools/Motion/MotionUtilities.h"
+#include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
 
 MAKE_MODULE(MotionEngine);
 
@@ -45,7 +46,7 @@ MotionEngine::MotionEngine()
   generators[MotionRequest::dive] = &theDiveGenerator;
   generators[MotionRequest::special] = &theSpecialGenerator;
   generators[MotionRequest::replayWalk] = &theReplayWalkRequestGenerator;
-  generators[MotionRequest::calibration] = &theCalibrationGenerator;
+  generators[MotionRequest::photoMode] = &thePhotoModeGenerator;
 
   phase = std::make_unique<PlayDeadPhase>(*this);
 }
@@ -53,6 +54,8 @@ MotionEngine::MotionEngine()
 void MotionEngine::update(JointRequest& jointRequest)
 {
   ASSERT(phase);
+
+  const JointRequest lastRequest = jointRequest;
 
   //1. update the current MotionPhase
   // Update the state of the currently active phase.
@@ -103,6 +106,9 @@ void MotionEngine::update(JointRequest& jointRequest)
   // Check if the fall engine should intervene (this can happen during phases).
   if(phase->type != MotionPhase::fall && theFallGenerator.shouldCatchFall(motionRequest))
     phase = theFallGenerator.createPhase();
+  else if(phase->type != MotionPhase::freeze && theFreezeGenerator.shouldHandleBodyDisconnect(*phase))
+    phase = theFreezeGenerator.createPhase();
+
   // 2.1 Check if the phase is done, i.e. a new phase has to be started.
   else if(phase->isDone(motionRequest))
   {
@@ -126,7 +132,7 @@ void MotionEngine::update(JointRequest& jointRequest)
     // Create the next phase according to the request or get up if necessary.
 
     //should we intercept the ball?
-    if(motionRequest.isWalking() && motionRequest.shouldInterceptBall)
+    if(motionRequest.shouldInterceptBall && motionRequest.motion != MotionRequest::dive)
     {
       newPhase = theInterceptBallGenerator.createPhase(motionRequest, *phase);
     }
@@ -141,12 +147,24 @@ void MotionEngine::update(JointRequest& jointRequest)
     {
       newPhase = generators[motionRequest.motion]->createPhase(motionRequest, *phase); // no, execute MotionRequest
     }
+    // should the robot intentionally walk out of the ball line?
+    if(motionRequest.isWalking() && motionRequest.shouldWalkOutOfBallLine && !getUp && newPhase->type != MotionPhase::fall)
+    {
+      // set new motion phase
+      auto walkOutRequest = theWalkOutOfBallDirection.createPhase(motionRequest, *phase, *newPhase);
+      // if the walkOutRequest is not a nullpointer
+      if(walkOutRequest)
+      {
+        // walk intentionally out of the ball line
+        newPhase = std::move(walkOutRequest);
+      }
+    }
 
     ASSERT(newPhase);
 
     // 2.3 create a new MotionPhase based on the previous one
     // Check if the previous phase has a mandatory continuation phase given the just created next phase.
-    // 2.4 decide which one to use (follow up MotionPhases are prioritised)
+    // 2.4 decide which one to use (follow up MotionPhases are prioritized)
     if(auto nextPhase = phase->createNextPhase(*newPhase))
       phase = std::move(nextPhase);
     else
@@ -227,7 +245,7 @@ void MotionEngine::update(JointRequest& jointRequest)
   // Let the request of turned off joints track the measurement.
   FOREACH_ENUM(Joints::Joint, joint)
     if(jointRequest.stiffnessData.stiffnesses[joint] == 0)
-      jointRequest.angles[joint] = theJointAngles.angles[joint];
+      jointRequest.angles[joint] = SystemCall::getMode() == SystemCall::simulatedRobot && lastRequest.angles[joint] != JointAngles::ignore && lastRequest.angles[joint] != JointAngles::off ? lastRequest.angles[joint] : theJointAngles.angles[joint];
 
   // Set this unused timestamp.
   jointRequest.timestamp = theFrameInfo.time;

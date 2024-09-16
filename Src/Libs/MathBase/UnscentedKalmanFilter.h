@@ -85,7 +85,7 @@ namespace impl
      * @param dynamicModel, a function to propagate the state
      * @param noise, the propagation specific noise (as a variance) to quantify the uncertainty
      */
-    void predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise);
+    void predict(const std::function<void(State&)>& dynamicModel, const CovarianceType& noise);
 
     /**
      * The multi dimensional update step to integrate a measurement into an existing hypothesis.
@@ -95,7 +95,7 @@ namespace impl
      * @param measurementNoise, the measurement specific noise (as a variance) to quantify the uncertainty
      */
     template<unsigned N>
-    void update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise);
+    void update(const Vectorf<N>& measurement, const std::function<Vectorf<N>(const State&)>& measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise);
 
     /**
      * The single dimensional update step to integrate a measurement into an existing hypothesis.
@@ -104,7 +104,7 @@ namespace impl
      * @param measurementModel, a function that returns a measurement for a state
      * @param measurementNoise, the measurement specific noise (as a variance) to quantify the uncertainty
      */
-    void update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise);
+    void update(float measurement, const std::function<float(const State&)>& measurementModel, float measurementNoise);
 
   private:
     /**
@@ -163,7 +163,7 @@ namespace impl
    * @param noise, the propagation specific noise (as variance) to quantify the uncertainty
    */
   template<typename State, unsigned DOF, bool Manifold>
-  void UnscentedKalmanFilter<State, DOF, Manifold>::predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise)
+  void UnscentedKalmanFilter<State, DOF, Manifold>::predict(const std::function<void(State&)>& dynamicModel, const CovarianceType& noise)
   {
     ASSERT((noise.array() >= 0.f).all());
     ASSERT(noise.trace() > 0.f);
@@ -197,7 +197,7 @@ namespace impl
    */
   template<typename State, unsigned DOF, bool IsManifold>
   template<unsigned N>
-  void UnscentedKalmanFilter<State, DOF, IsManifold>::update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise)
+  void UnscentedKalmanFilter<State, DOF, IsManifold>::update(const Vectorf<N>& measurement, const std::function<Vectorf<N>(const State&)>& measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise)
   {
     ASSERT((measurementNoise.diagonal().array() >= 0.f).all());
     ASSERT(measurementNoise.trace() > 0.f);
@@ -235,7 +235,11 @@ namespace impl
     }
     sigmaxz *= 0.5f;
     //The kalman gain
-    const MixedCovarianceType K = sigmaxz * sigmaz.inverse();
+    MixedCovarianceType K = MixedCovarianceType::Zero();
+    if(sigmaz.determinant() != 0)
+      K = sigmaxz * sigmaz.inverse();
+    ASSERT(K.allFinite());
+
     //Derive the mean and the covariance using the kalman gain
     mean += K * (measurement - z);
     cov -= K * sigmaz * K.transpose();
@@ -252,7 +256,7 @@ namespace impl
    * @param measurementNoise, the measurement specific noise (as variance) to quantify the uncertainty
    */
   template<typename State, unsigned DOF, bool IsManifold>
-  void UnscentedKalmanFilter<State, DOF, IsManifold>::update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise)
+  void UnscentedKalmanFilter<State, DOF, IsManifold>::update(float measurement, const std::function<float(const State&)>& measurementModel, float measurementNoise)
   {
     ASSERT(measurementNoise > 0.f);
 

@@ -45,28 +45,25 @@ STREAMABLE(KickInfo,
     walkForwardStealBallRight,
     walkForwardsRightAlternative,
     walkForwardsLeftAlternative,
-    walkForwardsRightVeryLong,
-    walkForwardsLeftVeryLong,
 
-    // kicks up to here are used by the KickView
+    // newKick is a placeholder
     newKick,
   });
 
   STREAMABLE(Kick,
   {,
-    (KickInfo::KickType) kickType,
-    (Angle) rotationOffset,
-    (Vector2f) ballOffset,
-    (Rangef) range,
-    (Rangef) ballVelocity,
-    (Rangef) exclusionRange,
+    (KickInfo::KickType) kickType, /**< The name of the kick. */
+    (Angle) rotationOffset, /**< The offset of the kickpose, e.g. how much does the robot need to be rotated away additionally from the kick angle. */
+    (Vector2f) ballOffset, /**< The offset of the kickpose, e.g. the robot pose relative to the ball. */
+    (Rangef) range, /**< The kick range (in mm). Note: all kicks deviate, this is just an approximation. */
+    (Rangef) ballVelocity, /**< The velocity of the ball after the kick (in mm/s). Note with this value the range value is determined at the start of the software. */
     (unsigned) executionTime, /**< Time needed to perform the kick or extra penalty for deficient kicks (in ms) */
     (Angle) postRotationOffset, /**< The angle at which the ball should be after the kick has been performed (relative to the pose of the robot after the kick, because some kicks change the rotation of the robot) */
-    (MotionPhase::Type) motion,
-    (KickRequest::KickMotionID) kickMotionType,
-    (WalkKicks::Type) walkKickType,
-    (Legs::Leg) kickLeg,
-    (bool) mirror,
+    (MotionPhase::Type) motion, /**< Is the kick a walk kick or a KickEngine kick? */
+    (KickRequest::KickMotionID) kickMotionType, /**< Kick name for the KickEngine. TODO should be removed ... */
+    (WalkKicks::Type) walkKickType, /**< The name of the walk kick. */
+    (Legs::Leg) kickLeg, /**< Which leg is the kicking one? TODO should be removed ... */
+    (bool) mirror, /**< Mirror the kick? TODO should be removed ... */
   });
 
   inline KickInfo::KickType mirror(const KickInfo::KickType kick) const
@@ -113,10 +110,6 @@ STREAMABLE(KickInfo,
         return KickInfo::walkForwardsLeftAlternative;
       case KickInfo::walkForwardsLeftAlternative:
         return KickInfo::walkForwardsRightAlternative;
-      case KickInfo::walkForwardsLeftVeryLong:
-        return KickInfo::walkForwardsRightVeryLong;
-      case KickInfo::walkForwardsRightVeryLong:
-        return KickInfo::walkForwardsLeftVeryLong;
       default:
       {
         FAIL("Unknown kick type.");

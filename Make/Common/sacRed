@@ -1,0 +1,42 @@
+#!/bin/bash
+# Start the version of SimRobot that was compiled most recently and
+# connect to the remote-controlled robot in the Shared Autonomy
+# Challenge. Locally, the robot is shown wearing a red jersey.
+
+cd "$(dirname "$(which "$0")")/../.."
+
+teamColor=red
+if [ ! -z "$(grep 'Black$' <<<"$0")" ]; then
+  teamColor=black
+fi
+
+teamNumber="$(grep 'teamNumber' Config/settings.cfg | sed -e 's%;.*%%' -e 's%.*[ =]%%' | tr -d '\n')"
+if [ ! -z "$1" ]; then
+  teamNumber="$1"
+fi
+
+scene="Config/Scenes/OtherScenes/SharedAutonomyRemote.ros2"
+con="Config/Scenes/OtherScenes/SharedAutonomyRemote.con"
+
+if [ "$(uname)" == "Darwin" ]; then
+  app=$(ls -1dt $(find Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
+elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+  app=$(ls -1dt Build/Windows/SimRobot/*/SimRobot.exe | head -1)
+else
+  app=$(ls -1dt Build/Linux/SimRobot/*/SimRobot | head -1)
+fi
+
+sed <"$scene" >"/tmp/sacRemote.tmp" "s%value=\"[^\"]*\"%value=\"$teamColor\"%" \
+&& mv "/tmp/sacRemote.tmp" "$scene"
+sed <"$con" >"/tmp/sacRemote.tmp" "s%view remote [^ ]*%view remote $teamNumber%" \
+&& mv "/tmp/sacRemote.tmp" "$con"
+
+if [ ! -z "$app" ]; then
+  if [ "$(uname)" == "Darwin" ]; then
+    open "$app" --args "$(pwd)/$scene"
+  elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    cmd.exe /c start "$app" "$scene"
+  else
+    "$app" "$scene" </dev/null >/dev/null 2>&1 &
+  fi
+fi

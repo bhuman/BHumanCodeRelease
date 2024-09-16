@@ -1,0 +1,187 @@
+#!/bin/bash
+# Formats a USB drive to be used for logging on the robot.
+# It is only allowed to connect a single USB drive to the
+# computer. The script will detect the drive automatically.
+# Before the drive is formatted, the script will show which
+# drive was found and how big it is. On Windows, the size
+# might be shown as "? GB" if the current file system of the
+# drive is not supported. The script will ask for a number,
+# assuming that all logging drives are labeled with one. The
+# drive is then formatted as exFAT with MBR and the name
+# "<number>_B-Human".
+
+# Function to detect the operating system
+detect_os()
+{
+  if [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    echo "Windows"
+  else
+    case "$(uname -s)" in
+      Darwin)
+        echo "macOS"
+        ;;
+      Linux)
+        echo "Linux"
+        ;;
+      CYGWIN*|MINGW32*|MSYS*|MINGW*)
+        echo "Windows"
+        ;;
+      *)
+        echo "Unknown"
+        ;;
+    esac
+  fi
+}
+
+format_drive_macos()
+{
+  # Logic for macOS
+  Info="$(diskutil list external physical | grep '^ *0:' | sed -e 's%^[^*]*\*%%' -e 's%^\(.*B\) *\(.*\)%/dev/\2 (\1)%')"
+  Device=$(sed 's% .*%%' <<<"$Info")
+
+  NumLines=$(echo "$Device" | wc -l)
+
+  # If there are more than 1 line, print an error message and exit
+  if [[ $NumLines -gt 1 ]]; then
+    echo "Error: Multiple drives are inserted. To ensure correct USB drive labels, please insert them one by one."
+    exit 1
+  fi
+
+  # An example of a device name is /dev/disk2
+  if [[ $Device == *"dev"* ]]; then
+    echo "Found single external drive: $Info. What number is written on the USB drive?"
+    read StickNumber
+    Label=$StickNumber"_B-HUMAN"
+
+    diskutil eraseDisk exFAT $Label MBRFormat $Device
+    ExitStatus=$?
+
+    if [ $ExitStatus -eq 0 ]; then
+      diskutil eject $Device
+      echo "$Device has been formatted as exFAT with label $Label."
+      echo "It should be safe to eject."
+    else
+      echo "diskutil failed with exit status $ExitStatus."
+    fi
+  else
+    echo "Error: No drive detected."
+    exit 1
+  fi
+}
+
+format_drive_linux()
+{
+  # Logic for Linux
+  # Check user's group memberships to determine access rights
+  local user_groups=$(groups)
+  for group in disk plugdev; do
+      if [[ $user_groups =~ $group ]]; then
+          echo "User has access without sudo."
+          break
+      fi
+  done
+
+  if [[ ! $user_groups =~ (disk|plugdev) ]]; then
+      if [ "$(id -u)" -ne 0 ]; then
+          echo "Attempting to re-run the script with sudo..."
+          sudo "$0" "$@"
+          exit $?
+      fi
+  fi
+  # Find external drives
+  ExternalDrives=($(lsblk -d -n -o NAME,TYPE,RM | grep 'disk' | awk '$3 == "1" {print "/dev/"$1}'))
+
+  # Check if exactly one external drive is connected
+  if [ ${#ExternalDrives[@]} -eq 0 ]; then
+    echo "No external drives found. Please connect one."
+    exit 1
+  elif [ ${#ExternalDrives[@]} -gt 1 ]; then
+    echo "Error: Multiple external drives are inserted. Please insert only one."
+    exit 1
+  fi
+
+  # Only one external drive is connected
+  Device=${ExternalDrives[0]}
+
+  # Get the size of the external drive
+  DriveSize=$(lsblk -d -n -o SIZE "$Device")
+
+  echo "Found single external drive: $Device (${DriveSize}B). What number is written on the USB drive?"
+  read StickNumber
+  Label=$StickNumber"_B-HUMAN"
+
+  # Ensure the device is not mounted
+  local mount_points=$(mount | grep "$Device" | awk '{print $3}')
+
+  if [ -z "$mount_points" ]; then
+      echo "no mount partition for $Device."
+      return 0
+  fi
+
+  for mount_point in $mount_points; do
+      echo "Unmouting $mount_point..."
+      umount "$mount_point" || {
+          echo "Error while umounting $mount_point. Make sure no process is using it."
+          return 1
+      }
+  done
+
+  # Check if mkfs.exfat is installed
+  if ! command -v mkfs.exfat &> /dev/null; then
+    echo "Error: mkfs.exfat is not installed. Please install exfat-utils."
+    echo "Run 'sudo apt-get install exfat-utils' or 'sudo apt-get install exfatprogs' to install it."
+    exit 1
+  fi
+
+  echo "Creating MBR partition table and formatting $Device as exFAT with label $Label..."
+  # Deleting the existing partition table and creating a new MBR partition table
+  (echo o; echo w) | fdisk $Device
+  if [ $? -ne 0 ]; then
+    echo "Error when deleting the existing partition table."
+    exit 1
+  fi
+  (echo n; echo p; echo 1; echo; echo; echo w) | fdisk $Device
+  if [ $? -ne 0 ]; then
+    echo "Error while creating the new partition."
+    exit 1
+  fi
+
+  # Formatting the new partition as exFAT
+  mkfs.exfat -n $Label ${Device}1
+  if [ $? -ne 0 ]; then
+    echo "Error while formatting the partition."
+    exit 1
+  fi
+
+  echo "$Device has been formatted as exFAT with label $Label."
+  # Eject the device
+  eject $Device
+  echo "It should be safe to eject."
+}
+
+format_drive_windows()
+{
+  echo "Formatting drive on Windows..."
+
+  # Set the relative path to the Batch script from the current script location
+  cd "$(dirname "${BASH_SOURCE[0]}")/../Windows" || exit
+
+  # Run the batch script with the user input as an argument
+  basePath="$(wslpath -w "$(cd "$(dirname "$(which "$0")")" && pwd)")"
+  cmd.exe /C "$basePath/formatExFAT.cmd"
+}
+
+# Main execution logic
+os=$(detect_os)
+case $os in
+  macOS)
+    format_drive_macos
+    ;;
+  Linux)
+    format_drive_linux
+    ;;
+  Windows)
+    format_drive_windows
+    ;;
+  *) echo "Unsupported OS: $os." ;;
+esac

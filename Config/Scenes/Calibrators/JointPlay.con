@@ -1,4 +1,4 @@
-echo set representation:MotionRequest motion = stand; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetOfInterest = []; forceSideWalking = false; shouldInterceptBall = false; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickLength = 0; alignPrecisely = notPrecise; preStepAllowed = true; turnKickAllowed = true; shiftTurnKickPose = false; diveRequest = prepare; specialRequest = demoBannerWave; odometryData = { rotation = 0; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 4000; y = 0; }; velocity = { x = 0; y = 0; }; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo set representation:MotionRequest motion = stand; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetOfInterest = []; forceSideWalking = false; shouldInterceptBall = false; shouldWalkOutOfBallLine = false; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickLength = 0; alignPrecisely = notPrecise; preStepAllowed = true; turnKickAllowed = true; shiftTurnKickPose = false; diveRequest = prepare; specialRequest = demoBannerWave; odometryData = { rotation = 0; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 4000; y = 0; }; velocity = { x = 0; y = 0; }; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
 
 for Motion mr JointPlay JointPlayProvider
 vp jointPlay 1000 -1 1.5
@@ -12,6 +12,7 @@ vpd jointPlay module:JointPlayProvider:rap red RAnklePitch
 vp jointPlay2 1000 -0.5 4
 vpd jointPlay2 module:JointPlayProvider:sum red Sum
 vpd jointPlay2 module:JointPlayProvider:qualityOfRobotHardware blue QualityValue
+
 
 vp jointPlayValue 200 0 10
 vpd jointPlayValue module:JointPlayProvider:play:value:lHipPitch orange

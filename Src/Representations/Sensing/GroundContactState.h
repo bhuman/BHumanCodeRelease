@@ -15,4 +15,5 @@
 STREAMABLE(GroundContactState,
 {,
   (bool)(false) contact, /**< a foot of the robot touches the ground */
+  (unsigned)(0) lastGroundContactTimestamp,
 });

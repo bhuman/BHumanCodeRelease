@@ -1,7 +1,7 @@
 #include "LabelImage.h"
 #include <algorithm>
 
-bool LabelImage::Annotation::isInside(const Annotation& annotation)const
+bool LabelImage::Annotation::isInside(const Annotation& annotation) const
 {
   Vector2f lowerDiff = lowerRight - annotation.lowerRight;
   Vector2f upperDiff = upperLeft - annotation.upperLeft;
@@ -10,7 +10,7 @@ bool LabelImage::Annotation::isInside(const Annotation& annotation)const
 
 bool LabelImage::Annotation::operator<(const Annotation& annotation) const
 {
-  return this->probability < annotation.probability;
+  return this->confidence < annotation.confidence;
 }
 
 float LabelImage::Annotation::getArea() const

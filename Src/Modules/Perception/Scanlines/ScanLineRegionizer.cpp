@@ -29,7 +29,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
 
   colorScanLineRegionsHorizontal.scanLines.clear();
 
-  if(theScanGrid.lines.empty() || theScanGrid.y.empty() || !theFieldBoundary.isValid)
+  if(!theScanGrid.isValid() || !theFieldBoundary.isValid)
     return;
 
   // 0. Preprocess
@@ -48,33 +48,19 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
                      static_cast<const int>(pointInImage.y()) : theCameraInfo.height - 1;
   LINE("module:ScanLineRegionizer:horizontalRegionSplit", 0, middle, theECImage.grayscaled.width, middle, 3, Drawings::PenStyle::dottedPen, ColorRGBA(80, 6, 80));
 
-  const int top = std::max(theFieldBoundary.getBoundaryTopmostY(theCameraInfo.width), theScanGrid.fieldLimit);
-  int usedY = static_cast<int>(theECImage.grayscaled.height) + minHorizontalScanLineDistance;
-  for(int y : theScanGrid.y)
+  for(const ScanGrid::HorizontalLine& horizontalLine : theScanGrid.lowResHorizontalLines)
   {
-    if(usedY - y < minHorizontalScanLineDistance)
-      usedY -= minHorizontalScanLineDistance;
-    else
-      usedY = y;
-    if(usedY <= top)
-      break;
-
-    // limit scan-line ranges by field boundary and body contour
-    const unsigned int leftmostX = static_cast<int>(horizontalScanStart(usedY));
-    const unsigned int rightmostX = static_cast<int>(horizontalScanStop(usedY));
-    if(leftmostX >= rightmostX)
-      continue;
-    yPerScanLine.emplace_back(usedY);
+    yPerScanLine.emplace_back(horizontalLine.y);
     regionsPerScanLine.emplace_back();
 
     // 2. Detect edges and create temporary regions in between including a representative YHS triple.
-    if(theCameraInfo.camera == CameraInfo::lower || middle < usedY)
+    if(theCameraInfo.camera == CameraInfo::lower || middle < horizontalLine.y)
     {
-      scanHorizontalAdditionalSmoothing(usedY, regionsPerScanLine.back(), leftmostX, rightmostX);
+      scanHorizontalAdditionalSmoothing(horizontalLine.y, regionsPerScanLine.back(), horizontalLine.left, horizontalLine.right);
     }
     else
     {
-      scanHorizontal(usedY, regionsPerScanLine.back(), leftmostX, rightmostX);
+      scanHorizontal(horizontalLine.y, regionsPerScanLine.back(), horizontalLine.left, horizontalLine.right);
     }
   }
 
@@ -101,7 +87,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
 
   colorScanLineRegionsVerticalClipped.scanLines.clear();
 
-  if(theScanGrid.lines.empty() || theScanGrid.y.empty() || !theFieldBoundary.isValid)
+  if(theScanGrid.verticalLines.empty() || theScanGrid.lowResHorizontalLines.empty() || !theFieldBoundary.isValid)
     return;
 
   colorScanLineRegionsVerticalClipped.lowResStart = theScanGrid.lowResStart;
@@ -112,7 +98,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
   approximateBaseSaturation();
 
   // 1. Define scan-lines and limit scan-line ranges by field boundary (body contour is already excluded by ScanGrid)
-  const std::size_t numOfScanLines = theScanGrid.lines.size();
+  const std::size_t numOfScanLines = theScanGrid.verticalLines.size();
   std::vector<unsigned short> xPerScanLine(numOfScanLines);
   std::vector<std::vector<InternalRegion>> regionsPerScanLine(numOfScanLines);
 
@@ -124,13 +110,13 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
                      static_cast<const int>(pointInImage.y()) : theCameraInfo.height - 1;
   LINE("module:ScanLineRegionizer:verticalRegionSplit", 0, middle, theECImage.grayscaled.width, middle, 3, Drawings::PenStyle::dottedPen, ColorRGBA(80, 6, 80));
 
-  for(std::size_t i = 0; i < theScanGrid.lines.size(); ++i)
+  for(std::size_t i = 0; i < theScanGrid.verticalLines.size(); ++i)
   {
-    xPerScanLine[i] = static_cast<unsigned short>(theScanGrid.lines[i].x);
-    const int top = std::max(theFieldBoundary.getBoundaryY(theScanGrid.lines[i].x), theScanGrid.fieldLimit) + 1;
+    xPerScanLine[i] = static_cast<unsigned short>(theScanGrid.verticalLines[i].x);
+    const int top = theScanGrid.verticalLines[i].yMin + 1;
 
     // 2. Detect edges and create temporary regions in between including a representative YHS triple.
-    scanVertical(theScanGrid.lines[i], middle, top, regionsPerScanLine[i]);
+    scanVertical(theScanGrid.verticalLines[i], middle, top, regionsPerScanLine[i]);
   }
 
   // 3. Classify field regions.
@@ -161,17 +147,17 @@ void ScanLineRegionizer::scanHorizontal(unsigned int y, std::vector<InternalRegi
 
   // define filter:
   // vertical 1D gauss/sobel smoothing: filter-matrix [[1], [2], [1]]
-  scanRun.gauss = [](const PixelTypes::GrayscaledPixel* line, const unsigned int imageWidth)
+  scanRun.gaussV = [](const PixelTypes::GrayscaledPixel* line, const unsigned int imageWidth)
   {
     return static_cast<int>(line[-static_cast<int>(imageWidth)] + 2 * line[0] + line[imageWidth]);
   };
-  // horizontal 1D gauss/sobel smoothing: filter-matrix [[1, 2, 1]]
-  // results in 2D-gaussian-filter when applied on values returned by the other 1D-gaussian-filter
+  // horizontal 1D Gauss/sobel smoothing: filter-matrix [[1, 2, 1]]
+  // results in 2D-Gaussian-filter when applied on values returned by the other 1D-Gaussian-filter
   scanRun.gaussSecond = [](std::array<int, 3>& gaussBuffer, int x)
   {
     return gaussBuffer[(x - 1) % 3] + 2 * gaussBuffer[x % 3] + gaussBuffer[(x + 1) % 3];
   };
-  // linear gradient, results in sobel filter when applied on values returned by the 1D-gaussian-filter
+  // linear gradient, results in sobel filter when applied on values returned by the 1D-Gaussian-filter
   scanRun.gradient = [](std::array<int, 3>& gaussBuffer, int x)
   {
     return gaussBuffer[(x - 1) % 3] - gaussBuffer[(x + 1) % 3];
@@ -182,30 +168,30 @@ void ScanLineRegionizer::scanHorizontal(unsigned int y, std::vector<InternalRegi
 
   // Initialize the buffer of smoothed values.
   const PixelTypes::GrayscaledPixel* luminance = &theECImage.grayscaled[scanY][scanStart];
-  scanRun.leftGaussBuffer[0] = scanRun.gauss(luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[1] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[2] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[0] = scanRun.gaussV(luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[1] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[2] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
 
   // grid scan stuff
   unsigned int gridX = scanStart + 1;
   int gridValue = scanRun.gaussSecond(scanRun.leftGaussBuffer, 1);
   int nextGridValue;
   size_t gridLineIndex = theScanGrid.lowResStart;
-  unsigned int nextGridX = theScanGrid.lines[gridLineIndex].x;
-  while(nextGridX <= gridX && nextGridX < rightmostX && ++gridLineIndex < theScanGrid.lines.size())
+  unsigned int nextGridX = theScanGrid.verticalLines[gridLineIndex].x;
+  while(nextGridX <= gridX && nextGridX < rightmostX && ++gridLineIndex < theScanGrid.verticalLines.size())
   {
-    nextGridX = theScanGrid.lines[gridLineIndex].x;
+    nextGridX = theScanGrid.verticalLines[gridLineIndex].x;
   }
   if(nextGridX <= gridX && nextGridX < rightmostX)
     nextGridX = rightmostX; // skip the loop, make only a single region
 
   // 'gridLineIndex <= theScanGrid.lines.size()' so that the image's right edge becomes the last grid point
-  while(gridLineIndex <= theScanGrid.lines.size() && nextGridX < rightmostX)
+  while(gridLineIndex <= theScanGrid.verticalLines.size() && nextGridX < rightmostX)
   {
     bool regionAdded = false;
-    scanRun.rightGaussBuffer[0] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX - 1], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[1] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[2] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX + 1], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[0] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX - 1], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[1] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[2] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX + 1], theECImage.grayscaled.width);
 
     nextGridValue = scanRun.gaussSecond(scanRun.rightGaussBuffer, 1);
     if(gridValue - nextGridValue >= threshold)  // bright to dark transition
@@ -233,8 +219,8 @@ void ScanLineRegionizer::scanHorizontal(unsigned int y, std::vector<InternalRegi
     // prepare next loop
     ++gridLineIndex;
     gridX = nextGridX;
-    if(gridLineIndex < theScanGrid.lines.size())
-      nextGridX = theScanGrid.lines[gridLineIndex].x;
+    if(gridLineIndex < theScanGrid.verticalLines.size())
+      nextGridX = theScanGrid.verticalLines[gridLineIndex].x;
     else
       nextGridX = theECImage.grayscaled.width - 2;
     gridValue = nextGridValue;
@@ -262,19 +248,19 @@ void ScanLineRegionizer::scanHorizontalAdditionalSmoothing(unsigned int y, std::
 
   // define filter
   // vertical 1D gauss/sobel smoothing: filter-matrix [[1], [2], [4], [2], [1]]
-  scanRun.gauss = [](const PixelTypes::GrayscaledPixel* line, const unsigned int imageWidth) // 5x5 gauss smoothing vertical
+  scanRun.gaussV = [](const PixelTypes::GrayscaledPixel* line, const unsigned int imageWidth) // 5x5 gauss smoothing vertical
   {
     return static_cast<int>(line[-2 * static_cast<int>(imageWidth)] + 2 * line[-static_cast<int>(imageWidth)] + 4 * line[0] +
                             2 * line[imageWidth] + line[2 * imageWidth]);
   };
-  // horizontal 1D gauss/sobel smoothing: filter-matrix [[1, 2, 4, 2, 1]]
-  // results in 2D-gaussian-filter when applied on values returned by the other 1D-gaussian-filter
+  // horizontal 1D Gauss/sobel smoothing: filter-matrix [[1, 2, 4, 2, 1]]
+  // results in 2D-Gaussian-filter when applied on values returned by the other 1D-Gaussian-filter
   scanRun.gaussSecond = [](std::array<int, 5>& gaussBuffer, int x) // 5x5 gauss smoothing horizontal
   {
     return gaussBuffer[(x - 2) % 5] + 2 * gaussBuffer[(x - 1) % 5] +
            4 * gaussBuffer[x % 5] + 2 * gaussBuffer[(x + 1) % 5] + gaussBuffer[(x + 2) % 5];
   };
-  // sobel-like gradient, results in sobel-like filter when applied on values returned by the 1D-gaussian-filter
+  // sobel-like gradient, results in sobel-like filter when applied on values returned by the 1D-Gaussian-filter
   scanRun.gradient = [](std::array<int, 5>& gaussBuffer, int x)
   {
     return gaussBuffer[(x - 2) % 5] + 2 * gaussBuffer[(x - 1) % 5] - 2 * gaussBuffer[(x + 1) % 5] - gaussBuffer[(x + 2) % 5];
@@ -285,11 +271,11 @@ void ScanLineRegionizer::scanHorizontalAdditionalSmoothing(unsigned int y, std::
 
   // Initialize the buffer of smoothed values.
   const PixelTypes::GrayscaledPixel* luminance = &theECImage.grayscaled[scanY][scanStart];
-  scanRun.leftGaussBuffer[0] = scanRun.gauss(luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[1] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[2] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[3] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
-  scanRun.leftGaussBuffer[4] = scanRun.gauss(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[0] = scanRun.gaussV(luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[1] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[2] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[3] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
+  scanRun.leftGaussBuffer[4] = scanRun.gaussV(++luminance, theECImage.grayscaled.width);
 
   // setup grid scan
   unsigned int gridX = scanStart + 2;
@@ -299,19 +285,19 @@ void ScanLineRegionizer::scanHorizontalAdditionalSmoothing(unsigned int y, std::
   unsigned int nextGridX;
   do
   {
-    nextGridX = theScanGrid.lines[gridLineIndex].x;
+    nextGridX = theScanGrid.verticalLines[gridLineIndex].x;
   }
-  while(nextGridX <= gridX && nextGridX <= scanStop && ++gridLineIndex < theScanGrid.lines.size());
+  while(nextGridX <= gridX && nextGridX <= scanStop && ++gridLineIndex < theScanGrid.verticalLines.size());
   if(nextGridX <= gridX)
     nextGridX = rightmostX; // skip the loop, make only a single region
 
-  while(gridLineIndex <= theScanGrid.lines.size() && nextGridX <= scanStop)
+  while(gridLineIndex <= theScanGrid.verticalLines.size() && nextGridX <= scanStop)
   {
-    scanRun.rightGaussBuffer[0] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX - 2], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[1] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX - 1], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[2] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[3] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX + 1], theECImage.grayscaled.width);
-    scanRun.rightGaussBuffer[4] = scanRun.gauss(&theECImage.grayscaled[scanY][nextGridX + 2], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[0] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX - 2], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[1] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX - 1], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[2] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[3] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX + 1], theECImage.grayscaled.width);
+    scanRun.rightGaussBuffer[4] = scanRun.gaussV(&theECImage.grayscaled[scanY][nextGridX + 2], theECImage.grayscaled.width);
 
     nextGridValue = scanRun.gaussSecond(scanRun.rightGaussBuffer, 2);
     if(gridValue - nextGridValue >= threshold)
@@ -325,8 +311,8 @@ void ScanLineRegionizer::scanHorizontalAdditionalSmoothing(unsigned int y, std::
     // prepare next loop
     gridLineIndex += theScanGrid.lowResStep;
     gridX = nextGridX;
-    if(gridLineIndex < theScanGrid.lines.size())
-      nextGridX = theScanGrid.lines[gridLineIndex].x;
+    if(gridLineIndex < theScanGrid.verticalLines.size())
+      nextGridX = theScanGrid.verticalLines[gridLineIndex].x;
     else
       nextGridX = theECImage.grayscaled.width - 3;
     gridValue = nextGridValue;
@@ -338,103 +324,6 @@ void ScanLineRegionizer::scanHorizontalAdditionalSmoothing(unsigned int y, std::
                        getHorizontalRepresentativeValue(theECImage.grayscaled, scanRun.leftScanEdgePosition, rightmostX, y),
                        getHorizontalRepresentativeHueValue(theECImage.hued, scanRun.leftScanEdgePosition, rightmostX, y),
                        getHorizontalRepresentativeValue(theECImage.saturated, scanRun.leftScanEdgePosition, rightmostX, y));
-}
-
-int ScanLineRegionizer::horizontalFieldBoundaryScanStart(const int x, const int y) const
-{
-  ASSERT(theFieldBoundary.isValid);
-  int leftX = x;
-  int leftY = theFieldBoundary.getBoundaryY(leftX);
-  if(leftY <= y)
-    return x;
-  for(const Vector2i& boundaryPoint : theFieldBoundary.boundaryInImage)
-  {
-    if(boundaryPoint.x() < leftX)
-      continue;
-    if(boundaryPoint.x() >= theCameraInfo.width)
-      break;
-    if(boundaryPoint.y() < y)
-    {
-      auto xDistance = static_cast<float>(boundaryPoint.x() - leftX);
-      auto alpha = static_cast<float>(leftY - y) / static_cast<float>(leftY - boundaryPoint.y());
-      return leftX + std::max(static_cast<int>(xDistance * alpha), 0);
-    }
-    else
-    {
-      leftX = boundaryPoint.x();
-      leftY = boundaryPoint.y();
-    }
-  }
-  int rightY = theFieldBoundary.getBoundaryY(theCameraInfo.width);
-  if(rightY < y)
-  {
-    auto xDistance = static_cast<float>(theCameraInfo.width - leftX);
-    auto alpha = static_cast<float>(leftY - y) / static_cast<float>(leftY - rightY);
-    return leftX + std::max(static_cast<int>(xDistance * alpha), 0);
-  }
-  return theCameraInfo.width;
-}
-
-int ScanLineRegionizer::horizontalFieldBoundaryScanStop(const int x, const int y) const
-{
-  ASSERT(theFieldBoundary.isValid);
-  int rightX = x;
-  int rightY = theFieldBoundary.getBoundaryY(rightX);
-  if(rightY <= y)
-    return x;
-  auto it = theFieldBoundary.boundaryInImage.rbegin();
-  while(it != theFieldBoundary.boundaryInImage.rend())
-  {
-    if(it->x() >= rightX)
-    {
-      ++it;
-      continue;
-    }
-    if(it->x() < 0)
-      break;
-    if(it->y() < y)
-    {
-      auto xDistance = static_cast<float>(rightX - it->x());
-      auto alpha = static_cast<float>(rightY - y) / static_cast<float>(rightY - it->y());
-      return rightX - std::max(static_cast<int>(xDistance * alpha), 0) + 1;
-    }
-    else
-    {
-      rightX = it->x();
-      rightY = it->y();
-    }
-    ++it;
-  }
-  int leftY = theFieldBoundary.getBoundaryY(0);
-  if(leftY < y)
-  {
-    auto xDistance = static_cast<float>(rightX);
-    auto alpha = static_cast<float>(rightY - y) / static_cast<float>(rightY - leftY);
-    return rightX - std::max(static_cast<int>(xDistance * alpha), 0) + 1;
-  }
-  return 1;
-}
-
-unsigned int ScanLineRegionizer::horizontalScanStart(int usedY) const
-{
-  // most of the time everything on the left side of the body contour right-side edge is inside the body
-  const unsigned int bodyScanStart = theBodyContour.getRightEdge(usedY, theCameraInfo.width);
-  ASSERT(bodyScanStart >= 0 && bodyScanStart < static_cast<unsigned int>(theCameraInfo.width));
-  unsigned int boundaryScanStart = horizontalFieldBoundaryScanStart(static_cast<int>(bodyScanStart), usedY);
-  if(boundaryScanStart >= static_cast<unsigned int>(theCameraInfo.width)) // may happen due to rounding
-    boundaryScanStart = 0;
-  return std::max(bodyScanStart, boundaryScanStart);
-}
-
-unsigned int ScanLineRegionizer::horizontalScanStop(int usedY) const
-{
-  // most of the time everything on the right side of the body contour left-side edge is inside the body
-  const unsigned int bodyRight = theBodyContour.getLeftEdge(usedY, theCameraInfo.width);
-  ASSERT(bodyRight > 0 && bodyRight <= static_cast<unsigned int>(theCameraInfo.width));
-  unsigned int boundaryRight = horizontalFieldBoundaryScanStop(static_cast<int>(bodyRight), usedY);
-  if(boundaryRight <= 0) // may happen due to rounding
-    boundaryRight = theCameraInfo.width;
-  return std::min(bodyRight, boundaryRight);
 }
 
 void ScanLineRegionizer::scanVertical(const ScanGrid::Line& line, int middle, int top, std::vector<InternalRegion>& regions) const
@@ -455,112 +344,71 @@ void ScanLineRegionizer::scanVertical(const ScanGrid::Line& line, int middle, in
   int gridValue = 0;
   int nextGridValue;
   size_t gridYIndex = line.yMaxIndex;
-  while(theScanGrid.y[gridYIndex] + verticalGridScanMinStep > gridY && gridYIndex + 1 < theScanGrid.y.size())
+  while(theScanGrid.fullResY[gridYIndex] + verticalGridScanMinStep > gridY && gridYIndex + 1 < theScanGrid.fullResY.size())
     ++gridYIndex;
-  int nextGridY = theScanGrid.y[gridYIndex];
+  int nextGridY = theScanGrid.fullResY[gridYIndex];
   if(nextGridY >= gridY)
     nextGridY = 2;
 
   // start with 5x5 filter
   if(lowestY > middleY)
   {
-    auto smoothedGauss = [](const PixelTypes::GrayscaledPixel* line) // 5x5 gauss horizontal
+    ScanRun<5> scanRun(false, static_cast<int>(line.x), lowestY, middleY);
+    scanRun.lowerScanEdgePosition = lowerY;
+
+    scanRun.gaussH = [](const PixelTypes::GrayscaledPixel* line) // 5x5 gauss horizontal
     {
       return static_cast<int>(line[-2] + 2 * line[-1] + 4 * line[0] + 2 * line[1] + line[2]);
     };
-    auto smoothedGaussSecond = [](std::array<int, 5>& gaussBuffer, int y) // 5x5 gauss vertical
+    scanRun.gaussSecond = [](std::array<int, 5>& gaussBuffer, int y) // 5x5 gauss vertical
     {
       return gaussBuffer[(y - 2) % 5] + 2 * gaussBuffer[(y - 1) % 5] + 4 * gaussBuffer[y % 5] +
              2 * gaussBuffer[(y + 1) % 5] + gaussBuffer[(y + 2) % 5];
     };
-    auto smoothedGradient = [](std::array<int, 5>& gaussBuffer, int y)
+    scanRun.gradient = [](std::array<int, 5>& gaussBuffer, int y) // sobel-like gradient
     {
       return gaussBuffer[(y - 2) % 5] + 2 * gaussBuffer[(y - 1) % 5] - 2 * gaussBuffer[(y + 1) % 5] - gaussBuffer[(y + 2) % 5];
     };
     // Initialize the buffer of smoothed values.
-    std::array<int, 5> lowerGauss = {}; // buffer for the lower grid point and for sobel scans
-    std::array<int, 5> upperGauss = {}; // buffer for the upper grid point, centered around grid point -> gridX is at index 2
-    lowerGauss[0] = smoothedGauss(luminance + 2 * theECImage.grayscaled.width);
-    lowerGauss[1] = smoothedGauss(luminance + theECImage.grayscaled.width);
-    lowerGauss[2] = smoothedGauss(luminance);
-    lowerGauss[3] = smoothedGauss(luminance -= theECImage.grayscaled.width);
-    lowerGauss[4] = smoothedGauss(luminance -= theECImage.grayscaled.width);
-    gridValue = smoothedGaussSecond(lowerGauss, 2);
+    scanRun.lowerGaussBuffer = {}; // buffer for the lower grid point and for sobel scans
+    scanRun.upperGaussBuffer = {}; // buffer for the upper grid point, centered around grid point -> gridX is at index 2
+    scanRun.lowerGaussBuffer[0] = scanRun.gaussH(luminance + 2 * theECImage.grayscaled.width);
+    scanRun.lowerGaussBuffer[1] = scanRun.gaussH(luminance + theECImage.grayscaled.width);
+    scanRun.lowerGaussBuffer[2] = scanRun.gaussH(luminance);
+    scanRun.lowerGaussBuffer[3] = scanRun.gaussH(luminance -= theECImage.grayscaled.width);
+    scanRun.lowerGaussBuffer[4] = scanRun.gaussH(luminance -= theECImage.grayscaled.width);
+    gridValue = scanRun.gaussSecond(scanRun.lowerGaussBuffer, 2);
 
-    while(nextGridY > middleY && gridYIndex <= theScanGrid.y.size())
+    while(nextGridY > middleY && gridYIndex <= theScanGrid.lowResHorizontalLines.size())
     {
-      upperGauss[0] = smoothedGauss(&theECImage.grayscaled[nextGridY + 2][line.x]);
-      upperGauss[1] = smoothedGauss(&theECImage.grayscaled[nextGridY + 1][line.x]);
-      upperGauss[2] = smoothedGauss(&theECImage.grayscaled[nextGridY][line.x]);
-      upperGauss[3] = smoothedGauss(&theECImage.grayscaled[nextGridY - 1][line.x]);
-      upperGauss[4] = smoothedGauss(&theECImage.grayscaled[nextGridY - 2][line.x]);
-      nextGridValue = smoothedGaussSecond(upperGauss, 2);
+      scanRun.upperGaussBuffer[0] = scanRun.gaussH(&theECImage.grayscaled[nextGridY + 2][line.x]);
+      scanRun.upperGaussBuffer[1] = scanRun.gaussH(&theECImage.grayscaled[nextGridY + 1][line.x]);
+      scanRun.upperGaussBuffer[2] = scanRun.gaussH(&theECImage.grayscaled[nextGridY][line.x]);
+      scanRun.upperGaussBuffer[3] = scanRun.gaussH(&theECImage.grayscaled[nextGridY - 1][line.x]);
+      scanRun.upperGaussBuffer[4] = scanRun.gaussH(&theECImage.grayscaled[nextGridY - 2][line.x]);
+      nextGridValue = scanRun.gaussSecond(scanRun.upperGaussBuffer, 2);
       if(gridValue - nextGridValue >= threshold)
       {
-        // find exact edge position
-        unsigned int edgeYMax = gridY;
-        int sobelMax = smoothedGradient(lowerGauss, 2);
-        luminance = &theECImage.grayscaled[gridY - 1][line.x];
-        int gaussBufferIndex = 0;
-        for(int y = gridY - 1; y > nextGridY; --y, ++gaussBufferIndex, luminance -= theECImage.grayscaled.width)
-        {
-          lowerGauss[gaussBufferIndex % 5] = smoothedGauss(luminance);
-          int sobelL = smoothedGradient(lowerGauss, gaussBufferIndex + 3);
-          if(sobelL > sobelMax)
-          {
-            edgeYMax = y;
-            sobelMax = sobelL;
-          }
-        }
-        // save region
-        ASSERT(lowerY > edgeYMax);
-        regions.emplace_back(edgeYMax, lowerY, getVerticalRepresentativeValue(theECImage.grayscaled, line.x, edgeYMax, lowerY),
-                             getVerticalRepresentativeHueValue(theECImage.hued, line.x, edgeYMax, lowerY),
-                             getVerticalRepresentativeValue(theECImage.saturated, line.x, edgeYMax, lowerY));
-        lowerY = edgeYMax;
-        MID_DOT("module:ScanLineRegionizer:verticalRegionSplit", line.x, edgeYMax, ColorRGBA::magenta, ColorRGBA::magenta);
+        findEdgeInSubLineVertical(regions, scanRun, gridY, nextGridY, true);
       }
       else if(gridValue - nextGridValue <= -threshold)
       {
-        // find exact edge position
-        unsigned int edgeYMin = gridY;
-        int sobelMin = smoothedGradient(lowerGauss, 2);
-        luminance = &theECImage.grayscaled[gridY - 1][line.x];
-        int gaussBufferIndex = 0;
-        for(int y = gridY - 1; y > nextGridY; --y, ++gaussBufferIndex, luminance -= theECImage.grayscaled.width)
-        {
-          lowerGauss[gaussBufferIndex % 5] = smoothedGauss(luminance);
-          int sobelL = smoothedGradient(lowerGauss, gaussBufferIndex + 3);
-          if(sobelL < sobelMin)
-          {
-            edgeYMin = y;
-            sobelMin = sobelL;
-          }
-        }
-        // save region
-        ASSERT(lowerY > edgeYMin);
-        regions.emplace_back(edgeYMin, lowerY, getVerticalRepresentativeValue(theECImage.grayscaled, line.x, edgeYMin, lowerY),
-                             getVerticalRepresentativeHueValue(theECImage.hued, line.x, edgeYMin, lowerY),
-                             getVerticalRepresentativeValue(theECImage.saturated, line.x, edgeYMin, lowerY));
-        lowerY = edgeYMin;
-        MID_DOT("module:ScanLineRegionizer:verticalRegionSplit", line.x, edgeYMin, ColorRGBA::magenta, ColorRGBA::magenta);
+        findEdgeInSubLineVertical(regions, scanRun, gridY, nextGridY, false);
       }
       // prepare next loop
       gridY = nextGridY;
       while(gridY < nextGridY + verticalGridScanMinStep)
       {
         ++gridYIndex;
-        if(gridYIndex < theScanGrid.y.size())
-          nextGridY = theScanGrid.y[gridYIndex];
+        if(gridYIndex < theScanGrid.fullResY.size())
+          nextGridY = theScanGrid.fullResY[gridYIndex];
         else
-        {
-          nextGridY = 2;
-          continue;
-        }
+          break;
       }
       gridValue = nextGridValue;
-      lowerGauss = upperGauss;
+      scanRun.lowerGaussBuffer = scanRun.upperGaussBuffer;
     }
+    lowerY = scanRun.lowerScanEdgePosition;
   }
   // switch to 3x3 filter
   if(middleY > top)
@@ -646,8 +494,8 @@ void ScanLineRegionizer::scanVertical(const ScanGrid::Line& line, int middle, in
         while(gridY < nextGridY + verticalGridScanMinStep)
         {
           ++gridYIndex;
-          if(gridYIndex < theScanGrid.y.size())
-            nextGridY = theScanGrid.y[gridYIndex];
+          if(gridYIndex < theScanGrid.fullResY.size())
+            nextGridY = theScanGrid.fullResY[gridYIndex];
           else
             break;
         }
@@ -680,7 +528,7 @@ void ScanLineRegionizer::findEdgeInSubLineHorizontal(
   int gaussBufferIndex = 0;
   for(unsigned int x = startPos + 1; x < stopPos; ++x, ++luminance, ++gaussBufferIndex)
   {
-    scanRun.leftGaussBuffer[gaussBufferIndex % filterSize] = scanRun.gauss(luminance, theECImage.grayscaled.width);
+    scanRun.leftGaussBuffer[gaussBufferIndex % filterSize] = scanRun.gaussV(luminance, theECImage.grayscaled.width);
     int sobelL = scanRun.gradient(scanRun.leftGaussBuffer, gaussBufferIndex + (filterSize + 1) / 2);
     if((maxEdge && sobelL > sobelMax) || (!maxEdge && sobelL < sobelMax))
     {
@@ -698,8 +546,12 @@ void ScanLineRegionizer::findEdgeInSubLineHorizontal(
 }
 
 template <int filterSize>
-void ScanLineRegionizer::findEdgeInSubLineVertical(std::vector<InternalRegion>& regions,
-                                       ScanRun<filterSize>& scanRun, unsigned int startPos, unsigned int stopPos, bool maxEdge) const
+void ScanLineRegionizer::findEdgeInSubLineVertical(
+    std::vector<InternalRegion>& regions,
+    ScanRun<filterSize>& scanRun,
+    unsigned int startPos,
+    unsigned int stopPos,
+    bool maxEdge) const
 {
   unsigned int edgeYMax = startPos;
   int sobelMax = scanRun.gradient(scanRun.lowerGaussBuffer, (filterSize - 1) / 2);
@@ -707,8 +559,8 @@ void ScanLineRegionizer::findEdgeInSubLineVertical(std::vector<InternalRegion>& 
   int gaussBufferIndex = 0;
   for(int y = static_cast<int>(startPos) - 1; y > static_cast<int>(stopPos); --y, ++gaussBufferIndex, luminance -= theECImage.grayscaled.width)
   {
-    scanRun.lowerGaussBuffer[gaussBufferIndex % filterSize] = scanRun.gauss(luminance);
-    int sobelL = smoothedGradient(scanRun.lowerGaussBuffer, gaussBufferIndex + (filterSize + 1) / 2);
+    scanRun.lowerGaussBuffer[gaussBufferIndex % filterSize] = scanRun.gaussH(luminance);
+    int sobelL = scanRun.gradient(scanRun.lowerGaussBuffer, gaussBufferIndex + (filterSize + 1) / 2);
     if((maxEdge && sobelL > sobelMax) || (!maxEdge && sobelL < sobelMax))
     {
       edgeYMax = y;
@@ -777,7 +629,7 @@ void ScanLineRegionizer::uniteVerticalFieldRegions(const std::vector<unsigned sh
   ASSERT(x.size() == regions.size());
   for(std::size_t lineIndex = 0; lineIndex < regions.size(); ++lineIndex)
   {
-    // build list of regions in the neighbourhood of the line. Can span multiple scan lines due to ScanGrid layout
+    // build list of regions in the neighborhood of the line. Can span multiple scan lines due to ScanGrid layout
     if(regions[lineIndex].empty())
       continue;
     unsigned short lineRangeFrom = regions[lineIndex][regions[lineIndex].size() - 1].range.from;
@@ -859,7 +711,7 @@ void ScanLineRegionizer::classifyFieldRegions(const std::vector<unsigned short>&
 {
   unsigned char minHue = 255;
   unsigned char maxHue = 0;
-  unsigned char minSaturation = 138;  // todo config value with comment
+  unsigned char minSaturation = initialMinSaturation;
   // luminance is only important for images with low saturated field
   unsigned char maxLuminance = baseLuminance;
   int dataPoints = 0;
@@ -931,33 +783,7 @@ void ScanLineRegionizer::classifyFieldHorizontal(const std::vector<unsigned shor
     auto& line = regions[lineIndex];
     for(auto& region : line)
     {
-      // saturation of very dark field pixels is often 0
-      unsigned char minSaturation = 0;
-      if(region.y > 2)
-      {
-        if(theCameraInfo.camera == CameraInfo::upper)
-        {
-          // lower saturation allowed for further away regions
-          float scalingFactor = (static_cast<float>(y[lineIndex] - theScanGrid.fieldLimit) /
-                                 static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) + 1.f) / 2.f;
-          minSaturation = static_cast<unsigned char>(static_cast<float>(estimatedFieldColor.minSaturation) * scalingFactor);
-        }
-        else
-          minSaturation = estimatedFieldColor.minSaturation;
-      }
-      char hueRangeExpansion = 0;
-      if(theCameraInfo.camera == CameraInfo::upper)
-        hueRangeExpansion = static_cast<char>(0.5f * static_cast<float>(hueSimilarityThreshold) - static_cast<float>(y[lineIndex] - theScanGrid.fieldLimit) /
-                                              static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) * 0.5f * static_cast<float>(hueSimilarityThreshold));
-      if(region.color != ScanLineRegion::white)
-      {
-        if(region.h >= estimatedFieldColor.minHue - hueRangeExpansion &&
-           region.h <= estimatedFieldColor.maxHue + hueRangeExpansion &&
-           region.s >= minSaturation && region.y <= estimatedFieldColor.maxLuminance)
-          region.color = ScanLineRegion::field;
-        else
-          region.color = ScanLineRegion::none;
-      }
+      classifyFieldSingleRegion(region,  y[lineIndex], true);
     }
   }
 }
@@ -968,35 +794,57 @@ void ScanLineRegionizer::classifyFieldVertical(std::vector<std::vector<InternalR
   {
     for(auto& region : line)
     {
-      // saturation of very dark field pixels is often 0
-      unsigned char minSaturation = 0;
-      if(region.y > 2)
-      {
-        if(theCameraInfo.camera == CameraInfo::upper)
-        {
-          // lower saturation allowed for further away regions
-          float scalingFactor = (static_cast<float>(region.range.from - theScanGrid.fieldLimit) /
-                                 static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) + 1.f) / 2.f;
-          minSaturation = static_cast<unsigned char>(static_cast<float>(estimatedFieldColor.minSaturation) * scalingFactor);
-        }
-        else
-          minSaturation = estimatedFieldColor.minSaturation;
-      }
-      char hueRangeExpansion = 0;
-      if(theCameraInfo.camera == CameraInfo::upper)
-        hueRangeExpansion = static_cast<char>(0.5f * static_cast<float>(hueSimilarityThreshold) - static_cast<float>(region.range.from - theScanGrid.fieldLimit) /
-                            static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) * 0.5f * static_cast<float>(hueSimilarityThreshold));
-      if(region.color != ScanLineRegion::white)
-      {
-        if(region.h >= estimatedFieldColor.minHue - hueRangeExpansion &&
-           region.h <= estimatedFieldColor.maxHue + hueRangeExpansion &&
-           region.s >= minSaturation && region.y <= estimatedFieldColor.maxLuminance)
-          region.color = ScanLineRegion::field;
-        else
-          region.color = ScanLineRegion::none;
-      }
+      classifyFieldSingleRegion(region, 0, false);
     }
   }
+}
+
+void ScanLineRegionizer::classifyFieldSingleRegion(ScanLineRegionizer::InternalRegion& region, float regionHeight, bool horizontal) const
+{
+  ASSERT(region.color != ScanLineRegion::unset);
+  if(region.color == ScanLineRegion::none)
+  {
+    if(region.findSet()->color == ScanLineRegion::field)
+    {
+      region.color = ScanLineRegion::field;
+      return;
+    }
+
+    if(!horizontal)
+      regionHeight = static_cast<float>(region.range.from + region.range.to) / 2.f;
+
+    unsigned char minSaturation = fieldClassificationSaturationThreshold(region, regionHeight);
+    char hueRangeExpansion = 0;
+    if(theCameraInfo.camera == CameraInfo::upper)
+      hueRangeExpansion = static_cast<char>(0.5f * static_cast<float>(hueSimilarityThreshold) - (regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
+                                                                                                static_cast<float>(theCameraInfo.height -
+                                                                                                                   theScanGrid.fieldLimit) * 0.5f *
+                                                                                                static_cast<float>(hueSimilarityThreshold));
+
+    if(region.h >= estimatedFieldColor.minHue - hueRangeExpansion &&
+       region.h <= estimatedFieldColor.maxHue + hueRangeExpansion &&
+       region.s >= minSaturation && region.y <= estimatedFieldColor.maxLuminance)
+      region.color = ScanLineRegion::field;
+    else
+      region.color = ScanLineRegion::none;
+  }
+}
+
+unsigned char ScanLineRegionizer::fieldClassificationSaturationThreshold(const InternalRegion& region, float regionHeight) const
+{
+  // saturation of very dark field pixels is often 0
+  if(region.y > 2)
+  {
+    if(theCameraInfo.camera == CameraInfo::upper)
+    {
+      // reduce saturation threshold for further away regions
+      float scalingFactor = ((regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
+                                   static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) + 1.f) / 1.8f;
+      return static_cast<unsigned char>(static_cast<float>(estimatedFieldColor.minSaturation) * scalingFactor);
+    }
+    return estimatedFieldColor.minSaturation;
+  }
+  return 0;
 }
 
 bool ScanLineRegionizer::regionIsField(const InternalRegion* const region) const

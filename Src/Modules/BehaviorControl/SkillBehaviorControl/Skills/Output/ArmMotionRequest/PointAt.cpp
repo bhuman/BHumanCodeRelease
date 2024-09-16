@@ -1,57 +1,53 @@
 /**
  * @file PointAt.cpp
  *
- * This file implements the implementation of the PointAt
- * and PointAtWithArm skills.
+ * This file implements the PointAt skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/ArmMotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(PointAtImpl,
-{,
-  IMPLEMENTS(PointAt),
-  IMPLEMENTS(PointAtWithArm),
-  MODIFIES(ArmMotionRequest),
-});
-
-class PointAtImpl : public PointAtImplBase
+option((SkillBehaviorControl) PointAt,
+       args((const Vector3f&) localPoint,
+            (Arms::Arm) arm))
 {
-  void execute(const PointAt& p) override
+  initial_state(initial)
   {
-    if(p.localPoint.y() > threshold)
+    transition
     {
-      setRequest(p.localPoint, Arms::left);
-      threshold = -50.f;
-    }
-    else
-    {
-      setRequest(p.localPoint, Arms::right);
-      threshold = 50.f;
+      if(arm == Arms::left || (arm == Arms::numOfArms && localPoint.y() > 0.f))
+        goto leftArm;
+      else
+        goto rightArm;
     }
   }
 
-  void reset(const PointAt&) override
+  state(leftArm)
   {
-    threshold = 0.f;
+    transition
+    {
+      if(arm == Arms::numOfArms && localPoint.y() < -50.f)
+        goto rightArm;
+    }
+    action
+    {
+      theArmMotionRequest.armMotion[Arms::left] = ArmMotionRequest::pointAt;
+      theArmMotionRequest.pointToPointAt = localPoint;
+    }
   }
 
-  void execute(const PointAtWithArm& p) override
+  state(rightArm)
   {
-    setRequest(p.localPoint, p.arm);
+    transition
+    {
+      if(arm == Arms::numOfArms && localPoint.y() > 50.f)
+        goto leftArm;
+    }
+    action
+    {
+      theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::pointAt;
+      theArmMotionRequest.pointToPointAt = localPoint;
+    }
   }
-
-  using Skills::PointAtWithArmSkill::Implementation::reset;
-
-  void setRequest(const Vector3f& localPoint, Arms::Arm arm)
-  {
-    theArmMotionRequest.armMotion[arm] = ArmMotionRequest::pointAt;
-    theArmMotionRequest.pointToPointAt = localPoint;
-  }
-
-  float threshold; /**< The current threshold to change the left/right arm decision. */
-};
-
-MAKE_SKILL_IMPLEMENTATION(PointAtImpl);
+}

@@ -10,35 +10,28 @@ MAKE_MODULE(FieldRatingProvider);
 
 FieldRatingProvider::FieldRatingProvider()
 {
-  attractRange = std::sqrt(sqr(theFieldDimensions.xPosOpponentGroundLine * 2.f) + sqr(theFieldDimensions.yPosLeftSideline));
-  betterGoalAngleRange = theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyArea;
-  drawMinX = -theFieldDimensions.xPosOpponentGroundLine;
+  attractRange = std::sqrt(sqr(theFieldDimensions.xPosOpponentGoalLine * 2.f) + sqr(theFieldDimensions.yPosLeftTouchline));
+  betterGoalAngleRange = theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentPenaltyArea;
+  drawMinX = -theFieldDimensions.xPosOpponentGoalLine;
   drawMaxX = -drawMinX;
-  drawMinY = -theFieldDimensions.yPosLeftSideline;
+  drawMinY = -theFieldDimensions.yPosLeftTouchline;
   drawMaxY = -drawMinY;
 
-  rightInnerGoalPost = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoal + theFieldDimensions.goalPostRadius);
-  leftInnerGoalPost = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius);
+  rightInnerGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoal + theFieldDimensions.goalPostRadius);
+  leftInnerGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius);
 
   rightInnerGoalPostY = rightInnerGoalPost.y();
   leftInnerGoalPostY = leftInnerGoalPost.y();
-  outerGoalPostX = theFieldDimensions.xPosOpponentGroundLine - 2.f * theFieldDimensions.goalPostRadius;
+  outerGoalPostX = theFieldDimensions.xPosOpponentGoalLine - 2.f * theFieldDimensions.goalPostRadius;
 
-  rightGoalPost.center = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoal);
-  rightGoalPost.left = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoal + theFieldDimensions.goalPostRadius);
-  rightGoalPost.right = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoal - theFieldDimensions.goalPostRadius);
+  rightGoalPost.center = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoal);
+  rightGoalPost.left = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoal + theFieldDimensions.goalPostRadius);
+  rightGoalPost.right = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoal - theFieldDimensions.goalPostRadius);
 
-  leftGoalPost.center = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal);
-  leftGoalPost.left = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal + theFieldDimensions.goalPostRadius);
-  leftGoalPost.right = Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius);
+  leftGoalPost.center = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoal);
+  leftGoalPost.left = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoal + theFieldDimensions.goalPostRadius);
+  leftGoalPost.right = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius);
 
-  fieldBorderDrawing = false;
-  goalDrawing = false;
-  goalAngleDrawing = false;
-  opponentDrawing = false;
-  teammateDrawing = false;
-  ballNearDrawing = false;
-  passTargetDrawing = false;
   lastTeammateUpdate = 0;
   lastObstacleOnFieldUpdate = 0;
 
@@ -55,11 +48,13 @@ void FieldRatingProvider::updateParameters()
   ballRTV = ballRating / ballRange;
   obstacleBackRTV = 1.f / opponentBackRangeY * opponentBackValue;
   bestBallPositionRange = Rangef(bestDistanceForBall - bestDistanceWidth, bestDistanceForBall + bestDistanceWidth);
-  minXCoordinateForPass = theFieldDimensions.xPosOwnGroundLine / 2.f - interpolationZoneInOwnHalf;
+  minXCoordinateForPass = theFieldDimensions.xPosOwnGoalLine / 2.f - interpolationZoneInOwnHalf;
 }
 
 void FieldRatingProvider::update(FieldRating& fieldRating)
 {
+  ASSERT(interpolationZoneInOwnHalf > 0.f);
+
   fieldRating.potentialFieldOnly = [this](const float x, const float y, const bool calculateFieldDirection)
   {
     PotentialValue pv;
@@ -100,6 +95,9 @@ void FieldRatingProvider::update(FieldRating& fieldRating)
 
   DECLARE_DEBUG_DRAWING("module:FieldRatingProvider:potentialField", "drawingOnField");
 
+  MODIFY("module:FieldRatingProvider:modifyDrawingRating", modifyDrawingRating);
+  MODIFY("module:FieldRatingProvider:minMaxDrawing", drawMinMax);
+  MODIFY("module:FieldRatingProvider:passTarget", lastRequestedPassTarget);
   MODIFY("module:FieldRatingProvider:drawing:field", fieldBorderDrawing);
   MODIFY("module:FieldRatingProvider:drawing:goal", goalDrawing);
   MODIFY("module:FieldRatingProvider:drawing:goalAngle", goalAngleDrawing);
@@ -143,15 +141,15 @@ Vector2f FieldRatingProvider::functionConeDer(const Vector2f& distanceVector, co
 void FieldRatingProvider::draw()
 {
   const bool calculateFieldDirection = true;
-  const float xShift = (2.f * theFieldDimensions.xPosOpponentGroundLine) / drawGrid.x();
-  const float yShift = (2.f * theFieldDimensions.yPosLeftSideline) / drawGrid.y();
+  const float xShift = (2.f * theFieldDimensions.xPosOpponentGoalLine) / drawGrid.x();
+  const float yShift = (2.f * theFieldDimensions.yPosLeftTouchline) / drawGrid.y();
   Rangef newMinMax(0.f, 0.f);
   const float newDrawShift = -(drawMinMax.getSize() / 2.f + drawMinMax.min) ;
   const Rangef shiftedRange(drawMinMax.min + newDrawShift, drawMinMax.max + newDrawShift);
   const Rangef targetRange(-1.f, 1.f);
 
-  const float xShiftArrow = (2.f * theFieldDimensions.xPosOpponentGroundLine) / drawGridArrow.x();
-  const float yShiftArrow = (2.f * theFieldDimensions.yPosLeftSideline) / drawGridArrow.y();
+  const float xShiftArrow = (2.f * theFieldDimensions.xPosOpponentGoalLine) / drawGridArrow.x();
+  const float yShiftArrow = (2.f * theFieldDimensions.yPosLeftTouchline) / drawGridArrow.y();
   float counterX = 0.f;
   float counterY = 0.f;
   std::vector<Vector4f> list;
@@ -246,10 +244,10 @@ void FieldRatingProvider::draw()
 PotentialValue FieldRatingProvider::getFieldBorderPotential(const float x, const float y, const bool calculateFieldDirection)
 {
   PotentialValue pv;
-  const float leftDistance = std::max(theFieldDimensions.yPosLeftSideline - y, 0.f);
-  const float rightDistance = std::max(y - theFieldDimensions.yPosRightSideline, 0.f);
-  const float backDistance = std::max(x - theFieldDimensions.xPosOwnGroundLine, 0.f);
-  const float leftRightDistance = std::max(theFieldDimensions.xPosOpponentGroundLine - x, 0.f);
+  const float leftDistance = std::max(theFieldDimensions.yPosLeftTouchline - y, 0.f);
+  const float rightDistance = std::max(y - theFieldDimensions.yPosRightTouchline, 0.f);
+  const float backDistance = std::max(x - theFieldDimensions.xPosOwnGoalLine, 0.f);
+  const float leftRightDistance = std::max(theFieldDimensions.xPosOpponentGoalLine - x, 0.f);
 
   // >> Left and right
   if(leftDistance < fieldBorderRange)
@@ -258,7 +256,7 @@ PotentialValue FieldRatingProvider::getFieldBorderPotential(const float x, const
     pv.value += leftBorderRating;
     if(calculateFieldDirection)
     {
-      const Vector2f leftBorderDirection = theFieldDimensions.yPosLeftSideline <= y ? Vector2f(0.f, -1.f) : -functionLinearDer(Vector2f(0.f, leftDistance), leftDistance, 1.f);
+      const Vector2f leftBorderDirection = theFieldDimensions.yPosLeftTouchline <= y ? Vector2f(0.f, -1.f) : -functionLinearDer(Vector2f(0.f, leftDistance), leftDistance, 1.f);
       pv.direction += leftBorderDirection * std::abs(leftBorderRating);
     }
   }
@@ -268,7 +266,7 @@ PotentialValue FieldRatingProvider::getFieldBorderPotential(const float x, const
     pv.value += rightBorderRating;
     if(calculateFieldDirection)
     {
-      const Vector2f rightBorderDirection = theFieldDimensions.yPosRightSideline >= y ? Vector2f(0.f, 1.f) : functionLinearDer(Vector2f(0.f, rightDistance), rightDistance, 1.f);
+      const Vector2f rightBorderDirection = theFieldDimensions.yPosRightTouchline >= y ? Vector2f(0.f, 1.f) : functionLinearDer(Vector2f(0.f, rightDistance), rightDistance, 1.f);
       pv.direction += rightBorderDirection * std::abs(rightBorderRating);
     }
   }
@@ -280,7 +278,7 @@ PotentialValue FieldRatingProvider::getFieldBorderPotential(const float x, const
     pv.value += backBorderRating;
     if(calculateFieldDirection)
     {
-      const Vector2f backBorderDirection = x <= theFieldDimensions.xPosOwnGroundLine ? Vector2f(1.f, 0.f) : functionLinearDer(Vector2f(backDistance, 0.f), backDistance, 1.f);
+      const Vector2f backBorderDirection = x <= theFieldDimensions.xPosOwnGoalLine ? Vector2f(1.f, 0.f) : functionLinearDer(Vector2f(backDistance, 0.f), backDistance, 1.f);
       pv.direction += backBorderDirection * std::abs(backBorderRating);
     }
   }
@@ -292,7 +290,7 @@ PotentialValue FieldRatingProvider::getFieldBorderPotential(const float x, const
     pv.value += leftRightFrontBorderRating;
     if(calculateFieldDirection)
     {
-      const Vector2f leftRightFrontBorderDirection = theFieldDimensions.xPosOpponentGroundLine > x && (y > theFieldDimensions.yPosLeftGoal || y < theFieldDimensions.yPosRightGoal) ? -functionLinearDer(Vector2f(leftRightDistance, 0.f), leftRightDistance, 1.f) : Vector2f(-1.f, 0.f);
+      const Vector2f leftRightFrontBorderDirection = theFieldDimensions.xPosOpponentGoalLine > x && (y > theFieldDimensions.yPosLeftGoal || y < theFieldDimensions.yPosRightGoal) ? -functionLinearDer(Vector2f(leftRightDistance, 0.f), leftRightDistance, 1.f) : Vector2f(-1.f, 0.f);
       pv.direction += leftRightFrontBorderDirection * std::abs(leftRightFrontBorderRating);
     }
   }
@@ -310,7 +308,7 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
   float obstacleRepelRating = 0.f;
   Vector2f obstacleRepelDirection(0.f, 0.f);
   const Vector2f fieldPoint(x, y);
-  if(x >= theFieldDimensions.xPosOpponentGroundLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
+  if(x >= theFieldDimensions.xPosOpponentGoalLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
     return PotentialValue();
 
   if(lastObstacleOnFieldUpdate != theFrameInfo.time)
@@ -320,7 +318,7 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
     for(const Obstacle& o : theObstacleModel.obstacles)
     {
       const Vector2f obCenter = theRobotPose * o.center;
-      if(std::abs(obCenter.x()) > theFieldDimensions.xPosOpponentGroundLine)
+      if(std::abs(obCenter.x()) > theFieldDimensions.xPosOpponentGoalLine)
         continue;
       obstaclesOnField.push_back({ obCenter, false });
     }
@@ -337,7 +335,7 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
   for(const auto& teammate : theGlobalTeammatesModel.teammates)
   {
     if(updateFieldPosition)
-      teammateInField.push_back(teammate.getFuturePosition(estimateTeamateIntoFuture));
+      teammateInField.push_back(teammate.getFuturePosition(estimateTeammateIntoFuture));
     const Vector2f& teammatePosition = teammateInField[index];
     const float newSquaredDistance = (teammatePosition - fieldPoint).squaredNorm();
     if(newSquaredDistance < squardedDistance)
@@ -345,7 +343,7 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
     index++;
   }
 
-  const Vector2f fieldPointToGoal = Vector2f(theFieldDimensions.xPosOpponentGroundLine, 0.f) - fieldPoint;
+  const Vector2f fieldPointToGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f) - fieldPoint;
   const float distanceToGoalFactor = std::min(1.f, fieldPointToGoal.norm() / opponentDistanceToGoal);
   // useMaxRepelRange describes the range between the min and the max value. the max radius is determined by the distance overlap of vectorToOb and squardedDistance.
   // the radius around the obstacle, that contains the max value is determined by the distance overlap minus useMaxRepelRange
@@ -369,12 +367,12 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
     float singleObstacleRating = functionLinear(realDistance, useMaxRepelRange, radiusTimesValue);
 
     // Behind the obstacle shall be a weak field, to discourage end positions behind and on the other y-axis side of the obstacle
-    const Vector2f obShiftFieldPoint(ob.position.x(), ob.position.y() + (ob.position.y() > theFieldBall.interceptedEndPositionOnField.y() ? opponentBackShiftY : -opponentBackShiftY));
-    if((fieldPoint.y() - obShiftFieldPoint.y()) * (theFieldBall.interceptedEndPositionOnField.y() - obShiftFieldPoint.y()) < 0 && ob.position.x() < fieldPoint.x())
+    const Vector2f obShiftFieldPoint(ob.position.x(), ob.position.y() + (ob.position.y() > theFieldInterceptBall.interceptedEndPositionOnField.y() ? opponentBackShiftY : -opponentBackShiftY));
+    if((fieldPoint.y() - obShiftFieldPoint.y()) * (theFieldInterceptBall.interceptedEndPositionOnField.y() - obShiftFieldPoint.y()) < 0 && ob.position.x() < fieldPoint.x())
     {
       const float dis = std::abs(fieldPoint.y() - obShiftFieldPoint.y());
-      const float maxRatingRatio = Rangef::ZeroOneRange().limit(std::abs(theFieldBall.interceptedEndPositionOnField.y() - ob.position.y()) / opponentBackShiftY);
-      singleObstacleRating = std::max(singleObstacleRating, maxRatingRatio * (opponentBackValue - functionLinear(dis, opponentBackRangeY, obstacleBackRTV)) * Rangef::ZeroOneRange().limit(((obShiftFieldPoint.x() + opponentBackRangeX) - theFieldBall.interceptedEndPositionOnField.x()) / opponentBackRangeX));
+      const float maxRatingRatio = Rangef::ZeroOneRange().limit(std::abs(theFieldInterceptBall.interceptedEndPositionOnField.y() - ob.position.y()) / opponentBackShiftY);
+      singleObstacleRating = std::max(singleObstacleRating, maxRatingRatio * (opponentBackValue - functionLinear(dis, opponentBackRangeY, obstacleBackRTV)) * Rangef::ZeroOneRange().limit(((obShiftFieldPoint.x() + opponentBackRangeX) - theFieldInterceptBall.interceptedEndPositionOnField.x()) / opponentBackRangeX));
     }
 
     obstacleRepelRating += singleObstacleRating;
@@ -397,19 +395,32 @@ PotentialValue FieldRatingProvider::getGoalPotential(const float x, const float 
   const bool yInGoal = y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal;
   const bool yInGoalPost = yInGoal && (y > leftInnerGoalPostY || y < rightInnerGoalPostY) && x > outerGoalPostX;
 
-  const float goalRating = yInGoal && !yInGoalPost
-                           ? (x > theFieldDimensions.xPosOpponentGroundLine ? attractRange * -2.f* attractRTV : -functionLinear(theFieldDimensions.xPosOpponentGroundLine - x, attractRange, attractRTV))
-                           : (!yInGoal && theFieldDimensions.xPosOpponentGroundLine - x <= fieldBorderRange ? 0.f : -functionLinear((Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius) - Vector2f(x, std::abs(y))).norm(), attractRange, attractRTV));
+  // If a goal shot is not allowed, the "best" position shall be in front of the goal
+  float goalRating;
+  if(theIndirectKick.allowDirectKick)
+  {
+    goalRating = yInGoal && !yInGoalPost
+                 ? (x > theFieldDimensions.xPosOpponentGoalLine ? attractRange * -2.f* attractRTV : -functionLinear(theFieldDimensions.xPosOpponentGoalLine - x, attractRange, attractRTV))
+                 : (!yInGoal && theFieldDimensions.xPosOpponentGoalLine - x <= fieldBorderRange ? 0.f : -functionLinear((Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius) - Vector2f(x, std::abs(y))).norm(), attractRange, attractRTV));
+  }
+  else
+    goalRating = -functionLinear((Vector2f(theFieldDimensions.xPosOpponentGoalLine + indirectGoalOffset, 0.f) - Vector2f(x, y)).norm(), attractRange, attractRTV);
 
   PotentialValue pv;
   pv.value = goalRating;
 
   if(calculateFieldDirection)
   {
-    Vector2f vectorToGoal = !yInGoal ? (y < 0.f ? rightInnerGoalPost : leftInnerGoalPost) - Vector2f(x, y) :
-                            (yInGoal && !yInGoalPost
-                             ? (x >= theFieldDimensions.xPosOpponentGroundLine ? Vector2f(1.f, 0.f) : Vector2f(theFieldDimensions.xPosOpponentGroundLine - x, 0.f))
-                             : (y > 0.f ? Vector2f(0.f, -1.f) : Vector2f(0.f, 1.f)));
+    Vector2f vectorToGoal;
+    if(theIndirectKick.allowDirectKick)
+    {
+      vectorToGoal = !yInGoal ? (y < 0.f ? rightInnerGoalPost : leftInnerGoalPost) - Vector2f(x, y) :
+                     (yInGoal && !yInGoalPost
+                      ? (x >= theFieldDimensions.xPosOpponentGoalLine ? Vector2f(1.f, 0.f) : Vector2f(theFieldDimensions.xPosOpponentGoalLine - x, 0.f))
+                      : (y > 0.f ? Vector2f(0.f, -1.f) : Vector2f(0.f, 1.f)));
+    }
+    else
+      vectorToGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine + indirectGoalOffset, 0.f) - Vector2f(x, y);
     if(vectorToGoal == Vector2f(0.f, 0.f))
       vectorToGoal.x() += 0.000001f;
     const Vector2f goalDirection = functionLinearDer(vectorToGoal, vectorToGoal.norm(), 1.f);
@@ -420,9 +431,9 @@ PotentialValue FieldRatingProvider::getGoalPotential(const float x, const float 
 
 PotentialValue FieldRatingProvider::getGoalAnglePotential(const float x, const float y, const bool calculateFieldDirection)
 {
-  // Better goal kick angle, this moves the robot back toward the own field side, when close to the sideline beside the opponent goal
+  // Better goal kick angle, this moves the robot back toward the own field side, when close to the touchline beside the opponent goal
   const bool yInGoal = y < theFieldDimensions.yPosLeftGoal - theFieldDimensions.goalPostRadius && y > theFieldDimensions.yPosRightGoal + theFieldDimensions.goalPostRadius;
-  const float goalAngleRating = x > theFieldDimensions.xPosOpponentPenaltyArea && !yInGoal ? functionLinear(theFieldDimensions.xPosOpponentGroundLine - x, betterGoalAngleRange, betterGoalAngleRTV) :
+  const float goalAngleRating = x > theFieldDimensions.xPosOpponentPenaltyArea && !yInGoal ? functionLinear(theFieldDimensions.xPosOpponentGoalLine - x, betterGoalAngleRange, betterGoalAngleRTV) :
                                 0.f;
 
   PotentialValue pv;
@@ -447,22 +458,23 @@ void FieldRatingProvider::updateTeammateData(const Vector2f& useBallPose)
     teammateRangeInterpolation.clear();
     obstacleOnField.clear();
     teammateBallAngle.clear();
-    const bool updateFieldPosition = lastTeammateInFieldUpdate != theFrameInfo.time;
+    const bool updateFieldPosition = lastTeammateInFieldUpdate != theFrameInfo.time
+                                     || teammateInField.size() != theGlobalTeammatesModel.teammates.size();
     if(updateFieldPosition)
       teammateInField.clear();
     lastTeammateInFieldUpdate = theFrameInfo.time;
-    const Vector2f goal(theFieldDimensions.xPosOpponentGroundLine, 0.f);
+    const Vector2f goal(theFieldDimensions.xPosOpponentGoalLine, 0.f);
     std::size_t index = 0;
     for(const auto& teammate : theGlobalTeammatesModel.teammates)
     {
       ASSERT(index < theGlobalTeammatesModel.teammates.size());
       if(updateFieldPosition)
-        teammateInField.push_back(teammate.getFuturePosition(estimateTeamateIntoFuture));
+        teammateInField.push_back(teammate.getFuturePosition(estimateTeammateIntoFuture));
       const Vector2f& playerPosition = teammateInField[index];
       teammateAngleToGoal.push_back((goal - playerPosition).angle());
       teammateOffsetToGoal.push_back(playerPosition + Vector2f::polar(bestRelativePose, (goal - playerPosition).angle()));
       teammateRangeInterpolation.push_back(std::min(1.f, std::max(0.f, (playerPosition - useBallPose).norm() - minTeammatePassDistance) / maxTeammatePassDistance));
-      teammateBallAngle.push_back((teammateOffsetToGoal.back() - theFieldBall.interceptedEndPositionOnField).angle());
+      teammateBallAngle.push_back((teammateOffsetToGoal.back() - theFieldInterceptBall.interceptedEndPositionOnField).angle());
       index++;
     }
     for(const Obstacle& ob : theObstacleModel.obstacles)
@@ -472,13 +484,13 @@ void FieldRatingProvider::updateTeammateData(const Vector2f& useBallPose)
 
 PotentialValue FieldRatingProvider::getTeammatesPotential(const float x, const float y, const bool calculateFieldDirection, const int passTarget)
 {
-  Vector2f clippedBallPose = theFieldBall.interceptedEndPositionOnField;
+  Vector2f clippedBallPose = theFieldInterceptBall.interceptedEndPositionOnField;
   clippedBallPose.x() = std::max(clippedBallPose.x(), minXCoordinateForPass);
   // calculate some values only once per frame
   updateTeammateData(clippedBallPose);
 
   PotentialValue pv;
-  if(x >= theFieldDimensions.xPosOpponentGroundLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
+  if(x >= theFieldDimensions.xPosOpponentGoalLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
     return pv;
   std::size_t index = -1;
   const Vector2f fieldPoint(x, y);
@@ -559,11 +571,11 @@ PotentialValue FieldRatingProvider::getTeammatesPotential(const float x, const f
 PotentialValue FieldRatingProvider::getBallNearPotential(const float x, const float y, const bool calculateFieldDirection)
 {
   PotentialValue pv;
-  if(x >= theFieldDimensions.xPosOpponentGroundLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
+  if(x >= theFieldDimensions.xPosOpponentGoalLine && y < theFieldDimensions.yPosLeftGoal && y > theFieldDimensions.yPosRightGoal) // the goal is always good
     return pv;
   const Vector2f fieldPoint(x, y);
-  const Vector2f vectorToGoal = Vector2f(theFieldDimensions.xPosOpponentGroundLine, 0.f) - theFieldBall.positionOnField;
-  const Vector2f ballVector = fieldPoint - theFieldBall.positionOnField;
+  const Vector2f vectorToGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f) - theFieldInterceptBall.interceptedEndPositionOnField;
+  const Vector2f ballVector = fieldPoint - theFieldInterceptBall.interceptedEndPositionOnField;
   const Angle ballAngle = std::abs(ballVector.angle() - vectorToGoal.angle());
   if(ballAngle < ballGoalSectorWidth)
   {
@@ -580,8 +592,8 @@ PotentialValue FieldRatingProvider::getBallNearPotential(const float x, const fl
       pv.value = ballNearRating - ballRating / 2.f;
       if(calculateFieldDirection)
       {
-        const Vector2f bestBallPostionRelativ = theFieldBall.positionOnField - fieldPoint;
-        const Vector2f ballDirection = bestBallPostionRelativ == Vector2f(0.f, 0.f) ? bestBallPostionRelativ : bestBallPostionRelativ.normalized(1.f);
+        const Vector2f bestBallPositionRelative = theFieldInterceptBall.interceptedEndPositionOnField - fieldPoint;
+        const Vector2f ballDirection = bestBallPositionRelative == Vector2f(0.f, 0.f) ? bestBallPositionRelative : bestBallPositionRelative.normalized(1.f);
         pv.direction = ballDirection;
       }
     }
@@ -601,7 +613,7 @@ PotentialValue FieldRatingProvider::getBallNearPotential(const float x, const fl
 
 std::vector<Vector2f> FieldRatingProvider::getPossiblePassTargets()
 {
-  Vector2f clippedBallPose = theFieldBall.interceptedEndPositionOnField;
+  Vector2f clippedBallPose = theFieldInterceptBall.interceptedEndPositionOnField;
   clippedBallPose.x() = std::max(clippedBallPose.x(), minXCoordinateForPass);
   // calculate some values only once per frame
   updateTeammateData(clippedBallPose);

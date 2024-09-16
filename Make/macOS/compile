@@ -1,8 +1,7 @@
 #!/bin/bash
 # This script builds the code from the command line using xcodebuild.
-# It is executed by the bush and deploy. It filters out a lot of the
-# output of xcodebuild, which would otherwise slow down the bush
-# significantly.
+# It is executed by the script 'deploy'. It filters out a lot of the
+# output of xcodebuild to make it more readable.
 
 cd "$(dirname "$(which "$0")")"
 

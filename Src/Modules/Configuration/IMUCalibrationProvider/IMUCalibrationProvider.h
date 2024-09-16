@@ -11,9 +11,9 @@
 #include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Representations/Sensing/InertialData.h"
 
 #include "Debugging/DebugDrawings.h"
@@ -24,9 +24,9 @@ MODULE(IMUCalibrationProvider,
   REQUIRES(CalibrationRequest),
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
-  REQUIRES(GyroState),
+  REQUIRES(IMUValueState),
   REQUIRES(InertialData),
-  REQUIRES(InertialSensorData),
+  REQUIRES(RawInertialSensorData),
   USES(IMUCalibration),
   PROVIDES(IMUCalibration),
   LOADS_PARAMETERS(

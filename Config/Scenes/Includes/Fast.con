@@ -26,9 +26,9 @@ for Cognition mr ObstacleModel OracledWorldModelProvider
 for Cognition mr RobotPose OracledWorldModelProvider
 for Motion mr FrameInfo LogDataProvider
 for Motion mr FsrSensorData LogDataProvider
-for Motion mr InertialSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
 for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
 
 # Deactivate Upper/Lower inter-thread communication
 mr ObstaclesPerceptorData off
@@ -56,14 +56,18 @@ mr FieldBoundary off
 mr FieldLineIntersections off
 mr FieldLines off
 mr FilteredBallPercepts off
+mr GoalPostsPercept off
 mr ImageCoordinateSystem off
+mr IntersectionCandidates off
 mr IntersectionsPercept off
 mr JerseyClassifier off
 mr JPEGImage off
 mr Keypoints off
 mr LinesPercept off
+mr ObstacleScan off
 mr ObstaclesImagePercept off
 mr OptionalECImage off
+mr PenaltyAreaAndGoalArea off
 mr PenaltyMarkPercept off
 mr PenaltyMarkRegions off
 mr PenaltyMarkWithPenaltyAreaLine off
@@ -78,7 +82,6 @@ mr OptionalCameraImage off
 
 # Representations that are still required
 mr CameraStatus default
-mr FieldFeatureOverview default
 #mr GlobalOpponentsModel default
 mr ObstaclesFieldPercept default
 mr RobotHealth default

@@ -33,7 +33,8 @@
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
-#include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
+#include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 
 MODULE(BallPerceptFilter,
@@ -42,10 +43,11 @@ MODULE(BallPerceptFilter,
   REQUIRES(BallSpecification),
   REQUIRES(CameraInfo),
   REQUIRES(FieldDimensions),
-  REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
+  REQUIRES(IMUValueState),
   REQUIRES(MotionInfo),
+  REQUIRES(ObstaclesImagePercept),
   REQUIRES(Odometer),
   REQUIRES(TeamData),
   REQUIRES(TeammatesBallModel),
@@ -56,7 +58,6 @@ MODULE(BallPerceptFilter,
   {,
     (float) fieldBorderExclusionDistance,              /**< Stuff that is more far away from the field (not the carpet!) is excluded. */
     (float) robotBanRadius,                            /**< If a ball is at the image border and this close to a teammate, it becomes excluded. */
-    (int) fieldFeatureTimeout,                         /**< When using self-localization information, there should have been a field feature recently. */
     (int) farBallIgnoreTimeout,                        /**< If we have seen a ball in the lower image recently, ignore balls in upper image for this time, if they are far away. */
     (float) farBallIgnoreDistance,                     /**< If we have seen a ball in the lower image recently, ignore balls in upper image (for some time) that are farther away than this parameter specifies. */
     (int) bufferedSeenBallTimeout,                     /**< The seen ball percepts for verification must have been seen within this amount of time. */
@@ -76,7 +77,8 @@ MODULE(BallPerceptFilter,
     (float) minimumVelocityForMotionDetection,         /**< Guessed percepts are only considered as moving, if the ball seems to have at least this velocity (in mm/s) */
     (float) maxStandardDeviationMotionDetection,       /**< Mean error (in mm) of percepts considered as a rolling ball is not allowed to be larger than this. */
     (bool) disableBallInOtherHalfForTesting,           /**< Flag for testing on a half field. Ball percepts in other half will be ignored */
-    (float) toleranceForDisablingBallInOtherHalf,      /**< Tolerance threshold for testing flag to handle balls on center line */
+    (float) toleranceForDisablingBallInOtherHalf,      /**< Tolerance threshold for testing flag to handle balls on halfway line */
+    (bool) correctBallDistanceByPerceivedSize,         /**< Flag, if set to true, the perceived size of the ball is used to correct the distance to the ball. The effect depends on the shakiness of the robot. The more it shakes, the less reliable the normal angle-based computation is.*/
   }),
 });
 
@@ -97,7 +99,8 @@ private:
   RingBuffer<FilteredBallPercept, 5> bufferedSeenBalls;  /**< Each percept needs to be verified. This is the verification buffer. However, it contains only perceptions that had the status "seen". */
   RingBuffer<FilteredBallPercept, 10> bufferedBalls;     /**< A buffer for all guessed and seen balls, used for accepting moving guessed balls. */
   unsigned int timeOfLastFilteredPercept;                /**< Point of time when the last percept has been added to the module's output representation */
-  unsigned int timeOfLastPerceivedFieldFeature;          /**< Save time of field feature perception to evaluate robot pose quality (not sure, if this is cool) */
+  float shakiness;                                       /**< Indicates, how much the robot currently appears to shake around its y axis */
+
 
   /** Check, if the percept is outside the field
    * @return true, if it is outside the field
@@ -109,6 +112,12 @@ private:
    * @return true, if it seems to be a false positive
    */
   bool perceptIsInsideTeammateAndCanBeExcludedByTeamBall();
+
+  /** Check, if the percept overlaps with a perceived robot.
+   *  Used as a check inside of perceptIsInsideTeammateAndCanBeExcludedByTeamBall
+   * @return true, if this is the case.
+   */
+  bool ballPerceptIntersectsObstaclesPercept();
 
   /** Check, if the percept is not in the same half as the robot. FOR TESTING ONLY
    * @return true, if this is the case
@@ -158,4 +167,7 @@ private:
    *  @return The aforementioned standard deviation
    */
   float computeStdDevOfMovingBallHypothesis(unsigned indexOfOldestObservation, Vector2f& endVelocity);
+
+  /** Yup, you correctly guessed what this method does. */
+  void plotAndDraw();
 };

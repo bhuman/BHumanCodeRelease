@@ -30,7 +30,6 @@ PROJECTSRC=$PROJECTDIR/B-Human.xcodeproj
 PLIST="/usr/libexec/PlistBuddy -c"
 TEMPPATH=/tmp/generate.tmp
 TEMPPATH2=/tmp/generate2.tmp
-TEMPPATH3=/tmp/generate3.tmp
 
 # Create a symbolic link to cmake.
 if [ ! -e "$CMAKE" ]; then
@@ -79,7 +78,12 @@ if [ -d "$PROJECTPATH" ]; then
       OLDVERSION=
     fi
     if [ "$OLDVERSION" != "$CLANGVERSION" ]; then
-      rm -r "$PROJECTDIR/PrecompiledHeaders"
+      if [ -d "$PROJECTDIR/PrecompiledHeaders" ]; then
+        rm -r "$PROJECTDIR/PrecompiledHeaders"
+      fi
+      if [ -d "$PROJECTDIR/DerivedData/B-Human/Index.noindex/PrecompiledHeaders" ]; then
+        rm -r "$PROJECTDIR/DerivedData/B-Human/Index.noindex/PrecompiledHeaders"
+      fi
     fi
   fi
 fi
@@ -95,18 +99,6 @@ if [ ! -z "$ROSETTA" -a -f "$PROJECTPATH/project.pbxproj" ]; then
     find ../../Build/macOS -name "*.app" -type d | xargs rm -r
   fi
 fi
-
-# Determine directories that do not directly contain files.
-DIRONLY="$(for dir in $(find ../../Src ../../Util/SimRobot/Src -type d); do \
-  if [ -z "$(find "$dir" -depth 1 -type f -name "[^.]*")" ]; then \
-    echo "$dir"; \
-  fi; \
-done)"
-
-# Create a dummy file in directories that do not contain one.
-while read dir; do
-  touch "$dir/DUMMY_FILE.h"
-done <<<"$DIRONLY"
 
 # Prevent cmake from considering this to be a duplicate.
 rm -f ../../Util/Buildchain/macOS/include
@@ -125,8 +117,8 @@ if [ -d "$PROJECTPATH/CMakeFiles" ]; then
 fi
 
 # Create project.
-PYTHON_PATH="$(dirname "$(dirname "$(readlink -f "$(xcrun -f python3)")")")"
-"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA -DPython3_ROOT_DIR="$PYTHON_PATH"
+"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA
+../../Util/SimRobot/Make/macOS/pbxgen pbxgen.cfg $PROJECTSRC/project.pbxproj
 xattr -w com.apple.xcode.CreatedByBuildSystem true "$PROJECTDIR"
 
 # Backwards compatibility: Remove the link to project if it exists.
@@ -149,90 +141,19 @@ fi
 echo -n "$SDKVERSION" >"$PROJECTPATH/sdkversion"
 echo -n "$CLANGVERSION" >"$PROJECTPATH/clangversion"
 
-# Remove dummy files created before.
-while read dir; do
-  rm "$dir/DUMMY_FILE.h"
-done <<<"$DIRONLY"
-
-# Assign folders to most source groups and improve use of object link libraries.
-grep <$PROJECTSRC/project.pbxproj -v '/Make/CMake/CMakeLists.txt' \
-| sed \
-  -e 's%/Build/macOS/CMakeFiles/%/Make/macOS/B-Human.xcodeproj/CMakeFiles/%' \
-  -e 's%\("[^"]*\.o"\),*%~\1,~%g' \
-  -e 's%~~%~%g' \
-| tr '~' '\n' \
-| sed 's%^\([ 	]*\)\(".*/\([^/]*\)\.build/.*/\)[^/]*\.o"[,;]$%\1"-filelist",\2\3.LinkFileList",%' \
-| uniq \
-| tr '\n' '~' \
-| sed \
-  -e 's%\(isa = PBXGroup;~[^)]*/\* \)\(/[^*]*\)\(/[^*]*\)\( \*/,[^<]*\)<group>";%\1\2\3\4<absolute>";~			path = "\2";%g' \
-  -e 's%\(isa = PBXGroup;~[^}]*name = "*.[^;]*\)Nao\("*;\)%\1\2%g' \
-  -e 's%\(isa = PBXGroup;~[^}]*name = Simulated\);%\1Nao;%g' \
-  -e 's%\(targets = ([^)]*\)~				[A-F0-9]* /\* Src \*/,%\1%g' \
-  -e 's%\(targets = ([^)]*\)~				[A-F0-9]* /\* Config \*/,%\1%g' \
-  -e 's%",~"%","%g' \
-  -e 's%",~)%")%g' \
-  -e 's%("",%(%g' \
-| tr '~' '\n' >$TEMPPATH2
-
-# Remove some unwanted folders and files from project tree and add options to copying frameworks.
-( sed <$TEMPPATH2 -n '/targets = (/q;p' \
-  | grep -v "/\* [^ ]*_autogen \*/,$"
-  sed <$TEMPPATH2 -n '/targets = (/,$p' ) \
-  | grep -v "ALL_BUILD \*/,$" \
-  | grep -v "DUMMY_FILE.h" \
-  | grep -v "/\* Frameworks \*/,$" \
-  | sed -e 's%\.framework \*/;%.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); };%' \
-    -e 's%\.dylib \*/;%.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); };%' \
-    -e 's%make -C %make -sC %g' \
-    -e 's%[[:<:]]HEADER_SEARCH_PATHS%USER_HEADER_SEARCH_PATHS%' \
-    -e 's%USER_\(HEADER_SEARCH_PATHS = ([^,;)]*_autogen/[^,;)]*,*\)%\1); USER_HEADER_SEARCH_PATHS = (%' >$TEMPPATH
-
-# CMake generates some wrong path names.
-if [ "$ROSETTA" = "-DROSETTA=1" ]; then
-  sed <$TEMPPATH >$TEMPPATH2 's%/Objects-normal/arm64/%/$(OBJECT_FILE_DIR_normal:base)/x86_64/%g' && mv $TEMPPATH2 $TEMPPATH
-else
-  sed <$TEMPPATH >$TEMPPATH2 's%Nao\.build/Objects-normal/arm64/%Nao.build/$(OBJECT_FILE_DIR_normal:base)/x86_64/%g' && mv $TEMPPATH2 $TEMPPATH
-fi
-
 touch $PROJECTPATH/project.pbxproj
-sed <$PROJECTPATH/project.pbxproj 's%[A-F0-9]\{24\}%GUID%g' | sort >$TEMPPATH2
-sed <$TEMPPATH 's%[A-F0-9]\{24\}%GUID%g' | sort >$TEMPPATH3
-if cmp -s $TEMPPATH2 $TEMPPATH3; then
+if cmp -s $PROJECTPATH/project.pbxproj $PROJECTSRC/project.pbxproj; then
   echo "Xcode project is already up to date"
 else
   echo "Updating Xcode project"
 
-  # Sort folders Libs.
-  for NUM in 1 2 3 4; do
-    BEFORE=$(($(grep <$TEMPPATH -Fnm $NUM '/* Libs */ =' | tail -1 | sed 's%:.*%%') + 2))
-    SIZE=$(($(tail <$TEMPPATH +$(($BEFORE + 1)) | grep -Fnm 1 ");" | sed 's%:.*%%') - 1))
-    AFTER=$(($BEFORE + $SIZE + 1))
-    (
-      head <$TEMPPATH -$BEFORE
-      tail <$TEMPPATH +$(($BEFORE + 1)) | head -$SIZE | sort -fk 2
-      tail <$TEMPPATH +$AFTER
-    ) >$TEMPPATH2 \
-    && mv $TEMPPATH2 $TEMPPATH
-  done
-
-  # Sort folders Apps.
-  for NUM in 1 2; do
-    BEFORE=$(($(grep <$TEMPPATH -Fnm $NUM '/* Apps */ =' | tail -1 | sed 's%:.*%%') + 2))
-    SIZE=$(($(tail <$TEMPPATH +$(($BEFORE + 1)) | grep -Fnm 1 ");" | sed 's%:.*%%') - 1))
-    AFTER=$(($BEFORE + $SIZE + 1))
-    (
-      head <$TEMPPATH -$BEFORE
-      tail <$TEMPPATH +$(($BEFORE + 1)) | head -$SIZE | sort -fk 2
-      tail <$TEMPPATH +$AFTER
-    ) >$TEMPPATH2 \
-    && mv $TEMPPATH2 $TEMPPATH
-  done
-  mv $TEMPPATH $PROJECTPATH/project.pbxproj
+  # Copy the project file
+  mv $PROJECTSRC/project.pbxproj $PROJECTPATH/project.pbxproj
 
   # Prepare creating schemes.
   SCHEMEDIR=$PROJECTPATH/xcshareddata/xcschemes
   SCHEMESRC=$PROJECTSRC/xcshareddata/xcschemes
+  SEDOPTION="$(cat $PROJECTSRC/project.pbxproj.sed)"
   mkdir -p $SCHEMEDIR
 
   # Create the three schemes for SimRobot from the ones CMake created for SimRobot and Tests.
@@ -247,7 +168,16 @@ else
   -e 's%<Testables/>%<Testables>\
       </Testables>%'
   (
-    sed <$TEMPPATH2 -n '/<\/Testables>/q;p'
+    sed <$TEMPPATH2 -n '/shouldUseLaunchSchemeArgsEnv/q;p'
+    echo '      shouldUseLaunchSchemeArgsEnv="NO">'
+    echo '      <EnvironmentVariables>'
+    echo '         <EnvironmentVariable'
+    echo '            key = "IS_XCTEST"'
+    echo '            value = "YES"'
+    echo '            isEnabled = "YES">'
+    echo '         </EnvironmentVariable>'
+    echo '      </EnvironmentVariables>'
+    echo '      <Testables>'
     echo '         <TestableReference'
     echo '            skipped = "NO">'
     sed <$SCHEMESRC/Tests.xcscheme -n '/BuildableReference/,/\/BuildActionEntry/{/\/BuildActionEntry/!p;};/\/BuildActionEntry/q' \
@@ -261,6 +191,7 @@ else
     sed <$TEMPPATH2 -n '/<\/ProfileAction>/,$p'
   ) \
   | sed >$TEMPPATH \
+    -e "$SEDOPTION" \
     -e 's%launchStyle *= *"0"%launchStyle = "0"\
       enableGPUValidationMode = "1"%' \
     -e 's%<BuildActionEntries>%<PreActions>\
@@ -286,6 +217,7 @@ else
   # Set the deployDialog as runnable target. Deactivate some building targets.
   SCHEMETEMPLATE=$SCHEMESRC/DeployDialog.xcscheme
   sed <$SCHEMETEMPLATE >$TEMPPATH \
+  -e "$SEDOPTION" \
   -e 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%' \
   -e 's%selectedDebuggerIdentifier.*%selectedDebuggerIdentifier = ""%' \
   -e 's%selectedLauncherIdentifier.*%selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"%' \
@@ -303,9 +235,6 @@ else
     -e 's%argument *= *"Debug"%argument = "Release"%'
   mv $TEMPPATH "$SCHEMEDIR/Nao - Release.xcscheme"
 
-  # Delete files that are invalid after the project was regenerated.
-  find -E ../../Build/macOS -regex ".*-[A-F0-9]*\.(d|dia|o)" | xargs rm
-
   # Avoid automatically creating schemes for all targets.
   SETTINGSDIR=$PROJECTPATH/project.xcworkspace/xcshareddata
   SETTINGSPATH=$SETTINGSDIR/WorkspaceSettings.xcsettings
@@ -318,7 +247,9 @@ else
   SETTINGSPATH=$SETTINGSDIR/WorkspaceSettings.xcsettings
   mkdir -p "$SETTINGSDIR"
   $PLIST "Set :BuildLocationStyle UseTargetSettings" $SETTINGSPATH >/dev/null 2>>/dev/null || $PLIST "Add :BuildLocationStyle string UseTargetSettings" $SETTINGSPATH  >/dev/null
-  $PLIST "Set :DerivedDataLocationStyle Default" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string Default" $SETTINGSPATH
+  $PLIST "Set :CustomBuildLocationType RelativeToDerivedData" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildLocationType string RelativeToDerivedData" $SETTINGSPATH
+  $PLIST "Set :DerivedDataCustomLocation ../../Build/macOS/DerivedData" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataCustomLocation string ../../Build/macOS/DerivedData" $SETTINGSPATH
+  $PLIST "Set :DerivedDataLocationStyle WorkspaceRelativePath" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string WorkspaceRelativePath" $SETTINGSPATH
 fi
 
 # Disable App Nap for SimRobot.
@@ -367,4 +298,4 @@ rsync -u ../../Util/BuildChain/macOS/snippets/*.codesnippet ~/Library/Developer/
 
 # Cleanup.
 rm -r $PROJECTSRC
-rm -f $TEMPPATH $TEMPPATH2 $TEMPPATH3
+rm -f $TEMPPATH $TEMPPATH2

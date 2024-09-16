@@ -125,7 +125,7 @@ void UKFPose2D::landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vec
   }
   landmarkReadingAndMeanCov *= 0.5f;
 
-  // computeCovOfLandmarkReadingsReadings
+  // computeCovOfLandmarkReadings
   const Vector2f d = landmarkReadings[0] - landmarkReadingMean;
   Matrix2f landmarkReadingCov = Matrix2f::Zero();
   landmarkReadingCov << d * d.x(), d * d.y();
@@ -145,13 +145,13 @@ void UKFPose2D::landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vec
   Covariance::fixCovariance<3>(cov);
 }
 
-void UKFPose2D::lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2f& readingCov)
+void UKFPose2D::lineSensorUpdate(bool lineIsParallelToWorldModelXAxis, const Vector2f& reading, const Matrix2f& readingCov)
 {
   generateSigmaPoints();
 
   // computeLineReadings
   Vector2f lineReadings[7];
-  if(vertical)
+  if(lineIsParallelToWorldModelXAxis)
     for(int i = 0; i < 7; ++i)
       lineReadings[i] = Vector2f(sigmaPoints[i].y(), sigmaPoints[i].z());
   else

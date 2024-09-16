@@ -474,10 +474,10 @@ void PaintMethods3DOpenGL::beforeFrame(const DebugDrawing3D& drawing, const Matr
       for(unsigned short i = 0; i < cylinderSlices; ++i)
       {
         secIndexData.push_back(i + 1);
-        secIndexData.push_back(((i + 1) % cylinderSlices) + cylinderSlices + 1);
-        secIndexData.push_back(i + cylinderSlices + 1);
+        secIndexData.push_back(((i + 1) % cylinderSlices) + cylinderSlices + 2);
+        secIndexData.push_back(i + cylinderSlices + 2);
         secIndexData.push_back(((i + 1) % cylinderSlices) + 1);
-        secIndexData.push_back(((i + 1) % cylinderSlices) + cylinderSlices + 1);
+        secIndexData.push_back(((i + 1) % cylinderSlices) + cylinderSlices + 2);
         secIndexData.push_back(i + 1);
       }
     }
@@ -526,6 +526,21 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
   ASSERT(data);
   ASSERT(f);
 
+  bool draw = true;
+  if(drawing.renderOptions & (Drawings3D::disableTransparency | Drawings3D::disableOpacity))
+  {
+    GLfloat blendColor[4];
+    f->glGetFloatv(GL_BLEND_COLOR, blendColor);
+    draw = (blendColor[0] == 1.f) == ((drawing.renderOptions & Drawings3D::disableTransparency) != 0);
+  }
+
+  if(draw && drawing.renderOptions & Drawings3D::disableDepth)
+  {
+    GLfloat blendColor[4];
+    f->glGetFloatv(GL_BLEND_COLOR, blendColor);
+    f->glDepthMask(GL_FALSE);
+  }
+
   const auto& transformation = transformations[&drawing];
 
   if(!drawing.lines.empty() || !drawing.dots.empty() || !drawing.quads.empty())
@@ -536,7 +551,7 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
     f->glUniformMatrix4fv(data->ldqPVMLocation, 1, GL_FALSE, transformation.data());
 
     // Draw all lines.
-    if(!drawing.lines.empty())
+    if(!drawing.lines.empty() && draw)
     {
       for(const DebugDrawing3D::Line& l : drawing.lines)
       {
@@ -547,9 +562,11 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
         ldqFirst += 2;
       }
     }
+    else
+      ldqFirst += 2 * static_cast<GLint>(2 * drawing.lines.size());
 
     // Draw all dots.
-    if(!drawing.dots.empty())
+    if(!drawing.dots.empty() && draw)
     {
       GLfloat oldPointSize = 1.f;
       f->glGetFloatv(GL_POINT_SIZE, &oldPointSize);
@@ -562,15 +579,20 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
       }
       f->glPointSize(oldPointSize);
     }
+    else
+      ldqFirst += 2 * static_cast<GLint>(drawing.dots.size());
 
     // Draw all quads.
-    for(const DebugDrawing3D::Quad& q : drawing.quads)
-    {
-      Alpha alpha(*f, q.color.a);
-      f->glDrawArrays(GL_TRIANGLE_STRIP, ldqFirst, 4);
-      ldqFirst += 4;
-    }
-  }
+    if(draw)
+      for(const DebugDrawing3D::Quad& q : drawing.quads)
+      {
+        Alpha alpha(*f, q.color.a);
+        f->glDrawArrays(GL_TRIANGLE_STRIP, ldqFirst, 4);
+        ldqFirst += 4;
+      }
+    else
+      ldqFirst += 4 * static_cast<GLint>(drawing.quads.size());
+}
 
   if(!drawing.spheres.empty() || !drawing.ellipsoids.empty() || !drawing.cylinders.empty())
   {
@@ -605,28 +627,30 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
     // Draw cylinders.
     for(const DebugDrawing3D::Cylinder& c : drawing.cylinders)
     {
-      if(c.baseRadius <= 0.f && c.topRadius <= 0.f)
-        continue;
-      Matrix3f rotation = Matrix3f::Identity();
-      if(c.rotation.x() != 0)
-        rotation *= RotationMatrix::aroundX(c.rotation.x());
-      if(c.rotation.y() != 0)
-        rotation *= RotationMatrix::aroundY(c.rotation.y());
-      if(c.rotation.z() != 0)
-        rotation *= RotationMatrix::aroundZ(c.rotation.z());
-      const Matrix4f localTransformation = transformation * (Matrix4f() << rotation, c.point, RowVector3f::Zero(), 1.f).finished();
-      f->glUniformMatrix4fv(data->secPVMLocation, 1, GL_FALSE, localTransformation.data());
-      f->glUniform3ui(data->secColorLocation, c.color.r, c.color.g, c.color.b);
-      Alpha alpha(*f, c.color.a);
-
       const unsigned int numOfIndices = 6 * cylinderSlices * ((c.baseRadius > 0.f) + (c.topRadius > 0.f));
+      if(draw)
+      {
+        if(c.baseRadius <= 0.f && c.topRadius <= 0.f)
+          continue;
+        Matrix3f rotation = Matrix3f::Identity();
+        if(c.rotation.x() != 0)
+          rotation *= RotationMatrix::aroundX(c.rotation.x());
+        if(c.rotation.y() != 0)
+          rotation *= RotationMatrix::aroundY(c.rotation.y());
+        if(c.rotation.z() != 0)
+          rotation *= RotationMatrix::aroundZ(c.rotation.z());
+        const Matrix4f localTransformation = transformation * (Matrix4f() << rotation, c.point, RowVector3f::Zero(), 1.f).finished();
+        f->glUniformMatrix4fv(data->secPVMLocation, 1, GL_FALSE, localTransformation.data());
+        f->glUniform3ui(data->secColorLocation, c.color.r, c.color.g, c.color.b);
+        Alpha alpha(*f, c.color.a);
       f->glDrawElementsBaseVertex(GL_TRIANGLES, numOfIndices, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(secIndexOffset), secBaseVertex);
+      }
       secBaseVertex += 2 + ((c.baseRadius > 0.f) + (c.topRadius > 0.f)) * cylinderSlices;
       secIndexOffset += sizeof(std::uint16_t) * numOfIndices;
     }
   }
 
-  if(!drawing.images.empty())
+  if(!drawing.images.empty() && draw)
   {
     GLboolean cullingWasEnabled;
     if((cullingWasEnabled = f->glIsEnabled(GL_CULL_FACE)))
@@ -657,6 +681,11 @@ void PaintMethods3DOpenGL::draw(const DebugDrawing3D& drawing)
     if(cullingWasEnabled)
       f->glEnable(GL_CULL_FACE);
   }
+  else
+    textureIndex += static_cast<unsigned int>(drawing.images.size());
+
+  if(draw && drawing.renderOptions & Drawings3D::disableDepth)
+    f->glDepthMask(GL_TRUE);
 }
 
 char* PaintMethods3DOpenGL::copyImage(const CameraImage& srcImage)

@@ -1,0 +1,37 @@
+# Request data to animate the remote puppet.
+dr representation:JointSensorData
+dr representation:RawInertialSensorData
+
+# Add views for camera images, but there will be no drawings,
+# because image processing might show poor results on highly
+# compressed JPEG images.
+for Upper Lower vi CameraImage
+
+# Add fieldView to orientate and navigate.
+vf force worldState
+vfd worldState cognition:Reset:up
+vfd worldState fieldPolygons
+vfd worldState fieldLines
+vfd worldState goalFrame
+vfd worldState representation:GlobalOpponentsModel
+vfd worldState representation:GlobalTeammatesModel
+vfd worldState representation:SharedAutonomyRequest
+vfd worldState representation:RobotPose
+vfd worldState representation:GlobalTeammatesModel:walkTargets
+vfd worldState cognition:RobotPose:up
+vfd worldState representation:FieldBall
+vfd worldState cognition:Reset:up
+
+# Add drawings to the puppet.
+dr debugDrawing3d:representation:CameraImage
+dr debugDrawing3d:representation:FieldDimensions
+dr debugDrawing3d:representation:GameState
+dr debugDrawing3d:representation:RobotPose:ring
+dr debugDrawing3d:representation:RobotPose:goalSectors
+dr debugDrawing3d:representation:FieldBall
+dr debugDrawing3d:representation:FieldBall:sector
+dr debugDrawing3d:representation:GlobalOpponentsModel
+dr debugDrawing3d:representation:GlobalOpponentsModel:sectors
+dr debugDrawing3d:representation:GlobalTeammatesModel
+dr debugDrawing3d:representation:GlobalTeammatesModel:sectors
+dr debugDrawing3d:representation:SharedAutonomyRequest

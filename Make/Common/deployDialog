@@ -1,4 +1,5 @@
 #!/bin/bash
+# Opens the Deploy Dialog and executes the actions selected in it.
 
 cd "$(dirname "$(which "$0")")"
 

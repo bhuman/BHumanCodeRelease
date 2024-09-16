@@ -21,7 +21,7 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle
   /** Different states of robot pose estimate quality */
   ENUM(LocalizationQuality,
   {,
-    superb,   /**< Everything is cool! The internal model ist unimodal and all deviations are low. */
+    superb,   /**< Everything is cool! The internal model is unimodal and all deviations are low. */
     okay,     /**< Could be better. The model is still somewhat unimodal but at least one deviation is quite high or the validity is low. Rough estimate might be correct but not precise. */
     poor,     /**< Nope. Do not do any serious stuff, if this is the current state. There seem to be multiple quite different hypotheses about the current pose or some deviations are REALLY high. We do not have any clue about the current pose, actually. */
   });

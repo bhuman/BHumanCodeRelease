@@ -1,23 +1,22 @@
-vf worldState
-vfd worldState fieldPolygons
+vf ratingRole
+vfd ratingRole fieldPolygons
 
-vfd worldState cognition:Reset
+vfd ratingRole cognition:Reset
 set module:ExpectedGoalsProvider:drawHeatmap false
 set module:PassEvaluationProvider:drawHeatmap false
-set behavior:Forward:drawHeatmap false
 set behavior:RatingRole:drawHeatmap true
 
-vfd worldState behavior:RatingRole:heatmap
+vfd ratingRole behavior:RatingRole:heatmap
 
-vfd worldState fieldLines
-vfd worldState goalFrame
-vfd worldState behavior:Tactic:voronoiDiagram
-vfd worldState representation:TeammatesBallModel
-vfd worldState cognition:RobotPose
-vfd worldState representation:ObstacleModel:rectangle
-vfd worldState cognition:Reset
+vfd ratingRole fieldLines
+vfd ratingRole goalFrame
+vfd ratingRole behavior:Tactic:voronoiDiagram
+vfd ratingRole representation:TeammatesBallModel
+vfd ratingRole cognition:RobotPose
+vfd ratingRole representation:ObstacleModel:rectangle
+vfd ratingRole cognition:Reset
 
-vfd worldState behavior:RatingRole:position
+vfd ratingRole behavior:RatingRole:position
 
-echo set module:RatingRole:drawHeatmap true
-echo set module:RatingRole:drawHeatmap false
+echo set behavior:RatingRole:drawHeatmap true
+echo set behavior:RatingRole:drawHeatmap false

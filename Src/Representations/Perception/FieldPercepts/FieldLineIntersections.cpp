@@ -152,3 +152,20 @@ void FieldLineIntersections::draw() const
     }
   }
 }
+
+void FieldLineIntersections::verify() const
+{
+  for([[maybe_unused]] const Intersection& i : intersections)
+  {
+    ASSERT(std::isfinite(i.pos.x()));
+    ASSERT(std::isfinite(i.pos.y()));
+    ASSERT(std::isnormal(i.cov(0, 0)));
+    ASSERT(std::isnormal(i.cov(1, 1)));
+    ASSERT(std::isfinite(i.cov(0, 1)));
+    ASSERT(std::isfinite(i.cov(1, 0)));
+    ASSERT(std::isfinite(i.dir1.x()));
+    ASSERT(std::isfinite(i.dir1.y()));
+    ASSERT(std::isfinite(i.dir2.x()));
+    ASSERT(std::isfinite(i.dir2.y()));
+  }
+}

@@ -1,43 +1,38 @@
 /**
  * @file WalkToPose.cpp
  *
- * This file implements the implementation of the WalkToPose skill.
+ * This file implements the WalkToPose skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(WalkToPoseImpl,
-{,
-  IMPLEMENTS(WalkToPose),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class WalkToPoseImpl : public WalkToPoseImplBase
+option((SkillBehaviorControl) WalkToPose,
+       args((const Pose2f&) target,
+            (const Pose2f&) speed,
+            (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
+            (bool) keepTargetRotation,
+            (const std::optional<Vector2f>&) targetOfInterest,
+            (bool) forceSideWalking))
 {
-  void execute(const WalkToPose& p) override
+  theMotionRequest.motion = MotionRequest::walkToPose;
+  theMotionRequest.walkTarget = target;
+  theMotionRequest.walkSpeed = speed;
+  theMotionRequest.keepTargetRotation = keepTargetRotation;
+  theMotionRequest.obstacleAvoidance = obstacleAvoidance;
+  theMotionRequest.targetOfInterest = targetOfInterest;
+  theMotionRequest.forceSideWalking = forceSideWalking;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::walkToPose;
-    theMotionRequest.walkTarget = p.target;
-    theMotionRequest.walkSpeed = p.speed;
-    theMotionRequest.keepTargetRotation = p.keepTargetRotation;
-    theMotionRequest.obstacleAvoidance = p.obstacleAvoidance;
-    theMotionRequest.targetOfInterest = p.targetOfInterest;
-    theMotionRequest.forceSideWalking = p.forceSideWalking;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::walk)
+        goto done;
+    }
   }
 
-  bool isDone(const WalkToPose&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::walk;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(WalkToPoseImpl);
+  target_state(done) {}
+}

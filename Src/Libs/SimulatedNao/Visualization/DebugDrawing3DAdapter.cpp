@@ -18,6 +18,7 @@ void DebugDrawing3DAdapter::copyFrom(const DebugDrawing3D& other)
   scale = other.scale;
   rotate = other.rotate;
   trans = other.trans;
+  renderOptions = other.renderOptions;
 
   lines = other.lines;
   dots = other.dots;

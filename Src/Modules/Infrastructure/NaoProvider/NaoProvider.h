@@ -13,9 +13,9 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Framework/Module.h"
 
@@ -28,9 +28,9 @@ MODULE(NaoProvider,
   REQUIRES(LEDRequest),
   PROVIDES(FrameInfo),
   PROVIDES(FsrSensorData),
-  PROVIDES(InertialSensorData),
   PROVIDES(JointSensorData),
   PROVIDES(KeyStates),
+  PROVIDES(RawInertialSensorData),
   PROVIDES(SystemSensorData),
   DEFINES_PARAMETERS(
   {,
@@ -39,9 +39,6 @@ MODULE(NaoProvider,
     (int)(5000) timeBetweenCPUTemperatureUpdates, /**< Time between reading the CPU temperature (in ms). */
     (unsigned)(10) retries, /**< Number of tries to connect socket. */
     (unsigned)(10) retryDelay, /**< Delay before a retry to connect socket. */
-    (Angle)(0.00064_deg) jointVariance, /**< Variance of a joint measurement (in deg²). */
-    (Angle)(0.00000387f) gyroVariance, /**< Variance of the gyro (in (rad / s)²). */
-    (float)(0.000374f) accVariance, /**< White noise variance of the accelerometer measurements (in (m/s²)²). */
   }),
 });
 
@@ -104,9 +101,9 @@ class NaoProvider : public NaoProviderBase
 
   /**
    * This method is called when the representation provided needs to be updated.
-   * @param theInertialSensorData The representation updated.
+   * @param theRawInertialSensorData The representation updated.
    */
-  void update(InertialSensorData& theInertialSensorData) override;
+  void update(RawInertialSensorData& theRawInertialSensorData) override;
 
   /**
    * This method is called when the representation provided needs to be updated.
@@ -177,14 +174,14 @@ class NaoProvider : public NaoProviderBase
 {
   void update(FrameInfo&) {}
   void update(FsrSensorData&) {}
-  void update(InertialSensorData&) {}
+  void update(RawInertialSensorData&) {}
   void update(JointSensorData& theJointSensorData) {static_cast<JointAngles&>(theJointSensorData) = theJointRequest;}
   void update(KeyStates&) {}
   void update(SystemSensorData&) {}
 
 public:
   static void waitForFrameData() {}
-  static void finishFrame() {}
+  static void finishFrame();
 };
 
 #endif

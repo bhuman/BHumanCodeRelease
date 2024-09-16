@@ -43,7 +43,7 @@ class FootSupportProvider : public FootSupportProviderBase
 
   float weights[Legs::numOfLegs][FsrSensors::numOfFsrSensors]; /**< Weights for the individual FSRs. */
   float lastSupport; /**< Last support value. */
-  float lastSupportWithPressure; /**< Last support measurment, when the feet had enough pressure. */
+  float lastSupportWithPressure; /**< Last support measurement, when the feet had enough pressure. */
   unsigned int lastSupportSwitch = 0; /**< Timestamp of last support switch. */
 
 public:

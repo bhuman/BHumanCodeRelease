@@ -10,8 +10,8 @@
 
 #pragma once
 
+#include "Tools/Communication/TeamMessageContainer.h"
 #include "Network/UdpComm.h"
-#include "Tools/Communication/TeamMessageBuffer.h"
 
 /**
  * @class TeamMessageChannel
@@ -20,14 +20,14 @@
 class TeamMessageChannel
 {
 public:
-  using Buffer = TeamMessageBuffer<9>;
+  using Container = TeamMessageContainer;
 
   /**
    * Constructor.
-   * @param in Incoming team messages.
+   * @param in Incoming team message.
    * @param out Outgoing team message.
    */
-  TeamMessageChannel(Buffer& in, Buffer::Container& out) :
+  TeamMessageChannel(Container& in, Container& out) :
     in(in), out(out) {}
 
   /**
@@ -50,15 +50,16 @@ public:
 
   /**
    * The method receives packets if available.
+   * @return Whether there was a message
    */
-  void receive();
+  bool receive();
 
 private:
   /** Sets the target of the socket to the WiFi broadcast address (if it exists). */
   void trySetWifiTarget();
 
-  Buffer& in; /**< Incoming team messages are stored here. */
-  Buffer::Container& out; /**< Outgoing team message is stored here. */
+  Container& in; /**< Incoming team message is stored here. */
+  Container& out; /**< Outgoing team message is stored here. */
   int port = 0; /**< The UDP port this handler is listening to. */
   UdpComm socket; /**< The socket used to communicate. */
   unsigned localId = 0; /**< The id of a local team communication participant or 0 for normal udp communication. */

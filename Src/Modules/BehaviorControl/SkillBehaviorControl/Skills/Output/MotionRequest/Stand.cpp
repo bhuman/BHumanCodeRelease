@@ -1,37 +1,28 @@
 /**
  * @file Stand.cpp
  *
- * This file implements the implementation of the Stand skill.
+ * This file implements the Stand skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(StandImpl,
-{,
-  IMPLEMENTS(Stand),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class StandImpl : public StandImplBase
+option((SkillBehaviorControl) Stand,
+       args((bool) high))
 {
-  void execute(const Stand& p) override
+  theMotionRequest.motion = MotionRequest::stand;
+  theMotionRequest.standHigh = high;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::stand;
-    theMotionRequest.standHigh = p.high;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::stand)
+        goto done;
+    }
   }
 
-  bool isDone(const Stand&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::stand;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(StandImpl);
+  target_state(done) {}
+}

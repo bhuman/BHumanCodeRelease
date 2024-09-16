@@ -9,5 +9,6 @@ vid all representation:ObstaclesImagePercept:image
 vid all representation:ObstaclesFieldPercept:image
 vid all representation:BodyContour
 vid all representation:BallSpots:image
+vid all representation:GoalPostsPercept:image
 
 call Includes/ManualHeadMotion

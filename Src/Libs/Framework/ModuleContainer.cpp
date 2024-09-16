@@ -145,21 +145,40 @@ bool ModuleContainer::main()
     OUTPUT(idFrameBegin, bin, getName());
     sizeAfterFrameBegin = debugSender->size();
   }
-  else if(SystemCall::getMode() == SystemCall::logFileReplay && debugSender->size() > sizeAfterFrameBegin)
+  else
   {
-    // idLogResponse was added in a delayed frame (no idFrameFinished to avoid flickering drawings)
-    debugSender->send();
+    // If data was not sent in the previous frame or new data was appended
+    // (idLogResponse or "pollingFinished"), try to send it now.
+    if(originalSize > 0 || debugSender->size() > sizeAfterFrameBegin)
+    {
+      debugSender->send();
 
-    // Prepare next frame
-    originalSize = debugSender->size();
-    OUTPUT(idFrameBegin, bin, getName());
-    sizeAfterFrameBegin = debugSender->size();
+      if(debugSender->size() == 0)
+      {
+        // Prepare next frame
+        originalSize = 0;
+        OUTPUT(idFrameBegin, bin, getName());
+        sizeAfterFrameBegin = debugSender->size();
+      }
+    }
+    if(Global::getDebugRequestTable().pollCounter > 0)
+      // If the frame is not executed during polling, the poll counter should not become smaller.
+      ++Global::getDebugRequestTable().pollCounter;
   }
-  else if(Global::getDebugRequestTable().pollCounter > 0)
-    // If the frame is not executed during polling, the poll counter should not become smaller.
-    ++Global::getDebugRequestTable().pollCounter;
 
-  return executionUnit->afterFrame();
+  if(executionUnit->afterFrame())
+  {
+    if(Global::getDebugRequestTable().pollCounter == 0
+       && (Global::getDebugOut().size() == 0 || ++Global::getDebugOut().begin() == Global::getDebugOut().end()))
+      return true;
+    else
+    {
+      Thread::yield();
+      return false;
+    }
+  }
+  else
+    return false;
 }
 
 void ModuleContainer::terminate()

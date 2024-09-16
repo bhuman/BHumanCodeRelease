@@ -27,12 +27,12 @@ AutomaticCameraCalibrator::AutomaticCameraCalibrator() :
   currentSampleConfiguration = nullptr;
 
   createLookUpTables();
-  parallelDisRangeLower = parallelDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.fieldLinesWidth,
-                                                         theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentGoalArea + theFieldDimensions.fieldLinesWidth);
+  parallelDisRangeLower = parallelDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.fieldLinesWidth,
+                                                         theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentGoalArea + theFieldDimensions.fieldLinesWidth);
   goalAreaDisRangeLower = goalAreaDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.fieldLinesWidth,
                                                          theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyMark + theFieldDimensions.fieldLinesWidth);
-  groundLineDisRangeLower = groundLineDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.fieldLinesWidth,
-                                                             theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyMark + theFieldDimensions.fieldLinesWidth);
+  goalLineDisRangeLower = goalLineDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.fieldLinesWidth,
+                                                         theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentPenaltyMark + theFieldDimensions.fieldLinesWidth);
 
   // Load the cameraCalibration from disk, if it exists.
   loadModuleParameters(const_cast<CameraCalibration&>(theCameraCalibration), "CameraCalibration", nullptr);
@@ -83,8 +83,11 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
   // Abort requested.
   if(theCalibrationRequest.targetState == CameraCalibrationStatus::State::idle && state != CameraCalibrationStatus::State::idle)
   {
+    samples.clear();
+    currentSampleConfiguration = nullptr;
     state = CameraCalibrationStatus::State::idle;
     inStateSince = theFrameInfo.time;
+    numOfSamples = 0;
   }
 
   // TODO: It would be nice to trigger this action with the request.
@@ -196,6 +199,9 @@ bool AutomaticCameraCalibrator::fitLine(CorrectedLine& cline)
 
 void AutomaticCameraCalibrator::update(CameraCalibrationStatus& cameraCalibrationStatus)
 {
+  if(state == CameraCalibrationStatus::State::idle)
+    cameraCalibrationStatus.sampleIndex = 0;
+
   cameraCalibrationStatus.state = state;
   cameraCalibrationStatus.inStateSince = inStateSince;
 
@@ -207,7 +213,11 @@ void AutomaticCameraCalibrator::update(CameraCalibrationStatus& cameraCalibratio
       cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::recording;
     updateSampleConfiguration();
     if(currentSampleConfiguration && currentSampleConfiguration->samplesExist(samples))
+    {
+      if(cameraCalibrationStatus.sampleConfigurationStatus != SampleConfigurationStatus::finished)
+        cameraCalibrationStatus.sampleIndex++;
       cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::finished;
+    }
   }
 }
 
@@ -353,7 +363,7 @@ void AutomaticCameraCalibrator::recordSamples()
   allRequiredFeaturesVisible = false;
   if(theLinesPercept.lines.size() >= 3 && theLinesPercept.lines.size() <= 8 &&
      (currentSampleConfiguration->needToRecord(samples, cornerAngle) || currentSampleConfiguration->needToRecord(samples, parallelAngle) || currentSampleConfiguration->needToRecord(samples, parallelLinesDistance)) &&
-     !(currentSampleConfiguration->needToRecord(samples, goalAreaDistance) || currentSampleConfiguration->needToRecord(samples, groundLineDistance)))
+     !(currentSampleConfiguration->needToRecord(samples, goalAreaDistance) || currentSampleConfiguration->needToRecord(samples, goalLineDistance)))
   {
     bool discardedParallelLines = false, foundParallelLines = false;
     Rangef& parallelLinesRange = currentSampleConfiguration->camera == CameraInfo::upper ? parallelDisRangeUpper : parallelDisRangeLower;
@@ -367,7 +377,7 @@ void AutomaticCameraCalibrator::recordSamples()
         {
           if(i == k)
             continue;
-          // i is the index of the "short" connecting line, j and k are the indices for the orthogonal lines (ground line and front goal area line).
+          // i is the index of the "short" connecting line, j and k are the indices for the orthogonal lines (goal line and front goal area line).
           // It is checked whether the line i has one end in one line and the other end in the other line.
           // TODO: This should be done in image coordinates because otherwise the camera would have to be calibrated. But still works.
           const float distInImage1 = std::min(Geometry::getDistanceToEdge(theLinesPercept.lines[j].line, theLinesPercept.lines[i].firstField.cast<float>()),
@@ -434,17 +444,17 @@ void AutomaticCameraCalibrator::recordSamples()
   }
 
   if(thePenaltyMarkPercept.wasSeen && theLinesPercept.lines.size() >= 2 && theLinesPercept.lines.size() <= 8 &&
-     (currentSampleConfiguration->needToRecord(samples, goalAreaDistance) || currentSampleConfiguration->needToRecord(samples, groundLineDistance)))
+     (currentSampleConfiguration->needToRecord(samples, goalAreaDistance) || currentSampleConfiguration->needToRecord(samples, goalLineDistance)))
   {
-    bool discardedGoalAreaLine = false, foundGoalAreaLine = false, discardedGroundLine = false, foundGroundLine = false;
+    bool discardedGoalAreaLine = false, foundGoalAreaLine = false, discardedGoalLine = false, foundGoalLine = false;
     Rangef& goalAreaDisRange = currentSampleConfiguration->camera == CameraInfo::upper ? goalAreaDisRangeUpper : goalAreaDisRangeLower;
-    Rangef& groundLineDisRange = currentSampleConfiguration->camera == CameraInfo::upper ? groundLineDisRangeUpper : groundLineDisRangeLower;
+    Rangef& goalLineDisRange = currentSampleConfiguration->camera == CameraInfo::upper ? goalLineDisRangeUpper : goalLineDisRangeLower;
 
     for(size_t i = 0; i < theLinesPercept.lines.size(); ++i)
     {
       for(size_t j = i + 1; j < theLinesPercept.lines.size(); ++j)
       {
-        // Heuristic: Ground line and front goal area line should span at least half the image width.
+        // Heuristic: Goal line and front goal area line should span at least half the image width.
         if(std::abs(theLinesPercept.lines[i].firstImg.x() - theLinesPercept.lines[i].lastImg.x()) < theCameraInfo.width / 2 ||
            std::abs(theLinesPercept.lines[j].firstImg.x() - theLinesPercept.lines[j].lastImg.x()) < theCameraInfo.width / 2)
           continue;
@@ -462,36 +472,36 @@ void AutomaticCameraCalibrator::recordSamples()
         if(!theCalibrationRequest.sampleConfigurationRequest->doRecord) continue;
 
         CorrectedLine cLineGoalArea = {theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(), Vector2f(), Vector2f()};
-        CorrectedLine cLineGroundLine = {theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>(), Vector2f(), Vector2f()};
-        // Use the farther line as the ground line
+        CorrectedLine cLineGoalLine = {theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>(), Vector2f(), Vector2f()};
+        // Use the farther line as the goal line
         if(squaredDistanceToFirst > squaredDistanceToSecond)
-          std::swap(cLineGoalArea, cLineGroundLine);
-        if(!fitLine(cLineGoalArea) || !fitLine(cLineGroundLine))
+          std::swap(cLineGoalArea, cLineGoalLine);
+        if(!fitLine(cLineGoalArea) || !fitLine(cLineGoalLine))
           continue;
         float goalAreaLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGoalArea.aOnField, (cLineGoalArea.bOnField - cLineGoalArea.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
-        float groundLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGroundLine.aOnField, (cLineGroundLine.bOnField - cLineGroundLine.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
+        float goalLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGoalLine.aOnField, (cLineGoalLine.bOnField - cLineGoalLine.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
 
         // Check if the found lines have a valid distance from the penalty spot.
-        bool goalAreaLineDistanceValid, groundLineDistanceValid;
+        bool goalAreaLineDistanceValid, goalLineDistanceValid;
         (goalAreaLineDistanceValid = goalAreaDisRange.isInside(goalAreaLineDistance - cLineGoalArea.offset)) ? foundGoalAreaLine = true : discardedGoalAreaLine = true;
-        (groundLineDistanceValid = groundLineDisRange.isInside(groundLineDistance - cLineGroundLine.offset)) ? foundGroundLine = true : discardedGroundLine = true;
-        if(!goalAreaLineDistanceValid || !groundLineDistanceValid)
+        (goalLineDistanceValid = goalLineDisRange.isInside(goalLineDistance - cLineGoalLine.offset)) ? foundGoalLine = true : discardedGoalLine = true;
+        if(!goalAreaLineDistanceValid || !goalLineDistanceValid)
           continue;
 
         OUTPUT_TEXT("GoalAreaLineDistance: " << goalAreaLineDistance << ", Offset: " << cLineGoalArea.offset);
-        OUTPUT_TEXT("GroundLineDistance: " << groundLineDistance << ", Offset: " << cLineGroundLine.offset);
+        OUTPUT_TEXT("GoalLineDistance: " << goalLineDistance << ", Offset: " << cLineGoalLine.offset);
         ANNOTATION("AutomaticCameraCalibrator", "Sample Recorded: " << std::to_string(i) << " " << std::to_string(j));
 
         ADD_SAMPLE(goalAreaDistance, GoalAreaDistanceSample, thePenaltyMarkPercept.positionInImage, cLineGoalArea)
-        ADD_SAMPLE(SampleType::groundLineDistance, GroundLineDistanceSample, thePenaltyMarkPercept.positionInImage, cLineGroundLine)
-        ADD_SAMPLE(parallelAngle, ParallelAngleSample, cLineGoalArea, cLineGroundLine)
-        ADD_SAMPLE(parallelLinesDistance, ParallelLinesDistanceSample, cLineGoalArea, cLineGroundLine)
+        ADD_SAMPLE(SampleType::goalLineDistance, GoalLineDistanceSample, thePenaltyMarkPercept.positionInImage, cLineGoalLine)
+        ADD_SAMPLE(parallelAngle, ParallelAngleSample, cLineGoalArea, cLineGoalLine)
+        ADD_SAMPLE(parallelLinesDistance, ParallelLinesDistanceSample, cLineGoalArea, cLineGoalLine)
       }
     }
     if(theCalibrationRequest.sampleConfigurationRequest->doRecord)
     {
       INCREASE_RANGE("PenaltyLineRange", discardedGoalAreaLine, foundGoalAreaLine, numOfDiscardedGoalAreaLines, goalAreaDisRange)
-      INCREASE_RANGE("GroundLineRange", discardedGroundLine, foundGroundLine, numOfDiscardedGroundLines, groundLineDisRange)
+      INCREASE_RANGE("GoalLineRange", discardedGoalLine, foundGoalLine, numOfDiscardedGoalLines, goalLineDisRange)
     }
   }
 
@@ -500,9 +510,9 @@ void AutomaticCameraCalibrator::recordSamples()
      !currentSampleConfiguration->needToRecord(samples, parallelAngle) &&
      !currentSampleConfiguration->needToRecord(samples, parallelLinesDistance) &&
      !currentSampleConfiguration->needToRecord(samples, goalAreaDistance) &&
-     !currentSampleConfiguration->needToRecord(samples, groundLineDistance))
+     !currentSampleConfiguration->needToRecord(samples, goalLineDistance))
   {
-    numOfDiscardedParallelLines = numOfDiscardedGoalAreaLines = numOfDiscardedGroundLines = 0;
+    numOfDiscardedParallelLines = numOfDiscardedGoalAreaLines = numOfDiscardedGoalLines = 0;
     allRequiredFeaturesVisible = true;
   }
 }
@@ -703,7 +713,7 @@ float AutomaticCameraCalibrator::ParallelLinesDistanceSample::computeError(const
 
   const float combinedOffset = distance1 > 0 ? cLine1.offset - cLine2.offset : cLine2.offset - cLine1.offset;
 
-  const float optimalDistance = calibrator.theFieldDimensions.xPosOpponentGroundLine - calibrator.theFieldDimensions.xPosOpponentGoalArea + combinedOffset;
+  const float optimalDistance = calibrator.theFieldDimensions.xPosOpponentGoalLine - calibrator.theFieldDimensions.xPosOpponentGoalArea + combinedOffset;
   std::vector<float> distanceErrorList;
   distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance1) - optimalDistance) - distance1ErrorRange)));
   distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance2) - optimalDistance) - distance2ErrorRange)));
@@ -727,17 +737,17 @@ float AutomaticCameraCalibrator::GoalAreaDistanceSample::computeError(const Came
   return goalAreaDistanceError / calibrator.distanceErrorDivisor;
 }
 
-float AutomaticCameraCalibrator::GroundLineDistanceSample::computeError(const CameraMatrix& cameraMatrix) const
+float AutomaticCameraCalibrator::GoalLineDistanceSample::computeError(const CameraMatrix& cameraMatrix) const
 {
   Vector2f penaltyMarkOnField;
-  CHECK_PROJECTION_LINE_PENALTY("GroundLineDistanceSample", cLine, penaltyMarkInImage, penaltyMarkOnField)
+  CHECK_PROJECTION_LINE_PENALTY("GoalLineDistanceSample", cLine, penaltyMarkInImage, penaltyMarkOnField)
 
   const Geometry::Line line(cLine.aOnField, (cLine.bOnField - cLine.aOnField).normalized());
-  const float groundLineDistance = Geometry::getDistanceToLine(line, penaltyMarkOnField);
-  const float groundLineDistanceError = std::abs(groundLineDistance - (calibrator.theFieldDimensions.xPosOpponentGroundLine -
-                                                 calibrator.theFieldDimensions.xPosOpponentPenaltyMark + cLine.offset));
-  OUTPUT_TEXT("GroundLineDistanceError: " << groundLineDistanceError);
-  return groundLineDistanceError / calibrator.distanceErrorDivisor;
+  const float goalLineDistance = Geometry::getDistanceToLine(line, penaltyMarkOnField);
+  const float goalLineDistanceError = std::abs(goalLineDistance - (calibrator.theFieldDimensions.xPosOpponentGoalLine -
+                                               calibrator.theFieldDimensions.xPosOpponentPenaltyMark + cLine.offset));
+  OUTPUT_TEXT("GoalLineDistanceError: " << goalLineDistanceError);
+  return goalLineDistanceError / calibrator.distanceErrorDivisor;
 }
 
 float AutomaticCameraCalibrator::Functor::operator()(const Parameters& params, size_t measurement) const

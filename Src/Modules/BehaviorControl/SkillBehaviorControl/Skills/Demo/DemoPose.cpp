@@ -6,139 +6,106 @@
  * @author Ayleen Lührsen
  */
 
-#include "Representations/BehaviorControl/Skills.h"
-#include "Tools/BehaviorControl/Framework/Skill/CabslSkill.h"
-#include "Platform/SystemCall.h"
-#include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/MotionControl/ArmKeyFrameRequest.h"
-#include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
-#include "Representations/Perception/RefereePercept/RefereePercept.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(DemoPoseImpl,
-{,
-  IMPLEMENTS(DemoPose),
-  CALLS(LookAtAngles),
-  CALLS(LookForward),
-  CALLS(KeyFrameSingleArm),
-  CALLS(KeyFrameArms),
-  CALLS(Stand),
-  REQUIRES(EnhancedKeyStates),
-  REQUIRES(RefereePercept),
-});
-
-class DemoPoseImpl : public DemoPoseImplBase
+option((SkillBehaviorControl) DemoPose)
 {
-  option(DemoPose)
+  using enum RefereePercept::Gesture;
+  using enum ArmKeyFrameRequest::ArmKeyFrameId;
+
+  // Look at referee, stand upright, and announce gesture if known.
+  const auto gesture = [this](const ArmKeyFrameRequest::ArmKeyFrameId left,
+                        const ArmKeyFrameRequest::ArmKeyFrameId right)
   {
-    using enum RefereePercept::Gesture;
-    using enum ArmKeyFrameRequest::ArmKeyFrameId;
+    Stand({.high = true});
+    KeyFrameLeftArm({.motion = left});
+    KeyFrameRightArm({.motion = right});
+    LookAtAngles({.pan = 0.f,
+                  .tilt = -15_deg});
+  };
 
-    // Look at referee, stand upright, and announce gesture if known.
-    auto gesture = [this](const ArmKeyFrameRequest::ArmKeyFrameId left,
-                          const ArmKeyFrameRequest::ArmKeyFrameId right)
-    {
-      theStandSkill({.high = true});
-      theKeyFrameSingleArmSkill({.motion = left, .arm = Arms::left});
-      theKeyFrameSingleArmSkill({.motion = right, .arm = Arms::right});
-      theLookAtAnglesSkill({.pan = 0.f,
-                            .tilt = -15_deg});
-    };
+  common_transition
+  {
+    if(theEnhancedKeyStates.isPressedFor(KeyStates::Key::headFront, 1000))
+      goto posing;
+  }
 
-    common_transition
+  initial_state(initial)
+  {
+    action
     {
-      if(theEnhancedKeyStates.isPressedFor(KeyStates::Key::headFront, 1000))
-        goto posing;
-    }
-
-    initial_state(initial)
-    {
-      action
-      {
-        theLookAtAnglesSkill({.pan = 0.f,
-                              .tilt = 0_deg});
-        theStandSkill({.high = true});
-      }
-    }
-
-    state(posing)
-    {
-      transition
-      {
-        if(state_time > 1000) // wait for a second until detections are accepted
-          switch(theRefereePercept.gesture)
-          {
-            case RefereePercept::goalKickBlue:
-              SystemCall::say("Goal Kick");
-              goto goalKickBlue;
-            case RefereePercept::goalKickRed:
-              SystemCall::say("Goal Kick");
-              goto goalKickRed;
-            case RefereePercept::kickInBlue:
-              SystemCall::say("Kick In");
-              goto kickInBlue;
-            case RefereePercept::kickInRed:
-              SystemCall::say("Kick In");
-              goto kickInRed;
-            case RefereePercept::cornerKickBlue:
-              SystemCall::say("Corner Kick");
-              goto cornerKickBlue;
-            case RefereePercept::cornerKickRed:
-              SystemCall::say("Corner Kick");
-              goto cornerKickRed;
-            case RefereePercept::goalBlue:
-              SystemCall::say("Goal");
-              goto goalBlue;
-            case RefereePercept::goalRed:
-              SystemCall::say("Goal");
-              goto goalRed;
-            case RefereePercept::pushingFreeKickBlue:
-              SystemCall::say("Free Kick");
-              goto pushingFreeKickBlue;
-            case RefereePercept::pushingFreeKickRed:
-              SystemCall::say("Free Kick");
-              goto pushingFreeKickRed;
-            case RefereePercept::fullTime:
-              SystemCall::say("Full time");
-              goto fullTime;
-          }
-      }
-      action
-      {
-        gesture(useDefault, useDefault);
-      }
-    }
-
-    state(kickInBlue)
-    { action{ gesture(armHorizontalSideways, useDefault); }}
-    state(kickInRed)
-    { action{ gesture(useDefault, armHorizontalSideways); }}
-    state(goalKickBlue)
-    { action{ gesture(arm45degreeUpSideways, useDefault); }}
-    state(goalKickRed)
-    { action{ gesture(useDefault, arm45degreeUpSideways); }}
-    state(cornerKickBlue)
-    { action{ gesture(arm45degreeDownSideways, useDefault); }}
-    state(cornerKickRed)
-    { action{ gesture(useDefault, arm45degreeDownSideways); }}
-    state(goalBlue)
-    { action{ gesture(armHorizontalSideways, arm45degreeUpFront); }}
-    state(goalRed)
-    { action{ gesture(arm45degreeUpFront, armHorizontalSideways); }}
-    state(pushingFreeKickBlue)
-    { action{ gesture(armHorizontalSideways, armHandToChest); }}
-    state(pushingFreeKickRed)
-    { action{ gesture(armHandToChest, armHorizontalSideways); }}
-    state(fullTime)
-    {
-      action
-      {
-        if(state_time / 1500 & 1)
-          gesture(armHandToChest, armHandToChest);
-        else
-          gesture(armHorizontalSideways, armHorizontalSideways);
-      }
+      LookAtAngles({.pan = 0.f,
+                    .tilt = 0_deg});
+      Stand({.high = true});
     }
   }
-};
 
-MAKE_SKILL_IMPLEMENTATION(DemoPoseImpl);
+  state(posing)
+  {
+    transition
+    {
+      if(state_time > 1000) // wait for a second until detections are accepted
+        switch(theRefereePercept.gesture)
+        {
+          case RefereePercept::goalKickBlue:
+            SystemCall::say("Goal Kick");
+            goto goalKickBlue;
+          case RefereePercept::goalKickRed:
+            SystemCall::say("Goal Kick");
+            goto goalKickRed;
+          case RefereePercept::kickInBlue:
+            SystemCall::say("Kick In");
+            goto kickInBlue;
+          case RefereePercept::kickInRed:
+            SystemCall::say("Kick In");
+            goto kickInRed;
+          case RefereePercept::cornerKickBlue:
+            SystemCall::say("Corner Kick");
+            goto cornerKickBlue;
+          case RefereePercept::cornerKickRed:
+            SystemCall::say("Corner Kick");
+            goto cornerKickRed;
+          case RefereePercept::goalBlue:
+            SystemCall::say("Goal");
+            goto goalBlue;
+          case RefereePercept::goalRed:
+            SystemCall::say("Goal");
+            goto goalRed;
+          case RefereePercept::pushingFreeKickBlue:
+            SystemCall::say("Free Kick");
+            goto pushingFreeKickBlue;
+          case RefereePercept::pushingFreeKickRed:
+            SystemCall::say("Free Kick");
+            goto pushingFreeKickRed;
+          case RefereePercept::fullTime:
+            SystemCall::say("Full time");
+            goto fullTime;
+        }
+    }
+    action
+    {
+      gesture(useDefault, useDefault);
+    }
+  }
+
+  state(kickInBlue) {action {gesture(armHorizontalSideways, useDefault);}}
+  state(kickInRed) {action {gesture(useDefault, armHorizontalSideways);}}
+  state(goalKickBlue) {action {gesture(arm45degreeUpSideways, useDefault);}}
+  state(goalKickRed) {action {gesture(useDefault, arm45degreeUpSideways);}}
+  state(cornerKickBlue) {action {gesture(arm45degreeDownSideways, useDefault);}}
+  state(cornerKickRed) {action {gesture(useDefault, arm45degreeDownSideways);}}
+  state(goalBlue) {action {gesture(armHorizontalSideways, arm45degreeUpFront);}}
+  state(goalRed) {action {gesture(arm45degreeUpFront, armHorizontalSideways);}}
+  state(pushingFreeKickBlue) {action {gesture(armHorizontalSideways, armHandToChest);}}
+  state(pushingFreeKickRed) {action {gesture(armHandToChest, armHorizontalSideways);}}
+  state(fullTime)
+  {
+    action
+    {
+      if(state_time / 1500 & 1)
+        gesture(armHandToChest, armHandToChest);
+      else
+        gesture(armHorizontalSideways, armHorizontalSideways);
+    }
+  }
+}

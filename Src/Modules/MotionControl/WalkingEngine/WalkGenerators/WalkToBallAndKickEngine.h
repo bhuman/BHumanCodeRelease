@@ -50,8 +50,9 @@ MODULE(WalkToBallAndKickEngine,
     (Rangef)(Rangef(35.f, 65.f)) forwardFastYThreshold, /**< Relative y ball position to kick foot. */
     (Rangef)(Rangef(100.f, 215.f)) forwardFastXThreshold, /**< Relative x ball position to kick foot. */
     (float)(240.f) forwardFastLongXMaxThreshold,  /**< Relative max x ball position to kick foot. */
-    (float)(50.f) maxBallVelocity,  /**< Max allowed ball velocity. TODO: or 150.f for some kicks? */
     (Pose2f)(Pose2f(20_deg, 35.f, 10.f)) forwardStealStepPlanningThreshold, /**< Max needed step size for reach position for forwardSteal, to start V-Shape position. */
+    (float)(15.f) forwardStealXBallUnseenThreshold, /**< Shift forward steal pose by this amount if ball is not seen. */
+    (Rangef)(Rangef(50.f, 350.f)) forwardStealBallUnseenInterpolationRange,
     (float)(50.f) kickPoseMaxYTranslation, /**< Kick pose y-Translation must be smaller than this threshold. */
     (Rangef)(Rangef(-80.f, -40.f)) forwardFastYClipRange, /**< For the dynamic points, clip the y position. */
     (Pose2f)(Pose2f(7_deg, 30.f, 40.f)) robotStuckThresholds, /**< Thresholds to start the V-shape kickpose. */
@@ -59,6 +60,8 @@ MODULE(WalkToBallAndKickEngine,
     (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relative to the closest point it will have to us. */
     (float)(50.f) minBallVelocityCloseRange, /**< Clip ball velocity to this value when close to the ball. */
     (Rangef)(150.f, 2000.f) ballVelocityInterpolationRange, /**< Based on the current ball distance interpolate the velocity. */
+    (float)(50.f) maxBallVelocityKickEngine, /**< Max allowed ball velocity for KickEngine kicks. */
+    (float)(500.f) maxBallVelocityInWalkKick, /**< Max allowed ball velocity for WalkKickEngine kicks. */
   }),
 });
 

@@ -22,7 +22,9 @@ STREAMABLE(Strategy,
   ENUM(Type,
   {,
     none,
-    s7v7,
+    attacking7v7,
+    attackingSAC2v2,
+    defendingSAC2v2,
   });
 
   template<typename SetPlayType>
@@ -49,6 +51,7 @@ STREAMABLE(Strategy,
         (float)(0.f) ballXThreshold, /**< An x coordinate to evaluate the following conditions. */
         (int)(0) timeSinceBallBehindThresholdGE, /**< Lower bound on the time the ball has been behind the above threshold. */
         (int)(0) timeSinceBallAheadOfThresholdGE, /**< Lower bound on the time the ball has been ahead of the above threshold. */
+        (std::optional<bool>) sacAlternateTactic, /**< Play alternate tactic in the shared autonomy challenge. */
       }),
       (Tactic::Type) to, /**< The tactic to switch to. */
       (std::vector<Condition>) conditions, /**< The conditions under which the switch may occur (only one of them must hold). */

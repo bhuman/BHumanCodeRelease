@@ -17,7 +17,7 @@
 
 STREAMABLE(FootSupport,
 {,
-  (float)(0.f) support, /**< Unitless distribution of the support over both feet (left - right). Positiv -> left foot is support. */
+  (float)(0.f) support, /**< Unitless distribution of the support over both feet (left - right). Positive -> left foot is support. */
   (bool)(false) trustedSupport, /**< Support foot has enough pressure. */
   (bool)(false) switched, /**< The support foot switched. */
   (bool)(false) predictedSwitched, /**< The support foot switched but predicted 3 frames earlier. */

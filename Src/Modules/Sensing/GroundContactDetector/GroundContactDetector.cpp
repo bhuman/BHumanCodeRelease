@@ -17,17 +17,25 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
       lastTimeWithPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithPressure) < maxTimeWithoutPressure;
     if(!groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
-      SystemCall::say("High");
+      lastTimeHigh = theFrameInfo.time;
+    groundContactState.lastGroundContactTimestamp = theFrameInfo.time;
   }
   else
   {
     if(theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::left].hasPressure) > maxTimeWithoutPressure ||
-       theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::right].hasPressure) > maxTimeWithoutPressure ||
-       (theFsrData.legInfo[Legs::left].totals <= minPressurePerFootToRegainContact &&
-        theFsrData.legInfo[Legs::right].totals <= minPressurePerFootToRegainContact))
+       theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::right].hasPressure) > maxTimeWithoutPressure)
       lastTimeWithoutPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithoutPressure) > minTimeWithPressure;
     if(groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
+      lastTimeGround = theFrameInfo.time;
+  }
+
+  if(theFrameInfo.getTimeSince(lastTimeSay) > minTimeSay && (lastTimeHigh > lastTimeSay || lastTimeGround > lastTimeSay))
+  {
+    if(lastTimeHigh > lastTimeGround)
+      SystemCall::say("High");
+    else
       SystemCall::say("Ground");
+    lastTimeSay = theFrameInfo.time;
   }
 }

@@ -44,7 +44,7 @@ void SideInformationProvider::update(SideInformation& sideInformation)
     else if(theExtendedGameState.returnFromGameControllerPenalty)
     {
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
-      largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyMark + 700;
+      largestXPossibleAtKnownPosition = theFieldDimensions.xPosReturnFromPenalty + 700;
     }
     else if(theExtendedGameState.wasSet() && theGameState.isPlaying() && !theGameState.isPenaltyKick())
     {
@@ -58,7 +58,7 @@ void SideInformationProvider::update(SideInformation& sideInformation)
     if(theGameState.isForOwnTeam())
       largestXPossibleAtKnownPosition = theFieldDimensions.xPosPenaltyStrikerStartPosition;
     else
-      largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundLine;
+      largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGoalLine;
   }
 
   if(theStaticInitialPose.isActive && !theGameState.isPenalized()

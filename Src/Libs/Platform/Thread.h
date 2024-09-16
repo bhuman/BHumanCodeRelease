@@ -103,7 +103,10 @@ public:
   /**
    * Causes the calling thread to relinquish the CPU.
    */
-  static void yield() { std::this_thread::yield(); }
+  static void yield()
+  {
+    std::this_thread::yield();
+  }
 
   static void sleep(unsigned ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 

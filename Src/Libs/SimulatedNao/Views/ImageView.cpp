@@ -1,7 +1,7 @@
 /**
  * @file SimulatedNao/Views/ImageView.cpp
  *
- * This file implements a view that displays an image overlayed by debug drawing.
+ * This file implements a view that displays an image overlaid by debug drawing.
  * Such a view is usually associated with a thread. It displays an image provided
  * by that thread. It prefers drawings originating from its associated thread. It
  * ignores drawings from other threads if the associated thread could also provide
@@ -78,7 +78,7 @@ void ImageWidget::paint(QPainter& painter)
     }
   }
 
-  updateTransform();
+  updateTransform(painter);
 
   if(image)
     paintImage(painter, *image, timestamp);

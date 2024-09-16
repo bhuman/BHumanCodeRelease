@@ -16,7 +16,9 @@
 #include "Streaming/AutoStreamable.h"
 
 STREAMABLE(StrategyStatus, COMMA public BHumanCompressedMessageParticle<StrategyStatus>
-{,
+{
+  void draw() const,
+
   (Tactic::Type)(Tactic::none) proposedTactic, /**< The tactic that this player votes for. */
   (Tactic::Type)(Tactic::none) acceptedTactic, /**< The actually used tactic. */
   (bool)(false) proposedMirror, /**< Whether this player wants that everything in the tactic/set play is mirrored. */

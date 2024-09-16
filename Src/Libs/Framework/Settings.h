@@ -8,8 +8,8 @@
 
 #include "Network/RoboCupGameControlData.h"
 #include "Streaming/Enum.h"
-#include <list>
 #include <string>
+#include <vector>
 
 /**
  * @class Settings
@@ -71,11 +71,8 @@ public:
    */
   explicit Settings(const std::string& logFileName, const std::string* location = nullptr, const std::string* scenario = nullptr);
 
-  /**
-   * Creates a search path for files, in the order in which they will be tried.
-   * @return A list of directories in which to look for files.
-   */
-  std::list<std::string> getSearchPath() const;
+  /** Creates a search path for files, in the order in which they will be tried. */
+  void updateSearchPath();
 
   /**
    * Returns the UDP port that is allocated to a given team for team communication.
@@ -89,6 +86,8 @@ public:
 
   static constexpr int lowestValidPlayerNumber = 1;  /**< No player can have a number smaller than this */
   static constexpr int highestValidPlayerNumber = MAX_NUM_PLAYERS; /**< No player can have a number greater than this */
+
+  std::vector<std::string> searchPath; /**< The file search path that results from these settings. */
 
   std::string headName; /**< The name of this robot's head. */
   std::string bodyName, /**< The name of this robot's body. */

@@ -20,7 +20,6 @@ STREAMABLE_WITH_BASE(TorsoMatrix, SE3WithCov,
 {
   TorsoMatrix() = default;
 
-  void setTorsoMatrix(const InertialData& theInertialData, const RobotModel& theRobotModel, const GroundContactState& theGroundContactState);
   void draw(),
 
   (bool)(false) isValid, /**< Matrix is only valid if robot is on ground. */

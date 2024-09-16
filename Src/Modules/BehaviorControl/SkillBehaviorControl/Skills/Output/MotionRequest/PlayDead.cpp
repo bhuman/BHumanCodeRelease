@@ -1,36 +1,26 @@
 /**
  * @file PlayDead.cpp
  *
- * This file implements the implementation of the PlayDead skill.
+ * This file implements the PlayDead skill.
  *
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "SkillBehaviorControl.h"
 
-SKILL_IMPLEMENTATION(PlayDeadImpl,
-{,
-  IMPLEMENTS(PlayDead),
-  REQUIRES(LibCheck),
-  REQUIRES(MotionInfo),
-  MODIFIES(MotionRequest),
-});
-
-class PlayDeadImpl : public PlayDeadImplBase
+option((SkillBehaviorControl) PlayDead)
 {
-  void execute(const PlayDead&) override
+  theMotionRequest.motion = MotionRequest::playDead;
+  theLibCheck.inc(LibCheck::motionRequest);
+
+  initial_state(execute)
   {
-    theMotionRequest.motion = MotionRequest::playDead;
-    theLibCheck.inc(LibCheck::motionRequest);
+    transition
+    {
+      if(theMotionInfo.executedPhase == MotionPhase::playDead)
+        goto done;
+    }
   }
 
-  bool isDone(const PlayDead&) const override
-  {
-    return theMotionInfo.executedPhase == MotionPhase::playDead;
-  }
-};
-
-MAKE_SKILL_IMPLEMENTATION(PlayDeadImpl);
+  target_state(done) {}
+}

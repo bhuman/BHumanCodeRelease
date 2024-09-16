@@ -69,7 +69,7 @@ struct ScanLineRegion : public Streamable
 
       case  Color::unset:
       default:
-        return {0, 0, 0, 96};  // black with transparency
+        return {30, 0, 40, 80};  // dark violet with transparency
     }
   }
 

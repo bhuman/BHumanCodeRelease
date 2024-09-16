@@ -1,0 +1,27 @@
+# Configuration for normal simulation scenes
+# Here, JPEGImage is still provided
+
+# activate simulation time
+st on
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameState
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+for Lower Upper mr CameraImage LogDataProvider
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
+for Cognition mr GroundTruthBallModel OracledWorldModelProvider
+
+call Includes/GameStates
+call Includes/DebugResponses

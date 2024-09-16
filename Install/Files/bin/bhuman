@@ -5,6 +5,7 @@ LOGDIR="/home/nao/logging"
 DUMPFILE="/home/nao/bhdump.log"
 BACKGROUND=false
 DEBUG=false
+ARGS=
 
 usage()
 {
@@ -46,11 +47,6 @@ fi
 
 # Remove assertion dumps from previous runs.
 rm -f "${DUMPFILE}"
-
-# This should fix a freaky cygwin bug.
-if [ ! -x "${BINARY}" ]; then
-  chmod u+x "${BINARY}" || exit 1
-fi
 
 # Ignore SIGINT and SIGTERM. This inherits to child processes,
 # but bhuman installs its own handlers, so this script will come to an end, too.
@@ -116,18 +112,32 @@ COUNTER=$(ls "${LOGDIR}" | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n
 COUNTER=$(expr ${COUNTER} + 1)
 LOGFILE="${LOGDIR}/bhumand_(${COUNTER}).log"
 
+# Support running an executable from the USB drive.
+if [ -f /media/usb/Config/bhuman ]; then
+  cp /media/usb/Config/bhuman /home/nao/bhuman
+  BINARY="/home/nao/bhuman"
+  ARGS="-c /media/usb"
+fi
+
+# This should fix a freaky cygwin bug.
+# ^- This comment is really old.
+if [ ! -x "${BINARY}" ]; then
+  chmod u+x "${BINARY}" || exit 1
+fi
+
 # Actually execute bhuman.
 if ${DEBUG}; then
-  gdb "${BINARY}"
+  gdb --args "${BINARY}" ${ARGS}
 elif ${BACKGROUND}; then
-  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
+  "${BINARY}" ${ARGS} -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
 else
-  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
+  "${BINARY}" ${ARGS} -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
 fi
 RESULT=${PIPESTATUS[0]}
 
 # Remove leftovers.
 rm -f "${LOGDIR}"
+rm -f /home/nao/bhuman
 umount /media/usb 2>/dev/null
 
 # Exit with result of ${BINARY}.

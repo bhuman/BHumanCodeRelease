@@ -102,5 +102,9 @@ void CirclePercept::verify() const
   {
     ASSERT(std::isfinite(pos.x()));
     ASSERT(std::isfinite(pos.y()));
+    ASSERT(std::isnormal(cov(0, 0)));
+    ASSERT(std::isnormal(cov(1, 1)));
+    ASSERT(std::isfinite(cov(0, 1)));
+    ASSERT(std::isfinite(cov(1, 0)));
   }
 }

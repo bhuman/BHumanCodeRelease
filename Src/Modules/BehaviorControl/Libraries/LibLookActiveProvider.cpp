@@ -6,6 +6,7 @@
 
 #include "LibLookActiveProvider.h"
 #include "Tools/Motion/InverseKinematic.h"
+#include "Tools/BehaviorControl/Strategy/ActiveRole.h"
 #include "Debugging/Plot.h"
 #include "Math/Geometry.h"
 
@@ -28,13 +29,13 @@ void LibLookActiveProvider::update(LibLookActive& libLookActive)
     }
   }
   //update representation
-  libLookActive.calculateHeadTarget = [this](const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt) -> HeadTarget
+  libLookActive.calculateHeadTarget = [this](const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt, const float slowdownFactor) -> HeadTarget
   {
-    return calculateHeadTarget(withBall, ignoreBall, onlyOwnBall, fixTilt);
+    return calculateHeadTarget(withBall, ignoreBall, onlyOwnBall, fixTilt, slowdownFactor);
   };
 }
 
-HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt)
+HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const bool ignoreBall, const bool onlyOwnBall, const bool fixTilt, const float slowdownFactor)
 {
   theBallPositionRelative = theBallModel.estimate.position;
   theBallSpeedRelative = theBallModel.estimate.velocity;
@@ -58,7 +59,7 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
   PLOT("module:LibLookActiveProvider:pan", pan.toDegrees());
   const Angle tilt = fixTilt ? Angle(0.38f) : calculateTilt(forceBall, onlyOwnBall);
   PLOT("module:LibLookActiveProvider:tilt", tilt.toDegrees());
-  const Angle speed = calculateSpeed(forceBall, pan);
+  const Angle speed = calculateSpeed(forceBall, pan, slowdownFactor);
   PLOT("module:LibLookActiveProvider:speed", speed.toDegrees());
 
   HeadTarget theTarget;
@@ -72,6 +73,7 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
 
 Angle LibLookActiveProvider::calculatePan(const bool forceBall)
 {
+  // head moves in the following pattern:
   std::vector<Angle> basePanAngles;
   basePanAngles.emplace_back(largeDefaultPan);
   basePanAngles.emplace_back(-smallDefaultPan);
@@ -132,15 +134,17 @@ Angle LibLookActiveProvider::calculateTilt(const bool forceBall, const bool only
   }
 }
 
-Angle LibLookActiveProvider::calculateSpeed(const bool forceBall, const float) const
+Angle LibLookActiveProvider::calculateSpeed(const bool forceBall, const float, const float slowdownFactor) const
 {
+  // you cannot but want to look at the ball? then use maxSpeed
+  // else defaultSpeed
   Angle speed = (forceBall && !ballInSight()) ? maxSpeed : defaultSpeed;
 
   float speedFactor = translationSpeedFactor * rotationSpeedFactor;
   speedFactor += 0.5f * std::log(std::abs(theJointAngles.angles[Joints::headYaw]) + 1.f);
-  speedFactor = std::min(1.f, speedFactor);
+  speedFactor = std::min(1.f, speedFactor * slowdownFactor);
 
-  speed = minSpeed + speedFactor * (speed - minSpeed);
+  speed = minSpeed + speedFactor * (speed - minSpeed); // cannot be lower than minSpeed or higher than maxSpeed
   return speed;
 }
 
@@ -149,7 +153,10 @@ bool LibLookActiveProvider::shouldLookAtBall() const
   if(!theGameState.isPlaying())
     return false;
 
-  const float distanceStrikerBallSquared = theLibTeammates.getStrikerBallPosition().squaredNorm();
+  const auto striker = std::find_if(theAgentStates.agents.begin(), theAgentStates.agents.end(),
+                                    [](const Agent& agent){return agent.role == ActiveRole::toRole(ActiveRole::playBall);});
+  const Vector2f strikerBallPosition = striker != theAgentStates.agents.end() ? striker->ballPosition : theBallModel.estimate.position;
+  const float distanceStrikerBallSquared = strikerBallPosition.squaredNorm();
 
   return distanceStrikerBallSquared < sqr(200.f)
          || distanceStrikerBallSquared > sqr(1500.f)
@@ -230,7 +237,8 @@ bool LibLookActiveProvider::ballPositionUnknown(const bool onlyOwnBall) const
   const bool notSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout;
   const bool globalNotSeen = !theTeammatesBallModel.isValid;
 
-  return disappeared || (notSeen && (onlyOwnBall || globalNotSeen));
+  return (disappeared && onlyOwnBall) || // Only our own ball counts and this one is lost
+         (notSeen && globalNotSeen); // We and our team did not see the ball for a long time
 }
 
 void LibLookActiveProvider::calculateSpeedFactors()

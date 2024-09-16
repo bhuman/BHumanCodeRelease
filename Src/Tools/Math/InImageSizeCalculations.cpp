@@ -9,19 +9,19 @@
 #include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 
-bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification, const Angle greenEdge)
+bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const BallSpecification& theBallSpecification, const Angle greenEdge)
 {
   Vector2f startPoint;
-  if(!Transformation::imageToRobot(start, theCameraMatix, theCameraInfo, startPoint))
+  if(!Transformation::imageToRobot(start, theCameraMatrix, theCameraInfo, startPoint))
     return false;
 
   const Vector2f slightlyRightPoint(start.x() + 1.f, start.y());
   Vector2f slightlyRightField;
-  if(!Transformation::imageToRobot(slightlyRightPoint, theCameraMatix, theCameraInfo, slightlyRightField))
+  if(!Transformation::imageToRobot(slightlyRightPoint, theCameraMatrix, theCameraInfo, slightlyRightField))
     return false;
 
   const Vector3f centerPoint3f(startPoint.x(), startPoint.y(), theBallSpecification.radius);
-  const Vector3f cameraPointVector(centerPoint3f - theCameraMatix.translation);
+  const Vector3f cameraPointVector(centerPoint3f - theCameraMatrix.translation);
   const Vector3f slightlyRightField3f(slightlyRightField.x(), slightlyRightField.y(), theBallSpecification.radius);
   const Vector3f rightVector(slightlyRightField3f - centerPoint3f);
 
@@ -37,27 +37,27 @@ bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry:
   const Vector3f ballRayIntersectionOffset(-useDir - Vector3f(0.f, 0.f, -theBallSpecification.radius));
 
   Vector2f ballPointByStart;
-  if(!Transformation::imageToRobotHorizontalPlane(start, ballRayIntersectionOffset.z(), theCameraMatix, theCameraInfo, ballPointByStart))
+  if(!Transformation::imageToRobotHorizontalPlane(start, ballRayIntersectionOffset.z(), theCameraMatrix, theCameraInfo, ballPointByStart))
     return false;
 
   const Vector3f ballPointByStart3f(ballPointByStart.x(), ballPointByStart.y(), ballRayIntersectionOffset.z());
-  const Vector3f highesVisibleBallPoint(ballPointByStart3f + dir.normalized((2.f * theBallSpecification.radius) * visiblePercentage));
+  const Vector3f highestVisibleBallPoint(ballPointByStart3f + dir.normalized((2.f * theBallSpecification.radius) * visiblePercentage));
 
-  Vector2f highesImagePoint;
-  if(!Transformation::robotToImage(highesVisibleBallPoint, theCameraMatix, theCameraInfo, highesImagePoint))
+  Vector2f highestImagePoint;
+  if(!Transformation::robotToImage(highestVisibleBallPoint, theCameraMatrix, theCameraInfo, highestImagePoint))
     return false;
 
-  const float visibleDiameter = (start - highesImagePoint).norm();
+  const float visibleDiameter = (start - highestImagePoint).norm();
 
   circle.radius = (visibleDiameter / visiblePercentage) / 2.f;
-  circle.center = highesImagePoint + (start - highesImagePoint).normalized(circle.radius);
+  circle.center = highestImagePoint + (start - highestImagePoint).normalized(circle.radius);
 
   return true;
 }
 
-float IISC::getImageLineDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const FieldDimensions& theFieldDimensions)
+float IISC::getImageLineDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)
 {
-  return getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.fieldLinesWidth, start, theCameraInfo, theCameraMatix);
+  return getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.fieldLinesWidth, start, theCameraInfo, theCameraMatrix);
 }
 
 bool IISC::calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)

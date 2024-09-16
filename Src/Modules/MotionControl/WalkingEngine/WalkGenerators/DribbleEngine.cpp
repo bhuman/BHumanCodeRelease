@@ -8,6 +8,7 @@
 
 #include "DribbleEngine.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Debugging/Annotation.h"
 #include "Math/BHMath.h"
 #include "Tools/Modeling/BallPhysics.h"
 #include "Tools/Motion/Transformation.h"
@@ -41,19 +42,19 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
       Legs::Leg kickLeg = ballSCS.y() > 0.f ? Legs::left : Legs::right;
 
       WalkKickVariant walkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
-      bool isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
+      bool isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepType, motionRequest.turnKickAllowed);
 
       // check forward kick that is slower but executable on the next step
       if(!isInPositionForKick)
       {
         kickLeg = ballSCS.y() < 0.f ? Legs::left : Legs::right;
         walkKickVariant = WalkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
-        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepAllowed, motionRequest.turnKickAllowed);
+        isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepType, motionRequest.turnKickAllowed);
       }
 
       isInPositionForKick &= motionRequest.ballTimeWhenLastSeen >= theMotionInfo.lastKickTimestamp;
       // velocity.norm() does not need to be transformed to another coordinate system.
-      isInPositionForKick &= motionRequest.ballEstimate.velocity.norm() < 50.f;
+      isInPositionForKick &= motionRequest.ballEstimate.velocity.norm() < maxBallVelocity;
 
       if(isInPositionForKick)
       {
@@ -65,7 +66,7 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
           return kickPhase;
         }
         else
-          OUTPUT_ERROR("Creating Kick Phase of Type " << TypeRegistry::getEnumName(kickType) << " in WalkToBallAndKickEngine returned an empty kick!");
+          ANNOTATION("DribbleEngine", "Creating Kick Phase of Type " << TypeRegistry::getEnumName(kickType) << " in WalkToBallAndKickEngine returned an empty kick!");
       }
     }
     MotionRequest::ObstacleAvoidance obstacleAvoidanceSCS = motionRequest.obstacleAvoidance;
@@ -75,7 +76,7 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
 
     Vector2f newBallSCS = ballSCS;
     calcInterceptionPosition(motionRequest, newBallSCS, perceivedBallPosition, scsCognition);
-    return theWalkToBallGenerator.createPhase(calcBasePose(newBallSCS, directionSCS, lastSign, motionRequest.turnKickAllowed), newBallSCS, theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen), perceivedBallPosition.norm(), obstacleAvoidanceSCS, motionRequest.walkSpeed, lastPhase);
+    return theWalkToBallGenerator.createPhase(calcBasePose(newBallSCS, directionSCS, lastSign, motionRequest.turnKickAllowed), newBallSCS, theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen), scsCognition, obstacleAvoidanceSCS, motionRequest.walkSpeed, lastPhase);
   };
 }
 

@@ -18,12 +18,23 @@
 #include "Framework/Debug.h"
 
 LocalConsole::LocalConsole(const Settings& settings, const std::string& robotName, ConsoleRoboCupCtrl* ctrl, const std::string& logFile, Debug* debug) :
-  RobotConsole(settings, robotName, ctrl, logFile.empty() ? SystemCall::simulatedRobot : SystemCall::logFileReplay, connectReceiverWithRobot(debug), connectSenderWithRobot(debug)),
+  RobotConsole(settings, robotName, ctrl,
+               logFile.empty() ? SystemCall::simulatedRobot : logFile == "remote" ? SystemCall::remoteRobot : SystemCall::logFileReplay,
+               connectReceiverWithRobot(debug), connectSenderWithRobot(debug)),
   updatedSignal(1)
 {
   addPerRobotViews();
 
-  if(mode == SystemCall::logFileReplay)
+  if(mode == SystemCall::remoteRobot)
+  {
+    SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
+    if(puppet)
+    {
+      simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
+      simulatedRobot->enableGravity(false);
+    }
+  }
+  else if(mode == SystemCall::logFileReplay)
   {
     this->logFile = logFile;
     if(logPlayer.open(logFile))
@@ -34,7 +45,10 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
       {
         SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
         if(puppet)
+        {
           simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
+          simulatedRobot->enableGravity(false);
+        }
       }
     }
     else
@@ -79,7 +93,7 @@ bool LocalConsole::main()
             debugSender->bin(idFrameBegin) << "Motion";
             debugSender->bin(idJointSensorData) << jointSensorData;
             debugSender->bin(idFsrSensorData) << fsrSensorData;
-            debugSender->bin(idInertialSensorData) << inertialSensorData;
+            debugSender->bin(idRawInertialSensorData) << rawInertialSensorData;
             debugSender->bin(idGroundTruthOdometryData) << odometryData;
             debugSender->bin(idFrameFinished) << "Motion";
             jointLastTimestampSent = jointSensorData.timestamp;
@@ -152,7 +166,18 @@ void LocalConsole::update()
     // Only one thread can access *this now.
     SYNC;
 
-    if(mode == SystemCall::logFileReplay)
+    if(mode == SystemCall::remoteRobot && simulatedRobot)
+    {
+      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+      const Angle headYaw = RobotConsole::jointSensorData.angles[Joints::headYaw];
+      Vector3f orientation = RobotConsole::rawInertialSensorData.angle.cast<float>();
+      if(std::abs(headYaw) > 30_deg)
+        orientation.z() = -headYaw + sgn(headYaw) * 30_deg;
+      simulatedRobot->moveRobot({std::abs(simulatedRobot->getPosition().x()) < 500.f ? 0.f
+                                 : simulatedRobot->getPosition().x() < 0 ? -1000.f : 1000.f, 0, -1000.f},
+                                orientation, true, true);
+    }
+    else if(mode == SystemCall::logFileReplay)
     {
       if(logPlayer.state == LogPlayer::playing && (logPlayer.cycle || logPlayer.frame() + 1 < logPlayer.frames()))
       {
@@ -170,7 +195,7 @@ void LocalConsole::update()
           simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
         else
           simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
-        simulatedRobot->moveRobot({0, 0, 1000.f}, RobotConsole::inertialSensorData.angle.cast<float>(), true);
+        simulatedRobot->moveRobot({0, 0, 1000.f}, RobotConsole::rawInertialSensorData.angle.cast<float>(), true, true);
       }
     }
     if(mode == SystemCall::simulatedRobot)
@@ -208,7 +233,7 @@ void LocalConsole::update()
         jointCalibrationChanged = false;
       }
       simulatedRobot->getOdometryData(robotPose, odometryData);
-      simulatedRobot->getSensorData(fsrSensorData, inertialSensorData);
+      simulatedRobot->getSensorData(fsrSensorData, rawInertialSensorData);
       simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
       simulatedRobot->getAndSetMotionData(motionRequest, motionInfo);
 

@@ -56,13 +56,13 @@ MODULE(LibWalkProvider,
 class LibWalkProvider : public LibWalkProviderBase
 {
   const Vector2f leftPenCorner = Vector2f(theFieldDimensions.xPosOwnPenaltyArea + penaltyAreaExpansion, theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaExpansion);
-  const Vector2f leftPenGroundLine = Vector2f(theFieldDimensions.xPosOwnGroundLine - penaltyAreaExpansion, theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaExpansion);
+  const Vector2f leftPenGoalLine = Vector2f(theFieldDimensions.xPosOwnGoalLine - penaltyAreaExpansion, theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaExpansion);
   const Vector2f rightPenCorner = Vector2f(theFieldDimensions.xPosOwnPenaltyArea + penaltyAreaExpansion, theFieldDimensions.yPosRightPenaltyArea - penaltyAreaExpansion);
-  const Vector2f rightPenGroundLine = Vector2f(theFieldDimensions.xPosOwnGroundLine - penaltyAreaExpansion, theFieldDimensions.yPosRightPenaltyArea - penaltyAreaExpansion);
-  const Vector2f leftOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine + fieldBorderExpansion, theFieldDimensions.yPosLeftSideline + fieldBorderExpansion);
-  const Vector2f rightOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGroundLine + fieldBorderExpansion, theFieldDimensions.yPosRightSideline - fieldBorderExpansion);
-  const Vector2f leftOwnCorner = Vector2f(theFieldDimensions.xPosOwnGroundLine - fieldBorderExpansion, theFieldDimensions.yPosLeftSideline + fieldBorderExpansion);
-  const Vector2f rightOwnCorner = Vector2f(theFieldDimensions.xPosOwnGroundLine - fieldBorderExpansion, theFieldDimensions.yPosRightSideline - fieldBorderExpansion);
+  const Vector2f rightPenGoalLine = Vector2f(theFieldDimensions.xPosOwnGoalLine - penaltyAreaExpansion, theFieldDimensions.yPosRightPenaltyArea - penaltyAreaExpansion);
+  const Vector2f leftOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGoalLine + fieldBorderExpansion, theFieldDimensions.yPosLeftTouchline + fieldBorderExpansion);
+  const Vector2f rightOpponentCorner = Vector2f(theFieldDimensions.xPosOpponentGoalLine + fieldBorderExpansion, theFieldDimensions.yPosRightTouchline - fieldBorderExpansion);
+  const Vector2f leftOwnCorner = Vector2f(theFieldDimensions.xPosOwnGoalLine - fieldBorderExpansion, theFieldDimensions.yPosLeftTouchline + fieldBorderExpansion);
+  const Vector2f rightOwnCorner = Vector2f(theFieldDimensions.xPosOwnGoalLine - fieldBorderExpansion, theFieldDimensions.yPosRightTouchline - fieldBorderExpansion);
   const Vector2f goalPosts[4] =
   {
     Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal),

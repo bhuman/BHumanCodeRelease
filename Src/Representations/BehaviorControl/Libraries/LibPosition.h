@@ -85,5 +85,12 @@ STREAMABLE(LibPosition,
    * @param position Absolute position on the field
    * @return Whether the position far enough in the field
    */
-  FUNCTION(bool(const Vector2f& position, const float offset)) isOutSideGoalFrame,
+  FUNCTION(bool(const Vector2f& position, const float offset)) isOutSideGoalFrame;
+
+  /**
+   * Determines whether the given position is near the post.
+   * @param position Absolute position on the field
+   * @return Whether the position is near the left and right post.
+   */
+  FUNCTION(std::tuple<bool, bool>(const Pose2f& position)) isNearPost,
 });

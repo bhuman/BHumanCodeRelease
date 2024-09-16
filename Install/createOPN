@@ -33,7 +33,7 @@ includeDir="${baseDir}/Include"
 
 source "${includeDir}/bhumanBase"
 
-rootImage="${baseDir}/root.ext3"
+rootImage="${baseDir}/root-coderelease2024.ext3"
 homeArchive="${baseDir}/home.tar.gz"
 installer="${baseDir}/Files/install.sh"
 opnImage="${baseDir}/image.opn"

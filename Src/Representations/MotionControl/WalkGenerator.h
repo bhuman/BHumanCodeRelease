@@ -17,7 +17,7 @@
 
 STREAMABLE(WalkGenerator,
 {
-  using CreateNextPhaseCallback = std::function<std::unique_ptr<MotionPhase>(const MotionPhase&)>;
+  using CreateNextPhaseCallback = std::function<std::unique_ptr<MotionPhase>(const MotionPhase&, const WalkKickStep&)>;
 
   /**
    * @param lastPhase The previous MotionPhase
@@ -46,11 +46,15 @@ STREAMABLE(WalkGenerator,
    * @param isFastWalk Is fast walk allowed? Meaning, more rotation with translation is allowed
    * @param lastPhase The previous MotionPhase
    * @param ignoreXTranslation Do not consider the x-Translation
+   * @param clipTranslation Use the translation polygon to clip step, to use a preview of the next step size. Otherwise use step as it is
    *
    * @return The min and max allowed rotation, that would not result in a translation reduction
    */
   FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, Vector2f step, const bool isFastWalk,
-                  const MotionPhase& lastPhase, const bool ignoreXTranslation)) getStepRotationRange;
+                  const MotionPhase& lastPhase, const bool ignoreXTranslation, const bool isMaxPossibleStepSize)) getStepRotationRange;
+
+  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, Vector2f step, const bool isFastWalk,
+                  const std::vector<Vector2f>& translationPolygon, const bool ignoreXTranslation, const bool isMaxPossibleStepSize)) getStepRotationRangeOther;
   /**
    * Given the last walk step size and the requested walk step rotation, return the min and max allowed translation as a convex polygon.
    * With that, the step size can be clipped.
@@ -62,7 +66,7 @@ STREAMABLE(WalkGenerator,
    * @param translationPolygon The convex polygon, which must contain the point (0,0)
    * @param translationPolygonNoCenter The convec polygon, which does not need to contain the point (0,0). Can happen after InWalkKicks
    * @param fastWalk Is fast walk allowed? Meaning, more rotation with translation is allowed
-   * @param useMaxPossibleStepSize Use the actuall max allowed translation polygon. ONLY USE IN SPECIAL CASES!
+   * @param useMaxPossibleStepSize Use the actual max allowed translation polygon. ONLY USE IN SPECIAL CASES!
    */
   FUNCTION(void(const bool isLeftPhase, const float rotation, const MotionPhase& lastPhase, const Pose2f& walkSpeedRatio,
                 std::vector<Vector2f>& translationPolygon, std::vector<Vector2f>& translationPolygonNoCenter, const bool fastWalk,
@@ -70,7 +74,7 @@ STREAMABLE(WalkGenerator,
   /**
    * A function to get a translation polygon (like getTranslationPolygon),
    * but here all accelerations are ignored and the min and max translations are partially given.
-   * This is usefull to for example calculate more optimized walk directions.
+   * This is useful to for example calculate more optimized walk directions.
    *
    * @param isLeftPhase Plan with the next swing foot being the left one
    * @param rotation The walk step rotation (z-axis; yaw)
@@ -139,5 +143,5 @@ STREAMABLE(WalkGenerator,
    *
    * @param lastPhase The last MotionPhase
    */
-  FUNCTION(bool(const MotionPhase& lastPhase, const float delay, const Pose2f& stepTarget)) isWalkDelayPossible,
+  FUNCTION(bool(const MotionPhase& lastPhase, const float delay, const Pose2f& stepTarget, const bool isKick)) isWalkDelayPossible,
 });

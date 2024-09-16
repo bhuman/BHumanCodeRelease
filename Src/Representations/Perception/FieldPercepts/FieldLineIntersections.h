@@ -48,7 +48,10 @@ STREAMABLE(FieldLineIntersections,
   /**
    * The method draws the percepts to image/field/3D scene.
    */
-  void draw() const,
+  void draw() const;
+
+  /** Verifies that all intersections contain valid values */
+  void verify() const,
 
   (std::vector<Intersection>) intersections, /**< The intersections of the lines */
 });

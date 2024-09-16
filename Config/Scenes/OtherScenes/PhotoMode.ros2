@@ -1,0 +1,44 @@
+<Simulation>
+
+  <Include href="../Includes/NaoV6H25.rsi2"/>
+
+  <Compound name="field">
+    <BoxGeometry width="8m" height="0.2m" depth="11m" color="rgb(80, 80, 80)">
+      <Translation z="-0.1m"/>
+    </BoxGeometry>
+  </Compound>
+
+  <Compound name="robots">
+    <Body ref="Nao" name="robot5">
+      <Translation x="0" z="320mm"/>
+      <Rotation z="270degree"/>
+      <Set name="NaoColor" value="black"/>
+    </Body>
+  </Compound>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="teams">
+      <Compound name="B-Human">
+        <Compound name="5"/>
+        <Compound name="black"/>
+        <Compound name="purple"/>
+      </Compound>
+      <Compound name="B-Team">
+        <Compound name="70"/>
+        <Compound name="red"/>
+        <Compound name="blue"/>
+      </Compound>
+    </Compound>
+
+    <Compound ref="robots"/>
+
+    <Compound ref="field"/>
+
+    <Compound name="scenarios">
+      <Compound name="PhotoMode"/>
+    </Compound>
+
+  </Scene>
+</Simulation>

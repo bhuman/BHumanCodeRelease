@@ -138,7 +138,7 @@ void KeyframePhaseBase::calculateCOMInSupportPolygon()
   // Calc the upper left and lower right edge
   Vector3f sumOfEdges = Vector3f::Zero();
   Vector3f upperLeftEdge = supportPolygon[0];
-  Vector3f lowerRighEdge = supportPolygon[0];
+  Vector3f lowerRightEdge = supportPolygon[0];
   for(size_t i = 1; i < supportPolygon.size(); i++)
   {
     sumOfEdges += supportPolygon[i] / supportPolygon.size();
@@ -190,7 +190,7 @@ void KeyframePhaseBase::doBalanceOut()
       state = EngineState::waitForRequest;
       finishGettingUp = false;
     }
-    if(state != EngineState::finished && state != EngineState::breakUp)
+    if(state != EngineState::finished && state != EngineState::breakUp && state != EngineState::waitForRequest)
       setNextJoints();
   }
 }

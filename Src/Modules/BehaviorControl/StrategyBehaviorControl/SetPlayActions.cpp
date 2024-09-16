@@ -10,7 +10,7 @@
 #include "Math/Random.h"
 #include "Tools/BehaviorControl/Strategy/Agent.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/ObstacleModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
 
 void ShotAction::reset()
 {
@@ -78,12 +78,10 @@ SkillRequest WaitAction::execute(const SetPlay::Action&, const Agent&, const Age
 
 SkillRequest MarkAction::execute(const SetPlay::Action& action, const Agent& agent, const Agents&)
 {
-  const auto& theObstacleModel = static_cast<const ObstacleModel&>(Blackboard::getInstance()["ObstacleModel"]);
-  for(const Obstacle& obstacle : theObstacleModel.obstacles)
+  const auto& theGlobalOpponentsModel = static_cast<const GlobalOpponentsModel&>(Blackboard::getInstance()["GlobalOpponentsModel"]);
+  for(const auto& opponent : theGlobalOpponentsModel.opponents)
   {
-    if(!obstacle.isOpponent())
-      continue;
-    const Vector2f obstacleOnField = theRobotPose * obstacle.center;
+    const Vector2f obstacleOnField = opponent.position;
     // TODO: hysteresis and tracking of the previously chosen one
     if(!action.markZone.isInside(agent.acceptedMirror ? Vector2f(obstacleOnField.x(), -obstacleOnField.y()) : obstacleOnField))
       continue;

@@ -11,6 +11,8 @@ MAKE_MODULE(NaoQiImageDetector);
 
 void NaoQiImageDetector::update(NaoQiImageInfo& theNaoQiImageInfo)
 {
+  if(SystemCall::getMode() != SystemCall::physicalRobot)
+    theNaoQiImageInfo.isCorrectImage = true;
   if(theNaoQiImageInfo.isCorrectImage || theFrameInfo.time < startTime)
     return;
 
