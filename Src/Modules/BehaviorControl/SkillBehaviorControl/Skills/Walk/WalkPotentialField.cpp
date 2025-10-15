@@ -27,6 +27,7 @@ option((SkillBehaviorControl) WalkPotentialField,
             (float) ballFactor,
             (bool) useRotation,
             (float) rotation,
+            (SideWalkingRequest::SideWalkingRequest) sideWalkingRequest,
             (const std::optional<Vector2f>&) targetOfInterest),
        defs((float)(250.f) alignDistance, /**< If the target is closer than this distance, the robot is completely aligned to the ball or the target rotation. */
             (Angle)(45_deg) maxBallAngleOffset, /**< If not walking straight, the ball should have at most this angle relative to the robot's orientation. */
@@ -54,6 +55,9 @@ option((SkillBehaviorControl) WalkPotentialField,
   const float halfLineWidth = theFieldDimensions.fieldLinesWidth * 0.5f;
   const Boundaryf reducedRect(Rangef(theFieldDimensions.xPosOwnGoalLine - halfLineWidth + maxDistance, theFieldDimensions.xPosOpponentGoalLine + halfLineWidth - maxDistance),
                               Rangef(theFieldDimensions.yPosRightTouchline - halfLineWidth + maxDistance, theFieldDimensions.yPosLeftTouchline + halfLineWidth - maxDistance));
+  const float fieldBorderDistance = theFieldDimensions.yPosLeftFieldBorder - theFieldDimensions.yPosLeftReturnFromPenalty;
+  const Boundaryf fieldBorderRect(Rangef(theFieldDimensions.xPosOwnFieldBorder + fieldBorderDistance, theFieldDimensions.xPosOpponentFieldBorder - fieldBorderDistance),
+                                  Rangef(theFieldDimensions.yPosRightFieldBorder + fieldBorderDistance, theFieldDimensions.yPosLeftFieldBorder - fieldBorderDistance));
 
   const auto computeVectorPotentialFieldTarget = [&](const Vector2f& position, const Vector2f& target) -> Vector2f
   {
@@ -101,6 +105,18 @@ option((SkillBehaviorControl) WalkPotentialField,
     Vector2f clippedPosition = position;
     reducedRect.clip(clippedPosition);
     const float rejection = std::min((clippedPosition - position).norm() / maxDistance, 1.f) * maxRejection;
+    return (clippedPosition - position).normalized(rejection);
+  };
+
+  const auto computeVectorPotentialFieldBorder = [&](const Vector2f& position) -> Vector2f
+  {
+    if(fieldBorderRect.isInside(position))
+      return Vector2f::Zero();
+    Vector2f clippedPosition = position;
+    fieldBorderRect.clip(clippedPosition);
+    // Only the small distance part between returning from a penalty and the field border is to be avoided
+    // Also IllegalAreas::numOfFieldAreas * maxRejection is used to ensure this rejection is stronger than all other rejections.
+    const float rejection = std::min((clippedPosition - position).norm() / fieldBorderDistance, 1.f) * maxRejection;
     return (clippedPosition - position).normalized(rejection);
   };
 
@@ -189,6 +205,8 @@ option((SkillBehaviorControl) WalkPotentialField,
       result += computeVectorPotentialFieldBallArea(position);
     if(illegal & bit(IllegalAreas::notOwnGoalLine))
       result += computeVectorPotentialFieldNotOwnGoalLine(position);
+    if(illegal & bit(IllegalAreas::fieldBorder))
+      result += computeVectorPotentialFieldBorder(position);
     for(const auto& teammate : theGlobalTeammatesModel.teammates)
       result += computeVectorPotentialFieldPlayer(position, teammate.pose.translation);
     return result;
@@ -246,8 +264,9 @@ option((SkillBehaviorControl) WalkPotentialField,
     action
     {
       WalkToPoint({.target = {0.f, potentialTargetRel},
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange,
-                   .targetOfInterest = targetOfInterest});
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::noChange,
+                   .targetOfInterest = targetOfInterest,
+                   .sideWalkingRequest = sideWalkingRequest});
       if(targetOfInterest)
         LookAtBallAndTarget({.startBall = true,
                              .walkingDirection = potentialTargetRel});
@@ -272,9 +291,10 @@ option((SkillBehaviorControl) WalkPotentialField,
       }
 
       WalkToPoint({.target = {walkAngle, potentialTargetRel},
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange,
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::noChange,
                    .disableAligning = std::abs(walkAngle) > 10_deg || useRotation,
-                   .targetOfInterest = targetOfInterest});
+                   .targetOfInterest = targetOfInterest,
+                   .sideWalkingRequest = sideWalkingRequest });
 
       if(targetOfInterest)
         LookAtBallAndTarget({.startBall = true,

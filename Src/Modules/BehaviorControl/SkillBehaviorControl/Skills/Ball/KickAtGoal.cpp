@@ -37,7 +37,7 @@ option((SkillBehaviorControl) KickAtGoal,
             (Vector2f)(Vector2f::Zero()) goalLineIntersection, /**< The point where the ball would have intersected the goal line according to the current plan. */
             (KickInfo::KickType)(KickInfo::numOfKickTypes) kickType, /**< The selected kick type to kick into the goal. */
             (Angle)(0_deg) kickDirectionRelative, /**< The pose where the robot has to walk to kick into the goal. */
-            (Rangea)(Rangea(0_deg, 0_deg)) precisionRange)) /**< The precision of the kick direction. */
+            (Rangea)(0_deg, 0_deg) precisionRange)) /**< The precision of the kick direction. */
 {
   const Vector2f leftGoalPost(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal); // The position of the left post of the opponent's goal.
   const Vector2f rightGoalPost(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal); // The position of the right post of the opponent's goal.

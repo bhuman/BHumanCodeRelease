@@ -54,6 +54,8 @@ MODULE(JointPlayProvider,
     (int) warningSoundWaitTime,
     (Angle) minPlayForSound,
     (Angle) minPlaySlowForSound,
+    (float) numOfFramesSkip, /**< Sometime a motion frame is missing. We allow a few skips, before resetting some timers. */
+    (int) motionDelay,
   }),
 });
 
@@ -61,26 +63,13 @@ class JointPlayProvider : public JointPlayProviderBase
 {
   void update(JointPlay& theJointPlay) override;
 
-  // Buffer for the joint request. Needed because of the motion delay, until a request is executed
-  // Value 4 is the correct delay here, because the module is executed at THE END of the motion cycle and uses the current JointRequest
-  //////////////////////////////////////////////////////////////////////
-  // Example values for the ankle pitch. Similar for all pitch joints //
-  //////////////////////////////////////////////////////////////////////
-  // - Request --- Measured -
-  // ------------------------
-  // -28.6518deg -28.4793deg
-  // -28.6518deg - 28.4793deg
-  // -28.6518deg - 28.4793deg
-  // 1.34815deg - 28.4793deg <- Request we want to use to subtract from current measurement. Take this request (theJointRequest), the value 1.34[...]deg
-  // 1.34815deg - 28.4793deg
-  // 1.34815deg - 28.4793deg
-  // 1.34815deg - 28.3035deg <- Current motion frame. Take this measurement (theJointAngles), the value 28.30[...]deg
-  RingBuffer<Angle, 3> bufferRequest[Joints::numOfJoints]; // we are at the start of the motion cycle. Therefore take one buffered request less
+  // Buffered requests, so we can compare the actually executed one with the measured angles
+  RingBuffer<Angle> bufferRequest[Joints::numOfJoints];
 
   // Filtered values over a long period of time.
   Angle bufferValue[Joints::numOfJoints];
 
-  // last measurend angles
+  // last measured angles
   JointAngles lastJointAngles;
 
   RingBuffer<Angle, 2> jointPlayValue[Joints::numOfJoints];

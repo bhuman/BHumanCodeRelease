@@ -258,7 +258,7 @@ ALWAYSINLINE void gauss(__m128i& currentIV, const __m128i& previousIV,
 }
 
 //! Sets dst[i] to src[2*i] for i=0..w/2
-/*! This helper function is used for the margin in the downsampled image
+/*! This helper function is used for the margin in the down-sampled image
  */
 void decimateLineUsingSSE(const unsigned char* src, int w, unsigned char* ds);
 

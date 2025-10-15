@@ -3,10 +3,10 @@
  *
  * This file declares a class that stores type information about primitive data types,
  * enumerations, and classes/structures. In contrast to the class TypeRegistry, this
- * class contains all type information in demangled and unified form. It is also
+ * class contains all type information in de-mangled and unified form. It is also
  * streamable.
  *
- * In their demangled form, type names can have two types of extensions at their end:
+ * In their de-mangled form, type names can have two types of extensions at their end:
  *
  * '[<n>]' The type is an arrays with a fixed number of <n> elements. Such entries can
  *         either result from a normal C array or from std::array.

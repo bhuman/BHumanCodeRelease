@@ -13,6 +13,7 @@
 
 #include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
@@ -49,6 +50,7 @@ MODULE(ObstacleModelProvider,
   REQUIRES(ObstaclesFieldPercept),
   REQUIRES(Odometer),
   REQUIRES(ReceivedTeamMessages),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(RobotPose),
   REQUIRES(TorsoMatrix),
@@ -128,7 +130,7 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   // Used for writing annotations only once per contact.
   bool armContact[Arms::numOfArms] = { false, false }, footContact[Legs::numOfLegs] = { false, false };
 
-  std::vector<ObstacleHypothesis, Eigen::aligned_allocator<ObstacleHypothesis>> obstacleHypotheses; /**< List of obstacles. */
+  std::vector<ObstacleHypothesis> obstacleHypotheses; /**< List of obstacles. */
   std::vector<bool> merged; /**< This is to merge obstacles once for every "percept" per frame. */
   std::vector<TeammateMeasurement> teammateMeasurements; /**< Pseudo-measurements from team messages from the last frame. */
 

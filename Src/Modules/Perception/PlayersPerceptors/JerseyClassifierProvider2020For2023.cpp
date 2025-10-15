@@ -134,16 +134,16 @@ void JerseyClassifierProvider2020For2023::detectJersey(const ObstaclesImagePerce
           y += yStep, left = std::max(left + xyStep, 0.f), right = std::min(right + xyStep, static_cast<float>(theCameraInfo.width)))
       {
         // calculations for pixel weighting
-        const float ydiffFromCenter = 2 * (((lowerInImage.y() - upperInImage.y()) / 2) - (y - upperInImage.y())) / (lowerInImage.y() - upperInImage.y());
-        const float yFactor = std::abs(ydiffFromCenter) < 0.5f ? 1.f : (1.f - std::abs(ydiffFromCenter)) + 0.5f;
-        const float jerseyEnd = relativeJerseyWidth - 0.1f * std::abs(ydiffFromCenter - 0.4f);
+        const float yDiffFromCenter = 2 * (((lowerInImage.y() - upperInImage.y()) / 2) - (y - upperInImage.y())) / (lowerInImage.y() - upperInImage.y());
+        const float yFactor = std::abs(yDiffFromCenter) < 0.5f ? 1.f : (1.f - std::abs(yDiffFromCenter)) + 0.5f;
+        const float jerseyEnd = relativeJerseyWidth - 0.1f * std::abs(yDiffFromCenter - 0.4f);
         for(float x = left; x < right; x += xStep)
         {
           float weight = 1.f;
           if(weighPixels)
           {
-            const float xdiffFromCenter = 2 * std::abs((right - left) / 2 + left - x) / (right - left);
-            const float xFactor = xdiffFromCenter < jerseyEnd ? 1 : 1 - (xdiffFromCenter - jerseyEnd);
+            const float xDiffFromCenter = 2 * std::abs((right - left) / 2 + left - x) / (right - left);
+            const float xFactor = xDiffFromCenter < jerseyEnd ? 1 : 1 - (xDiffFromCenter - jerseyEnd);
             weight = xFactor * yFactor;
           }
           DOT("module:JerseyClassifierProvider2020For2023:jerseyWeights", static_cast<int>(x), static_cast<int>(y),

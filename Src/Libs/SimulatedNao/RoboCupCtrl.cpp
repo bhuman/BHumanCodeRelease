@@ -16,6 +16,7 @@
 #include "Platform/File.h"
 #include "Platform/Time.h"
 #include "Framework/Settings.h"
+#include "TestUtils.h"
 
 #include <QApplication>
 
@@ -30,6 +31,7 @@ RoboCupCtrl* RoboCupCtrl::controller = nullptr;
 SimRobot::Application* RoboCupCtrl::application = nullptr;
 
 RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application)
+  : gameController()
 {
   Thread::nameCurrentThread("Main");
 
@@ -65,6 +67,14 @@ bool RoboCupCtrl::compile()
   simStepLength = static_cast<float>(is2D ? scene2D->getStepLength() : scene->getStepLength()) * 1000.f;
   delayTime = simStepLength;
 
+  // Load test state if available
+  std::string scenePath = application->getFilePath().toStdString();
+  gameController.setTestDirPath(TestUtils::generateTestDirPath(scenePath));
+  if(application->isSimResetting())
+  {
+    gameController.loadTest();
+  }
+
   // Get colors of first and second team
   std::array<GameController::TeamInfo, 2> teamInfos{{{5, Settings::TeamColor::black, Settings::TeamColor::purple}, {70, Settings::TeamColor::red, Settings::TeamColor::blue}}};
   SimRobot::Object* teamInfosObject = application->resolveObject("RoboCup.teams", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
@@ -95,12 +105,24 @@ bool RoboCupCtrl::compile()
         ASSERT(color != -1);
         return static_cast<Settings::TeamColor>(color);
       };
-
       teamInfos[i].number = parseTeamNumber(getChildName(0));
       teamInfos[i].fieldPlayerColor = parseTeamColor(getChildName(1));
       teamInfos[i].goalkeeperColor = parseTeamColor(getChildName(2));
     }
   }
+
+  if(gameController.isTestActive())
+  {
+    auto teamNumbers = gameController.getTestParameters().teamNumbers;
+    if(teamNumbers[0] == teamNumbers[1])
+    {
+      FAIL("Both teams have the same team number: " << teamNumbers[0]);
+      teamNumbers[1] = (teamNumbers[0] + 1) % 256;
+    }
+    teamInfos[0].number = static_cast<uint8_t>(teamNumbers[0]);
+    teamInfos[1].number = static_cast<uint8_t>(teamNumbers[1]);
+  }
+
   gameController.setTeamInfos(teamInfos);
 
   std::string location = "Default";
@@ -141,12 +163,18 @@ bool RoboCupCtrl::compile()
   // get interfaces to simulated objects
   SimRobot::Object* group = application->resolveObject("RoboCup.robots", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
 
+  const Settings::RobotType robotType = getRobotType();
+  std::string robotName = TypeRegistry::getEnumName(robotType);
+  robotName[0] &= ~0x20;
+  robotName = "Simulated" + robotName;
   for(unsigned currentRobot = 0, count = application->getObjectChildCount(*group); currentRobot < count; ++currentRobot)
   {
     SimRobot::Object* robot = application->getObjectChild(*group, currentRobot);
     const QString& fullName = robot->getFullName();
     const bool firstTeam = SimulatedRobot::isFirstTeam(robot);
-    robots.push_back(new ControllerRobot(Settings("Nao", "Nao",
+    robots.push_back(new ControllerRobot(Settings(robotName, robotName,
+                                                  simStepLength * 0.001f,
+                                                  robotType,
                                                   teamInfos[firstTeam ? 0 : 1].number,
                                                   teamInfos[firstTeam ? 0 : 1].fieldPlayerColor,
                                                   teamInfos[firstTeam ? 0 : 1].goalkeeperColor,
@@ -173,6 +201,7 @@ bool RoboCupCtrl::compile()
         ballGeom->registerCollisionCallback(*this);
     }
   }
+  gameController.loadBallSpecification();
 
   return true;
 }
@@ -265,6 +294,23 @@ SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const QString& p
     parent = addCategory(name, subParentName);
   }
   return addCategory(name, parent);
+}
+
+Settings::RobotType RoboCupCtrl::getRobotType() const
+{
+  SimRobot::Object* robotTypeObject = application->resolveObject("RoboCup.robot type", is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound));
+  if(robotTypeObject)
+  {
+    ASSERT(application->getObjectChildCount(*robotTypeObject) == 1);
+    const QString& robotTypeFullName = application->getObjectChild(*robotTypeObject, 0)->getFullName();
+    const std::string robotTypeName = robotTypeFullName.mid(robotTypeFullName.lastIndexOf('.') + 1).toUtf8().constData();
+    int robotTypeValue = TypeRegistry::getEnumValue(typeid(Settings::RobotType).name(), robotTypeName.c_str());
+    if(robotTypeValue != -1)
+      return static_cast<Settings::RobotType>(robotTypeValue);
+    else
+      FAIL("Robot type \"" << robotTypeName << "\" does not exist.");
+  }
+  return Settings::nao;
 }
 
 void RoboCupCtrl::start()

@@ -3,7 +3,7 @@
 *
 * Implementation of a representation that stores the estimated states
 * of the teammates.
-* The representation is a result of the combination of receveived position information
+* The representation is a result of the combination of received position information
 * and own observations of teammates.
 *
 * @author Tim Laue

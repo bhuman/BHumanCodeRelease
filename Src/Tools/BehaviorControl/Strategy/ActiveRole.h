@@ -18,7 +18,8 @@ public:
   {,
     playBall,
     freeKickWall,
-    closestToTeammatesBall,
+    closestToTeamBall,
+    kickOffForward,
     startSetPlay, /**< This role is only assigned during READY/SET to the player who has the start position of the set play. */
   });
 

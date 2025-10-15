@@ -31,6 +31,7 @@ void PassEvaluationProvider::update(PassEvaluation& thePassEvaluation)
   MODIFY_ONCE("module:PassEvaluationProvider:calcPassTargetInField", calcPassTargetInField);
   MODIFY_ONCE("module:PassEvaluationProvider:calcShotLineFree", calcShotLineFree);
   MODIFY_ONCE("module:PassEvaluationProvider:calcShotDistance", calcShotDistance);
+  MODIFY_ONCE("module:PassEvaluationProvider:calcCrossPass", calcCrossPass);
   MODIFY_ONCE("module:PassEvaluationProvider:drawHeatmap", drawHeatmap);
   MODIFY_ONCE("module:PassEvaluationProvider:drawCombinedHeatmap", drawCombinedHeatmap);
   MODIFY_ONCE("module:PassEvaluationProvider:isPositioningDrawing", isPositioningDrawing);
@@ -48,53 +49,86 @@ float PassEvaluationProvider::getRating(const Vector2f& baseOnField, const Vecto
     lastUpdateParameters = theFrameInfo.time;
     updateParameters();
   }
+
+  const bool isBaseBall = baseOnField == theFieldBall.recentBallPositionOnField() && minOpponentDistToBaseList.size() == opponentsOnField.size();
+
+  float passTargetFree = 1.f;
+  float passLineFree = 1.f;
   // Calculate the minimum distance from the opponents and teammates (separately) to the target itself as well as the line from the base to the target
-  float minOpponentDistToTarget = std::numeric_limits<float>::max();
-  float minOpponentDistToLine = std::numeric_limits<float>::max();
-  for(const Vector2f& opponentOnField : opponentsOnField)
-    updateMinDistances(baseOnField, targetOnField, opponentOnField, minOpponentDistToTarget, minOpponentDistToLine);
 
-  // Estimated probability that no opponent would be at the pass target
-  const float passTargetFree = calcPassTargetFree ? mapToRange(minOpponentDistToTarget, 0.f, opponentDistToTargetThreshold, 0.f, 1.f) : 1.f;
+  for(std::size_t index = 0; index < opponentsOnField.size(); index++)
+  {
+    const Vector2f& opponentOnField = opponentsOnField[index];
+    float minOpponentDistToTarget = 0.f;
+    float minOpponentDistToLine = 0.f;
+    updateMinDistances(baseOnField, targetOnField, opponentOnField, minOpponentDistToTarget, minOpponentDistToLine, isPositioning);
 
-  // Estimated probability that no opponent would intercept the pass
-  const float passLineFree = !isPositioning && calcPassLineFree ? mapToRange(minOpponentDistToLine, obstacleBlockingRadius, opponentDistToLineThreshold, 0.f, 1.f) : 1.f;
+    // Estimated probability that no opponent would be at the pass target
+    const float baseScaling = mapToRange(isBaseBall ? minOpponentDistToBaseList[index] : (baseOnField - opponentOnField).norm(), opponentDistToBaseThreshold.min, opponentDistToBaseThreshold.max, 0.f, 1.f);
+    const float useOpponentDistToTargetThreshold = mapToRange(baseScaling, 0.f, 1.f, opponentDistToTargetThreshold.min, opponentDistToTargetThreshold.max);
+    const float useOpponentDistToLineThreshold = mapToRange(baseScaling, 0.f, 1.f, opponentDistToLineThreshold.min, opponentDistToLineThreshold.max);
+
+    passTargetFree = std::min(passTargetFree, calcPassTargetFree ? mapToRange(minOpponentDistToTarget, 0.f, useOpponentDistToTargetThreshold, 0.f, 1.f) : 1.f);
+
+    // Estimated probability that no opponent would intercept the pass
+    passLineFree = std::min(passLineFree, !isPositioning && calcPassLineFree ? mapToRange(minOpponentDistToLine, obstacleBlockingRadius, useOpponentDistToLineThreshold, 0.f, 1.f) : 1.f);
+  }
 
   // Estimated probability that the pass would be within the field and not go out of its boundary
   const float passTargetInField = calcPassTargetInField ? mapToRange(getDistanceToFieldBorder(targetOnField), 0.f, distToBoundaryThreshold, 0.f, 1.f) : 1.f;
 
   // Estimated probability that no teammate's direct shot towards the opponent's goal would be blocked
-  const float shotLineFree = calcShotLineFree ? 1.f - ((1.f - isShotLineFree(baseOnField, targetOnField)) * theExpectedGoals.xG(baseOnField)) : 1.f;
+  const float shotLineFree = isPositioning && calcShotLineFree ? 1.f - ((1.f - isShotLineFree(baseOnField, targetOnField)) * theExpectedGoals.xG(baseOnField)) : 1.f;
 
   // Estimated probability that the target is within the kick range
   const float targetInRange = calcShotDistance ? isTargetInRange(baseOnField, targetOnField) : 1.f;
 
+  // Estimated probability that a cross pass will be successful
+  float crossPassValue = 1.f;
+  if(!isPositioning && calcCrossPass)
+  {
+    // The closer the ball to the own goal, the higher the risk of passing to an opponent and giving it a perfect goal shot
+    const float ballCrossInfluenceX = mapToRange(std::max(targetOnField.x(), baseOnField.x()), theFieldDimensions.xPosOwnPenaltyArea, -theFieldDimensions.centerCircleRadius, 0.f, 1.f);
+    // Ball must be a bit away from the y-center to consider it for a cross pass
+    const float ballCrossInfluenceY = ballCrossInfluenceX == 1.f ? 1.f : mapToRange(std::abs(baseOnField.y()), crossPassWidth, crossPassBlockMaxYBallPos, 1.f, 0.f);
+    // Calculate target distance to cross pass line
+    const float distanceToCrossLine = ballCrossInfluenceX == 1.f || ballCrossInfluenceY == 1.f ? 0.f : Geometry::getDistanceToLineSigned({ baseOnField, (Vector2f(-theFieldDimensions.centerCircleRadius, 0.f) - baseOnField).normalized() }, targetOnField);
+    const bool targetOnSameSide = baseOnField.y() * distanceToCrossLine < 0.f;
+    crossPassValue = ballCrossInfluenceX == 1.f || ballCrossInfluenceY == 1.f ?
+                     1.f : // no need to calculate
+                     (targetOnSameSide ? 1.f : // target does not result in a cross pass
+                      mapToRange(std::abs(distanceToCrossLine), 0.f, crossPassWidth, 1.f, std::max(ballCrossInfluenceX, ballCrossInfluenceY)));
+  }
+
   // Estimated probability that the pass would be successful based on the above combined conditions
-  const float combinedValue = passTargetFree * passLineFree * passTargetInField * shotLineFree * targetInRange;
+  const float combinedValue = passTargetFree * passLineFree * passTargetInField * shotLineFree * targetInRange * crossPassValue;
   return std::max(minValue, combinedValue);
 }
 
 void PassEvaluationProvider::updateParameters()
 {
   opponentsOnField.clear();
+  minOpponentDistToBaseList.clear();
+  const Vector2f ballPosition = theFieldBall.recentBallPositionOnField();
+
   for(const auto& obstacle : theGlobalOpponentsModel.opponents)
   {
     Vector2f obstacleOnField = obstacle.position;
     // Assume the opponent is oriented towards the ball and shift its position in an attempt to rate pass positions "in front of them" worse than behind them. The minimum ensures that the obstacle is not shifted onto the other side of the ball when the initial distance is smaller than opponentShiftToBall.
-    const Vector2f obstacleToBall = theFieldBall.recentBallPositionOnField() - obstacleOnField;
-    obstacleOnField += obstacleToBall.normalized(std::min(opponentShiftToBall, obstacleToBall.norm()));
+    const Vector2f ballToObstacle = obstacleOnField - ballPosition;
+    const float ballToObstacleDistance = ballToObstacle.norm();
+    obstacleOnField += ballToObstacle.normalized(std::min(opponentShiftToBall, ballToObstacleDistance));
     opponentsOnField.emplace_back(obstacleOnField);
+
+    minOpponentDistToBaseList.push_back(ballToObstacleDistance);
   }
 }
 
-void PassEvaluationProvider::updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine) const
+void PassEvaluationProvider::updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine, const bool isPositioning) const
 {
-  const float distToTarget = (targetOnField - obstacleOnField).norm();
-  if(distToTarget < minDistToTarget)
-    minDistToTarget = distToTarget;
-  const float distToLine = Geometry::getDistanceToEdge(Geometry::Line(baseOnField, (targetOnField - baseOnField)), obstacleOnField);
-  if(distToLine < minDistToLine)
-    minDistToLine = distToLine;
+  minDistToTarget = (targetOnField - obstacleOnField).norm();
+  if(!isPositioning)
+    minDistToLine = Geometry::getDistanceToEdge(Geometry::Line(baseOnField, (targetOnField - baseOnField)), obstacleOnField);
 }
 
 float PassEvaluationProvider::isShotLineFree(const Vector2f& baseOnField, const Vector2f& targetOnField) const
@@ -146,5 +180,14 @@ void PassEvaluationProvider::draw()
       cellColors.push_back(cellColor);
     }
   }
+
+  Vector2i numOfCells = ((opponentFieldCorner - ownFieldCorner).array() / Vector2f(cellSize, cellSize).array()).cast<int>();
+  numOfCells += Vector2i(1, 1);
+  if(numOfCells != cellsNumber)
+  {
+    cellColors.reserve(numOfCells.x() * numOfCells.y());
+    cellsNumber = numOfCells;
+  }
+
   GRID_RGBA("module:PassEvaluationProvider:heatmap", 0, 0, cellSize, cellsNumber.x(), cellsNumber.y(), cellColors.data());
 }

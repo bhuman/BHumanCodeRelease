@@ -9,13 +9,24 @@ killall DeployDialog 2>/dev/null
 
 ( if [ "$(uname)" == "Darwin" ]; then
   FULLSCREEN=`osascript <<-APPLESCRIPT
-    tell app "System events"
-      try
-        return true is in value of attribute "AXFullScreen" of windows of process "Xcode"
-      on error
-        return false
-      end try
-    end tell
+    if application "Xcode" is running then
+      set theApp to "Xcode"
+    else if application "Code" is running then
+      set theApp to "Code"
+    else
+      set theApp to ""
+    end if
+    if theApp is not equal "" then
+      tell app "System events"
+        try
+          return true is in value of attribute "AXFullScreen" of windows of process theApp
+        on error
+          return false
+        end try
+      end tell
+    else
+      return false
+    end if
     APPLESCRIPT`
   OPTION=
   if $FULLSCREEN; then

@@ -35,7 +35,7 @@ STREAMABLE(WalkKickStep,
     normal,
     linear,
     sinusMaxToZero,
-    cosinusZeroToMax,
+    cosineZeroToMax,
   });
 
   // Parameters for specific joint offsets during an InWalkKick
@@ -84,7 +84,9 @@ STREAMABLE(WalkKickStep,
   (WalkKicks::Type)(WalkKicks::none) currentKick, /**< Name of the currently executed walk kick. */
   (bool)(false) useLastKeyframeForSupportFootXTranslation, /**< Shall the support foot use the interpolation of only the last keyframe? */
   (bool)(false) usedWalkDelay, /**< A walk delay was used before the kick. */
+  (bool)(false) isAfterKick, /**< If set true, start behaving as if after the kick finished. */
   (std::optional<WalkKickVariant>) currentKickVariant, /**< Current kick information. Used to updated the kick. */
   (WalkKickStep::LastStepInfo) lastStepInfo, /**< Information about the previous motion phase. TODO move into currentKickVariant */
   (bool)(false) isReplayWalkRequest, /**< Flag for when replaying walk steps. This prevents updating the kick after creating. */
+  (float)(0.f) leftoverSideHipShift, /**< Side hip shift from previous walk step. */
 });

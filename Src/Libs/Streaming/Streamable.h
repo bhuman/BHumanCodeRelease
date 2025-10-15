@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "Streaming/AlignedMemory.h"
 #include "Streaming/InOut.h"
 #include "Streaming/TypeRegistry.h"
 #include <array>
@@ -117,7 +116,7 @@ Out& operator<<(Out& out, const Streamable& streamable);
 /**
  * Base class for all classes using the STREAM macros for streaming instances.
  */
-class Streamable : public AlignedMemory
+class Streamable
 {
   friend In& operator>>(In&, Streamable&);
   friend Out& operator<<(Out&, const Streamable&);

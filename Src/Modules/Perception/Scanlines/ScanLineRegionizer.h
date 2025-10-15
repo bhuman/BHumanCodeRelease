@@ -46,6 +46,7 @@ MODULE(ScanLineRegionizer,
     (unsigned char)(20) hueSimilarityThreshold,         /**< Maximum hue difference for two regions to become united */
     (unsigned char)(26) saturationSimilarityThreshold,  /**< Maximum saturation difference for two regions to become united */
     (unsigned char)(138) initialMinSaturation,          /**< Standard minimum field saturation for field classification */
+    (float)(0.7f) saturationDiscountFactor,             /**< Reduced saturation expected of white regions compared to the field */
     (int)(520) lowerMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the lower camera */
     (int)(640) upperMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the upper camera */
     (float)(0.9f) baseLuminanceReduction,               /**< Rather underestimate the baseLuminance as it is used for noise filtering */
@@ -362,21 +363,22 @@ class ScanLineRegionizer : public ScanLineRegionizerBase
   /**
    * Classifies some regions as white.
    * @param regions The regions (grouped by scan line).
+   * @param horizontal Whether the stitching is done on horizontal or vertical scan line regions.
    */
-  void classifyWhiteRegionsWithThreshold(std::vector<std::vector<InternalRegion>>& regions) const;
+  void classifyWhiteRegionsWithThreshold(std::vector<std::vector<InternalRegion>>& regions, bool horizontal) const;
 
   /**
-   * Checks if the region fulfills basic characteristics for being prelabeled as white
+   * Checks if the region fulfills basic characteristics for being pre-labeled as white
    * @param checkedRegion The tested region
-   * @return True, if the region fulfills basic characteristics for being prelabeled as white
+   * @return True, if the region fulfills basic characteristics for being pre-labeled as white
    */
   [[nodiscard]] bool prelabelWhiteCheck(const InternalRegion& checkedRegion) const;
 
   /**
-   * Checks if the region neighbor allows the checked region to be prelabeled as white
+   * Checks if the region neighbor allows the checked region to be pre-labeled as white
    * @param checkedRegion The tested region
    * @param neighborRegion The neighbor region
-   * @return True, if the region neighbor allows the checked region to be prelabeled as white
+   * @return True, if the region neighbor allows the checked region to be pre-labeled as white
    */
   [[nodiscard]] bool prelabelWhiteNeighborCheck(const InternalRegion& checkedRegion, const InternalRegion& neighborRegion) const;
 

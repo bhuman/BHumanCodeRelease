@@ -15,7 +15,7 @@
 #include "Representations/Modeling/BallDropInModel.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Math/Eigen.h"
 #include "Framework/Module.h"
 #include "Streaming/Enum.h"
@@ -29,7 +29,7 @@ MODULE(BallDropInLocator,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(RobotPose),
-  REQUIRES(TeammatesBallModel),
+  REQUIRES(TeamBallModel),
   PROVIDES(BallDropInModel),
   DEFINES_PARAMETERS(
   {,

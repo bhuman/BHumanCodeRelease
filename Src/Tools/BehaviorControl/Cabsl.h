@@ -641,7 +641,7 @@ namespace cabsl
 #define _CABSL_STRUCT_ARGS_1_1(name, ...)
 
 // Generate the declaration and optional initialization of a field in the structure.
-#define _CABSL_STRUCT_WITH_INIT(seq) std::remove_const<std::remove_reference<decltype(cabsl::TypeWrapper<_CABSL_DECL_I seq))>::type)>::type>::type _CABSL_VAR(seq) _CABSL_INIT(seq);
+#define _CABSL_STRUCT_WITH_INIT(seq) std::remove_const<std::remove_reference<decltype(cabsl::TypeWrapper<_CABSL_DECL_I seq))>::type)>::type>::type _CABSL_CONST_REF(seq) _CABSL_VAR(seq) _CABSL_INIT(seq);
 
 // Define a structure for definitions. They are streamable, so the STREAMABLE macro is used.
 #define _CABSL_STRUCT_DEFS__(name, class, ...)
@@ -915,7 +915,7 @@ namespace cabsl
   template<typename U = _##name##Args> typename std::enable_if<std::is_default_constructible<U>::value>::type \
   name(const OptionExecution& _o = OptionExecution(#name, static_cast<CabslBehavior*>(_theInstance)->_##name##Context, _theInstance)) \
   { \
-    name(_##name##Args(), _o); \
+    name(U(), _o); \
   } \
   void name(const _##name##Args& _args, const OptionExecution& _o = OptionExecution(#name, static_cast<CabslBehavior*>(_theInstance)->_##name##Context, _theInstance)) \
   { \
@@ -938,7 +938,12 @@ namespace cabsl
   _CABSL_APPLY(_CABSL_STREAM_VAR, _CABSL_GET_VARS(__VA_ARGS__)) \
 
 // Assign a value to a variable.
-#define _CABSL_INIT_VAR(seq) _vars->_CABSL_VAR(seq) = _CABSL_INIT_I_2_I(seq);
+#define _CABSL_INIT_VAR(seq) \
+  (&_vars->_CABSL_VAR(seq))->~decltype(_vars->_CABSL_VAR(seq))(); \
+  new (&_vars->_CABSL_VAR(seq)) decltype(_vars->_CABSL_VAR(seq))(_CABSL_INIT_VAR_I(seq));
+#define _CABSL_INIT_VAR_I(seq) _CABSL_JOIN(_CABSL_INIT_VAR_I_, _CABSL_SEQ_SIZE(seq))(seq)
+#define _CABSL_INIT_VAR_I_1(seq)
+#define _CABSL_INIT_VAR_I_2(seq) _CABSL_INIT_I_2_I(seq)
 
 // Apply a macro to all values in a list.
 #define _CABSL_APPLY(macro, ...) _CABSL_APPLY_I(macro, _CABSL_TUPLE_SIZE(__VA_ARGS__, ignore), __VA_ARGS__)
@@ -949,6 +954,11 @@ namespace cabsl
 #define _CABSL_INIT(seq) _CABSL_JOIN(_CABSL_INIT_I_, _CABSL_SEQ_SIZE(seq))(seq)
 #define _CABSL_INIT_I_1(...)
 #define _CABSL_INIT_I_2(...) = _CABSL_INIT_I_2_I(__VA_ARGS__)
+
+// Generate a const reference of the declaration contains no initialization.
+#define _CABSL_CONST_REF(seq) _CABSL_JOIN(_CABSL_CONST_REF_I_, _CABSL_SEQ_SIZE(seq))(seq)
+#define _CABSL_CONST_REF_I_1(...) const&
+#define _CABSL_CONST_REF_I_2(...)
 
 // Generate code for streaming an argument and adding it to the arguments stored in the execution environment.
 #define _CABSL_STREAM_ARG(seq) \
@@ -1115,10 +1125,10 @@ namespace cabsl
 #define action _o.addToActivationGraph();
 
 /** The time since the execution of this option started. */
-#define option_time int(_currentFrameTime - _o.context.optionStart)
+#define option_time static_cast<int>(_currentFrameTime - _o.context.optionStart)
 
 /** The time since the execution of the current state started. */
-#define state_time int(_currentFrameTime - _o.context.stateStart)
+#define state_time static_cast<int>(_currentFrameTime - _o.context.stateStart)
 
 /** Did a suboption called reached a target state? */
 #define action_done (_o.context.subOptionStateType == OptionContext::targetState)

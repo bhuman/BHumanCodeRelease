@@ -1,9 +1,9 @@
 #include "JointAngles.h"
 #include "Debugging/Plot.h"
 
-Angle JointAngles::mirror(Joints::Joint joint) const
+Angle JointAngles::mirror(Joints::Joint joint, bool hasSeparateHipYawJoints) const
 {
-  if(canNegate(joint))
+  if(canNegate(joint, hasSeparateHipYawJoints))
   {
     return JointAngles::mirror(angles[Joints::mirror(joint)]);
   }
@@ -15,6 +15,7 @@ void JointAngles::draw()
 {
   PLOT("representation:JointAngles:headYaw", angles[Joints::headYaw].toDegrees());
   PLOT("representation:JointAngles:headPitch", angles[Joints::headPitch].toDegrees());
+  PLOT("representation:JointAngles:waistYaw", angles[Joints::waistYaw].toDegrees());
   PLOT("representation:JointAngles:lShoulderPitch", angles[Joints::lShoulderPitch].toDegrees());
   PLOT("representation:JointAngles:lShoulderRoll", angles[Joints::lShoulderRoll].toDegrees());
   PLOT("representation:JointAngles:lElbowYaw", angles[Joints::lElbowYaw].toDegrees());

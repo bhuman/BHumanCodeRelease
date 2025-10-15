@@ -65,6 +65,11 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
     else
       simulatedRobot = std::make_unique<SimulatedRobot3D>(robot);
     ctrl->gameController.registerSimulatedRobot(SimulatedRobot::getNumber(robot) - 1, *simulatedRobot);
+    if(!ctrl->is2D)
+    {
+      SimRobot::Object* referee = RoboCupCtrl::application->resolveObject("RoboCup.referee", static_cast<int>(SimRobotCore2::body));
+      ctrl->gameController.registerReferee(referee);
+    }
   }
 }
 
@@ -95,6 +100,7 @@ bool LocalConsole::main()
             debugSender->bin(idFsrSensorData) << fsrSensorData;
             debugSender->bin(idRawInertialSensorData) << rawInertialSensorData;
             debugSender->bin(idGroundTruthOdometryData) << odometryData;
+            debugSender->bin(idTorsoMatrix) << torsoMatrix;
             debugSender->bin(idFrameFinished) << "Motion";
             jointLastTimestampSent = jointSensorData.timestamp;
           }
@@ -168,14 +174,12 @@ void LocalConsole::update()
 
     if(mode == SystemCall::remoteRobot && simulatedRobot)
     {
-      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData), true);
       const Angle headYaw = RobotConsole::jointSensorData.angles[Joints::headYaw];
       Vector3f orientation = RobotConsole::rawInertialSensorData.angle.cast<float>();
       if(std::abs(headYaw) > 30_deg)
         orientation.z() = -headYaw + sgn(headYaw) * 30_deg;
-      simulatedRobot->moveRobot({std::abs(simulatedRobot->getPosition().x()) < 500.f ? 0.f
-                                 : simulatedRobot->getPosition().x() < 0 ? -1000.f : 1000.f, 0, -1000.f},
-                                orientation, true, true);
+      simulatedRobot->moveRobot({ 0, 0, -1000.f }, orientation, true, true);
     }
     else if(mode == SystemCall::logFileReplay)
     {
@@ -192,7 +196,7 @@ void LocalConsole::update()
       if(simulatedRobot)
       {
         if(RobotConsole::jointSensorData.timestamp)
-          simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+          simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData), true);
         else
           simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
         simulatedRobot->moveRobot({0, 0, 1000.f}, RobotConsole::rawInertialSensorData.angle.cast<float>(), true, true);
@@ -236,6 +240,7 @@ void LocalConsole::update()
       simulatedRobot->getSensorData(fsrSensorData, rawInertialSensorData);
       simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
       simulatedRobot->getAndSetMotionData(motionRequest, motionInfo);
+      simulatedRobot->getTorsoMatrix(torsoMatrix);
 
       ctrl->gameController.getGameControllerData(gameControllerData);
       ctrl->gameController.getWhistle(whistle);
@@ -274,15 +279,12 @@ void LocalConsole::update()
 
 DebugReceiver<MessageQueue>* LocalConsole::connectReceiverWithRobot(Debug* debug)
 {
-  ASSERT(!debug->debugSender);
   DebugReceiver<MessageQueue>* receiver = new DebugReceiver<MessageQueue>(this, debug->getName());
-  debug->debugSender = new DebugSender<MessageQueue>(*receiver, "LocalConsole");
+  debug->debugSender->setReceiver(*receiver);
   return receiver;
 }
 
 DebugSender<MessageQueue>* LocalConsole::connectSenderWithRobot(Debug* debug) const
 {
-  ASSERT(!debug->debugReceiver);
-  debug->debugReceiver = new DebugReceiver<MessageQueue>(debug, "LocalConsole");
   return new DebugSender<MessageQueue>(*debug->debugReceiver, debug->getName());
 }

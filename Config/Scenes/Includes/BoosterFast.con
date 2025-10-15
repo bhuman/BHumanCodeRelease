@@ -1,0 +1,85 @@
+# Configuration for simulation scenes with oracled world models
+
+# activate simulation time
+st on
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameState
+
+# in case we have more than a single robot
+robot all
+
+# Fast, because we do not compute images
+ci off
+
+# Select modules for simulator
+for Upper mr CameraInfo LogDataProvider
+for Upper mr FrameInfo LogDataProvider
+for Upper Cognition Motion mr CameraCalibration ConfigurationDataProvider
+for Cognition mr BallModel SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
+for Cognition mr GlobalOpponentsModel SimulatedWorldModelProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr ObstacleModel SimulatedWorldModelProvider
+for Cognition mr RobotPose SimulatedWorldModelProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+
+# Representations not required anymore
+mr AlternativeRobotPoseHypothesis off
+mr AutoExposureWeightTable off
+mr BallContactChecker off
+mr BallPercept off
+mr BallSpots off
+mr BodyContour off
+mr CameraCalibrationStatus off
+mr CameraImage off
+mr CameraIntrinsics off
+mr CameraResolutionRequest off
+mr CenterCircleWithLine off
+mr CirclePercept off
+mr ColorScanLineRegionsHorizontal off
+mr ColorScanLineRegionsVerticalClipped off
+mr CustomCalibrationLines off
+mr ECImage off
+mr FieldBoundary off
+mr FieldLineIntersections off
+mr FieldLines off
+mr FilteredBallPercepts off
+mr ImageCoordinateSystem off
+mr IntersectionCandidates off
+mr IntersectionsPercept off
+mr JerseyClassifier off
+mr JPEGImage off
+mr LinesPercept off
+mr LineCorrector off
+mr ObstacleScan off
+mr ObstaclesImagePercept off
+mr OptionalECImage off
+mr PenaltyAreaAndGoalArea off
+mr PenaltyMarkPercept off
+mr PenaltyMarkRegions off
+mr PenaltyMarkWithPenaltyAreaLine off
+mr PerceptRegistration off
+mr RelativeFieldColors off
+mr ScanGrid off
+mr SegmentedObstacleImage off
+mr SelfLocalizationHypotheses off
+mr SideInformation off
+mr OptionalCameraImage off
+
+# Representations that are still required
+mr ArmContactModel default
+mr CameraStatus default
+#mr GlobalOpponentsModel default
+mr ObstaclesFieldPercept default
+mr RefereeGesture default
+mr RefereeSignal default
+mr RobotHealth default
+for Motion mr CameraIntrinsics ConfigurationDataProvider
+
+call GameStates
+call DebugResponses

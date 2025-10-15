@@ -3,7 +3,7 @@
  *
  * This file declares a module that provides walk generators.
  *
- * @author Arne Hasslebring
+ * @author Arne Hasselbring
  */
 
 #pragma once

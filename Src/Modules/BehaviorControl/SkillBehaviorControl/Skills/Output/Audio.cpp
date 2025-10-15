@@ -12,7 +12,7 @@
 option((SkillBehaviorControl) PlaySound,
        args((const std::string&) name,
             (bool) force),
-       vars((std::string)("") lastSoundPlayed)) /**< The name of the last sound file played. */
+       vars((std::string) lastSoundPlayed)) /**< The name of the last sound file played. */
 {
   initial_state(execute)
   {

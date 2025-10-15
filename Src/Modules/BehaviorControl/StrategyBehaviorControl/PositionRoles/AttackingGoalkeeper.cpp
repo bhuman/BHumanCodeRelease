@@ -41,23 +41,23 @@ float AttackingGoalkeeper::rating(const Vector2f& pos) const
   const Vector2f deviation = pos - meanVector;
   const float baseRating = std::exp(-0.5f * deviation.transpose() * baseCovarianceMatrix.inverse() * deviation);
 
-//rating the position based on the difference to the last opponent
+  //rating the position based on the difference to the last opponent
   float opponentRating = 1.f;
   if(!(theGlobalOpponentsModel.opponents.empty()))
   {
-   auto lastOpponent = theGlobalOpponentsModel.opponents.at(0);
+    auto lastOpponent = theGlobalOpponentsModel.opponents.at(0);
 
-   //calculate the last opponent
-   for(const auto& opponent : theGlobalOpponentsModel.opponents)
-   {
-     if(opponent.position.x() < lastOpponent.position.x())
-     {
-      lastOpponent = opponent;
-     }
-   }
-   //calculate rating via logistic function
-   float diff = lastOpponent.position.x() - pos.x();
-   opponentRating = 1.f / (1.f + std::exp(-diff / p.sigmaOpponent));
+    //calculate the last opponent
+    for(const auto& opponent : theGlobalOpponentsModel.opponents)
+    {
+      if(opponent.position.x() < lastOpponent.position.x())
+      {
+        lastOpponent = opponent;
+      }
+    }
+    //calculate rating via logistic function
+    float diff = lastOpponent.position.x() - pos.x();
+    opponentRating = 1.f / (1.f + std::exp(-diff / p.sigmaOpponent));
   }
 
   //rating for the angle between ball and goalkeeper

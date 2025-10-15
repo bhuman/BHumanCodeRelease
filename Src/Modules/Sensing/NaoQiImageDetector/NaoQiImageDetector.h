@@ -21,7 +21,7 @@ MODULE(NaoQiImageDetector,
   {,
     (unsigned int)(101000) startTime, /**< Start detection after this timestamp is reached. 1 second after software start. */
     (int)(20000) wrongImageTime, /**< Repeat warning sound every 10 seconds. */
-    (Rangef)(-0.001f, 0.001f) valueRange, /**< Sensordata must be within this range to trigger the warning. */
+    (Rangef)(-0.001f, 0.001f) valueRange, /**< Sensor data must be within this range to trigger the warning. */
   }
   ),
 });
@@ -30,5 +30,5 @@ class NaoQiImageDetector : public NaoQiImageDetectorBase
 {
   void update(NaoQiImageInfo& theNaoQiImageInfo) override;
 
-  unsigned int lastSirene = 0;
+  unsigned int lastSiren = 0;
 };

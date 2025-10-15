@@ -20,8 +20,8 @@ for Motion mr JointSensorData LogDataProvider
 for Motion mr KeyStates LogDataProvider
 for Motion mr RawInertialSensorData LogDataProvider
 for Cognition mr GroundTruthWorldState LogDataProvider
-for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
-for Cognition mr GroundTruthBallModel OracledWorldModelProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
 
-call Includes/GameStates
-call Includes/DebugResponses
+call GameStates
+call DebugResponses

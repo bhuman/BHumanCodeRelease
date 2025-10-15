@@ -158,7 +158,7 @@ void SynchronizationMeasurementsBuffer::validate(unsigned sendTimestamp, unsigne
   // \c GameController::timeLastPacketReceived of sender and receiver. It is the inherent error bound of
   // the method, even if both clocks don't drift.
 
-  // ((receiveTimestamp - timestamp) / clockDriftDivier + 1) is an upper bound for how much each clock may have
+  // ((receiveTimestamp - timestamp) / clockDriftDivider + 1) is an upper bound for how much each clock may have
   // drifted from the "real" clock since the synchronization point (which is the GC packet). We disregard
   // the fact that (receiveTimestamp - timestamp) itself is measured by a robot's clock and thus may be too
   // short/long.

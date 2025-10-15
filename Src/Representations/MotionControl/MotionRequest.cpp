@@ -114,7 +114,15 @@ void MotionRequest::verify() const
 {
   ASSERT(motion >= static_cast<Motion>(0) && motion < numOfMotions);
   if(motion == walkAtAbsoluteSpeed || motion == walkAtRelativeSpeed || motion == walkToPose || motion == walkToBallAndKick || motion == dribble)
+  {
     ASSERT(walkSpeed.isFinite());
+    if(motion != walkAtAbsoluteSpeed)
+    {
+      ASSERT(Rangef::OneRange().isInside(walkSpeed.rotation));
+      ASSERT(Rangef::OneRange().isInside(walkSpeed.translation.x()));
+      ASSERT(Rangef::OneRange().isInside(walkSpeed.translation.y()));
+    }
+  }
 
   if(motion == walkToPose)
     ASSERT(walkTarget.isFinite());

@@ -16,12 +16,12 @@
 #include "Debugging/DebugImages.h"
 #include "Framework/ThreadFrame.h"
 #include "LogExtractor.h"
-#include "LogPlayer.h"
+#include "LogPlayback/LogPlayer.h"
 #include "Platform/Joystick.h"
 #include "Representations/AnnotationInfo.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/JoystickState.h"
-#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
+#include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
@@ -30,7 +30,7 @@
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/TimeInfo.h"
 #include "Streaming/OutStreams.h"
-#include "Tools/Communication/SharedAutonomyChannel.h"
+#include "Tools/Communication/RemoteControlChannel.h"
 #include "Views/DataView/DataView.h"
 #include "Visualization/DebugDrawing.h"
 #include "Visualization/DebugDrawing3D.h"
@@ -43,7 +43,6 @@
 class ConsoleRoboCupCtrl;
 class ImageView;
 class SimulatedRobot;
-class SACControlWidget;
 
 /**
  * @class RobotConsole
@@ -52,7 +51,6 @@ class SACControlWidget;
  */
 class RobotConsole : public ThreadFrame
 {
-  friend class SACControlWidget;
 private:
   /** A console command based on the joystick's axes that is executed when no button is pressed. */
   struct JoystickMotionCommand
@@ -171,14 +169,13 @@ public:
   ModuleInfo moduleInfo; /**< The current state of all solution requests. */
   DebugImageConverter debugImageConverter; /**< Helper for all image view to convert debug images. */
   ConsoleRoboCupCtrl* ctrl; /**< A pointer to the controller object. */
-  SharedAutonomyRequest sharedAutonomyRequest; /**< The command sent to the robot */
-  unsigned timeSharedAutonomyRequestSent = 0; /**< When was the command sent? Set to 0 to force sending immediately. */
+  unsigned timeRemoteControlMessageSent = 0; /**< When was the last UDP message sent? Set to 0 to force sending immediately. */
+  std::unique_ptr<SimulatedRobot> simulatedRobot; /**< The interface to simulated objects. */
 
 protected:
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
   const char* pollingFor = nullptr; /**< The information the console is waiting for. */
   bool jointCalibrationChanged = false; /**< Was the joint calibration changed since setting it for the local robot? */
-  std::unique_ptr<SimulatedRobot> simulatedRobot; /**< The interface to simulated objects. */
 
   // Representations received
   JointCalibration jointCalibration; /**< The new joint calibration angles received from the robot code. */
@@ -186,6 +183,7 @@ protected:
   JointRequest jointRequest; /**< The joint angles request received from the robot code. */
   MotionRequest motionRequest; /**< The motion request received from the robot code. */
   RawInertialSensorData rawInertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
+  SkillRequest skillRequest; /**< The current skill request from the robot code. */
 
 private:
   TypeInfo typeInfo; /**< Information about all data types used by the connected robot. */
@@ -240,7 +238,7 @@ private:
   std::string joystickButtonReleaseCommand[Joystick::numOfButtons]; /**< Command for each button release. */
   JoystickState joystickState; /**< The last joystick state measured. */
 
-  std::unique_ptr<SharedAutonomyChannel> sharedAutonomyChannel; /**< Channel to remote robot in shared autonomy challenge. */
+  std::unique_ptr<RemoteControlChannel> remoteControlChannel; /**< Channel to remote-controlled robot. */
 
 public:
   /**
@@ -282,11 +280,12 @@ public:
   void handleKeyEvent(int key, bool pressed);
 
   /**
-   * Request debug data.
+   * Request debug data or stop requesting it.
    * @param threadName The name of the thread the request is sent to.
    * @param name The name of the debug data. Does not contain "debug data:".
+   * @param active Request it or not.
    */
-  void requestDebugData(const std::string& threadName, const std::string& name);
+  void requestDebugData(const std::string& threadName, const std::string& name, bool active);
 
   /**
    * Send debug data to overwrite data in a specific thread.
@@ -371,8 +370,8 @@ private:
    */
   bool handleJoystickCommand(const std::string& cmd);
 
-  /** Handle messages from remote robot in the shared autonomy challenge. */
-  void handleSharedAutonomyMessages();
+  /** Handle messages from remote-controlled robot. */
+  void handleRemoteControlMessages();
 
   /**
    * Poll information of a certain kind if it needs updated.
@@ -425,11 +424,11 @@ private:
   bool moveRobot(In&);
   bool msg(In&);
   bool penalizeRobot(In&);
+  bool remoteControl(In&);
   bool repoll(In&);
   bool saveImage(In&, std::string threadName);
   bool sensorNoise(In&);
   bool set(In&, const std::string& threadName);
-  bool sharedAutonomyChallenge(In&);
   bool viewDrawing(In&, Views& views, const char* type);
   bool viewField(In&, const std::string& threadName);
   bool viewImage(In&, std::string threadName);

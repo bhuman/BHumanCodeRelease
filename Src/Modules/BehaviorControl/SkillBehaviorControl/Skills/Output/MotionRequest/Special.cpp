@@ -13,6 +13,7 @@ option((SkillBehaviorControl) Special,
 {
   theMotionRequest.motion = MotionRequest::special;
   theMotionRequest.specialRequest = request;
+  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

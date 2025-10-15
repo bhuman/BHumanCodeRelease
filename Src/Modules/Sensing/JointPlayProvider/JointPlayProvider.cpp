@@ -7,7 +7,9 @@
 #include "JointPlayProvider.h"
 #include "Debugging/Annotation.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
 #include "Platform/SystemCall.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(JointPlayProvider);
 
@@ -18,8 +20,7 @@ JointPlayProvider::JointPlayProvider()
     jointPlayValue[i].push_front(0.f);
     jointPlayValue[i].push_front(0.f);
     bufferValue[i] = 0.f;
-    // TODO is this even needed?
-    bufferRequest[i].clear();
+    bufferRequest[i].reserve(motionDelay);
   }
 }
 
@@ -39,7 +40,7 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
   isWalking = isWalkingNow;
   const bool skipBuffer = theFrameInfo.getTimeSince(startWalkingTimestamp) < minWalkTime || !isWalking;
   if(!skipBuffer)
-    timeSpendWalking += Constants::motionCycleTime;
+    timeSpendWalking += Global::getSettings().motionCycleTime;
   const float ratio = Rangef::ZeroOneRange().limit(timeSpendWalking / interpolateLowpassFilterTime);
   const float useLowPassFilterFactor = lowpassFilterFactor.min * ratio + lowpassFilterFactor.max * (1.f - ratio);
   Angle jointPlaySum = 0.f;
@@ -47,6 +48,8 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
   const float speedRatio = theWalkStepData.stepDuration == 0.f ? 0.f : (theWalkStepData.stepTarget.translation.x() / theWalkStepData.stepDuration) / maxForwardSpeed;
   const Angle jointPlayOffset = (1.f - Rangef::ZeroOneRange().limit((speedRatio - minSpeedRatio) / (1.f - minSpeedRatio))) * jointPlayScalingWalkingSpeed;
   bool jointAbovePlaySoundValue = false;
+
+  const float motionCycleTime = Global::getSettings().motionCycleTime;
 
   // 2. Filter
   FOREACH_ENUM(Joints::Joint, joint)
@@ -79,7 +82,7 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
     theJointPlay.jointState[joint].requestBoundary.max = std::max(bufferRequest[joint].back(), clippedJoint);
 
     theJointPlay.jointState[joint].lastExecutedRequest = bufferRequest[joint].back();
-    theJointPlay.jointState[joint].velocity = theJointAngles.angles[joint] - lastJointAngles.angles[joint];
+    theJointPlay.jointState[joint].velocity = (theJointAngles.angles[joint] - lastJointAngles.angles[joint]) / motionCycleTime;
 
     jointPlayValue[joint].push_front(std::abs(theJointPlay.jointState[joint].requestBoundary.limit(theJointAngles.angles[joint]) - theJointAngles.angles[joint]));
     if(joint > Joints::firstLegJoint)
@@ -87,7 +90,7 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
       const bool hasHighPlay = theMotionInfo.isMotion(MotionPhase::walk) && (std::abs(jointPlayValue[joint].front() - jointPlayValue[joint].back()) > minPlayForSound || jointPlayValue[joint].front() > minPlaySlowForSound);
       if(hasHighPlay)
         theJointPlay.jointState[joint].status =
-          static_cast<JointPlay::JointStatus>(std::min(static_cast<unsigned>(JointPlay::numOfJointStatuss) - 1, static_cast<unsigned>(theJointPlay.jointState[joint].status) + 1));
+          static_cast<JointPlay::JointStatus>(std::min(static_cast<unsigned>(JointPlay::numOfJointStatuses) - 1, static_cast<unsigned>(theJointPlay.jointState[joint].status) + 1));
       else
         theJointPlay.jointState[joint].status = JointPlay::allFine;
       if(hasHighPlay)
@@ -133,7 +136,7 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
   MODIFY("module:JointPlayProvider:sound", playSound);
 
   if(lastWarningTimestamp > theFrameInfo.time || // Time jumped backwards. Happens when replaying logs
-     (theFrameInfo.time - lastFrameInfoTime) > (Constants::motionCycleTime * 1000.f * 1.5f)) // Time jump is a lot larger than it should be
+     (theFrameInfo.time - lastFrameInfoTime) > (Global::getSettings().motionCycleTime * 1000.f * numOfFramesSkip)) // Time jump is a lot larger than it should be
     lastWarningTimestamp = theFrameInfo.time;
 
   if(playSound && theMotionInfo.isMotion(MotionPhase::walk) &&
@@ -159,14 +162,14 @@ void JointPlayProvider::update(JointPlay& theJointPlay)
       {
         joints += TypeRegistry::getEnumName(Joints::Joint(joint));
         joints += " ";
-        if(std::find(theDamageConfigurationBody.jointsToMuteSirenes.cbegin(), theDamageConfigurationBody.jointsToMuteSirenes.cend(), joint) == theDamageConfigurationBody.jointsToMuteSirenes.cend())
+        if(std::find(theDamageConfigurationBody.jointsToMuteSirens.cbegin(), theDamageConfigurationBody.jointsToMuteSirens.cend(), joint) == theDamageConfigurationBody.jointsToMuteSirens.cend())
           playSound = true;
       }
       ANNOTATION("JointPlayProvider", "Joint with high play " << joints);
 
       if(playSound)
       {
-        SystemCall::playSound("sirene.wav", true);
+        SystemCall::playSound("siren", true);
         SystemCall::say((std::string("Joints may be broken ") + joints).c_str(), true);
       }
     }

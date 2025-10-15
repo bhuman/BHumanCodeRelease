@@ -12,12 +12,16 @@
 #include "Platform/Time.h"
 #include "Streaming/TypeInfo.h"
 
+#ifndef TARGET_ROBOT
+static DebugReceiver<MessageQueue>* dummy = nullptr;
+#endif
+
 Debug::Debug(const Settings& settings, const std::string& robotName, const Configuration& config) :
 #ifdef TARGET_ROBOT
   ThreadFrame(settings, robotName, nullptr, nullptr), // Initializes the MessageQueues used from the DebugHandler.
   debugHandler(*debugReceiver, *debugSender, MAX_PACKAGE_SEND_SIZE, 0),
 #else
-  ThreadFrame(settings, robotName),
+  ThreadFrame(settings, robotName, new DebugReceiver<MessageQueue>(this, "LocalConsole"), new DebugSender<MessageQueue>(*dummy, "LocaleConsole")),
 #endif
   config(config)
 {
@@ -57,9 +61,9 @@ void Debug::init()
       for(; i < config().size(); i++)
         if(config()[i].name == sender.receiverThreadName)
           break;
-      auto stream = sender.bin(idModuleRequest);
-      stream << moduleGraphCreator->getExecutionValues(i);
-      stream << -1;
+      auto outStream = sender.bin(idModuleRequest);
+      outStream << moduleGraphCreator->getExecutionValues(i);
+      outStream << -1;
     }
   }
 }
@@ -174,36 +178,49 @@ bool Debug::main()
 
   // If there is still data to be sent, immediately start a new cycle.
   // Otherwise, wait for the next packet to arrive.
+#ifndef TARGET_ROBOT
   if(debugSender->size() > 0)
   {
-    Thread::yield();
+    yield();
     return false;
   }
   else
+#endif
     return true;
 }
 
 void Debug::removeRepetitions()
 {
-  std::unordered_map<std::string, std::array<size_t, numOfMessageIDs>> threads;
+  std::unordered_map<std::string, std::array<size_t, numOfMessageIDs>> messagesPerTypeAndThread;
+  std::unordered_map<std::string, std::unordered_map<std::string, size_t>> debugDataPerIdAndThread;
   std::string thread = "unknown";
+  std::string id;
 
-  size_t* messagesPerType = threads[thread].data();
+  size_t* messagesPerType = messagesPerTypeAndThread[thread].data();
+  std::unordered_map<std::string, size_t>* debugDataPerId = &debugDataPerIdAndThread[thread];
   for(MessageQueue::Message message : *debugSender)
   {
     if(message.id() == idFrameBegin)
     {
       message.bin() >> thread;
-      messagesPerType = threads[thread].data();
+      messagesPerType = messagesPerTypeAndThread[thread].data();
+      debugDataPerId = &debugDataPerIdAndThread[thread];
     }
-    ++messagesPerType[message.id()];
+    if(message.id() == idDebugDataResponse)
+    {
+      message.bin() >> id;
+      ++(*debugDataPerId)[id];
+    }
+    else
+      ++messagesPerType[message.id()];
   }
 
-  messagesPerType = threads["unknown"].data();
+  messagesPerType = messagesPerTypeAndThread["unknown"].data();
+  debugDataPerId = &debugDataPerIdAndThread["unknown"];
   size_t originalSize = 0;
   size_t sizeAfterFrameBegin = 0;
 
-  debugSender->filter([&](MessageQueue::const_iterator i)
+  debugSender->filter([&](const MessageQueue::const_iterator i)
   {
     MessageQueue::Message message = *i;
     switch(message.id())
@@ -212,7 +229,8 @@ void Debug::removeRepetitions()
         originalSize = debugSender->size();
         message.bin() >> thread;
         sizeAfterFrameBegin = debugSender->size();
-        messagesPerType = threads[thread].data();
+        messagesPerType = messagesPerTypeAndThread[thread].data();
+        debugDataPerId = &debugDataPerIdAndThread[thread];
         return true;
 
       case idFrameFinished:
@@ -232,7 +250,6 @@ void Debug::removeRepetitions()
       case idNumOfDataMessageIDs:
       case idDebugRequest:
       case idDebugResponse:
-      case idDebugDataResponse:
       case idPlot:
       case idConsole:
       case idAudioData:
@@ -240,6 +257,11 @@ void Debug::removeRepetitions()
       case idLogResponse:
       case idThread:
         return true;
+
+      // only the latest messages for debug data per id
+      case idDebugDataResponse:
+        message.bin() >> id;
+        return --(*debugDataPerId)[id] == 0;
 
       // only the latest messages for infrastructure
       default:
@@ -257,7 +279,7 @@ void Debug::removeRepetitions()
   });
 }
 
-bool Debug::handleMessage(MessageQueue::Message message)
+bool Debug::handleMessage(const MessageQueue::Message message)
 {
   switch(message.id())
   {
@@ -327,8 +349,19 @@ bool Debug::handleMessage(MessageQueue::Message message)
       [[fallthrough]];
 
     default:
-      *senderMap[currentThreadName.empty() ? threadName : currentThreadName] << message;
+    {
+      const char* currentThread = (currentThreadName.empty() ? threadName : currentThreadName).c_str();
+      auto sender = senderMap.find(currentThread);
+      if(sender != senderMap.end())
+        *sender->second << message;
+      else if(message.id() == idFrameFinished)
+      {
+        debugSender->bin(idFrameBegin) << currentThread;
+        debugSender->bin(idLogResponse) << '\0';
+        debugSender->bin(idFrameFinished) << currentThread;
+      }
       currentThreadName = "";
       return true;
+    }
   }
 }

@@ -13,7 +13,7 @@ void BallLostProvider::update(BallLostModel& theBallLostModel)
   bool* lastFrameDetected = theCameraInfo.camera == CameraInfo::upper ? &lastUpperDetectedBall : &lastLowerDetectedBall;
 
   if(theFrameInfo.time != theBallModel.timeWhenLastSeen && theBallModel.timeOfLastCollision > lastBallSeenTimestamp)
-    theBallLostModel.relativeAlternativBallPosition = theOdometer.odometryOffset.inverse() * theBallLostModel.relativeAlternativBallPosition;
+    theBallLostModel.relativeAlternateBallPosition = theOdometer.odometryOffset.inverse() * theBallLostModel.relativeAlternateBallPosition;
   else if(theFrameInfo.time == theBallModel.timeWhenLastSeen)
   {
     if(!(*lastFrameDetected))
@@ -23,12 +23,12 @@ void BallLostProvider::update(BallLostModel& theBallLostModel)
     }
     else
     {
-      theBallLostModel.relativeAlternativBallPosition = theBallModel.estimate.position;
-      theBallLostModel.relativeAlternativBallDirectionWhenLastSeen = theBallModel.estimate.position.angle();
+      theBallLostModel.relativeAlternateBallPosition = theBallModel.estimate.position;
+      theBallLostModel.relativeAlternateBallDirectionWhenLastSeen = theBallModel.estimate.position.angle();
       lastBallSeenTimestamp = theFrameInfo.time;
       blockUpdate = false;
     }
   }
   else if(!blockUpdate)
-    theBallLostModel.relativeAlternativBallPosition = theBallModel.estimate.position;
+    theBallLostModel.relativeAlternateBallPosition = theBallModel.estimate.position;
 }

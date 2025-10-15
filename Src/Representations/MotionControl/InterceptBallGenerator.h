@@ -17,5 +17,6 @@
 STREAMABLE_WITH_BASE(InterceptBallGenerator, MotionGenerator,
 {
   BASE_HAS_FUNCTION;
-  FUNCTION(Pose2f(const MotionRequest& motionRequest, const std::vector<Vector2f>& translationPolygon, const bool isLeftPhase, const std::optional<Vector2f>& oldStep)) intercept,
+  FUNCTION(Pose2f(const MotionRequest& motionRequest, const std::vector<Vector2f>& translationPolygon, const bool isLeftPhase, const std::optional<Vector2f>& oldStep)) intercept;
+  FUNCTION(Pose2f(const MotionRequest& motionRequest, const std::vector<Vector2f>& translationPolygon, const bool isLeftPhase, const Pose2f& oldStep)) kickIntercept,
 });

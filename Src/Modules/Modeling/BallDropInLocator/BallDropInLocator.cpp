@@ -81,10 +81,10 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
   Vector2f ballPositionOnField;
   Vector2f ballVelocityOnField;
 
-  if(theTeammatesBallModel.isValid && theTeammatesBallModel.newerThanOwnBall)
+  if(theTeamBallModel.isValid && theTeamBallModel.newerThanOwnBall)
   {
-    ballPositionOnField = theTeammatesBallModel.position;
-    ballVelocityOnField = theTeammatesBallModel.velocity;
+    ballPositionOnField = theTeamBallModel.position;
+    ballVelocityOnField = theTeamBallModel.velocity;
   }
   else if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 8000)
   {

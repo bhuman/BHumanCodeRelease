@@ -198,6 +198,8 @@ namespace NeuralNetworkONNX
       for(size_t i = 0; i < session.GetInputCount(); i++)
       {
         inputNames.emplace_back(session.GetInputName(i, allocator));
+        if(session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+          ORT_CXX_API_THROW("Network inputs must be float values", ORT_FAIL);
         inputDims.emplace_back(session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
         size_t size = 1;
         for(int64_t& dim : inputDims.back())
@@ -214,6 +216,8 @@ namespace NeuralNetworkONNX
       for(size_t i = 0; i < session.GetOutputCount(); i++)
       {
         outputNames.emplace_back(session.GetOutputName(i, allocator));
+        if(session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+          ORT_CXX_API_THROW("Network outputs must be float values", ORT_FAIL);
         outputDims.emplace_back(session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
         size_t size = 1;
         for(int64_t& dim : outputDims.back())

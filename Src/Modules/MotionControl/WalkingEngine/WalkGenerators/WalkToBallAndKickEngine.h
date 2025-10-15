@@ -20,6 +20,7 @@
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/WalkKickGenerator.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkToBallAndKickGenerator.h"
 #include "Representations/MotionControl/WalkToBallGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
@@ -43,6 +44,7 @@ MODULE(WalkToBallAndKickEngine,
   REQUIRES(WalkGenerator),
   REQUIRES(WalkKickGenerator),
   REQUIRES(WalkingEngineOutput),
+  REQUIRES(WalkStepData),
   REQUIRES(WalkToBallGenerator),
   PROVIDES(WalkToBallAndKickGenerator),
   DEFINES_PARAMETERS(
@@ -55,13 +57,15 @@ MODULE(WalkToBallAndKickEngine,
     (Rangef)(Rangef(50.f, 350.f)) forwardStealBallUnseenInterpolationRange,
     (float)(50.f) kickPoseMaxYTranslation, /**< Kick pose y-Translation must be smaller than this threshold. */
     (Rangef)(Rangef(-80.f, -40.f)) forwardFastYClipRange, /**< For the dynamic points, clip the y position. */
-    (Pose2f)(Pose2f(7_deg, 30.f, 40.f)) robotStuckThresholds, /**< Thresholds to start the V-shape kickpose. */
+    (Pose2f)(Pose2f(7_deg, 30.f, 40.f)) robotStuckThresholds, /**< Thresholds to start the V-shape kick pose. */
     (float)(100.f) minBallPositionFuture, /**< Ball must land this far behind us if it is rolling towards us. */
     (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relative to the closest point it will have to us. */
     (float)(50.f) minBallVelocityCloseRange, /**< Clip ball velocity to this value when close to the ball. */
     (Rangef)(150.f, 2000.f) ballVelocityInterpolationRange, /**< Based on the current ball distance interpolate the velocity. */
     (float)(50.f) maxBallVelocityKickEngine, /**< Max allowed ball velocity for KickEngine kicks. */
     (float)(500.f) maxBallVelocityInWalkKick, /**< Max allowed ball velocity for WalkKickEngine kicks. */
+    (float)(0.036f) maxStandDelayTime, /**< Delay next walk phase for max this time. */
+    (Vector2f)(0.5f, 2.f) slippingCorrectionFactor, /**< When positioning behind the ball, use those factors to scale the odometry error. */
   }),
 });
 
@@ -70,10 +74,13 @@ class WalkToBallAndKickEngine : public WalkToBallAndKickEngineBase
   void update(WalkToBallAndKickGenerator& walkToBallAndKickGenerator) override;
   bool lastPhaseWasKick = false; /**< Was last motion phase a kick phase? */
   bool lastPhaseWasKickPossible = false; /**< Last phase the kick was possible. */
+  float standWaitTime = 0.f;
+  bool motionRequestChanged = false;
+  Pose2f lastMotionRequestOdometry;
   bool ignoreBallTimestamp = false;
   Vector2f lastStableBall = Vector2f(0.f, 0.f);
 
-  OdometryDataPreview lastOdometry;
+  OdometryData lastOdometry;
   OdometryTranslationRequest lastOdometryRequest;
 
   /**

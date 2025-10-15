@@ -1,4 +1,4 @@
-# Configuration for simulation scenes with oracled percepts
+# Configuration for simulation scenes with simulated percepts
 
 # Activate simulation time
 st on
@@ -14,11 +14,11 @@ ci off
 
 # Ground truth modules
 for Cognition mr GroundTruthWorldState LogDataProvider
-for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
-for Cognition mr GroundTruthBallModel OracledWorldModelProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
 
 # Field views need ground truth and some later deactivated modules
-call Includes/FieldViews
+call FieldViews
 
 # Select modules for simulator
 for Lower Upper mr CameraInfo LogDataProvider
@@ -46,7 +46,6 @@ mr CameraIntrinsics off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage default
-mr GoalPostsPercept default
 mr JerseyClassifier off
 mr JPEGImage off
 mr ObstacleScan off
@@ -62,14 +61,14 @@ mr SegmentedObstacleImage off
 # Representations that are still required
 mr CameraStatus default
 mr RobotHealth default
-mr RefereePercept default
+mr RefereeGesture default
+mr RefereeSignal default
 mr OptionalCameraImage default
 mr OptionalECImage default
-mr Keypoints default
 for Motion mr CameraIntrinsics ConfigurationDataProvider
 
-call Includes/GameStates
-call Includes/DebugResponses
+call GameStates
+call DebugResponses
 
 dr debugDrawing3d:representation:RobotPose
 dr debugDrawing3d:representation:GameState:playerNumber

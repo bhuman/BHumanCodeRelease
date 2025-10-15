@@ -32,7 +32,7 @@ bool CameraProvider::resetPending = false;
 #endif
 
 CameraProvider::CameraProvider()
-  : whichCamera(Thread::getCurrentThreadName() == "Upper" ?  CameraInfo::upper : CameraInfo::lower),
+  : whichCamera(Thread::getCurrentThreadName() == "Upper" ? CameraInfo::upper : CameraInfo::lower),
     cameraInfo(whichCamera)
 {
   VERIFY(readCameraIntrinsics());
@@ -66,6 +66,9 @@ CameraProvider::~CameraProvider()
 void CameraProvider::update(CameraImage& theCameraImage)
 {
 #ifdef TARGET_ROBOT
+  if((whichCamera == CameraInfo::upper && theCameraResolutionRequest.resolutions[CameraInfo::lower] == CameraResolutionRequest::w1280h960 && theCameraResolutionRequest.resolutions[CameraInfo::upper] != CameraResolutionRequest::w1280h960) ||
+     (whichCamera == CameraInfo::lower && theCameraResolutionRequest.resolutions[CameraInfo::upper] == CameraResolutionRequest::w1280h960 && theCameraResolutionRequest.resolutions[CameraInfo::lower] != CameraResolutionRequest::w1280h960))
+    Thread::sleep(200);
   unsigned timestamp = static_cast<long long>(camera->getTimestamp() / 1000) > static_cast<long long>(Time::getSystemTimeBase())
                        ? static_cast<unsigned>(camera->getTimestamp() / 1000 - Time::getSystemTimeBase()) : 100000;
   if(camera->hasImage())
@@ -137,13 +140,13 @@ void CameraProvider::update(CameraStatus& cameraStatus)
     if(cameraStatus.ok)
     {
       ANNOTATION("CameraProvider", "Could not acquire new image.");
-      SystemCall::playSound("sirene.wav", true);
+      SystemCall::playSound("siren", true);
       SystemCall::say("Camera broken", true);
     }
 #ifdef NDEBUG
     else if(!SystemCall::soundIsPlaying())
     {
-      SystemCall::playSound("sirene.wav", true);
+      SystemCall::playSound("siren", true);
       SystemCall::say("Camera broken", true);
     }
 #endif
@@ -203,24 +206,7 @@ bool CameraProvider::processResolutionRequest()
 void CameraProvider::setupCamera()
 {
   // set resolution
-  switch(cameraResolutionRequest.resolutions[whichCamera])
-  {
-    case CameraResolutionRequest::w320h240:
-      cameraInfo.width = 320;
-      cameraInfo.height = 240;
-      break;
-    case CameraResolutionRequest::w640h480:
-      cameraInfo.width = 640;
-      cameraInfo.height = 480;
-      break;
-    case CameraResolutionRequest::w1280h960:
-      cameraInfo.width = 1280;
-      cameraInfo.height = 960;
-      break;
-    default:
-      FAIL("Unknown resolution.");
-      break;
-  }
+  cameraResolutionRequest.apply(whichCamera, cameraInfo);
 
   // set opening angle
   cameraInfo.openingAngleWidth = cameraIntrinsics.cameras[whichCamera].openingAngleWidth;
@@ -232,7 +218,11 @@ void CameraProvider::setupCamera()
 
   // update focal length
   cameraInfo.updateFocalLength();
+  createCamera();
+}
 
+void CameraProvider::createCamera()
+{
 #ifdef TARGET_ROBOT
   ASSERT(camera == nullptr);
   camera = new NaoCamera(whichCamera == CameraInfo::upper ?
@@ -264,6 +254,8 @@ void CameraProvider::takeImages()
   Thread::nameCurrentThread("CameraProvider");
   thread.setPriority(11);
   unsigned imageReceived = Time::getRealSystemTime();
+  unsigned cameraStarted = Time::getRealSystemTime();
+  bool restartedStream = false;
   while(thread.isRunning())
   {
     if(camera->resetRequired)
@@ -282,6 +274,8 @@ void CameraProvider::takeImages()
       }
       setupCamera();
       performingReset.post();
+      cameraStarted = Time::getRealSystemTime();
+      imageReceived = Time::getRealSystemTime();
       continue;
     }
 
@@ -300,7 +294,8 @@ void CameraProvider::takeImages()
 
     while(!camera->hasImage())
     {
-      cameraOk = camera->captureNew(maxWaitForImage);
+      // If we just restarted the camera, use a larger timeout
+      cameraOk = camera->captureNew(Time::getRealTimeSince(cameraStarted) > timeBetweenResets ? minWaitForImage : maxWaitForImage);
 
       if(!cameraOk)
       {
@@ -310,16 +305,24 @@ void CameraProvider::takeImages()
     }
 
     if(camera->hasImage())
+    {
       imageReceived = Time::getRealSystemTime();
-    else if(Time::getRealTimeSince(imageReceived) > resetDelay)
+      restartedStream = false;
+    }
+    // Reset camera only after some time passed after the last reset
+    else if(Time::getRealTimeSince(cameraStarted) > timeBetweenResets && Time::getRealTimeSince(imageReceived) > resetDelay)
     {
       delete camera;
-      camera = new NaoCamera(whichCamera == CameraInfo::upper ?
-                             "/dev/video-top" : "/dev/video-bottom",
-                             cameraInfo.camera,
-                             cameraInfo.width, cameraInfo.height, whichCamera == CameraInfo::upper,
-                             theCameraSettings.cameras[whichCamera], theAutoExposureWeightTable.tables[whichCamera]);
+      camera = nullptr;
+      createCamera();
       imageReceived = Time::getRealSystemTime();
+      cameraStarted = Time::getRealSystemTime();
+    }
+    // We assume the camera stream died, therefore only restart the stream
+    else if(Time::getRealTimeSince(cameraStarted) > timeBetweenResets && Time::getRealTimeSince(imageReceived) > static_cast<int>(minWaitForImage) && !restartedStream)
+    {
+      resetPending = !(camera->simpleCameraReset());
+      restartedStream = true;
     }
 
     if(camera->hasImage())

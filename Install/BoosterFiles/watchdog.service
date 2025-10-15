@@ -1,0 +1,11 @@
+[Unit]
+Description=B-Human Watchdog service
+
+[Service]
+ExecStart=/home/master/bin/watchdog
+TimeoutStopSec=1s
+Restart=always
+RestartSec=1s
+
+[Install]
+WantedBy=default.target

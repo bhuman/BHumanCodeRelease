@@ -1,0 +1,15 @@
+# Add robot processes used for visualization.
+sl remote remote DigitalTwin
+robot remote
+
+# Must be started before sending debug requests, so that
+# Cognition receives new data from Upper and Lower.
+rc remote 5 10.0.255.255
+
+# Request data to animate the remote puppet.
+dr representation:JointSensorData
+dr representation:RawInertialSensorData
+
+# Add views for camera images.
+for Upper Lower vi CameraImage
+call ../Includes/DigitalTwin

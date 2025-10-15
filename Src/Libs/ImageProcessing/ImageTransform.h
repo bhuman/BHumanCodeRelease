@@ -210,7 +210,7 @@ namespace ImageTransform
   }
 
   ////////
-  // TODO opimize below
+  // TODO optimize below
 
   void polarTransform(const Image<float>& src, Image<float>& dest)
   {

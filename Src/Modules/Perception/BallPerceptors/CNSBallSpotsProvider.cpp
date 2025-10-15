@@ -126,11 +126,11 @@ void CNSBallSpotsProvider::draw()
   {
     Contour ctAll;
     detector.renderSearchSpace(ctAll, detector.camera, 1);
-    drawRasteredContour(ctAll, ColorRGBA::green);
+    drawRasterizedContour(ctAll, ColorRGBA::green);
   }
 }
 
-void CNSBallSpotsProvider::drawRasteredContour(const Contour& contour, [[maybe_unused]] const ColorRGBA& color) const
+void CNSBallSpotsProvider::drawRasterizedContour(const Contour& contour, [[maybe_unused]] const ColorRGBA& color) const
 {
   for(unsigned i = 0; i < contour.size(); ++i)
   {

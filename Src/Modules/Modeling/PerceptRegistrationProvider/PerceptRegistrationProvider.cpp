@@ -144,9 +144,6 @@ void PerceptRegistrationProvider::preprocessMeasurements(PerceptRegistration& pe
     perceptRegistration.totalNumberOfAvailableLandmarks++;
   if(theCirclePercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
-  for(auto const& goalPost : theGoalPostsPercept.goalPosts)
-    if(goalPost.baseInImage)
-      perceptRegistration.totalNumberOfAvailableLandmarks++;
   perceptRegistration.totalNumberOfAvailableLandmarks += static_cast<int>(theFieldLineIntersections.intersections.size());
   // --- Lines:
   perceptRegistration.totalNumberOfAvailableLines = static_cast<int>(theFieldLines.lines.size());
@@ -245,22 +242,6 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
       newLandmark.model = intersectionInWorldModel;
       newLandmark.percept = intersection.pos;
       newLandmark.covPercept = intersection.cov;
-      landmarks.push_back(newLandmark);
-    }
-  }
-  // Register goal posts: I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I I
-  for(unsigned int i = 0; i < theGoalPostsPercept.goalPosts.size(); ++i)
-  {
-    const auto& goalPost = theGoalPostsPercept.goalPosts[i];
-    if(!goalPost.baseInImage)
-      continue;
-    Vector2f goalPostInWorldModel;
-    if(getCorrespondingGoalPost(pose, goalPost.positionOnField, goalPostInWorldModel))
-    {
-      RegisteredLandmark newLandmark;
-      newLandmark.model = goalPostInWorldModel;
-      newLandmark.percept = goalPost.positionOnField;
-      newLandmark.covPercept = goalPost.covarianceOnField;
       landmarks.push_back(newLandmark);
     }
   }
@@ -488,11 +469,11 @@ PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pos
       continue;
     // Not other conditions implemented yet. Some more might be added later (see old implementation).
     // ...
-    // Check association of perceived line to halfway line. Often, short schniptzels of the center circle
+    // Check association of perceived line to halfway line. Often, short segments of the center circle
     // become falsely associated to the halfway line, causing a translational error in the self-localization.
     // Thus, any perceived halfway line must be longer than the center circle diameter, if it was perceived
     // from a distance that is larger than the diameter.
-    // Please note that these are just frickelparameters, but I do not think that we should
+    // Please note that these are just fiddle parameters, but I do not think that we should
     // add some separate parameters to the module.
     const float diameter = 2.f * theFieldDimensions.centerCircleRadius;
     if(worldModelLine.isHalfwayLine && lineLength < diameter &&

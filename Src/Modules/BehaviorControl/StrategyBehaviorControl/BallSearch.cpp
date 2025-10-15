@@ -24,10 +24,10 @@ void BallSearch::postProcess()
   MODIFY("behavior:BallSearch", activationGraph);
 }
 
-SkillRequest BallSearch::execute(const Agent& agent, const Agents& otherAgents)
+SkillRequest BallSearch::execute(const Agent& agent)
 {
   this->agent = &agent;
-  agents = otherAgents;
+
   // Execute behavior
   Root();
   this->agent = nullptr;

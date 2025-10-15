@@ -19,7 +19,10 @@
 			<key>NSRequiredContext</key>
 			<dict>
 				<key>NSApplicationIdentifier</key>
-				<string>com.apple.dt.Xcode</string>
+				<array>
+   					<string>com.apple.dt.Xcode</string>
+					<string>com.microsoft.VSCode</string>
+				</array>
 			</dict>
 			<key>NSReturnTypes</key>
 			<array>

@@ -1,0 +1,170 @@
+{
+  "folders": [
+    {
+      "path": "../.."
+    }
+  ],
+  "tasks": {
+    "version": "2.0.0",
+    "inputs": [
+      {
+        "id": "target",
+        "type": "command",
+        "command": "cpptools.activeConfigCustomVariable",
+        "args": "target"
+      },
+      {
+        "id": "configuration",
+        "type": "command",
+        "command": "cpptools.activeConfigCustomVariable",
+        "args": "configuration"
+      },
+      {
+        "id": "generateOption",
+        "type": "command",
+        "command": "cpptools.activeConfigCustomVariable",
+        "args": "generateOption"
+      }
+    ],
+    "tasks": [
+      {
+        "label": "generate",
+        "type": "shell",
+        "command": "${workspaceFolder}/Make/macOS/generate",
+        "problemMatcher": [],
+        "options": {
+          "env": {
+            "NO_XCTEST": "ON",
+            "GENERATE_OPTION": "${input:generateOption}"
+          }
+        }
+      },
+      {
+        "label": "B-Human",
+        "type": "process",
+        "command": "${workspaceFolder}/Make/macOS/compile",
+        "args": [
+          "${input:target}",
+          "${input:configuration}"
+        ],
+        "options": {
+          "env": {
+            "NO_XCTEST": "ON",
+            "GENERATE_OPTION": "${input:generateOption}"
+          }
+        },
+        "problemMatcher": [
+          "$gcc"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": false
+        }
+      },
+      {
+        "label": "Tests",
+        "type": "process",
+        "command": "${workspaceFolder}/Make/macOS/compile",
+        "args": [
+          "Tests",
+          "${input:configuration}"
+        ],
+        "options": {
+          "env": {
+            "NO_XCTEST": "ON",
+            "GENERATE_OPTION": "${input:generateOption}"
+          }
+        },
+        "problemMatcher": [
+          "$gcc"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": false
+        }
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "inputs": [
+      {
+        "id": "configuration",
+        "type": "command",
+        "command": "cpptools.activeConfigCustomVariable",
+        "args": "configuration",
+      },
+      {
+        "id": "program",
+        "type": "command",
+        "command": "cpptools.activeConfigCustomVariable",
+        "args": "program",
+      }
+    ],
+    "configurations": [
+      {
+        "name": "B-Human",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${input:program}",
+        "cwd": "${workspaceFolder}",
+        "preLaunchTask": "B-Human",
+        "logging": {
+          "moduleLoad": false
+        },
+        "MIMode": "lldb"
+      },
+      {
+        "name": "Tests",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/Build/macOS/Tests/${input:configuration}/Tests.app/Contents/MacOS/Tests",
+        "cwd": "${workspaceFolder}",
+        "preLaunchTask": "Tests",
+        "logging": {
+          "moduleLoad": false
+        },
+        "MIMode": "lldb"
+      }
+    ],
+    "compounds": []
+  },
+  "extensions": {
+    "recommendations": [
+      "matepek.vscode-catch2-test-adapter",
+      "ms-vscode.cpptools",
+      "streetsidesoftware.code-spell-checker"
+    ]
+  },
+  "settings": {
+    "C_Cpp.codeAnalysis.clangTidy.enabled": false,
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "C_Cpp.doxygen.generatedStyle": "/**",
+    "C_Cpp.formatting": "vcFormat",
+    "C_Cpp.inlayHints.parameterNames.enabled": true,
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.vcFormat.indent.caseLabels": true,
+    "C_Cpp.vcFormat.indent.lambdaBracesWhenParameter": false,
+    "C_Cpp.vcFormat.indent.withinParentheses": "alignToParenthesis",
+    "C_Cpp.vcFormat.newLine.beforeOpenBrace.block": "newLine",
+    "C_Cpp.vcFormat.newLine.beforeOpenBrace.namespace": "newLine",
+    "C_Cpp.vcFormat.newLine.beforeWhileInDoWhile": true,
+    "C_Cpp.vcFormat.newLine.closeBraceSameLine.emptyFunction": true,
+    "C_Cpp.vcFormat.space.afterCastCloseParenthesis": true,
+    "C_Cpp.vcFormat.space.afterKeywordsInControlFlowStatements": false,
+    "C_Cpp.vcFormat.space.withinInitializerListBraces": false,
+    "debug.hideSlowPreLaunchWarning": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "files.autoSave": "afterDelay",
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "search.followSymlinks": false,
+    "test.executables": "${workspaceFolder}/Build/macOS/Tests/*/Tests.app/Contents/MacOS/Tests",
+    "editor.accessibilitySupport": "on",
+    "accessibility.signalOptions.volume": 0
+  }
+}

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "SimulatedRobot.h"
-#include "GameController.h"
+#include "TestGameController.h"
 #include "Framework/Settings.h"
 #include <SimRobotCore2.h>
 #include <SimRobotCore2D.h>
@@ -48,7 +48,7 @@ class RoboCupCtrl : public SimRobot::Module, public SimRobotCore2::CollisionCall
 public:
   static RoboCupCtrl* controller; /**< A pointer to the SimRobot controller. */
   static SimRobot::Application* application; /**< The interface to the SimRobot GUI. */
-  GameController gameController;
+  TestGameController gameController;
   PaintMethods3DOpenGL* paintMethods3D = nullptr;
   bool is2D = false; /**< Whether the controller is loaded in the 2D simulator (otherwise it is 3D simulation). */
   float simStepLength; /**< The length of one simulation step (in ms). */
@@ -88,7 +88,7 @@ public:
   /**
    * Adds a scene graph object to the scene graph displayed in SimRobot
    * @param object The scene graph object to add
-   * @param categoryName The full name of the parent categroy
+   * @param categoryName The full name of the parent category
    * @param flags Some flags for registering the scene graph object (see SimRobot::Flag)
    */
   void addView(SimRobot::Object* object, const QString& categoryName, int flags = 0);
@@ -116,6 +116,12 @@ public:
    * @return The category
    */
   SimRobot::Object* addCategory(const QString& name, const QString& parentName);
+
+  /**
+   * Determines the robot type from a special object present in the scene.
+   * @return The robot type.
+   */
+  Settings::RobotType getRobotType() const;
 
 protected:
   /**

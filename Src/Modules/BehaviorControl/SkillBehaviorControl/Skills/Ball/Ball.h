@@ -55,7 +55,7 @@ option(GoToBallAndKick, args((Angle) targetDirection,
                              (bool)(true) turnKickAllowed,
                              (bool)(false) shiftTurnKickPose,
                              (const Pose2f&)({1.f, 1.f, 1.f}) speed,
-                             (ReduceWalkSpeedType)(ReduceWalkSpeedType::noChange) reduceWalkSpeedType,
+                             (ReduceWalkSpeedType::ReduceWalkSpeedType)(ReduceWalkSpeedType::noChange) reduceWalkSpeedType,
                              (const Rangea&)({0_deg, 0_deg}) directionPrecision));
 
 /** This skill plays the ball when the own goal posts constrain the possible kick poses. */
@@ -88,7 +88,7 @@ option(PassToTeammate, args((int) playerNumber));
  */
 option(PenaltyStrikerGoToBallAndKick, args((const Pose2f&) kickPose,
                                            (KickInfo::KickType) kickType,
-                                           (float) walkSpeed));
+                                           (Pose2f) walkSpeed));
 
 /** This skill plays the ball under consideration of the skill request. */
 option(PlayBall);

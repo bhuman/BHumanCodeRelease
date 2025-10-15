@@ -21,7 +21,6 @@
 #include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
 #include "Representations/Perception/FieldFeatures/PenaltyAreaAndGoalArea.h"
-#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Framework/Module.h"
 
 MODULE(PerceptRegistrationProvider,
@@ -31,7 +30,6 @@ MODULE(PerceptRegistrationProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLineIntersections),
   REQUIRES(FieldLines),
-  REQUIRES(GoalPostsPercept),
   REQUIRES(PenaltyMarkPercept),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
   REQUIRES(PenaltyAreaAndGoalArea),

@@ -107,11 +107,14 @@ void ObstacleModel::draw() const
       CYLINDER3D("representation:ObstacleModel", center.x(), center.y(), 290, 0, 0, 0, 100, 580, ColorRGBA(color.r, color.g, color.b, 128));
     else
       CYLINDER3D("representation:ObstacleModel", center.x(), center.y(), -210, 0, 0, 0, 0.5f * (left - right).norm(), 10, color);
-    CROSS("representation:ObstacleModel:centerCross", center.x(), center.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, color);
+    const float robotDepth = Blackboard::getInstance().exists("RobotDimensions")
+                             ? static_cast<const RobotDimensions&>(Blackboard::getInstance()["RobotDimensions"]).robotDepth : 80.f;
+
+    CROSS("representation:ObstacleModel:centerCross", center.x(), center.y(), robotDepth, 10, Drawings::solidPen, color);
 
     float obstacleRadius = (left - right).norm() * .5f;
     Angle robotRotation = Blackboard::getInstance().exists("RobotPose") ? static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]).rotation : Angle();
-    Vector2f frontRight(-Obstacle::getRobotDepth(), -obstacleRadius);
+    Vector2f frontRight(-robotDepth, -obstacleRadius);
     frontRight = center + frontRight;
     RECTANGLE2("representation:ObstacleModel:rectangle", frontRight, obstacleRadius * 2, obstacleRadius * 2, -robotRotation, 16, Drawings::PenStyle::solidPen, ColorRGBA::black, Drawings::solidBrush, color);
 

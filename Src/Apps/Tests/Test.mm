@@ -27,7 +27,7 @@
 #import <XCTest/XCTest.h>
 #import <gtest/gtest.h>
 #import <objc/runtime.h>
-#include "Platform/SystemCall.h"
+#include "Streaming/FunctionList.h"
 
 using testing::TestCase;
 using testing::TestInfo;
@@ -95,10 +95,10 @@ private:
 /**
  * Base class for the generated classes for Google Test cases.
  */
-@interface GoogleTestHelper : XCTestCase
+@interface GoogleTestCase : XCTestCase
 @end
 
-@implementation GoogleTestHelper
+@implementation GoogleTestCase
 
 /**
  * Associates generated Google Test classes with the test bundle.
@@ -180,11 +180,39 @@ static void RunTest(id self, SEL _cmd)
  */
 + (void)load
 {
+  FunctionList::execute();
   NSBundle* bundle = [NSBundle bundleForClass:self];
   [[NSNotificationCenter defaultCenter] addObserverForName:NSBundleDidLoadNotification object:bundle queue:nil usingBlock:^(NSNotification*)
   {
-    [self registerTestClasses];
+    [self registerTestClassesOnce]; // NSBundleDidLoadNotification doesn't happen since iOS26, macOS26
   }];
+  dispatch_async(dispatch_get_main_queue(), ^
+  {
+    [self registerTestClassesOnce]; // sometimes is too late
+  });
+}
+
+/**
+ * Register our test classes before any tests run. For this to work,`GoogleTestLoader` must
+ * be the principle class of the bundle.
+ */
+- (instancetype)init
+{
+  self = [super init];
+  if(self)
+  {
+    [GoogleTestLoader registerTestClassesOnce]; // GoogleTestLoader should be made principal
+  }
+  return self;
+}
+
++ (void)registerTestClassesOnce
+{
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^
+  {
+    [self registerTestClasses];
+  });
 }
 
 + (void)registerTestClasses
@@ -235,7 +263,7 @@ static void RunTest(id self, SEL _cmd)
     // a valid class name.
     NSString* className = [GeneratedClassPrefix stringByAppendingString:[testCaseNameComponents componentsJoinedByString:@"_"]];
 
-    Class testClass = objc_allocateClassPair([GoogleTestHelper class], [className UTF8String], 0);
+    Class testClass = objc_allocateClassPair([GoogleTestCase class], [className UTF8String], 0);
     NSAssert1(testClass, @"Failed to register Google Test class \"%@\", this class may already exist. The value of GeneratedClassPrefix can be changed to avoid this.", className);
     BOOL hasMethods = NO;
 
@@ -252,13 +280,16 @@ static void RunTest(id self, SEL _cmd)
       if([methodName length] > 0 && [decimalDigitCharacterSet characterIsMember:[methodName characterAtIndex:0]])
         methodName = [@"_" stringByAppendingString:methodName];
 
+      // Google Test set test method name in parameterized tests to <name>/<index>.
+      // Replace / with a _ to create a valid method name.
+      methodName = [methodName stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+
       NSString* testKey = [NSString stringWithFormat:@"%@.%@", className, methodName];
       NSString* testFilter = [NSString stringWithFormat:@"%@.%@", testCaseName, testName];
       testFilterMap[testKey] = testFilter;
 
       SEL selector = sel_registerName([methodName UTF8String]);
-      BOOL added = class_addMethod(testClass, selector, reinterpret_cast<IMP>(RunTest), "v@:");
-      (void)added;
+      [[maybe_unused]] BOOL added = class_addMethod(testClass, selector, reinterpret_cast<IMP>(RunTest), "v@:");
       NSAssert1(added, @"Failed to add Google Test method \"%@\", this method may already exist in the class.", methodName);
       hasMethods = YES;
     }
@@ -273,8 +304,3 @@ static void RunTest(id self, SEL _cmd)
 }
 
 @end
-
-SystemCall::Mode SystemCall::getMode()
-{
-  return simulatedRobot;
-}

@@ -78,7 +78,7 @@ void GlobalOpponentsHypothesis::dynamic(const float odometryRotation, const Vect
   Covariance::fixCovariance<2>(covariance);
 }
 
-void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting)
+void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting, const float minWidth)
 {
   ASSERT(covariance(0, 1) == covariance(1, 0));
   Matrix2f newCov = measurement.covariance;
@@ -92,8 +92,8 @@ void GlobalOpponentsHypothesis::measurement(const GlobalOpponentsHypothesis& mea
   const float measurementWidth = (measurement.left - measurement.right).norm();
   const float obstacleWidth = (left - right).norm();
   float width = (obstacleWidth * modelWidthWeighting + measurementWidth) / (modelWidthWeighting + 1);
-  if(width < 2.f * Obstacle::getRobotDepth())
-    width = 2.f * Obstacle::getRobotDepth();
+  if(width < minWidth)
+    width = minWidth;
   setLeftRight(width * .5f); // Radius (that's why * .5f)
 }
 

@@ -1,1 +1,4 @@
 call Includes/2D
+
+# direct goals are allowed, because the robot is alone
+ar directGoals on

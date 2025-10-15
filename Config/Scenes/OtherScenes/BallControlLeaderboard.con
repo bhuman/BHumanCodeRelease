@@ -1,0 +1,14 @@
+call ../Includes/Normal
+call ../Includes/Views
+
+ar off
+gc playing
+
+vfd worldState option:BallControlLeaderboard
+
+vfd worldState module:PathPlannerProvider:barriers
+vfd worldState module:PathPlannerProvider:obstacles
+vfd worldState module:PathPlannerProvider:path
+dr debugDrawing3d:module:PathPlannerProvider:barriers
+dr debugDrawing3d:module:PathPlannerProvider:obstacles
+dr debugDrawing3d:module:PathPlannerProvider:path

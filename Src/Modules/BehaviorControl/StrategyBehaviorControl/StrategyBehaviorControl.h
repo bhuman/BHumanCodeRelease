@@ -13,11 +13,12 @@
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
-#include "Representations/BehaviorControl/OpposingKickoff.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
+#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Communication/SentTeamMessage.h"
+#include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/SetupPoses.h"
@@ -26,7 +27,7 @@
 #include "Representations/Modeling/BallDropInModel.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
@@ -38,7 +39,9 @@ MODULE(StrategyBehaviorControl,
 {,
   REQUIRES(BallDropInModel),
   REQUIRES(BallModel),
+  REQUIRES(BallSearchParticles),
   REQUIRES(BallSpecification),
+  REQUIRES(BehaviorParameters),
   REQUIRES(ExtendedGameState),
   REQUIRES(FallDownState),
   REQUIRES(FieldBall),
@@ -49,16 +52,16 @@ MODULE(StrategyBehaviorControl,
   REQUIRES(IndirectKick),
   REQUIRES(GroundContactState),
   REQUIRES(MotionInfo),
-  REQUIRES(OpposingKickoff),
   REQUIRES(ReceivedTeamMessages),
   REQUIRES(RobotPose),
   REQUIRES(SentTeamMessage),
   REQUIRES(SetupPoses),
-  REQUIRES(TeammatesBallModel),
+  REQUIRES(TeamBallModel),
   PROVIDES(SkillRequest),
   REQUIRES(SkillRequest),
   PROVIDES(StrategyStatus),
   PROVIDES(AgentStates),
+  REQUIRES(LibDemo),
   LOADS_PARAMETERS(
   {,
     (Strategy::Type) strategy, /**< The strategy to play. */
@@ -124,4 +127,5 @@ private:
   Behavior theBehavior; /**< The instance of the behavior. */
   std::vector<Agent> agents; /**< The list of active agents. */
   StrategyStatus theStrategyStatus; /**< The strategy status which is provided later. */
+  bool wasPenalized = false;
 };

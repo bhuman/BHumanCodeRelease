@@ -14,7 +14,6 @@
 #include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/IMUValueState.h"
-#include "Representations/Sensing/InertialData.h"
 
 #include "Debugging/DebugDrawings.h"
 #include "Framework/Module.h"
@@ -25,7 +24,6 @@ MODULE(IMUCalibrationProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
   REQUIRES(IMUValueState),
-  REQUIRES(InertialData),
   REQUIRES(RawInertialSensorData),
   USES(IMUCalibration),
   PROVIDES(IMUCalibration),
@@ -35,6 +33,7 @@ MODULE(IMUCalibrationProvider,
     (int) waitTimeTillNewCalibrationAccepted,
     (int) minTimeBetweenCalibration,
     (bool) isAutoCalibrationActive,
+    (Vector2a) maxtorsoAngles,
   }),
 });
 

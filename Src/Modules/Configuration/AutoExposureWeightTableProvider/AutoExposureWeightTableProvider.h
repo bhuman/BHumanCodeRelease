@@ -21,6 +21,7 @@
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/RefereeGestures/RefereeDetectionRequest.h"
 #include "Streaming/EnumIndexedArray.h"
 
 MODULE(AutoExposureWeightTableProvider,
@@ -30,6 +31,7 @@ MODULE(AutoExposureWeightTableProvider,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(FrameInfo),
+  REQUIRES(RefereeDetectionRequest),
   REQUIRES(WorldModelPrediction),
   PROVIDES(AutoExposureWeightTable),
   LOADS_PARAMETERS(
@@ -38,6 +40,7 @@ MODULE(AutoExposureWeightTableProvider,
     (int) ballValidDelay, /**< How long is the ball prioritized after its last detection (in ms)? */
     (float) ballWeightRatio, /**< The ratio between the summed up weights of ball areas and other areas. */
     (ENUM_INDEXED_ARRAY(bool, CameraInfo::Camera)) useStaticTables, /**< Only provide the static tables defined below? */
+    (bool) staticTableForRefereeDetection, /**< Use a static table when the referee detection is active? */
     (AutoExposureWeightTable::Table[CameraInfo::numOfCameras]) staticTables, /**< Static weights each in the range [0 .. AutoExposureWeightTable::maxWeight]. */
   }),
 });

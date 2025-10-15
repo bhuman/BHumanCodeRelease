@@ -1,0 +1,5 @@
+call ../Includes/BoosterFast
+call ../Includes/5vs5
+
+dr representation:SetupPoses:place
+dr debugDrawing3d:representation:GameState:playerNumber

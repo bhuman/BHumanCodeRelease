@@ -191,7 +191,7 @@ bool DotViewWidget::openDotFileContent(const QString& content)
   if(!saveDotFileContent(content, dotFileName))
     return false;
 
-  // open dot fiile
+  // open dot file
   bool result = openDotFile(dotFileName);
   QFile::remove(dotFileName);
   return result;
@@ -224,7 +224,7 @@ void DotViewWidget::exportAsSvg()
   QSettings& settings = RoboCupCtrl::application->getSettings();
   QString fileName = QFileDialog::getSaveFileName(this,
                      tr("Export as SVG"), settings.value("ExportDirectory", "").toString(), tr("Scalable Vector Graphics (*.svg)")
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                      , nullptr, QFileDialog::DontUseNativeDialog
 #endif
                      );
@@ -244,7 +244,7 @@ void DotViewWidget::exportAsPdf()
   QSettings& settings = RoboCupCtrl::application->getSettings();
   QString fileName = QFileDialog::getSaveFileName(this,
                      tr("Export as PDF"), settings.value("ExportDirectory", "").toString(), tr("Portable Document Format (*.pdf)")
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                      , nullptr, QFileDialog::DontUseNativeDialog
 #endif
                      );

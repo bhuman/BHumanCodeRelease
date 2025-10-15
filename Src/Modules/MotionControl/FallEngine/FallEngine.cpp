@@ -7,6 +7,7 @@
  */
 
 #include "FallEngine.h"
+#include "Framework/Settings.h"
 #include "Platform/SystemCall.h"
 #include "Representations/Infrastructure/StiffnessData.h"
 #include "Representations/MotionControl/MotionRequest.h"
@@ -141,7 +142,7 @@ void FallPhase::safeBody(JointRequest& request)
     if(mirrorFrontFall)
     {
       JointAngles anglesMirror;
-      anglesMirror.mirror(ref);
+      anglesMirror.mirror(ref, Global::getSettings().robotType != Settings::nao);
       ref = anglesMirror;
     }
     MotionUtilities::copy(ref, request, Joints::firstLegJoint, Joints::numOfJoints);
@@ -172,6 +173,7 @@ void FallPhase::safeBody(JointRequest& request)
   request.stiffnessData.stiffnesses[Joints::lHipPitch] = useHipStiffness;
   request.stiffnessData.stiffnesses[Joints::rHipPitch] = useHipStiffness;
 }
+
 void FallPhase::safeArms(JointRequest& request)
 {
   const bool lowStiffness = engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDuration;
@@ -204,7 +206,7 @@ void FallPhase::safeArms(JointRequest& request)
       if(mirrorFrontFall)
       {
         JointAngles anglesMirror;
-        anglesMirror.mirror(goal);
+        anglesMirror.mirror(goal, Global::getSettings().robotType != Settings::nao);
         goal = anglesMirror;
       }
 
@@ -221,8 +223,8 @@ void FallPhase::safeArms(JointRequest& request)
       else
       {
         // Boost the joints. No idea if this is still needed
-        request.angles[Joints::lShoulderRoll] = 20_deg;
-        request.angles[Joints::lElbowYaw] = -90_deg;
+        request.angles[Joints::lShoulderRoll] = engine.shoulderRollBoostAngle;
+        request.angles[Joints::lElbowYaw] = engine.elbowYawBoostAngle;
       }
 
       request.angles[Joints::rShoulderRoll] = goal.angles[Joints::rShoulderRoll];
@@ -238,8 +240,8 @@ void FallPhase::safeArms(JointRequest& request)
       else
       {
         // Boost the joints. No idea if this is still needed
-        request.angles[Joints::rShoulderRoll] = -20_deg;
-        request.angles[Joints::rElbowYaw] = -90_deg;
+        request.angles[Joints::rShoulderRoll] = -engine.shoulderRollBoostAngle;
+        request.angles[Joints::rElbowYaw] = -engine.elbowYawBoostAngle;
       }
 
       const int useStiffness = lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;

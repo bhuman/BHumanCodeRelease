@@ -11,6 +11,7 @@
 option((SkillBehaviorControl) PhotoMode)
 {
   theMotionRequest.motion = MotionRequest::photoMode;
+  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

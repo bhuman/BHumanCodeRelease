@@ -29,7 +29,7 @@ MODULE(FreezeEngine,
   PROVIDES(FreezeGenerator),
   DEFINES_PARAMETERS(
   {,
-    (int)(4000) freezeTime,
+    (int)(500) freezeTime,
     (Vector2f)(Vector2f(20_deg, 20_deg)) uprightBodyBoundary,
   }),
 });

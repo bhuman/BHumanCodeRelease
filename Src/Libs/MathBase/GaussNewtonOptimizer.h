@@ -46,10 +46,10 @@ float GaussNewtonOptimizer<N>::iterate(Vector& params, const Vector& epsilon)
   Jacobian J(numOfMeasurements, N);
   for(size_t j = 0; j < N; ++j)
   {
-    Vector epsilonj = Vector::Zero();
-    epsilonj(j) = epsilon(j);
-    const Vector paramsAbove = params + epsilonj;
-    const Vector paramsBelow = params - epsilonj;
+    Vector epsilonJ = Vector::Zero();
+    epsilonJ(j) = epsilon(j);
+    const Vector paramsAbove = params + epsilonJ;
+    const Vector paramsBelow = params - epsilonJ;
     for(size_t i = 0; i < numOfMeasurements; ++i)
       J(i, j) = (functor(paramsAbove, i) - functor(paramsBelow, i)) / (2 * epsilon(j));
   }
@@ -59,8 +59,8 @@ float GaussNewtonOptimizer<N>::iterate(Vector& params, const Vector& epsilon)
     r(i) = functor(params, i);
 
   const JacobianTransposed Jt = J.transpose();
-  const Eigen::LDLT<Eigen::Matrix<float, N, N>> JtJdecomposed(Jt * J);
-  const Vector s = JtJdecomposed.solve(Jt * r);
+  const Eigen::LDLT<Eigen::Matrix<float, N, N>> JtJDecomposed(Jt * J);
+  const Vector s = JtJDecomposed.solve(Jt * r);
 
   params -= s;
 

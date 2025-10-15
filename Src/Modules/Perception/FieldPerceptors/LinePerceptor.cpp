@@ -8,6 +8,7 @@
  */
 
 #include "LinePerceptor.h"
+
 #include "Debugging/Annotation.h"
 #include "Debugging/DebugDrawings.h"
 #include "ImageProcessing/PixelTypes.h"
@@ -15,6 +16,7 @@
 #include "Math/Deviation.h"
 #include "Math/Geometry.h"
 #include "Tools/Math/Transformation.h"
+#include <ranges>
 
 MAKE_MODULE(LinePerceptor);
 
@@ -52,6 +54,8 @@ void LinePerceptor::update(CirclePercept& circlePercept)
     // Find a valid center circle in the circle candidates
     for(CircleCandidate& candidate : circleCandidates)
     {
+      candidate.removeSpotsCloseToCenter(minSquaredSpotToCircleCenterDistance);
+
       if(candidate.fieldSpots.size() >= minSpotsOnCircle &&
          candidate.circlePartInImage() > minCircleAngleBetweenSpots &&
          getAbsoluteDeviation(candidate.radius, theFieldDimensions.centerCircleRadius) <= maxCircleRadiusDeviation &&
@@ -109,6 +113,7 @@ void LinePerceptor::markLinesOnCircle(const Vector2f& center)
     ;
   }
 }
+
 void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
 {
   spotsH.resize(theColorScanLineRegionsHorizontal.scanLines.size());
@@ -136,15 +141,18 @@ void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
           for(int i = 0; i < maxSkipNumber
                          && after->range.right - after->range.left <= maxSkipWidth
                          && after + 1 != scanLine.regions.cend(); ++i, ++after);
+          float regionXMidPos = static_cast<float>((region->range.left + region->range.right)) / 2.f;
           if(before->color == ScanLineRegion::field &&
              after->color == ScanLineRegion::field &&
-             !isSpotInsideObstacle(region->range.left, region->range.right, scanLine.y, scanLine.y))
+             !isSpotInsideObstacle(region->range.left, region->range.right, scanLine.y, scanLine.y) &&
+             !isSpotInsideBall(regionXMidPos, static_cast<float>(scanLine.y))
+             )
           {
             if(theFieldBoundary.getBoundaryY((region->range.left + region->range.right) / 2) > static_cast<int>(scanLine.y))
             {
               goto hEndScan;
             }
-            spotsH[scanLineId].emplace_back(static_cast<float>((region->range.left + region->range.right)) / 2.f, scanLine.y);
+            spotsH[scanLineId].emplace_back(regionXMidPos, scanLine.y);
             Spot& thisSpot = spotsH[scanLineId].back();
             Vector2f corrected(theImageCoordinateSystem.toCorrected(thisSpot.image));
             Vector2f otherImage;
@@ -270,10 +278,10 @@ hEndScan:
 
       if(flipped)
       {
-        for(auto it = candidate.spots.crbegin(); it != candidate.spots.crend(); it++)
+        for(auto spot : std::ranges::reverse_view(candidate.spots))
         {
-          line.spotsInField.emplace_back((*it)->field);
-          line.spotsInImg.emplace_back(static_cast<Vector2i>((*it)->image.cast<int>()));
+          line.spotsInField.emplace_back(spot->field);
+          line.spotsInImg.emplace_back(static_cast<Vector2i>(spot->image.cast<int>()));
         }
       }
       else
@@ -315,11 +323,13 @@ void LinePerceptor::scanVerticalScanLines(LinesPercept& linesPercept)
           for(int i = 0; i < maxSkipNumber
                          && after->range.lower - after->range.upper <= maxSkipWidth
                          && after + 1 != regions.cend(); ++i, ++after);
+          float regionYMidPos = static_cast<float>(region->range.upper + region->range.lower) / 2.f;
           if(before->color == ScanLineRegion::field &&
              after->color == ScanLineRegion::field &&
-             !isSpotInsideObstacle(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, region->range.upper, region->range.lower))
+             !isSpotInsideObstacle(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, region->range.upper, region->range.lower) &&
+             !isSpotInsideBall(static_cast<float>(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x), regionYMidPos))
           {
-            spotsV[scanLineId].emplace_back(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, static_cast<float>(region->range.upper + region->range.lower) / 2.f);
+            spotsV[scanLineId].emplace_back(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, regionYMidPos);
             Spot& thisSpot = spotsV[scanLineId].back();
             Vector2f corrected = theImageCoordinateSystem.toCorrected(thisSpot.image);
             Vector2f otherImage;
@@ -473,7 +483,8 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
     {
       Vector2f pointOnField;
       if(!Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, pointOnField) ||
-         !isPointWhite(pointOnField, pos.cast<int>(), n0))
+         !isPointWhite(pointOnField, pos.cast<int>(), n0) ||
+         isSpotInsideBall(pos.x(), pos.y()))
         break;
     }
     if(changed)
@@ -496,7 +507,8 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
     {
       Vector2f pointOnField;
       if(!Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, pointOnField) ||
-         !isPointWhite(pointOnField, pos.cast<int>(), n0))
+         !isPointWhite(pointOnField, pos.cast<int>(), n0) ||
+         isSpotInsideBall(pos.x(), pos.y()))
         break;
     }
     if(changed)
@@ -849,8 +861,8 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
           circle.fieldSpots.emplace_back((outerField + innerField) / 2);
           COMPLEX_DRAWING("module:LinePerceptor:circlePoint")
           {
-            Vector2f uncor = (theImageCoordinateSystem.fromCorrected(outer) + theImageCoordinateSystem.fromCorrected(inner)) / 2.f;
-            CROSS("module:LinePerceptor:circlePoint", uncor.x(), uncor.y(), 3, 1, Drawings::solidPen, ColorRGBA::gray);
+            Vector2f uncorrected = (theImageCoordinateSystem.fromCorrected(outer) + theImageCoordinateSystem.fromCorrected(inner)) / 2.f;
+            CROSS("module:LinePerceptor:circlePoint", uncorrected.x(), uncorrected.y(), 3, 1, Drawings::solidPen, ColorRGBA::gray);
           }
           CROSS("module:LinePerceptor:circlePointField", circle.fieldSpots.back().x(), circle.fieldSpots.back().y(), 5, 2, Drawings::solidPen, ColorRGBA::black);
         }
@@ -918,9 +930,39 @@ bool LinePerceptor::isCircleWhite(const Vector2f& center, const float radius) co
   return count > 0 && static_cast<float>(whiteCount) / static_cast<float>(count) >= minCircleWhiteRatio;
 }
 
+bool LinePerceptor::isPotentialCircle(const CircleCandidate& circle) const
+{
+  // Fit line through the first and last points of the circle candidate
+  const Vector2f& first = circle.fieldSpots.front();
+  const Vector2f& last = circle.fieldSpots.back();
+  Vector2f lineDirection = (last - first).normalized();
+  Vector2f lineNormal(-lineDirection.y(), lineDirection.x());
+  float lineDistance = lineNormal.dot(first);
+
+  // Compute maximum distance of spots to the line
+  float maxLineDistance = 0.f;
+  for(const Vector2f& spot : circle.fieldSpots)
+  {
+    float distance = std::abs(lineNormal.dot(spot) - lineDistance);
+    if(distance > maxLineDistance)
+    {
+      maxLineDistance = distance;
+    }
+  }
+  if(maxLineDistance < minCircleDeviation)
+  {
+    return false;
+  }
+  return true;
+}
+
 bool LinePerceptor::isCircleNotALine(const CircleCandidate& candidate, float& lineError) const
 {
   ASSERT(candidate.fieldSpots.size() >= 2);
+  if(!isPotentialCircle(candidate))
+  {
+    return false;
+  }
   LeastSquares::LineFitter fitter;
   for(const Vector2f& spot : candidate.fieldSpots)
     fitter.add(spot);
@@ -932,7 +974,7 @@ bool LinePerceptor::isCircleNotALine(const CircleCandidate& candidate, float& li
   lineError = 0.f;
   for(const Vector2f& spot : candidate.fieldSpots)
     lineError += std::abs(n0.dot(spot) - d);
-  lineError /= candidate.fieldSpots.size();
+  lineError /= static_cast<float>(candidate.fieldSpots.size());
 
   return candidate.calculateError() < lineError;
 }
@@ -1084,4 +1126,17 @@ bool LinePerceptor::isSpotInsideObstacle(const int fromX, const int toX, const i
       return false;
   };
   return std::any_of(theObstaclesImagePercept.obstacles.cbegin(), theObstaclesImagePercept.obstacles.cend(), predicate);
+}
+
+bool LinePerceptor::isSpotInsideBall(const float xPos, const float yPos) const
+{
+  if (theBallPercept.status != BallPercept::seen)
+    return false;
+  float radius = theBallPercept.radiusInImage * ballCheckRadiusFactor;
+  float xDistance = std::abs(theBallPercept.positionInImage.x() - xPos);
+  float yDistance = std::abs(theBallPercept.positionInImage.y() - yPos);
+  if (xDistance > radius || yDistance > radius)
+    return false;
+  return yDistance <= std::cos(pi_2 * xDistance / radius) * radius
+      && xDistance <= std::cos(pi_2 * yDistance / radius) * radius;
 }

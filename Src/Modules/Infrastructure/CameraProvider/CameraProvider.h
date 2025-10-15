@@ -43,8 +43,10 @@ MODULE(CameraProvider,
   PROVIDES_WITHOUT_MODIFY(JPEGImage),
   LOADS_PARAMETERS(
   {,
-    (unsigned) maxWaitForImage, /**< Timeout in ms for waiting for new images. */
-    (int) resetDelay, /**< Timeout in ms for resetting camera without image. */
+    (unsigned) maxWaitForImage, /**< Timeout in ms for waiting for new images after the camera was just set up. */
+    (unsigned) minWaitForImage, /**< Timeout in ms for waiting for new images when the camera was previously working. */
+    (int) resetDelay, /**< Timeout in ms for resetting camera without image after the camera was previously working. */
+    (int) timeBetweenResets, /**< Timeout in ms between camera resets. */
     (int) jpegQuality, /**< The quality of the JPEG compressing (0 = bad ... 100 = very good). */
   }),
 });
@@ -92,6 +94,8 @@ class CameraProvider : public CameraProviderBase
   bool processResolutionRequest();
 
   void setupCamera();
+
+  void createCamera();
 
   void takeImages();
 

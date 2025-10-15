@@ -64,8 +64,8 @@ class PenaltyAreaAndGoalAreaPerceptor : public PenaltyAreaAndGoalAreaPerceptorBa
   const float penaltyAreaToGoalDistance = std::abs(theFieldDimensions.xPosOwnPenaltyArea - theFieldDimensions.xPosOwnGoalLine);
   const float goalAreaToGoalDistance = std::abs(penaltyAreaToGoalDistance - penaltyAreaToGoalAreaDistance);
   const float penaltyAreaLineLength = std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosRightPenaltyArea);
-  const float penaltyAreaToGoalAreaDistancey = std::abs(theFieldDimensions.yPosRightPenaltyArea - theFieldDimensions.yPosRightGoalArea);
-  const float penaltyAndGoalAreaIntersectionDistance = Geometry::distance(Vector2f(0, 0), Vector2f(penaltyAreaToGoalAreaDistance, penaltyAreaToGoalAreaDistancey));
+  const float penaltyAreaToGoalAreaDistanceY = std::abs(theFieldDimensions.yPosRightPenaltyArea - theFieldDimensions.yPosRightGoalArea);
+  const float penaltyAndGoalAreaIntersectionDistance = Geometry::distance(Vector2f(0, 0), Vector2f(penaltyAreaToGoalAreaDistance, penaltyAreaToGoalAreaDistanceY));
 
   /**
    * The main function of this module.

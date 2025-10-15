@@ -11,6 +11,7 @@
 #include "Math/Random.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/Challenge/RollingBallState.h"
 #include "Representations/BehaviorControl/ClearTarget.h"
 #include "Representations/BehaviorControl/DribbleTarget.h"
 #include "Representations/BehaviorControl/ExpectedGoals.h"
@@ -19,7 +20,8 @@
 #include "Representations/BehaviorControl/FieldRating.h"
 #include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
-#include "Representations/BehaviorControl/InitialToReady.h"
+#include "Representations/BehaviorControl/Leaderboards/BestKickState.h"
+#include "Representations/BehaviorControl/Leaderboards/FastestWalkState.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/Libraries/LibLookActive.h"
@@ -27,9 +29,9 @@
 #include "Representations/BehaviorControl/Libraries/LibWalk.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
 #include "Representations/BehaviorControl/PassEvaluation.h"
-#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
+#include "Representations/Communication/SentTeamMessage.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
@@ -55,8 +57,9 @@
 #include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
+#include "Representations/Modeling/RefereeSignal.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
@@ -65,15 +68,16 @@
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
-#include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
-#include "Representations/Perception/RefereePercept/RefereePercept.h"
+#include "Representations/Perception/RefereeGestures/RefereeDetectionRequest.h"
 #include "Representations/Sensing/ArmContactModel.h"
+#include "Representations/Sensing/BallHoldingState.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/IMUValueState.h"
 #include "Tools/BehaviorControl/HeadOrientation.h"
 #include "Tools/BehaviorControl/Strategy/PositionRole.h"
 #include "Tools/Motion/ReduceWalkSpeedType.h"
+#include "Tools/BehaviorControl/SideWalkingRequest.h"
 #include "Debugging/Annotation.h"
 #include "Framework/Module.h"
 #include "Platform/SystemCall.h"
@@ -90,10 +94,12 @@ MODULE(SkillBehaviorControl,
 {,
   REQUIRES(ArmContactModel),
   REQUIRES(ArmMotionInfo),
+  REQUIRES(BallHoldingState),
   REQUIRES(BallLostModel),
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(BehaviorParameters),
+  REQUIRES(BestKickState),
   USES(CameraCalibration),
   USES(CameraCalibrationStatus),
   REQUIRES(CameraInfo),
@@ -105,6 +111,7 @@ MODULE(SkillBehaviorControl,
   REQUIRES(ExpectedGoals),
   REQUIRES(ExtendedGameState),
   REQUIRES(FallDownState),
+  REQUIRES(FastestWalkState),
   REQUIRES(FieldBall),
   REQUIRES(FieldInterceptBall),
   REQUIRES(FieldDimensions),
@@ -120,10 +127,10 @@ MODULE(SkillBehaviorControl,
   REQUIRES(IllegalAreas),
   USES(IMUCalibration),
   REQUIRES(IndirectKick),
-  REQUIRES(InitialToReady),
   REQUIRES(JointAngles),
   REQUIRES(JointSensorData),
   REQUIRES(KickInfo),
+  REQUIRES(KeyStates),
   REQUIRES(LibCheck),
   REQUIRES(LibDemo),
   REQUIRES(LibLookActive),
@@ -135,15 +142,16 @@ MODULE(SkillBehaviorControl,
   REQUIRES(OdometryData),
   REQUIRES(PassEvaluation),
   REQUIRES(PathPlanner),
-  REQUIRES(RefereePercept),
+  REQUIRES(RefereeSignal),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotHealth),
   REQUIRES(RobotPose),
-  REQUIRES(SharedAutonomyRequest),
+  REQUIRES(RollingBallState),
+  REQUIRES(SentTeamMessage),
   REQUIRES(SkillRequest),
   REQUIRES(StrategyStatus),
   REQUIRES(TeamData),
-  REQUIRES(TeammatesBallModel),
+  REQUIRES(TeamBallModel),
   REQUIRES(WalkingEngineOutput),
   PROVIDES(ActivationGraph),
   REQUIRES(ActivationGraph),
@@ -152,7 +160,7 @@ MODULE(SkillBehaviorControl,
   PROVIDES(CalibrationRequest),
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
-  PROVIDES(OptionalImageRequest),
+  PROVIDES(RefereeDetectionRequest),
   LOADS_PARAMETERS(
   {,
     (std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options,
@@ -207,9 +215,9 @@ private:
 
   /**
    * Updates the optional image request.
-   * @param optionalImageRequest The provided optional image request.
+   * @param refereeDetectionRequest The provided optional image request.
    */
-  void update(OptionalImageRequest& optionalImageRequest) override { optionalImageRequest = theOptionalImageRequest; }
+  void update(RefereeDetectionRequest& refereeDetectionRequest) override { refereeDetectionRequest = theRefereeDetectionRequest; }
 
   unsigned lastReceivePassRequestTimestamp = 0;
   int receivePassPlayerNumber = -1;
@@ -226,7 +234,7 @@ protected:
   CalibrationRequest theCalibrationRequest; /**< The camera calibration request that is modified by the behavior. */
   HeadMotionRequest theHeadMotionRequest; /**< The head motion request that is modified by the behavior. */
   MotionRequest theMotionRequest; /**< The motion request that is modified by the behavior. */
-  OptionalImageRequest theOptionalImageRequest; /**< The request that decides whether an optional image should be send or not */
+  RefereeDetectionRequest theRefereeDetectionRequest; /**< The request that decides whether an optional image should be sent or not */
 
 #include "Options/Options.h"
 #include "Skills/Arms/Arms.h"

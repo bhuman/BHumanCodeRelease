@@ -89,7 +89,11 @@ unsigned Time::getRealSystemTime()
   const unsigned time = timeGetTime();
 #elif defined LINUX
   timespec ts;
+#if defined TARGET_ROBOT && (defined __arm64__ || defined __aarch64__) // Booster
+  clock_gettime(CLOCK_REALTIME, &ts);
+#else
   clock_gettime(CLOCK_MONOTONIC, &ts); // NTP might change CLOCK_REALTIME on desktop systems
+#endif
   const unsigned long long time = ts.tv_sec * 1000ll + ts.tv_nsec / 1000000;
 #endif
   if(!base)

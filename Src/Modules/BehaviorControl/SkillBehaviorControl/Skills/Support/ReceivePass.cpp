@@ -31,16 +31,15 @@ option((SkillBehaviorControl) ReceivePass, args((int) playerNumber),
     action
     {
       const Vector2f passBase = theFieldBall.recentBallPositionOnField();
-      // Set the target position to where the passing teammate communicated kicking the ball to
-      const Vector2f passTarget = teammate->theRobotPose * teammate->theBehaviorStatus.shootingTo.value_or(Vector2f::Zero());
+      // Set the target position to where the passing teammate communicated kicking the ball to, or our current position
+      const Vector2f passTarget = teammate->theBehaviorStatus.shootingTo.has_value() ? teammate->theRobotPose * teammate->theBehaviorStatus.shootingTo.value() : theRobotPose.translation;
       const Angle targetAngle = Angle::normalize(KickSelection::calculateTargetRotation(passBase, passTarget, opponentGoal, maxAngle) - theRobotPose.rotation);
 
       // Walk to the target position and look towards the ball to receive it when it arrives
       const Pose2f passTargetRelative(targetAngle, theRobotPose.inverse() * passTarget);
       WalkToPoint({.target = passTargetRelative,
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::normal,
-                   .targetOfInterest = theFieldBall.recentBallPositionRelative(),
-                   .forceSideWalking = false});
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::normal, // TODO no idea if side speed is too low
+                   .targetOfInterest = theFieldBall.recentBallPositionRelative()});
       LookActive({.withBall = true,
                   .onlyOwnBall = false,
                   .slowdownFactor = 0.5f});

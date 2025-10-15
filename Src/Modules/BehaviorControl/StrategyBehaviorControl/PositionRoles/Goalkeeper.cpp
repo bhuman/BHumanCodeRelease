@@ -41,7 +41,7 @@ Pose2f Goalkeeper::position(Side, const Pose2f& basePose, const std::vector<Vect
   return theGameState.isGoalKick() && theGameState.isForOwnTeam() ? basePose : p.goaliePoseField;
 }
 
-//Calculates the debug drawings for the goalkeeper and the goaliepose
+//Calculates the debug drawings for the goalkeeper and the goalie pose
 void Goalkeeper::draw() const
 {
   CROSS("behavior:Goalkeeper:pose",
@@ -104,10 +104,10 @@ void Goalkeeper::draw() const
 void Goalkeeper::verify() const
 {
   ASSERT(p.goaliePoseField.isFinite());
-  ASSERT(p.goaliePoseField.translation.x() > -6500.f);
+  ASSERT(p.goaliePoseField.translation.x() > theFieldDimensions.xPosOwnGoalLine - 2000.f);
   ASSERT(p.goaliePoseField.translation.x() < -1000.f);
-  ASSERT(p.goaliePoseField.translation.y() > -3000.f);
-  ASSERT(p.goaliePoseField.translation.y() < 3000.f);
+  ASSERT(p.goaliePoseField.translation.y() > theFieldDimensions.yPosRightTouchline);
+  ASSERT(p.goaliePoseField.translation.y() < theFieldDimensions.yPosLeftTouchline);
   ASSERT(p.goaliePoseField.rotation >= -pi);
   ASSERT(p.goaliePoseField.rotation <= pi);
   ASSERT(p.goaliePoseRel.isFinite());

@@ -31,7 +31,7 @@ struct TimingManager::Pimpl
   unsigned currentThreadStartTime = 0; /**< Timestamp of the current thread iteration */
   unsigned frameNo = 0; /**<  Number of the current frame*/
   std::vector<const char*> watchNames; /**< Contains the names of the stopwatches */
-  MessageQueue data; /**< Contains the timing data in streamable format inbetween frames */
+  MessageQueue data; /**< Contains the timing data in streamable format in between frames */
   bool dataPrepared = false; /**< True if data hs already been prepared this frame */
   int watchNameIndex = 0; /**< Every frame a few watch names are transmitted. This is the index of the watchname that is to be transmitted next */
 };

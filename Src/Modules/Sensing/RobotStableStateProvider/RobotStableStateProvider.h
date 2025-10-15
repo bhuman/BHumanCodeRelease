@@ -1,13 +1,13 @@
 /**
  * @file RobotStableStateProvider.h
- * TODO
+ * Provides information about the predicted center of mass in the soles
  * @author Philip Reichenberg
  */
 
 #pragma once
 
-#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/MassCalibration.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FootSupport.h"
@@ -20,16 +20,17 @@ MODULE(RobotStableStateProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
-  REQUIRES(FootOffset),
   REQUIRES(FootSupport),
   REQUIRES(MassCalibration),
   USES(MotionInfo),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   PROVIDES(RobotStableState),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (unsigned)(3) predictionSteps,
-    (unsigned)(20) turnPointSteps,
+    (unsigned) predictionSteps,
+    (unsigned) turnPointSteps,
+    (bool) useLightModel,
   }),
 });
 

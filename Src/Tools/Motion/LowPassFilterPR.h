@@ -34,6 +34,12 @@ struct LowPassFilterPR
    */
   float fastFactor = 0.f;
 
+  /**
+   * The last value
+   */
+  float lastFirstFilteredValue = 0.f;
+  float firstFilteredValue = 0.f;
+
   LowPassFilterPR(const float lowPassFactor, const float fastFactor) :
     lowPassFactor(lowPassFactor),
     fastFactor(fastFactor) {};

@@ -1,7 +1,7 @@
 /**
  * @file LibWalkProvider.h
  *
- * Recalculates a walktarget to avoid obstacles, fieldborders and penaltyareas
+ * Recalculates a walktarget to avoid obstacles, field borders and penalty areas
  *
  * @author Andreas Stolpmann
  */

@@ -27,7 +27,7 @@ MODULE(ExpectedGoalsProvider,
     (float)(0.01f) minValue, /**< Minimum probability of a successful goal shot in the worst situation possible. */
     (Angle)(0_deg) minOpeningAngle, /**< Opening angle for the goal shot line to be considered blocked */
     (Angle)(20_deg) maxOpeningAngle, /**< Opening angle for the goal shot line to be considered free */
-    (Angle)(40_deg) maxOpeningAngleOpponenent, /**< Opening angle for the goal shot line to be considered free */
+    (Angle)(40_deg) maxOpeningAngleOpponent, /**< Opening angle for the goal shot line to be considered free */
     (float)(100.f) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
     (unsigned char)(255) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
     (ColorRGBA)(213, 17, 48) worstRatingColor, /**< Red color in RGB corresponding to a pass rating value of 0 in the heatmap */

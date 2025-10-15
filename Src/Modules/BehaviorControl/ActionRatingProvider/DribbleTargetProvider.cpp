@@ -65,7 +65,7 @@ float DribbleTargetProvider::getDistanceToFieldBorder(const Vector2f& startPosit
                     i1, i2));
   Vector2f ballToIntersection1 = i1 - startPosition;
   Vector2f ballToIntersection2 = i2 - startPosition;
-  // the 5_degs is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding errors.
+  // the 5_deg is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding errors.
   if(std::abs(ballToIntersection1.angle() - direction) < 5_deg)
     distanceToFieldBorderSquared = ballToIntersection1.squaredNorm();
   else if(std::abs(ballToIntersection2.angle() - direction) < 5_deg)
@@ -125,13 +125,13 @@ void DribbleTargetProvider::calculateSectorWheel()
     else
     {
       const bool mergeToPreviousObstacle = lastSector->distance < obstacleDistance && (sector.distance < obstacleDistance || (sector.angleRange.getSize() < minFreeSector && sector.angleRange.min < sector.angleRange.max));
-      const bool mergeCurrentObstalceWithPreviousSmallSector = lastSector->angleRange.getSize() < minFreeSector && lastSector->angleRange.min < lastSector->angleRange.max && sector.distance < obstacleDistance;
-      if((mergeToPreviousObstacle || mergeCurrentObstalceWithPreviousSmallSector) &&
+      const bool mergeCurrentObstacleWithPreviousSmallSector = lastSector->angleRange.getSize() < minFreeSector && lastSector->angleRange.min < lastSector->angleRange.max && sector.distance < obstacleDistance;
+      if((mergeToPreviousObstacle || mergeCurrentObstacleWithPreviousSmallSector) &&
          sector.type != SectorWheel::Sector::teammate && sector.type != SectorWheel::Sector::goal &&
          lastSector->type != SectorWheel::Sector::teammate && lastSector->type != SectorWheel::Sector::goal)
       {
         lastSector->angleRange.max = sector.angleRange.max;
-        if(!mergeToPreviousObstacle && mergeCurrentObstalceWithPreviousSmallSector)
+        if(!mergeToPreviousObstacle && mergeCurrentObstacleWithPreviousSmallSector)
         {
           lastSector->type = sector.type;
           lastSector->distance = sector.distance;

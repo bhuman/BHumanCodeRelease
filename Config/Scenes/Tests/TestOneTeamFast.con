@@ -1,0 +1,5 @@
+call ../Includes/Fast
+
+dr representation:SetupPoses:place
+
+test situation 3 120 goalTeamA con Tests/TestOneTeamFastFormation.con fuz x 100 y 100

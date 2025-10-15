@@ -2,6 +2,7 @@
 
 set -eu
 
+model=nao
 remoteIp=""
 headId=""
 bodyId=""
@@ -10,14 +11,17 @@ name=""
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} -ids <headId> <bodyId> <name>"
-  echo "${0} -ip <remoteIp> <name>"
+  echo "${0} [-m nao] -ids <headId> <bodyId> <name>"
+  echo "${0} [-m nao] -ip <remoteIp> <name>"
+  echo "${0} -m <model> <name>"
   echo ""
   echo " <name>     : Name of the robot."
+  echo " <model>    : The robot model (k1 or t1)."
   echo " <headId>   : The id of the robots head."
   echo " <bodyId>   : The id of the robots body."
   echo " <remoteIp> : The id of the robots body."
   echo ""
+  echo " -m         : Defines the robot model. The default is nao."
   echo " -ids       : Uses the the provided ids."
   echo " -ip        : Loads the ids from the robot with the provided ip."
   echo " -h         : Display this help."
@@ -25,7 +29,12 @@ usage() {
 }
 
 parseOptions() {
-  if [ $# -eq 4 ]; then
+  if [ ${1} == "-m" ]; then
+    model=${2}
+    shift
+    shift
+  fi
+  if [ $# -eq 4 -a ${model} == nao ]; then
     if [ ${1} == "-ids" ]; then
       headId=${2}
       bodyId=${3}
@@ -34,7 +43,7 @@ parseOptions() {
     else
       usage
     fi
-  elif [ $# -eq 3 ]; then
+  elif [ $# -eq 3 -a ${model} == nao ]; then
     if [ ${1} == "-ip" ]; then
       remoteIp=${2}
       name=${3}
@@ -42,6 +51,9 @@ parseOptions() {
     else
       usage
     fi
+  elif [ $# -eq 1 -a ${model} != nao ]; then
+    name=${1}
+    return 0
   else
     usage
   fi
@@ -63,13 +75,17 @@ getIdsFromRobot() {
 
 addIds() {
   if [[ $(grep "name = \"${name}\"" "${robotsFile}") ]]; then
-    fatal "The robot ${name} has already ids associated with it!"
+    fatal "The robot ${name} already exists!"
   elif [[ $(grep "headId = \"${headId}\"" "${robotsFile}") ]]; then
     fatal "The headId ${headId} is already in use!"
   elif [[ $(grep "bodyId = \"${bodyId}\"" "${robotsFile}") ]]; then
     fatal "The bodyId ${bodyId} is already in use!"
   else
-    line="{ name = \"${name}\"; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
+    if [ ${model} == nao ]; then
+      line="{ name = \"${name}\"; robotType = ${model}; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
+    else
+      line="{ name = \"${name}\"; robotType = ${model}; }"
+    fi
     if [[ $(tr '\n' '|' <"${robotsFile}" | grep '\[|\]') ]]; then
       sed "s%\[%[|  ${line}%" <"${robotsFile}" \
       | tr '|' '\n' >/tmp/addRobotIds.tmp \
@@ -108,6 +124,7 @@ fi
 echo ""
 echo "using:"
 echo "  name:     ${name}"
+echo "  model:    ${name}"
 echo "  headId:   ${headId}"
 echo "  bodyId:   ${bodyId}"
 echo ""
@@ -115,5 +132,5 @@ echo ""
 createRobotsFile
 addIds
 
-message "Added ${name}'s ids to ${robotsFile}."
-message "Don't forget to flash the robot!"
+message "Added ${name} to ${robotsFile}."
+message "Don't forget to flash or install the robot!"

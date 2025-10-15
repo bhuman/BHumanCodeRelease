@@ -10,7 +10,7 @@
 #include "SkillBehaviorControl.h"
 
 option((SkillBehaviorControl) PublishMotion,
-       args((const Vector2f) target,
+       args((const Vector2f&) target,
             (const Pose2f&) speed))
 {
   initial_state(execute)

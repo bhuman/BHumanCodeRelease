@@ -20,12 +20,12 @@ namespace Motion::Transformation
    *
    * @param torsoMatrix The torso matrix
    * @param robotModel The robot model
-   * @param robotDimensions The dimensions of the robot
+   * @param yHipOffset The y-hip offset of the legs
    * @param startOdometry The cognition odometry
    * @param targetOdometry The motion odometry
    * @param isLeftSwing Is the left foot the swing foot?
    */
   Pose2f getTransformationToZeroStep(const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                                     const RobotDimensions& robotDimensions, const Pose2f& startOdometry,
+                                     const float yHipOffset, const Pose2f& startOdometry,
                                      const Pose2f& targetOdometry, const bool isLeftSwing);
 }

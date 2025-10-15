@@ -28,8 +28,10 @@ STREAMABLE(GameState,
 
     setupOwnKickOff, /**< The ready phase before an own kick-off. */
     setupOpponentKickOff, /**< The ready phase before an opponent kick-off. */
+    setupDropBall, /**< The ready phase before a drop-ball. */
     waitForOwnKickOff, /**< The set phase before an own kick-off. */
     waitForOpponentKickOff, /**< The set phase before an opponent kick-off. */
+    waitForDropBall, /**< The set phase before a drop-ball. */
     ownKickOff, /**< The phase of an own kick-off in which the opponent must not enter the center circle. */
     opponentKickOff, /**< The phase of an opponent kick-off in which we must not enter the center circle. */
 
@@ -125,6 +127,7 @@ STREAMABLE(GameState,
     },
 
     (std::array<PlayerState, Settings::highestValidPlayerNumber - Settings::lowestValidPlayerNumber + 1>)({}) playerStates, /**< The states of the players, indexed by jersey number - Settings::lowestValidPlayerNumber. */
+    (std::array<unsigned, Settings::highestValidPlayerNumber - Settings::lowestValidPlayerNumber + 1>)({}) timeWhenPlayerStatesStarted, /**< For each player: Time when this state started. */
     (int)(0) number, /**< The team number in the GameController. */
     (Color)(Color::black) fieldPlayerColor, /**< The jersey color of field players. */
     (Color)(Color::blue) goalkeeperColor, /**< The jersey color of the goalkeeper. */
@@ -156,6 +159,7 @@ STREAMABLE(GameState,
   {
     return state == setupOwnKickOff ||
            state == setupOpponentKickOff ||
+           state == setupDropBall ||
            state == setupOwnPenaltyKick ||
            state == setupOpponentPenaltyKick;
   }
@@ -169,6 +173,7 @@ STREAMABLE(GameState,
   {
     return state == waitForOwnKickOff ||
            state == waitForOpponentKickOff ||
+           state == waitForDropBall ||
            state == waitForOwnPenaltyKick ||
            state == waitForOpponentPenaltyKick ||
            state == waitForOwnPenaltyShot ||
@@ -238,6 +243,7 @@ STREAMABLE(GameState,
            state == setupOpponentKickOff ||
            state == waitForOwnKickOff ||
            state == waitForOpponentKickOff ||
+           state == waitForDropBall ||
            state == ownKickOff ||
            state == opponentKickOff;
   }
@@ -400,6 +406,13 @@ STREAMABLE(GameState,
            state == substitute;
   }
 
+  static State stateForOtherTeam(const State state);
+
+  State stateForOtherTeam() const
+  {
+    return stateForOtherTeam(state);
+  }
+
   bool isPenalized() const
   {
     return isPenalized(playerState);
@@ -431,6 +444,7 @@ STREAMABLE(GameState,
   (CompetitionPhase)(roundRobin) competitionPhase, /**< The phase of the tournament we are in. */
   (bool)(false) whistled, /**< State was switched due to a whistle. */
   (unsigned)(0) timeWhenPenaltyEnds, /**< Time when the own penalty is expected to end (0 -> not penalized). */
+  (bool)(false) kickingTeamKnown, /**< Whether the kicking team was sent by the GameController. */
 });
 
 STREAMABLE(ExtendedGameState,

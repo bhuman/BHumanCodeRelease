@@ -43,4 +43,6 @@ STREAMABLE(FallDownState,
   (State)(pickedUp) state, /**< Current state of the robot's body. */
   (Direction)(none) direction, /**< The robot is falling / fell into this direction. */
   (float)(0) odometryRotationOffset,
+  (unsigned)(0) timestampSinceStateSwitch, /**< The timestamp from when the state switched the last time. */
+  (Vector3f)(Vector3f::Zero()) predictedCom,
 });

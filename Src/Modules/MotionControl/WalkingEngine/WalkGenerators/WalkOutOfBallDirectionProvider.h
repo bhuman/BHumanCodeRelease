@@ -10,12 +10,12 @@
 
 #include "Framework/Module.h"
 #include "Representations/Configuration/BallSpecification.h"
-#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/WalkOutOfBallDirection.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -26,11 +26,11 @@ MODULE(WalkOutOfBallDirectionProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(OdometryDataPreview),
-  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(RobotPose),
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
+  REQUIRES(WalkStepData),
   PROVIDES(WalkOutOfBallDirection),
 
   DEFINES_PARAMETERS(

@@ -16,14 +16,13 @@ ci off
 for Lower Upper mr CameraInfo LogDataProvider
 for Lower Upper mr FrameInfo LogDataProvider
 for Lower Upper Cognition Motion mr CameraCalibration ConfigurationDataProvider
-for Cognition mr BallModel OracledWorldModelProvider
-for Cognition mr GroundTruthBallModel OracledWorldModelProvider
-for Cognition mr TeammatesBallModel OracledWorldModelProvider
-for Cognition mr GlobalOpponentsModel OracledWorldModelProvider
-for Cognition mr GroundTruthRobotPose OracledWorldModelProvider
+for Cognition mr BallModel SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
+for Cognition mr GlobalOpponentsModel SimulatedWorldModelProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
 for Cognition mr GroundTruthWorldState LogDataProvider
-for Cognition mr ObstacleModel OracledWorldModelProvider
-for Cognition mr RobotPose OracledWorldModelProvider
+for Cognition mr ObstacleModel SimulatedWorldModelProvider
+for Cognition mr RobotPose SimulatedWorldModelProvider
 for Motion mr FrameInfo LogDataProvider
 for Motion mr FsrSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
@@ -51,19 +50,19 @@ mr CenterCircleWithLine off
 mr CirclePercept off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
+mr CustomCalibrationLines off
 mr ECImage off
 mr FieldBoundary off
 mr FieldLineIntersections off
 mr FieldLines off
 mr FilteredBallPercepts off
-mr GoalPostsPercept off
 mr ImageCoordinateSystem off
 mr IntersectionCandidates off
 mr IntersectionsPercept off
 mr JerseyClassifier off
 mr JPEGImage off
-mr Keypoints off
 mr LinesPercept off
+mr LineCorrector off
 mr ObstacleScan off
 mr ObstaclesImagePercept off
 mr OptionalECImage off
@@ -77,16 +76,16 @@ mr ScanGrid off
 mr SegmentedObstacleImage off
 mr SelfLocalizationHypotheses off
 mr SideInformation off
-mr WorldModelPrediction off
 mr OptionalCameraImage off
 
 # Representations that are still required
 mr CameraStatus default
 #mr GlobalOpponentsModel default
 mr ObstaclesFieldPercept default
+mr RefereeGesture default
+mr RefereeSignal default
 mr RobotHealth default
-mr RefereePercept default
 for Motion mr CameraIntrinsics ConfigurationDataProvider
 
-call Includes/GameStates
-call Includes/DebugResponses
+call GameStates
+call DebugResponses

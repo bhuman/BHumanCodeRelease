@@ -7,11 +7,14 @@
  */
 
 #include "Cognition.h"
+#include "Debugging/DebugRequest.h"
+#include "Framework/Settings.h"
 #include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
-#include "Representations/Communication/BHumanMessageOutputGenerator.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
+#include "Representations/Communication/BHumanMessageOutputGenerator.h"
+#include "Streaming/Global.h"
 
 REGISTER_EXECUTION_UNIT(Cognition)
 
@@ -19,8 +22,8 @@ thread_local bool Cognition::isUpper = false;
 
 Cognition::Cognition()
 {
-  Blackboard::getInstance().alloc<UpperFrameInfo>("UpperFrameInfo").time = 100000;
-  Blackboard::getInstance().alloc<LowerFrameInfo>("LowerFrameInfo").time = 100000;
+  Blackboard::getInstance().alloc<UpperFrameInfo>("UpperFrameInfo").time = minTime;
+  Blackboard::getInstance().alloc<LowerFrameInfo>("LowerFrameInfo").time = minTime;
 }
 
 Cognition::~Cognition()
@@ -42,17 +45,11 @@ bool Cognition::beforeFrame()
     return false;
   }
 
-  const FrameInfo* lowerFrameInfo = Blackboard::getInstance().exists("LowerFrameInfo")
-                                    ? static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["LowerFrameInfo"]))
-                                    : nullptr;
-  const FrameInfo* upperFrameInfo = Blackboard::getInstance().exists("UpperFrameInfo")
-                                    ? static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["UpperFrameInfo"]))
-                                    : nullptr;
-  unsigned lowerFrameTime = lowerFrameInfo ? lowerFrameInfo->time : 0;
-  unsigned upperFrameTime = upperFrameInfo ? upperFrameInfo->time : 0;
+  const unsigned lowerFrameTime = static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["LowerFrameInfo"]))->time;
+  const unsigned upperFrameTime = static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["UpperFrameInfo"]))->time;
 
   const bool upperIsLate = static_cast<int>(lowerFrameTime - upperFrameTime) >= 100;
-  const bool lowerIsLate = static_cast<int>(upperFrameTime - lowerFrameTime) >= 100;
+  const bool lowerIsLate = static_cast<int>(upperFrameTime - lowerFrameTime) >= 100 || Global::getSettings().robotType == Settings::t1;
   upperIsNew |= upperFrameTime != lastUpperFrameTime && upperFrameTime >= lastAcceptedTime;
   lowerIsNew |= lowerFrameTime != lastLowerFrameTime && lowerFrameTime >= lastAcceptedTime;
   lastUpperFrameTime = upperFrameTime;
@@ -110,6 +107,7 @@ bool Cognition::beforeFrame()
       LogDataProvider::isFrameDataComplete();
       delayedLogCounter = 1;
       lastAcceptedTime = 0;
+      return Global::getDebugRequestTable().pollCounter > 0;
     }
   }
 

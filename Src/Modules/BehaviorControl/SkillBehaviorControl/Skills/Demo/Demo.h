@@ -22,3 +22,6 @@ option(DemoWaitAndPlay, args((const std::string&) soundName));
 
 /** This skill makes the robot wave for public demos. */
 option(DemoWave);
+
+/** This skill makes the robot play "soccer" in a public demo. */
+option(DemoSoccer);

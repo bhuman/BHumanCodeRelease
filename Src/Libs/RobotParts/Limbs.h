@@ -46,6 +46,7 @@ namespace Limbs
     footRight,
 
     torso,
+    waist,
   });
 
   ENUM(LimbArmVarieties,

@@ -1,4 +1,4 @@
 # Configuration for normal simulation scenes
 
-call Includes/NormalWithJPEG
+call NormalWithJPEG
 mr JPEGImage off

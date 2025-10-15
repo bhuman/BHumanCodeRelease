@@ -1,0 +1,12 @@
+vp currentsLeft 1000 -1 1800
+vpd currentsLeft representation:FilteredCurrent:lAP red
+vpd currentsLeft representation:FilteredCurrent:lKP orange
+vpd currentsLeft representation:FilteredCurrent:lHP brown
+vp currentsRight 1000 -1 1800
+vpd currentsRight representation:FilteredCurrent:rAP blue
+vpd currentsRight representation:FilteredCurrent:rKP cyan
+vpd currentsRight representation:FilteredCurrent:rHP black
+
+vp currentsSum 300 0 5000
+vpd currentsSum representation:FilteredCurrent:lSum red
+vpd currentsSum representation:FilteredCurrent:rSum blue

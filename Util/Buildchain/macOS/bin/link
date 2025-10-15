@@ -8,6 +8,7 @@ while true; do
       break
       ;;
     "-target")
+      TARGET="$2"
       shift
       ;;
     "-isysroot")
@@ -63,4 +64,8 @@ if [ ! -z "$INFO" ]; then
   ) | tr '\n' '\0' >"$INFO"
 fi
 
-bash -c "\"${basePath}/mold\" -nostdlib --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/lib64/ld-linux-x86-64.so.2 ../../Util/Buildchain/V6/lib/crt1.o ../../Util/Buildchain/V6/lib/crti.o ../../Util/Buildchain/V6/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/lib/libstdc++.so.6.0.30 --start-group ../../Util/Buildchain/V6/lib/libm.so.6 --as-needed ../../Util/Buildchain/V6/lib/libmvec.so.1 --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/lib/libgcc.a --end-group ../../Util/Buildchain/V6/lib/libgcc.a --start-group ../../Util/Buildchain/V6/lib/libc.so.6 ../../Util/Buildchain/V6/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/lib/ld-linux-x86-64.so.2 --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/lib/libgcc.a --end-group ../../Util/Buildchain/V6/lib/libgcc.a ../../Util/Buildchain/V6/lib/crtend.o ../../Util/Buildchain/V6/lib/crtn.o"
+if [[ "$TARGET" == "x86_64"* ]]; then
+  bash -c "\"${basePath}/mold\" -nostdlib --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/lib64/ld-linux-x86-64.so.2 ../../Util/Buildchain/V6/lib/crt1.o ../../Util/Buildchain/V6/lib/crti.o ../../Util/Buildchain/V6/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/lib/libstdc++.so.6.0.30 --start-group ../../Util/Buildchain/V6/lib/libm.so.6 --as-needed ../../Util/Buildchain/V6/lib/libmvec.so.1 --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/lib/libgcc.a --end-group ../../Util/Buildchain/V6/lib/libgcc.a --start-group ../../Util/Buildchain/V6/lib/libc.so.6 ../../Util/Buildchain/V6/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/lib/ld-linux-x86-64.so.2 --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/lib/libgcc.a --end-group ../../Util/Buildchain/V6/lib/libgcc.a ../../Util/Buildchain/V6/lib/crtend.o ../../Util/Buildchain/V6/lib/crtn.o"
+else
+  bash -c "\"${basePath}/mold\" -nostdlib --hash-style=gnu --eh-frame-hdr -m aarch64elf -dynamic-linker=/lib/ld-linux-aarch64.so.1 ../../Util/Buildchain/T1/lib/crt1.o ../../Util/Buildchain/T1/lib/crti.o ../../Util/Buildchain/T1/lib/crtbegin.o $CALL ../../Util/Buildchain/T1/lib/libstdc++.so.6.0.30 --start-group ../../Util/Buildchain/T1/lib/libm.so.6 --end-group --start-group ../../Util/Buildchain/T1/lib/libgcc_s.so.1 ../../Util/Buildchain/T1/lib/libgcc.a --end-group ../../Util/Buildchain/T1/lib/libgcc.a --start-group ../../Util/Buildchain/T1/lib/libc.so.6 ../../Util/Buildchain/T1/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/T1/lib/ld-linux-aarch64.so.1 --no-as-needed --end-group --start-group ../../Util/Buildchain/T1/lib/libgcc_s.so.1 ../../Util/Buildchain/T1/lib/libgcc.a --end-group ../../Util/Buildchain/T1/lib/libgcc.a ../../Util/Buildchain/T1/lib/crtend.o ../../Util/Buildchain/T1/lib/crtn.o"
+fi

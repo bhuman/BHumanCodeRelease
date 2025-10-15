@@ -1,4 +1,5 @@
 call Includes/Normal
+ar trueGameState off
 
 # all views are defined in another script
 call Includes/Views

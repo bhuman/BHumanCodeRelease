@@ -28,20 +28,22 @@ MODULE(FallEngine,
   USES(MotionInfo),
   REQUIRES(StaticJointPoses),
   PROVIDES(FallGenerator),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (int)(2000) waitAfterFalling, /**< Get up is allowed after this much time has passed. */
-    (Angle)(40_deg) fallDirectionChangeThreshold, /**< Fall direction motion is allowed to change when the body rotation exceeds this torso tilt rotation. */
-    (Angle)(10_deg) maxGyroToStartGetUp, /**< Get up is allowed when the gyros are lower than this value. */
-    (Angle)(-45_deg) lateFallYAngleBack, /**< Change leg angles the moment the robots is about to touch the ground. */
-    (Angle)(55_deg) lateFallYAngleFront, /**< Change leg angles the moment the robots is about to touch the ground. */
-    (int)(100) highStiffnessDuration, /**< Duration high stiffness for the arms are used. */
-    (int)(140) highStiffnessDurationElbowRoll, /**< Duration high stiffness for the elbow are used. */
-    (Rangei)(Rangei(5, 30)) stiffnessArm, /**< Min and max stiffness for the arms. */
-    (Rangei)(Rangei(20, 30)) stiffnessLeg, /**< Min and max stiffness for the legs. */
-    (Rangei)(Rangei(20, 50)) stiffnessHead, /**< Min and max stiffness for the head. */
-    (Angle)(45_deg) shoulderPitchSideFallCorrectionRange,
-    (Angle)(35_deg) shoulderPitchSideFallCorrectionValue,
+    (int) waitAfterFalling, /**< Get up is allowed after this much time has passed. */
+    (Angle) fallDirectionChangeThreshold, /**< Fall direction motion is allowed to change when the body rotation exceeds this torso tilt rotation. */
+    (Angle) maxGyroToStartGetUp, /**< Get up is allowed when the gyros are lower than this value. */
+    (Angle) lateFallYAngleBack, /**< Change leg angles the moment the robots is about to touch the ground. */
+    (Angle) lateFallYAngleFront, /**< Change leg angles the moment the robots is about to touch the ground. */
+    (int) highStiffnessDuration, /**< Duration high stiffness for the arms are used. */
+    (int) highStiffnessDurationElbowRoll, /**< Duration high stiffness for the elbow are used. */
+    (Rangei) stiffnessArm, /**< Min and max stiffness for the arms. */
+    (Rangei) stiffnessLeg, /**< Min and max stiffness for the legs. */
+    (Rangei) stiffnessHead, /**< Min and max stiffness for the head. */
+    (Angle) shoulderPitchSideFallCorrectionRange,
+    (Angle) shoulderPitchSideFallCorrectionValue,
+    (Angle) shoulderRollBoostAngle, /**< Overwrite shoulder roll by this value. */
+    (Angle) elbowYawBoostAngle, /**< Overwrite shoulder yaw by this value. */
   }),
 });
 

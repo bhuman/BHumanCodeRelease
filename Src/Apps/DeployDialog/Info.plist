@@ -16,5 +16,7 @@
 	<string>True</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 </dict>
 </plist>

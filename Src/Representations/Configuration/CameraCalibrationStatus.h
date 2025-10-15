@@ -17,6 +17,7 @@ ENUM(SampleConfigurationStatus,
   none, /**< There is no active SampleConfigurationRequest. */
   recording, /**< The calibrator is currently recording samples. */
   visible, /**< All required samples are visible, but the calibrator is not configured to record them. */
+  waiting, /**< Wait for camera finishing its reset. */
   notVisible, /**< Some required SampleTypes are not visible. */
   finished, /**< The request SampleConfiguration has finished recording. */
 });
@@ -32,7 +33,8 @@ STREAMABLE(CameraCalibrationStatus,
   }),
 
   (CameraCalibrationStatus::State)(CameraCalibrationStatus::State::idle) state,
-  (int)(0) inStateSince,
+  (unsigned)(0) inStateSince,
   (SampleConfigurationStatus)(SampleConfigurationStatus::none) sampleConfigurationStatus,
+  (unsigned)(0) inStatusSince,
   (unsigned)(0) sampleIndex, /**< Index of the current sample configuration. */
 });

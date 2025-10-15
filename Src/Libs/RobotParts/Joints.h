@@ -12,6 +12,8 @@ namespace Joints
     headYaw,
     headPitch,
 
+    waistYaw, //< not present on the NAO
+
     firstArmJoint,
     firstLeftArmJoint = firstArmJoint,
 
@@ -34,7 +36,8 @@ namespace Joints
     firstLegJoint,
     firstLeftLegJoint = firstLegJoint,
 
-    lHipYawPitch = firstLeftLegJoint,
+    lHipYaw = firstLeftLegJoint,
+    lHipYawPitch = lHipYaw,
     lHipRoll,
     lHipPitch,
     lKneePitch,
@@ -43,7 +46,8 @@ namespace Joints
 
     firstRightLegJoint,
 
-    rHipYawPitch = firstRightLegJoint, //< not a joint in the real NAO
+    rHipYaw = firstRightLegJoint,
+    rHipYawPitch = rHipYaw, //< not a joint in the real NAO
     rHipRoll,
     rHipPitch,
     rKneePitch,
@@ -65,7 +69,8 @@ namespace Joints
 
   ENUM(LegJoint,
   {,
-    hipYawPitch, //< not a joint in the real NAO
+    hipYaw,
+    hipYawPitch = hipYaw, //< not a joint in the real NAO
     hipRoll,
     hipPitch,
     kneePitch,
@@ -90,7 +95,8 @@ namespace Joints
     switch(joint)
     {
       case Joints::headYaw:
-        return Joints::headYaw;
+      case Joints::waistYaw:
+        return joint;
       case Joints::lShoulderPitch:
       case Joints::lHand:
         return Joint(joint - Joints::lShoulderPitch + Joints::rShoulderPitch);
@@ -128,18 +134,18 @@ namespace Joints
     }
   }
 
-  inline bool canNegate(const Joint joint)
+  inline bool canNegate(const Joint joint, const bool hasSeparateHipYawJoints)
   {
     switch(joint)
     {
       case Joints::headYaw:
+      case Joints::waistYaw:
         return true;
       case Joints::lShoulderPitch:
       case Joints::lHand:
         return false;
       case Joints::lElbowRoll:
       case Joints::lShoulderRoll:
-      case Joints::lElbowYaw:
       case Joints::lWristYaw:
         return true;
       case Joints::rShoulderPitch:
@@ -147,9 +153,11 @@ namespace Joints
         return false;
       case Joints::rElbowRoll:
       case Joints::rShoulderRoll:
-      case Joints::rElbowYaw:
       case Joints::rWristYaw:
         return true;
+      case Joints::rElbowYaw:
+      case Joints::lElbowYaw:
+        return !hasSeparateHipYawJoints;
       case Joints::lHipYawPitch:
       case Joints::lHipPitch:
       case Joints::lKneePitch:
@@ -159,6 +167,7 @@ namespace Joints
       case Joints::lAnkleRoll:
         return true;
       case Joints::rHipYawPitch:
+        return hasSeparateHipYawJoints;
       case Joints::rHipPitch:
       case Joints::rKneePitch:
       case Joints::rAnklePitch:

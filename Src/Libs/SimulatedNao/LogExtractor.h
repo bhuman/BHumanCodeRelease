@@ -50,21 +50,4 @@ public:
    * @return if writing all files was successful
    */
   bool saveImages(const std::string& path, bool raw, bool onlyPlaying, int takeEachNthFrame);
-
-  /**
-   * Analyze if the measured joint angles are jumping, which indicates defect sensors.
-   * @return true if analyzing was successful
-   */
-  bool analyzeRobotStatus();
-
-private:
-  /**
-   * Go through the log and execute an action after each frame.
-   * @param representations Map with all needed Representations.
-   * @param executeAction The action that is executed after each frame.
-   *
-   * @param frameType Type of the frame.
-   * @return whether the action was successful or not.
-   */
-  bool goThroughLog(const std::map<const MessageID, Streamable*>& representations, const std::function<bool(const std::string& frameType)>& executeAction);
 };

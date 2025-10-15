@@ -6,8 +6,7 @@ option((SkillBehaviorControl) HandlePhotoMode)
   {
     transition
     {
-      if(true) // TODO: Update condition
-        goto photoMode;
+      goto photoMode;
     }
   }
 

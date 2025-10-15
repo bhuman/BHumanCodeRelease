@@ -8,7 +8,7 @@ set module:PassEvaluationProvider:drawHeatmap true
 
 vfd passEvaluation fieldLines
 vfd passEvaluation goalFrame
-vfd passEvaluation representation:TeammatesBallModel
+vfd passEvaluation representation:TeamBallModel
 vfd passEvaluation cognition:RobotPose
 vfd passEvaluation representation:ObstacleModel:rectangle
 vfd passEvaluation cognition:Reset

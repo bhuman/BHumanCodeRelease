@@ -70,7 +70,7 @@ public:
   /**
    * The method writes a module request to a stream.
    * @param stream The stream the request is written to.
-   * @param sort Should the provider and representationlist be sorted?
+   * @param sort Should the provider and representation list be sorted?
    */
   void sendRequest(Out& stream, bool sort = false);
 };

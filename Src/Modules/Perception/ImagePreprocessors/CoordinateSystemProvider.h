@@ -58,7 +58,7 @@ class CoordinateSystemProvider : public CoordinateSystemProviderBase
   void calcOffset(const Pose3f& prevPose, const Pose3f& currentPose, Vector2f& prevOffset, Vector2f& offset);
 
   /**
-   * The method calculates the scaling factors for the distored image.
+   * The method calculates the scaling factors for the distorted image.
    * @param a The constant part of the equation for motion distortion will be returned here.
    * @param b The linear part of the equation for motion distortion will be returned here.
    */

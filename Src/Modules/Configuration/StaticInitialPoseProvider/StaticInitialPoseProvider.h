@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Framework/Module.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/StaticInitialPose.h"
 #include "Representations/Infrastructure/GameState.h"
 
@@ -21,6 +22,7 @@ STREAMABLE(PoseVariation,
 MODULE(StaticInitialPoseProvider,
 {,
   REQUIRES(GameState),
+  REQUIRES(RobotDimensions),
   PROVIDES(StaticInitialPose),
   LOADS_PARAMETERS(
   {,

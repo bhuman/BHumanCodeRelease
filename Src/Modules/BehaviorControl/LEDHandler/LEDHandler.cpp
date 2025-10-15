@@ -16,8 +16,15 @@ void LEDHandler::update(LEDRequest& ledRequest)
 
   //update
   if(thePhotoModeGenerator.isActive)
-  {
     setPhotoModeLights(ledRequest);
+  else if(theRollingBallState.isActive)
+  {
+    setRollingBallChallengeLights(ledRequest);
+    setChestButton(ledRequest);
+    setLeftFoot(ledRequest);
+    setRightFoot(ledRequest);
+    setRightEar(ledRequest);
+    setLeftEar(ledRequest);
   }
   else
   {
@@ -159,7 +166,6 @@ void LEDHandler::setBothEyes(LEDRequest& ledRequest)
       case Tactic::Position::midfielderM:
       case Tactic::Position::midfielderL:
       case Tactic::Position::midfielderR:
-      case Tactic::Position::sacPasser:
         setEyeColor(ledRequest, false, green, LEDRequest::on);
         if(ballWasSeen)
           setEyeColor(ledRequest, true, green, LEDRequest::on);
@@ -174,7 +180,12 @@ void LEDHandler::setBothEyes(LEDRequest& ledRequest)
         break;
       default:
         ASSERT(theStrategyStatus.position == Tactic::Position::none);
-        if(ballWasSeen)
+        if(theRefereeGesture.gesture == RefereeGesture::ready)
+        {
+          setEyeColor(ledRequest, false, yellow, LEDRequest::on);
+          setEyeColor(ledRequest, true, yellow, LEDRequest::on);
+        }
+        else if(ballWasSeen)
         {
           setEyeColor(ledRequest, false, magenta, LEDRequest::on);
           setEyeColor(ledRequest, true, magenta, LEDRequest::on);
@@ -193,13 +204,13 @@ void LEDHandler::setHead(LEDRequest& ledRequest)
     ledRequest.ledStates[currentLED] = LEDRequest::on;
     ledRequest.ledStates[nextLED] = LEDRequest::on;
   }
-  //  Show if Robot wwants to make a pass or receive one, maybe add different signs for both situations later on
+  //  Show if robot wants to make a pass or receive one, maybe add different signs for both situations later on
   else if(theBehaviorStatus.passTarget > 0 || theBehaviorStatus.passOrigin > 0)
   {
     for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
       ledRequest.ledStates[i] = LEDRequest::on;
   }
-  //Added for Demos, so we know when a robot is in heat and needs a pause
+  //Added for demos, so we know when a robot is in heat and needs a pause
   else if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForLEDFastBlinking)
   {
     for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
@@ -282,6 +293,20 @@ void LEDHandler::setRightFoot(LEDRequest& ledRequest)
     ledRequest.ledStates[LEDRequest::footRightGreen] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::footRightBlue] = LEDRequest::on;
   }
+}
+
+void LEDHandler::setRollingBallChallengeLights(LEDRequest& ledRequest)
+{
+  bool ballWasSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 250;
+  if(ballWasSeen)
+    setEyeColor(ledRequest, !theRollingBallState.isRampLeftSide, magenta, LEDRequest::on);
+
+  setEyeColor(ledRequest, theRollingBallState.isRampLeftSide, theRollingBallState.isRampLeftSide ? blue : red, LEDRequest::on);
+
+  const float percentHeadLED = Rangef::ZeroOneRange().limit(theRollingBallState.approxRampDistance / theRollingBallState.maxRampDistance);
+  const unsigned numberOfActiveHeadLEDs = static_cast<unsigned>((LEDRequest::lastHeadLED - LEDRequest::firstHeadLED) * percentHeadLED);
+  for(unsigned headLEDIndex = LEDRequest::firstHeadLED; headLEDIndex < LEDRequest::LEDRequest::firstHeadLED + numberOfActiveHeadLEDs; headLEDIndex++)
+    ledRequest.ledStates[headLEDIndex] = LEDRequest::on;
 }
 
 void LEDHandler::setPhotoModeLights(LEDRequest& ledRequest)

@@ -19,7 +19,6 @@ MODULE(LibDemoProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(KeyStates),
-  USES(RobotHealth),
   PROVIDES(LibDemo),
   LOADS_PARAMETERS(
   {,
@@ -34,11 +33,6 @@ MODULE(LibDemoProvider,
 class LibDemoProvider : public LibDemoProviderBase
 {
   void update(LibDemo& libDemo) override;
-
-  /**
-   * In soccer mode, replace soccer with waving when in heat
-   */
-  void handleHeatInSoccer();
 
   LibDemo::DemoGameState demoGameState = LibDemo::DemoGameState::soccer;
   unsigned lastSwitch = 0;

@@ -37,6 +37,7 @@ public:
   static void extractInput(const YUYVImage& cameraImage, const Vector2i& patchSize, OutType* input);
   static void extractInput(const YUYVImage& cameraImage, const Vector2i& patchSize, std::uint8_t* input);
 
+  static void extractPatch(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const YUYVImage& src, YUVImage& dest);
 private:
   template<typename OutType, bool interpolate = false>
   static void getImageSection(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* output);
@@ -45,4 +46,6 @@ private:
   static void getInterpolatedImageSection(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* output);
 
   static Matrix3f calcInverseTransformation(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize);
+
+  static PixelTypes::YUVPixel interpolateYUV(const YUYVImage& src, const Vector2f& pos, const Vector2f& stepSize);
 };

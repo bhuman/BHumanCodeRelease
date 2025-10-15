@@ -26,12 +26,16 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
   DECLARE_DEBUG_RESPONSE("module:WalkToBallAndKickEngine:forwardTurnInterpolation");
   DECLARE_DEBUG_RESPONSE("module:WalkToBallAndKickEngine:UseMirroredForwardKick");
   MODIFY("module:WalkToBallAndKickEngine:ignoreBallTimestamp", ignoreBallTimestamp);
+
+  motionRequestChanged = lastMotionRequestOdometry != theMotionRequest.odometryData;
+  lastMotionRequestOdometry = theMotionRequest.odometryData;
+
   walkToBallAndKickGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
     lastPhaseWasKick = lastPhase.type == MotionPhase::kick;
 
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, Pose2f(0, motionRequest.ballEstimate.position));
-    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
+    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theWalkStepData.yHipOffset, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
 
     const Rangef ttrbRange(1.f, 2.f);
     const float timeToReachBall = ttrbRange.limit(std::max(std::abs(motionRequest.ballEstimate.position.x()) / theWalkingEngineOutput.maxSpeed.translation.x(), std::abs(motionRequest.ballEstimate.position.y()) / theWalkingEngineOutput.maxSpeed.translation.y()));
@@ -48,7 +52,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
     Pose2f kickPose = Pose2f(targetDirection, ballPosition);
 
     // interpolate between forward and turn kick
-    if(motionRequest.turnKickAllowed && motionRequest.preStepType != PreStepType::notAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
+    if(Global::getSettings().robotType == Settings::nao && motionRequest.turnKickAllowed && motionRequest.preStepType != PreStepType::notAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
     {
       KickInfo::KickType turnKick;
 
@@ -109,7 +113,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
           isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, precisionRange, motionRequest.preStepType, motionRequest.turnKickAllowed);
         }
         if(!(motionRequest.kickType == KickInfo::walkForwardStealBallLeft || motionRequest.kickType == KickInfo::walkForwardStealBallRight))  // we are so close to the ball. The velocity might be a false perception
-          isInPositionForKick &= motionRequest.ballEstimate.velocity.norm() < (Global::getSettings().scenario.starts_with("SharedAutonomyAttacker") ? maxBallVelocityKickEngine : maxBallVelocityInWalkKick);
+          isInPositionForKick &= motionRequest.ballEstimate.velocity.norm() < maxBallVelocityInWalkKick;
         break;
       }
       case KickInfo::newKick:
@@ -133,7 +137,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       if(kickPhase)
       {
         lastPhaseWasKickPossible = isInPositionForKick;
-        kickPhase->kickType = motionRequest.kickType;
+        kickPhase->kickType = walkKickVariant.kickType;
         return kickPhase;
       }
       else
@@ -141,7 +145,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
     }
 
     // force "duck" feet for the forwardSteal kick
-    if(motionRequest.kickType == KickInfo::walkForwardStealBallLeft || motionRequest.kickType == KickInfo::walkForwardStealBallRight)   // otherwise get normal kickpose
+    if(motionRequest.kickType == KickInfo::walkForwardStealBallLeft || motionRequest.kickType == KickInfo::walkForwardStealBallRight)   // otherwise get normal kick pose
     {
       const Pose3f supportInTorso3DLeft = theTorsoMatrix * theRobotModel.soleLeft;
       const Pose2f supportInTorsoLeft(supportInTorso3DLeft.rotation.getZAngle(), supportInTorso3DLeft.translation.head<2>());
@@ -172,12 +176,18 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
 
     if(lastPhaseWasKickPossible && !lastPhaseWasKick && std::abs(kickPose.rotation) < robotStuckThresholds.rotation && std::abs(kickPose.translation.x()) < robotStuckThresholds.translation.x() && std::abs(kickPose.translation.y()) < robotStuckThresholds.translation.y())
     {
-      const Pose2f odometryMeasuredChanged = theOdometryDataPreview.inverse() * theMotionInfo.odometryAtLastPhaseSwitch;
-      const Pose2f odometryRequestChanged = theOdometryTranslationRequest.inverse() * theMotionInfo.odometryRequestAtLastPhaseSwitch;
+      // Delay next walk phase, in case the perception is just slightly off due to errors
+      if(Global::getSettings().robotType == Settings::nao && (standWaitTime == 0.f || (!motionRequestChanged  && standWaitTime < maxStandDelayTime)))
+      {
+        standWaitTime += Global::getSettings().motionCycleTime;
+        return theWalkGenerator.createPhase(Pose2f(), lastPhase, maxStandDelayTime);
+      }
+      const Pose2f odometryMeasuredChanged = theOdometryDataPreview.inverse() * lastOdometry;
+      const Pose2f odometryRequestChanged = theOdometryTranslationRequest.inverse() * lastOdometryRequest;
       const Pose2f odometryError = odometryRequestChanged.inverse() * odometryMeasuredChanged;
-      kickPose.rotation += Rangef::ZeroOneRange().limit(std::abs(odometryError.rotation / kickPose.rotation)) * odometryError.rotation;
-      kickPose.translation.x() += Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.x() / kickPose.translation.x())) * kickPose.translation.x();
-      kickPose.translation.y() += Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.y() / kickPose.translation.y())) * kickPose.translation.y();
+      kickPose.rotation += kickPose.rotation == 0.f ? 0.f : Rangef::ZeroOneRange().limit(std::abs(odometryError.rotation / kickPose.rotation)) * odometryError.rotation;
+      kickPose.translation.x() += kickPose.translation.x() == 0.f ? 0.f : Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.x() / kickPose.translation.x())) * kickPose.translation.x() * slippingCorrectionFactor.x();
+      kickPose.translation.y() += kickPose.translation.y() == 0.f ? 0.f : Rangef::ZeroOneRange().limit(std::abs(odometryError.translation.y() / kickPose.translation.y())) * kickPose.translation.y() * slippingCorrectionFactor.y();
     }
     else if(theKickInfo[motionRequest.kickType].walkKickType == WalkKicks::none && kickPose.translation.x() < 40.f && std::abs(kickPose.translation.y()) < 50.f)
     {
@@ -187,7 +197,10 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       if(lastStep.translation.y() * kickPose.translation.y() < 0.f)
         kickPose.translation.y() = 0.f;
     }
+    standWaitTime = 0.f; // Reset
     lastPhaseWasKickPossible = isInPositionForKick;
+    lastOdometry = theMotionInfo.odometryAtLastPhaseSwitch;
+    lastOdometryRequest = theMotionInfo.odometryRequestAtLastPhaseSwitch;
 
     Vector2f newBallPosition = ballPosition;
     if(calcInterceptionPosition(motionRequest, newBallPosition, perceivedBallPosition, scsCognition))
@@ -195,7 +208,7 @@ void WalkToBallAndKickEngine::update(WalkToBallAndKickGenerator& walkToBallAndKi
       kickPose = Pose2f(targetDirection, newBallPosition);
 
       // interpolate between forward and turn kick
-      if(motionRequest.turnKickAllowed && motionRequest.preStepType != PreStepType::notAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
+      if(Global::getSettings().robotType == Settings::nao && motionRequest.turnKickAllowed && motionRequest.preStepType != PreStepType::notAllowed && (motionRequest.kickType == KickInfo::walkForwardsLeft || motionRequest.kickType == KickInfo::walkForwardsRight))
       {
         KickInfo::KickType turnKick;
 
@@ -239,7 +252,7 @@ std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const Moti
       Vector2f ball = lastStableBall;
       if(phaseNumber <= 2) // after the robot shifts all his weight on the support foot, the torsoMatrix might be off and results in a miss position of the ball by up to 3cm
       {
-        const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, theMotionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
+        const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theWalkStepData.yHipOffset, theMotionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
         ball = scsCognition * theMotionRequest.ballEstimate.position;
         lastStableBall = ball;
       }
@@ -252,10 +265,6 @@ std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const Moti
           if(ball.y() > 0.f)
             ball.y() *= -1.f;
 
-          // RoboCup 2021 shift. Should be based on internal sensor data
-          //ball.y() -= 5.f + Rangef(0.f, 10.f).limit((ball.x() - 180.f) / 2.f); //this is a hit correction factor
-          ball.y() -= 5.f; // this is a hit correction factor
-
           //clipping
           forwardFastYClipRange.clamp(ball.y());
 
@@ -266,7 +275,7 @@ std::unique_ptr<MotionPhase> WalkToBallAndKickEngine::createKickPhase(const Moti
           const Vector2f kickFootX(optimalHitPointX - 0.5f * requiredDistanceFromStrikeOutToKick, optimalHitPointX + 0.5f * requiredDistanceFromStrikeOutToKick);
           const Vector2f kickFootZ(-190.f + power * 20.f, -190.f + power * 10.f);
 
-          const Vector3f strikeOut(kickFootX.x(), ball.y(), kickFootZ.x()), kickTo(kickFootX.y(), ball.y(), kickFootZ.y());
+          const Vector3f strikeOut(kickFootX.x(), ball.y(), kickFootZ.x()), kickTo(kickFootX.y(), ball.y() - 30.f /* this is a hit correction factor */, kickFootZ.y());
           const DynPoint dynRFoot2(Phase::rightFootTra, 2, strikeOut), dynRFoot3(Phase::rightFootTra, 3, kickTo);
 
           d.push_back(dynRFoot2);

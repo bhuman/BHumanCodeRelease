@@ -20,8 +20,6 @@
 #include "Representations/Infrastructure/CameraImage.h"
 #include "DrawingView.h"
 
-class SACControlWidget;
-
 /**
  * @class ImageView
  *
@@ -31,8 +29,6 @@ class SACControlWidget;
  */
 class ImageView : public DrawingView
 {
-  friend class SACControlWidget;
-
 public:
   /**
    * @param fullName The path to this view in the scene graph.

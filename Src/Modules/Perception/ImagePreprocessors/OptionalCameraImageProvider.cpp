@@ -14,7 +14,7 @@ MAKE_MODULE(OptionalCameraImageProvider);
 
 void OptionalCameraImageProvider::update(OptionalCameraImage& theOptionalCameraImage)
 {
-  if(theOptionalImageRequest.sendImage)
+  if(theRefereeDetectionRequest.detectReferee)
     theOptionalCameraImage.image = theCameraImage;
   else
     theOptionalCameraImage.image.reset();

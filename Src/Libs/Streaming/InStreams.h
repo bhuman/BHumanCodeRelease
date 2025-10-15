@@ -16,7 +16,7 @@ class File;
 /**
  * @class PhysicalInStream
  *
- * The base class for physical in streams. Derivates of PhysicalInStream only handle the
+ * The base class for physical in streams. Classes derived from PhysicalInStream only handle the
  * reading of data from a medium, not of formatting data.
  */
 class PhysicalInStream
@@ -67,7 +67,7 @@ public:
  * @class StreamReader
  *
  * Generic class for formatted reading of data to be used in streams.
- * The physical reading is then done by PhysicalOutStream derivates.
+ * The physical reading is then done by classes derived from PhysicalOutStream.
  */
 class StreamReader
 {
@@ -191,7 +191,7 @@ protected:
  * @class InText
  *
  * Formatted reading of text data to be used in streams.
- * The physical reading is done by PhysicalInStream derivates.
+ * The physical reading is done by class derived from PhysicalInStream.
  */
 class InText : public StreamReader
 {
@@ -438,7 +438,7 @@ private:
  * @class InBinary
  *
  * Formatted reading of binary data to be used in streams.
- * The physical reading is done by PhysicalInStream derivates.
+ * The physical reading is done by classes derived from PhysicalInStream.
  */
 class InBinary : public StreamReader
 {

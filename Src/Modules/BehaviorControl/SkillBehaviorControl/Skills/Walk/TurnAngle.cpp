@@ -14,7 +14,8 @@
 
 option((SkillBehaviorControl) TurnAngle,
        args((Angle) angle,
-            (Angle) margin),
+            (Angle) margin,
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType),
        vars((Angle)(theOdometryData.rotation) startRotation)) /**< The global rotation of the robot when the turn started. */
 {
   initial_state(execute)
@@ -27,7 +28,7 @@ option((SkillBehaviorControl) TurnAngle,
     action
     {
       WalkToPoint({.target = {Angle::normalize(startRotation + angle - theOdometryData.rotation)},
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange});
+                   .reduceWalkSpeedType = reduceWalkSpeedType});
     }
   }
 
@@ -36,7 +37,7 @@ option((SkillBehaviorControl) TurnAngle,
     action
     {
       WalkToPoint({.target = {Angle::normalize(startRotation + angle - theOdometryData.rotation)},
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange});
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::noChange});
     }
   }
 }

@@ -13,6 +13,7 @@ option((SkillBehaviorControl) Dive,
 {
   theMotionRequest.motion = MotionRequest::dive;
   theMotionRequest.diveRequest = request;
+  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

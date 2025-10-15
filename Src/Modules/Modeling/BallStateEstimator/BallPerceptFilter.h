@@ -29,10 +29,11 @@
 #include "Representations/Modeling/FilteredBallPercepts.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
@@ -42,6 +43,7 @@ MODULE(BallPerceptFilter,
   REQUIRES(BallPercept),
   REQUIRES(BallSpecification),
   REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
@@ -50,7 +52,7 @@ MODULE(BallPerceptFilter,
   REQUIRES(ObstaclesImagePercept),
   REQUIRES(Odometer),
   REQUIRES(TeamData),
-  REQUIRES(TeammatesBallModel),
+  REQUIRES(TeamBallModel),
   REQUIRES(WorldModelPrediction),
   USES(RobotPose),
   PROVIDES(FilteredBallPercepts),
@@ -78,7 +80,7 @@ MODULE(BallPerceptFilter,
     (float) maxStandardDeviationMotionDetection,       /**< Mean error (in mm) of percepts considered as a rolling ball is not allowed to be larger than this. */
     (bool) disableBallInOtherHalfForTesting,           /**< Flag for testing on a half field. Ball percepts in other half will be ignored */
     (float) toleranceForDisablingBallInOtherHalf,      /**< Tolerance threshold for testing flag to handle balls on halfway line */
-    (bool) correctBallDistanceByPerceivedSize,         /**< Flag, if set to true, the perceived size of the ball is used to correct the distance to the ball. The effect depends on the shakiness of the robot. The more it shakes, the less reliable the normal angle-based computation is.*/
+    (Angle) correctBallDistanceByPerceivedSize,        /**< Defines the vertical angle down to which the perceived size of the ball is used to correct the distance to the ball. The effect depends on the shakiness of the robot. The more it shakes, the less reliable the normal angle-based computation is. 0_deg deactivates the correction. */
   }),
 });
 

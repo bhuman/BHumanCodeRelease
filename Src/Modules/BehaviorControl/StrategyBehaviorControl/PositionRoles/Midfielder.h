@@ -25,8 +25,8 @@ class Midfielder : public RatingRole
     (float)(0.7f) startThreshold, /**< the rating has to be at least this much better (normalized to the new found one) at the destination to start moving */
     (float)(0.3f) stopThreshold, /**< if the rating is not at least this much better (normalized to the new found one) at the destination stop moving */
     (float)(0.5f) baseShiftX, /**< factor by which the base pose is moved toward the X position of the ball */
-    (float)(0.5f) maxBaseShilftY, /**< factor by which the base pose is moved toward the Y position of the ball at maximum */
-    (float)(1000.f) smoothBaseShiftYDistence, /**< distance from the mid line in which the base shift in Y direction is smoothed linearly */
+    (float)(0.5f) maxBaseShiftY, /**< factor by which the base pose is moved toward the Y position of the ball at maximum */
+    (float)(1000.f) smoothBaseShiftYDistance, /**< distance from the mid line in which the base shift in Y direction is smoothed linearly */
     (float)(0.5f) minBallRating, /**< minimal value of the rating depending on the distance to the ball */
     (float)(0.5f) minGoalRating, /**< minimal value of the goal rating */
     (float)(1000.f) sigmaCommunication, /**< standard deviation for rating dependent on the last target position */

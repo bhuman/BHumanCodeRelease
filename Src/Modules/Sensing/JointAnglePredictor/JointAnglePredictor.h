@@ -12,7 +12,7 @@
 #include "MathBase/RingBuffer.h"
 #include "Platform/File.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/JointAnglePred.h"
 
@@ -24,7 +24,7 @@ using namespace NeuralNetworkONNX;
 MODULE(JointAnglePredictor,
 {,
   USES(JointRequest), // It must be ensured that the data comes from the last frame.
-  REQUIRES(JointSensorData),
+  REQUIRES(JointAngles),
   USES(MotionInfo),
   PROVIDES(JointAnglePred),
   LOADS_PARAMETERS(

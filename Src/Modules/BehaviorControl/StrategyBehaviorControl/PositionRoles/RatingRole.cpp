@@ -61,11 +61,6 @@ Pose2f RatingRole::position(Side, const Pose2f& basePose, const std::vector<Vect
 
 bool RatingRole::shouldStart(const Pose2f& target) const
 {
-  float startThreshold = p.startThreshold;
-  if(!theIndirectKick.allowDirectKick)
-  {
-    startThreshold = 0.f;
-  }
   const float targetRating = rating(target.translation);
 
   //avoid division by zero
@@ -73,7 +68,7 @@ bool RatingRole::shouldStart(const Pose2f& target) const
     return false;
 
   // rating && (position diff)
-  if(((targetRating - rating(theRobotPose.translation)) / targetRating > startThreshold &&
+  if(((targetRating - rating(theRobotPose.translation)) / targetRating > p.startThreshold &&
       (std::abs(target.translation.x() - theRobotPose.translation.x()) > p.startTranslationThreshold ||
        std::abs(target.translation.y() - theRobotPose.translation.y()) > p.startTranslationThreshold)) ||
      // rotation diff
@@ -93,8 +88,11 @@ bool RatingRole::shouldStop(const Pose2f& target) const
   if(targetRating == 0)
     return false;
 
+  const float currentTeammateDistanceSquared = getClosestTeammateSquaredDistance(theRobotPose.translation);
+  const bool allowRatingStop = currentTeammateDistanceSquared >= sqr(p.stopTeammateDistance);
+
   // rating || (position diff)
-  if(((targetRating - rating(theRobotPose.translation)) / targetRating < p.stopThreshold ||
+  if(((allowRatingStop && (targetRating - rating(theRobotPose.translation)) / targetRating < p.stopThreshold) ||
       (std::abs(target.translation.x() - theRobotPose.translation.x()) < p.stopTranslationThreshold &&
        std::abs(target.translation.y() - theRobotPose.translation.y()) < p.stopTranslationThreshold)) &&
      // rotation diff
@@ -162,6 +160,23 @@ void RatingRole::gradientAscent(Vector2f& pos, int numIterations) const
   //outside the Voronoi region, return original pos
   if(!Geometry::isPointInsideConvexPolygon(region.data(), static_cast<int>(region.size()), pos))
     pos = originalPos;
+}
+
+float RatingRole::getClosestTeammateSquaredDistance(const Vector2f& fieldPos) const
+{
+  if(!theGlobalTeammatesModel.teammates.empty())
+  {
+    float minTeammateDistanceSquared = (fieldPos - theGlobalTeammatesModel.teammates.cbegin()->pose.translation).squaredNorm();
+    for(auto t = ++theGlobalTeammatesModel.teammates.cbegin(); t != theGlobalTeammatesModel.teammates.cend(); t++)
+    {
+      const float d = (fieldPos - t->pose.translation).squaredNorm();
+      if(d < minTeammateDistanceSquared)
+        minTeammateDistanceSquared = d;
+    }
+
+    return minTeammateDistanceSquared;
+  }
+  return std::numeric_limits<float>::max();
 }
 
 void RatingRole::drawRating()

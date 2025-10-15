@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
@@ -22,8 +23,9 @@
 
 MODULE(WalkToPoseEngine,
 {,
-  REQUIRES(OdometryDataPreview),
+  REQUIRES(BallSpecification),
   REQUIRES(LibDemo),
+  REQUIRES(OdometryDataPreview),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
@@ -63,8 +65,7 @@ class WalkToPoseEngine : public WalkToPoseEngineBase
    * @param keepTargetRotation Whether the engine must reach the target rotation as soon as possible.
    * @param lastPhase The previous motion phase.
    * @param targetOfInterest If filled, the first entry is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates.
-   * @param sideWalkAllowed If true, no forced 90deg sidewalk will be made
-   * @param forceSideWalk If true, force sidewalking
+   * @param sideWalkingRequest Requests how side walking is allowed to be used
    * @param doNotForceDiagonalWalk If true, the targetOfInterest does not force side/diagonal walk
    * @return The walk phase to the target.
    */
@@ -72,7 +73,7 @@ class WalkToPoseEngine : public WalkToPoseEngineBase
                                            const Pose2f& walkSpeed, bool isLeftPhase, bool keepTargetRotation,
                                            const MotionPhase& lastPhase, const bool isFastWalkAllowed,
                                            const std::optional<Vector2f>& targetOfInterest,
-                                           const bool forceSideWalk, const bool isSideWalkAllowed, const bool useModTarget) const;
+                                           const SideWalkingRequest::SideWalkingRequest sideWalkingRequest, const bool useModTarget) const;
 
   Pose2f generateStep(const bool isLeftPhase, const MotionPhase& lastPhase, const Pose2f& walkSpeed,
                       const bool isFastWalk, const Pose2f& targetInSCS, const Pose2f& modTargetInSCS,

@@ -13,11 +13,13 @@
 #include "SimulatedNao/LocalConsole.h"
 #include "SimulatedNao/RemoteConsole.h"
 #include "SimulatedNao/Views/ConsoleView.h"
+#include "SimulatedNao/TestCommandParser.h"
 #include "Platform/File.h"
 #include "Platform/Time.h"
 #include "Streaming/FunctionList.h"
 #include "Streaming/InStreams.h"
 #include "Streaming/OutStreams.h"
+#include "Representations/BehaviorControl/SkillRequest.h"
 
 #include <SimRobotEditor.h>
 
@@ -42,7 +44,8 @@ ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application) :
   mode(SystemCall::simulatedRobot), currentCompletionIndex(completion.end()),
   toolBar(*this)
 {
-  application.getLayoutSettings().setValue("Run", true);
+  if(!application.isSimResetting())
+    application.getLayoutSettings().setValue("Run", true);
 
   consoleView = new ConsoleView("Console", *this);
   addView(consoleView, nullptr, SimRobot::Flag::verticalTitleBar);
@@ -62,19 +65,28 @@ bool ConsoleRoboCupCtrl::compile()
 
   start();
 
-  std::string fileName = application->getFilePath().
-#ifdef WINDOWS
-                         toLatin1
-#else
-                         toUtf8
-#endif
-                         ().constData();
-  std::string::size_type p = fileName.find_last_of("\\/");
-  std::string::size_type p2 = fileName.find_last_of(".");
-  if(p2 > p)
-    fileName = fileName.substr(0, p2);
+  std::string scenePath = application->getFilePath().toStdString();
+  std::string baseConPath = std::filesystem::path(scenePath).replace_extension("con").string();
+  std::string userConPath;
+  callPath = std::string(File::getBHDir()) + "/Config/Scenes";
 
-  executeFile("", fileName, false, nullptr);
+  // If the test mode is enabled, load the test configuration file
+  if(gameController.isTestActive())
+  {
+    baseConPath = gameController.getPrimaryConfigPath();
+    userConPath = gameController.getSecondaryConfigPath();
+    printLn("Test mode enabled. Using test configuration.");
+    printLn("Files stored in " + gameController.getTestDirPath().string());
+  }
+
+  // Execute the scene configuration file
+  executeFile("", baseConPath, false, nullptr);
+
+  // Execute the user's test configuration file
+  if(!userConPath.empty())
+  {
+    executeFile("", userConPath, false, nullptr);
+  }
 
   for(ControllerRobot* robot : robots)
     robot->getRobotConsole()->handleConsole("endOfStartScript");
@@ -138,6 +150,12 @@ void ConsoleRoboCupCtrl::update()
 
   if(completion.empty())
     createCompletion();
+
+  std::string msg = gameController.getConsoleMessage();
+  if(!msg.empty())
+  {
+    printLn(msg);
+  }
 }
 
 bool ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string& name2,
@@ -160,7 +178,7 @@ bool ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string
       if(!File::hasExtension(name))
         name = name + ".con";
       if(!File::isAbsolute(name))
-        name = std::string("Scenes/") + name;
+        name = callPath + "/" + name;
       InBinaryFile stream(name);
       if(!stream.exists())
       {
@@ -170,6 +188,8 @@ bool ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string
       }
       else
       {
+        const std::string callPathBackup = callPath;
+        callPath = std::filesystem::path(name).parent_path().string();
         std::string line;
         while(!stream.eof())
         {
@@ -185,11 +205,16 @@ bool ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string
           }
           if(line.find_first_not_of(" ") != std::string::npos)
           {
+            if(!gameController.isConfigCommandAllowed(line))
+            {
+              continue;
+            }
             if(executeConsoleCommand(line, console))
               console = nullptr;
             std::this_thread::yield();
           }
         }
+        callPath = callPathBackup;
         break;
       }
     }
@@ -259,6 +284,25 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     help(stream);
   else if(buffer == "robot")
   {
+    auto getNumber = [](const std::string& str) -> int
+    {
+      int result = 0;
+      bool foundDigit = false;
+
+      for(char ch : str)
+      {
+        if(std::isdigit(ch))
+        {
+          result = result * 10 + (ch - '0');
+          foundDigit = true;
+        }
+        else if(foundDigit)
+        {
+          break;
+        }
+      }
+      return result;
+    };
     stream >> buffer;
     if(buffer == "?")
     {
@@ -273,9 +317,49 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     {
       selected.clear();
       for(const ControllerRobot* robot : robots)
+      {
         selected.push_back(robot->getRobotConsole());
+      }
       for(RemoteConsole* remoteRobot : remoteRobots)
         selected.push_back(remoteRobot);
+      return true;
+    }
+    else if(buffer == "teamA")
+    {
+      selected.clear();
+      for(const ControllerRobot* robot : robots)
+      {
+        if(getNumber(robot->getName()) <= Settings::highestValidPlayerNumber)
+        {
+          selected.push_back(robot->getRobotConsole());
+        }
+      }
+      for(RemoteConsole* remoteRobot : remoteRobots)
+      {
+        if(getNumber(remoteRobot->getName()) <= Settings::highestValidPlayerNumber)
+        {
+          selected.push_back(remoteRobot);
+        }
+      }
+      return true;
+    }
+    else if(buffer == "teamB")
+    {
+      selected.clear();
+      for(const ControllerRobot* robot : robots)
+      {
+        if(getNumber(robot->getName()) > Settings::highestValidPlayerNumber)
+        {
+          selected.push_back(robot->getRobotConsole());
+        }
+      }
+      for(RemoteConsole* remoteRobot : remoteRobots)
+      {
+        if(getNumber(remoteRobot->getName()) > Settings::highestValidPlayerNumber)
+        {
+          selected.push_back(remoteRobot);
+        }
+      }
       return true;
     }
     else
@@ -367,12 +451,8 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
       check(gameController.competitionTypeChampionsCup());
     else if(buffer == "competitionTypeChallengeShield")
       check(gameController.competitionTypeChallengeShield());
-    else if(buffer == "competitionTypeSharedAutonomyChallenge")
-      check(gameController.competitionTypeSharedAutonomyChallenge());
-    else if(buffer == "globalGameStuckByFirstTeam")
-      check(gameController.globalGameStuck(0));
-    else if(buffer == "globalGameStuckBySecondTeam")
-      check(gameController.globalGameStuck(1));
+    else if(buffer == "globalGameStuck")
+      check(gameController.globalGameStuck());
     else if(buffer == "goalByFirstTeam")
       check(gameController.goal(0));
     else if(buffer == "goalBySecondTeam")
@@ -394,13 +474,15 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     else if(buffer == "kickInForSecondTeam")
       check(gameController.kickIn(1));
     else if(buffer == "penaltyKickForFirstTeam")
-      check(gameController.penaltyKick(0));
+      check(gameController.teamPenaltyKick(0));
     else if(buffer == "penaltyKickForSecondTeam")
-      check(gameController.penaltyKick(1));
+      check(gameController.teamPenaltyKick(1));
     else if(buffer == "kickOffFirstTeam")
       check(gameController.kickOff(0));
     else if(buffer == "kickOffSecondTeam")
       check(gameController.kickOff(1));
+    else if(buffer == "dropBall")
+      check(gameController.dropBall());
     else if(buffer == "halfFirst")
       check(gameController.setHalf(1));
     else if(buffer == "halfSecond")
@@ -509,6 +591,36 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
 
     return false;
   }
+  else if(buffer == "test")
+  {
+    std::string normalizedCmd = TestCommandParser::normalize(command);
+    InConfigMemory cmdStream(normalizedCmd.c_str(), normalizedCmd.size());
+    TestCommandParser testCmdParser = TestCommandParser(cmdStream);
+    try
+    {
+      testCmdParser.parse();
+    }
+    catch(const std::runtime_error& e)
+    {
+      printLn("Syntax error: " + std::string(e.what()));
+      return false;
+    }
+    switch(testCmdParser.getCommandType())
+    {
+      case TestCommandType::help:
+        printLn("See more information here: https://gitlab.informatik.uni-bremen.de/groups/B-Human/-/wikis/doku/Tests");
+        break;
+      case TestCommandType::stop:
+        gameController.stopTest();
+        break;
+      case TestCommandType::test:
+        gameController.startTest(testCmdParser.getTestParameters());
+        break;
+      case TestCommandType::none:
+        break;
+    }
+    return false;
+  }
   else if(console)
   {
     console->handleConsole(command);
@@ -538,8 +650,16 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
   std::string output = "";
   if(ball != nullptr)
   {
-    const float* ballPosition = static_cast<SimRobotCore2::Body*>(ball)->getPosition();
-    output += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0] * positionFactor) + " " + std::to_string(ballPosition[1] * positionFactor) + " " + std::to_string(ballPosition[2] * positionFactor) + "\n";
+    if(is2D)
+    {
+      const float* ballPosition = static_cast<SimRobotCore2D::Body*>(ball)->getPosition();
+      output += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0]) + " " + std::to_string(ballPosition[1]) + "\n";
+    }
+    else
+    {
+      const float* ballPosition = static_cast<SimRobotCore2::Body*>(ball)->getPosition();
+      output += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0] * positionFactor) + " " + std::to_string(ballPosition[1] * positionFactor) + " " + std::to_string(ballPosition[2] * positionFactor) + "\n";
+    }
   }
   for(const ControllerRobot* controllerRobot : robots)
   {
@@ -548,8 +668,11 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
     {
       if(is2D)
       {
-        //Do we have a 2D mode?
-        printLn("2D: " + robot->getFullName().toStdString() + std::to_string(*static_cast<SimRobotCore2D::Body*>(robot)->getPosition()));
+        Pose2f pos;
+        Pose2f& pose = pos;
+        static_cast<const SimRobotCore2D::Body*>(robot)->getPose(pose.translation.data(), reinterpret_cast<float*>(&pose.rotation));
+        pose.translation *= 1000.f;
+        output += "mvo " + robot->getFullName().toStdString() + " " + std::to_string(pose.translation[0]) + " " + std::to_string(pose.translation[1]) + " " + std::to_string(pose.rotation.toDegrees()) + "\n";
       }
       else
       {
@@ -575,7 +698,7 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
 void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
 {
   SimRobot::Object* ball = application->resolveObject(QString::fromStdString("RoboCup.balls.ball"), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
-  const float positionFactor = 1000.f;
+  float positionFactor = 1000.f;
   std::string file = "Locations/Default/staticInitialPoseProvider.cfg";
   InMapFile stream(file);
   StaticInitialPoseProvider::Parameters params;
@@ -587,53 +710,41 @@ void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
   {
     printLn("Input File not found!");
   }
-  PoseVariation variation;
+  PoseVariation variationTeamA;
+  PoseVariation variationTeamB;
+
   params.isActive = true;
   params.loadVariation = 0;
-  //Change the order, otherwise the teams will be on the wrong side
-  for(unsigned int i = 0; i < robots.size() / 2; i++)
-  {
-    robots.splice(robots.end(), robots, robots.begin());
-  }
+
   for(const ControllerRobot* controllerRobot : robots)
   {
-    SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
-    if(robot)
+    if(controllerRobot)
     {
-      if(is2D)
+      Pose2f pose;
+      SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+      controllerRobot->getRobotConsole()->simulatedRobot->getRobotPose(pose);
+      if(SimulatedRobot::isFirstTeam(robot))
       {
-        //Do we have a 2D mode?
-        printLn("2D: " + robot->getFullName().toStdString() + std::to_string(*static_cast<SimRobotCore2D::Body*>(robot)->getPosition()));
+        variationTeamA.poseVaria.push_back(pose);
       }
       else
       {
-        float position[3];
-        float(rotation[3])[3];
-        static_cast<SimRobotCore2::Body*>(robot)->getPose(position, rotation);
-        const float rotationFactor = -57.2958f;
-        Pose2f pose;
-        pose.translation.x() = position[0] * positionFactor;
-        pose.translation.y() = position[1] * positionFactor;
-        pose.rotation = std::atan2(rotation[1][0], rotation[0][0]) * rotationFactor;
-        variation.poseVaria.push_back(pose);
+        variationTeamB.poseVaria.push_back(pose);
       }
     }
     else
     {
-      printLn("robot is NULL");
+      printLn("controllerRobot is NULL");
     }
   }
-  params.poseVariations.push_back(variation);
-  OutMapFile outStream(file, true);
-  if(outStream.exists())
-  {
-    outStream << params;
-  }
-  else
-  {
-    printLn("Output File not found!");
-  }
-  size_t variationCount = params.poseVariations.size() - 1;
+  params.poseVariations.push_back(variationTeamA);
+  params.poseVariations.push_back(variationTeamB);
+  params.loadVariation = static_cast<int>(params.poseVariations.size() - 2);
+  OutMapMemory outStreamTeamA(true, true);
+  outStreamTeamA << params;
+  params.loadVariation = static_cast<int>(params.poseVariations.size() - 1);
+  OutMapMemory outStreamTeamB(true, true);
+  outStreamTeamB << params;
 
   std::string text = "";
   if(ball != nullptr)
@@ -641,10 +752,15 @@ void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
     const float* ballPosition = static_cast<SimRobotCore2::Body*>(ball)->getPosition();
     text += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0] * positionFactor) + " " + std::to_string(ballPosition[1] * positionFactor) + " " + std::to_string(ballPosition[2] * positionFactor) + "\n";
   }
-  text += "robot all\n";
-  text += "set module:StaticInitialPoseProvider:loadVariation " + std::to_string(variationCount) + "\n";
+  std::string valuesTeamA = outStreamTeamA.data();
+  std::string valuesTeamB = outStreamTeamB.data();
+  text += "robot teamA\n";
+  text += "set module:StaticInitialPoseProvider " + valuesTeamA + "\n";
   text += "dr module:StaticInitialPoseProvider\n";
-  text += "gc playing";
+  text += "robot teamB\n";
+  text += "set module:StaticInitialPoseProvider " + valuesTeamB + "\n";
+  text += "dr module:StaticInitialPoseProvider\n";
+  text += "robot all\n";
   File moveFile("Scenes/" + fileName, "w", true);
   moveFile.write(text.c_str(), text.size());
 }
@@ -683,12 +799,12 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  cls : Clear console window.", pattern, true);
   list("  dt off | on | <fps> : Delay time of a simulation step to real time or a certain number of frames per second.", pattern, true);
   list("  echo <text> : Print text into console window. Useful in console.con.", pattern, true);
-  list("  gc initial | standby | ready | set | playing | finished | goalByFirstTeam | goalBySecondTeam | kickOffFirstTeam | kickOffSecondTeam | globalGameStuckByFirstTeam | globalGameStuckBySecondTeam | goalKickForFirstTeam | goalKickForSecondTeam | pushingFreeKickForFirstTeam | pushingFreeKickForSecondTeam | cornerKickForFirstTeam | cornerKickForSecondTeam | kickInForFirstTeam | kickInForSecondTeam | penaltyKickForFirstTeam | penaltyKickForSecondTeam | halfFirst | halfSecond | gameNormal | gamePenaltyShootout | competitionPhasePlayoff | competitionPhaseRoundRobin | competitionTypeChampionsCup | competitionTypeChallengeShield | competitionTypeSharedAutonomyChallenge : Set GameController state.", pattern, true);
+  list("  gc initial | standby | ready | set | playing | finished | goalByFirstTeam | goalBySecondTeam | kickOffFirstTeam | kickOffSecondTeam | dropBall | globalGameStuck | goalKickForFirstTeam | goalKickForSecondTeam | pushingFreeKickForFirstTeam | pushingFreeKickForSecondTeam | cornerKickForFirstTeam | cornerKickForSecondTeam | kickInForFirstTeam | kickInForSecondTeam | penaltyKickForFirstTeam | penaltyKickForSecondTeam | halfFirst | halfSecond | gameNormal | gamePenaltyShootout | competitionPhasePlayoff | competitionPhaseRoundRobin | competitionTypeChampionsCup | competitionTypeChallengeShield : Set GameController state.", pattern, true);
   list("  ( help | ? ) [<pattern>] : Display this text.", pattern, true);
   if(is2D)
     list("  mvo <name> <x> <y> [<rot>] : Move the object with the given name to the given position.", pattern, true);
   else
-    list("  mvo <name> <x> <y> <z> [<rotx> <roty> <rotz>] : Move the object with the given name to the given position.", pattern, true);
+    list("  mvo <name> <x> <y> <z> [<rotX> <rotY> <rotZ>] : Move the object with the given name to the given position.", pattern, true);
   list("  robot ? | all | <name> {<name>} : Connect console to a set of active robots. Alternatively, double click on robot.", pattern, true);
   list("  st off | on : Switch simulation of time on or off.", pattern, true);
   list("  # <text> : Comment.", pattern, true);
@@ -708,22 +824,33 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  log ? [<pattern>] : Display information about log file.", pattern, true);
   list("  log load <file> | clear : Load log-file or clear all frames.", pattern, true);
   list("  log ( keep | remove ) <message> {<message>} : Filter specified messages of all frames.", pattern, true);
+  list("  log keep circlePercept : Keep frames that satisfy hard-coded criteria.", pattern, true);
   list("  log start | pause | stop | ( forward | backward ) [ fast | image ] | repeat | goto <number> | cycle | once : Replay log file.", pattern, true);
   list("  log mr [list] : Generate module requests to replay log file.", pattern, true);
-  list("  log analyzeRobotStatus : Find timestamps with joints that are defect or gyros not updating.", pattern, true);
   list("  mr ? [<pattern>] | modules [<pattern>] | save | <representation> ( ? [<pattern>] | <module> | off | default ) : Send module request.", pattern, true);
   list("  msg off | on | log <file> | enable | disable : Switch output of text messages on or off. Log text messages to a file. Switch message handling on or off.", pattern, true);
-  list("  mv <x> <y> <z> [<rotx> <roty> <rotz>] : Move the selected simulated robot to the given position.", pattern, true);
+  list("  mv <x> <y> <z> [<rotX> <rotY> <rotZ>] : Move the selected simulated robot to the given position.", pattern, true);
   list("  mvb <x> <y> <z> : Move the ball to the given position.", pattern, true);
   list("  poll : Poll for all available debug requests and drawings. ", pattern, true);
-  list("  pr none | illegalBallContact | playerPushing | illegalMotionInSet | inactivePlayer | illegalPosition | leavingTheField | requestForPickup | localGameStuck | illegalPositionInSet | playerStance | substitute | manual : Set robot penalty.", pattern, true);
-  list("  sac [view] ( local <team number> | remote <team number> <broadcast> ) : Start connection for Shared Autonomy Challenge.", pattern, true);
+  list("  pr none | illegalBallContact | playerPushing | foul | penaltyKick | illegalMotionInSet | inactivePlayer | illegalPosition | leavingTheField | requestForPickup | localGameStuck | illegalPositionInSet | playerStance | substitute | manual : Set robot penalty.", pattern, true);
+  list("  rc ( local <team number> | remote <team number> <broadcast> ) : Start connection to remote-control a robot.", pattern, true);
   list("  set ? [<pattern>] | <key> ( ? | unchanged | <data> ) : Change debug data or show its specification.", pattern, true);
   if(!is2D)
     list("  si reset [<number>] | [number] [grayscale] [<file>] : Save camera image. Only \"reset\" works without \"for\".", pattern, true);
   list("  sn [ whiteNoise | timeDelay | discretization ] [ on | off ] : (De)activates the simulation of (specified) sensor noise.", pattern, true);
   list("  sv fast | oracle [ <fileName> ]: Save the current robot positions into a specified fileName. If no fileName given, it will be saved in Saved.con. Use fast to save it for Fast scenes. Use oracle to save it for PerceptOracle scenes.", pattern, true);
-  list("  vf [force] <name> : Add field view.", pattern, true);
+  list("  test game <numRuns> [<conFile>] [rt] [q]: Automatically test your code by playing multiple games.", pattern, true);
+  list("  test help: get some more information about the tests.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] ballInZone (<x1> <y1> <x2> <y2> | (fieldHalf | centerCircle | penaltyArea | goalArea)[A | B]) : Play till the ball is in the coordinates or till the time is gone.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] goalTeamA : Play till Team A scores or till the time is gone.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] goalTeamB : Play till Team B scores or till the time is gone.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] penalized <robot name> : Play till the robot is penalized or till the time is gone.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] robotTouch <robot name> : Play till the robot touches the ball or till the time is gone. The robot name is the name when you click on this robot.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] robotInZone (<x1> <y1> <x2> <y2> | (fieldHalf | centerCircle | penaltyArea | goalArea)[A | B]) <robot name> : Play till the robot is in the coordinates or till the time is gone. The robot name is the name when you click on this robot.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] teamPossession (teamA | teamB) : Play till Team A or Team B is in possession of the ball or till the time is gone.", pattern, true);
+  list("  test situation <numRuns> <runTimeout> [<conFile>] [fuz ((all | pos | rot | x | y | z | rotx | roty | rotz) <deviation>)+] [rt] [q] budget (teamA | teamB) (< | > | >= | <=) <value> : Play till Team A or Team B has a budget that matches the condition or till the time is gone.", pattern, true);
+  list("  test stop  : Stops the current test and deletes all working files", pattern, true);
+  list("  vf <name> : Add field view.", pattern, true);
   list("  vfd ? [<pattern>] | off | ( all | <name> ) ( ? [<pattern>] | <drawing> [ on | off ] ) : (De)activate debug drawing in field view.", pattern, true);
   list("  vi ? [<pattern>] | ( <image> | none ) [<name>] [gain <value>] [ddScale <value>] : Add image view.", pattern, true);
   list("  vic ? [<pattern>] | ( all | <name> ) [ alt | noalt ] [ ctrl | noctrl ] [ shift | noshift ] <command> : Set image view button release command.", pattern, true);
@@ -754,7 +881,12 @@ bool ConsoleRoboCupCtrl::startRemote(In& stream)
   stream >> name >> ip;
 
   mode = SystemCall::remoteRobot;
-  RemoteConsole* rc = new RemoteConsole(name, ip, this);
+
+  const Settings::RobotType robotType = getRobotType();
+  std::string robotName = TypeRegistry::getEnumName(robotType);
+  robotName[0] &= ~0x20;
+  robotName = "Simulated" + robotName;
+  RemoteConsole* rc = new RemoteConsole(name, ip, this, Settings(robotName, robotName, simStepLength * 0.001f, robotType));
   if(!rc->isClient())
   {
     if(ip != "")
@@ -802,7 +934,7 @@ bool ConsoleRoboCupCtrl::startLogFile(In& stream)
 
   mode = fileName == "remote" ? SystemCall::remoteRobot : SystemCall::logFileReplay;
   logFile = fileName;
-  robots.push_back(new ControllerRobot(Settings(logFile, location == "" ? nullptr : &location,
+  robots.push_back(new ControllerRobot(Settings(logFile, simStepLength * 0.001f, getRobotType(), location == "" ? nullptr : &location,
                                                 scenario == "" ? nullptr : &scenario), name, this, logFile));
   selected.clear();
   RobotConsole* rc = robots.back()->getRobotConsole();
@@ -885,11 +1017,10 @@ void ConsoleRoboCupCtrl::createCompletion()
     "gc finished",
     "gc competitionTypeChampionsCup",
     "gc competitionTypeChallengeShield",
-    "gc competitionTypeSharedAutonomyChallenge",
     "gc competitionPhasePlayoff",
     "gc competitionPhaseRoundRobin",
-    "gc globalGameStuckByFirstTeam",
-    "gc globalGameStuckBySecondTeam",
+    "gc dropBall",
+    "gc globalGameStuck",
     "gc goalByFirstTeam",
     "gc goalBySecondTeam",
     "gc goalKickForFirstTeam",
@@ -925,6 +1056,7 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log trim until current",
     "log trim between current",
     "log ?",
+    "log keep circlePercept",
     "log mr list",
     "log load",
     "log cycle",
@@ -936,7 +1068,6 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log backward image",
     "log repeat",
     "log goto",
-    "log analyzeRobotStatus",
     "mr modules",
     "mr save",
     "msg off",
@@ -948,11 +1079,9 @@ void ConsoleRoboCupCtrl::createCompletion()
     "mvb",
     "mvo",
     "poll",
+    "rc local",
+    "rc remote",
     "robot all",
-    "sac local",
-    "sac remote",
-    "sac view local",
-    "sac view remote",
     "sc",
     "sl",
     "sn off",
@@ -961,7 +1090,9 @@ void ConsoleRoboCupCtrl::createCompletion()
     "st on",
     "sv fast",
     "sv oracle",
-    "vf force",
+    "test game <numRuns> [rt] [q]",
+    "test stop",
+    "vf",
     "vp"
   };
 
@@ -976,6 +1107,67 @@ void ConsoleRoboCupCtrl::createCompletion()
   const int num = sizeof(commands) / sizeof(commands[0]);
   for(int i = 0; i < num; ++i)
     completion.insert(commands[i]);
+
+  std::list<std::string> robotList =
+  {
+    "robot1", "robot2", "robot3", "robot4", "robot5", "robot6", "robot7",
+    "robot21", "robot22", "robot23", "robot24", "robot25", "robot26", "robot27"
+  };
+
+  FOREACH_ENUM(TestController::TargetType, i)
+  {
+    switch(i)
+    {
+      case TestController::goalTeamB:
+        completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] goalTeamB");
+        break;
+      case TestController::goalTeamA:
+        completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] goalTeamA");
+        break;
+      case TestController::ballInZone:
+        completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] ballInZone <zoneProps>");
+        break;
+      case TestController::robotTouch:
+        for(std::string robot : robotList)
+        {
+          completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] robotTouch " + robot);
+        }
+        break;
+      case TestController::robotInZone:
+        for(std::string robot : robotList)
+        {
+          completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] robotInZone <zoneProps> " + robot);
+        }
+        break;
+      case TestController::teamPossession:
+        completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] teamPossession teamA");
+        completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] teamPossession teamB");
+        break;
+      case TestController::penalized:
+        for(std::string robot : robotList)
+        {
+          completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] penalized " + robot);
+        }
+        break;
+      case TestController::robotInSkill:
+        FOREACH_ENUM(SkillRequest::Type, skill)
+        {
+          std::string skillName = TypeRegistry::getEnumName(skill);
+          for(std::string robot : robotList)
+          {
+            completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] robotInSkill " + skillName + " " + robot);
+          }
+        }
+        break;
+      case TestController::budget:
+        for (std::string op : {"<", ">", "<=", ">="})
+        {
+          completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] budget teamA " + op + " <value>");
+          completion.insert("test situation <numRuns> <runTimeout> [<conFile>] [<fuzCmd>] [rt] [q] budget teamB " + op + " <value>");
+        }
+        break;
+    }
+  }
 
   if(!is2D)
   {
@@ -1183,16 +1375,16 @@ void ConsoleRoboCupCtrl::createCompletion()
 
 void ConsoleRoboCupCtrl::addCompletionFiles(const std::string& command, const std::string& pattern, bool removeExtension)
 {
-  QString qpattern(pattern.c_str());
-  qpattern.replace("\\", "/");
-  const auto lastSlashIdx = qpattern.lastIndexOf('/');
+  QString qPattern(pattern.c_str());
+  qPattern.replace("\\", "/");
+  const auto lastSlashIdx = qPattern.lastIndexOf('/');
 
-  QDir qdir(qpattern.left(lastSlashIdx));
-  qdir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
+  QDir qDir(qPattern.left(lastSlashIdx));
+  qDir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
   QStringList qsl;
-  qsl.append(qpattern.right(qpattern.size() - lastSlashIdx - 1));
-  qdir.setNameFilters(qsl);
-  QDirIterator it(qdir, QDirIterator::Subdirectories);
+  qsl.append(qPattern.right(qPattern.size() - lastSlashIdx - 1));
+  qDir.setNameFilters(qsl);
+  QDirIterator it(qDir, QDirIterator::Subdirectories);
   while(it.hasNext())
   {
     QString filename = it.next().remove(0, lastSlashIdx + 1);
@@ -1327,11 +1519,11 @@ std::vector<std::string> ConsoleRoboCupCtrl::getThreadsFor(const std::unordered_
 
 void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
 {
-  QString qstrCommand(command.c_str());
+  QString qStrCommand(command.c_str());
   QRegularExpression re("\\$\\{([^\\}]*)\\}");
   QRegularExpressionMatch match;
   bool ok = true;
-  while(ok && (match = re.match(qstrCommand)).hasMatch())
+  while(ok && (match = re.match(qStrCommand)).hasMatch())
   {
     QStringList list = match.captured(1).split(',');
     QString label = list.takeFirst();
@@ -1343,21 +1535,21 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
     }
     else if(list.length() == 1)
     {
-      QString qpattern(list.takeFirst());
-      qpattern.replace("\\", "/");
-      const auto lastSlashIdx = qpattern.lastIndexOf('/');
+      QString qPattern(list.takeFirst());
+      qPattern.replace("\\", "/");
+      const auto lastSlashIdx = qPattern.lastIndexOf('/');
 
-      QString path(qpattern.left(lastSlashIdx));
+      QString path(qPattern.left(lastSlashIdx));
 
       QStringList qsl;
-      qsl.append(qpattern.right(qpattern.size() - lastSlashIdx - 1));
+      qsl.append(qPattern.right(qPattern.size() - lastSlashIdx - 1));
       qsl.append("all (*.*)");
 
       QSettings settings("B-Human", "SimRobot");
 
       // ${Select Log File:,../Logs/*.log}
       input = QFileDialog::getOpenFileName(nullptr, label, settings.value(qsl.front(), path).toString(), qsl.join(";;")
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                                            , nullptr, QFileDialog::DontUseNativeDialog
 #endif
                                           );
@@ -1373,7 +1565,7 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
       QSettings settings("B-Human", "SimRobot");
 
       input = QFileDialog::getExistingDirectory(nullptr, label, settings.value("LogFolder", path).toString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                                                 | QFileDialog::DontUseNativeDialog
 #endif
                                                );
@@ -1382,20 +1574,14 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
     }
     else
     {
-      // ${Select Robot:,Leonard,Rajesh,Lenny}
+      // ${IP address:,192.168.5.11,192.168.5.12,192.168.5.13}
       input = QInputDialog::getItem(nullptr, "Input", label, list, 0, true, &ok);
     }
-    qstrCommand.replace(match.captured(0), input);
+    qStrCommand.replace(match.captured(0), input);
   }
   if(ok)
   {
-    command = std::string(qstrCommand.
-#ifdef WINDOWS
-                          toLatin1()
-#else
-                          toUtf8()
-#endif
-                          .constData());
+    command = qStrCommand.toStdString();
   }
   else
   {

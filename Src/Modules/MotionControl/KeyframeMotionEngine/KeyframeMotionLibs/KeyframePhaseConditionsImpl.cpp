@@ -6,7 +6,9 @@
  */
 
 #include "KeyframePhaseBase.h"
+#include "Framework/Settings.h"
 #include "Modules/MotionControl/KeyframeMotionEngine/KeyframeMotionEngine.h"
+#include "Streaming/Global.h"
 
 template<class C>
 bool KeyframePhaseBase::checkConditions(const std::vector<C>& conditions, bool useAnd)
@@ -20,7 +22,7 @@ bool KeyframePhaseBase::checkConditions(const std::vector<C>& conditions, bool u
   float variableValues[numOfConditionVars];
   variableValues[ConditionVar::InertialDataAngleY] = engine.theInertialData.angle.y().toDegrees();
   variableValues[ConditionVar::InertialDataAngleAbsoluteX] = std::abs(engine.theInertialData.angle.x().toDegrees());
-  variableValues[ConditionVar::FluctuationY] = fluctuation.y().toDegrees() * 1.f / Constants::motionCycleTime;
+  variableValues[ConditionVar::FluctuationY] = fluctuation.y().toDegrees() * 1.f / Global::getSettings().motionCycleTime;
   variableValues[ConditionVar::ShoulderPitchLeft] = engine.theJointAngles.angles[Joints::lShoulderPitch].toDegrees();
   variableValues[ConditionVar::ShoulderPitchRight] = engine.theJointAngles.angles[Joints::rShoulderPitch].toDegrees();
   variableValues[ConditionVar::ShoulderRollLeft] = engine.theJointAngles.angles[Joints::lShoulderRoll].toDegrees();
@@ -38,6 +40,12 @@ bool KeyframePhaseBase::checkConditions(const std::vector<C>& conditions, bool u
   variableValues[ConditionVar::LyingOnArmsFront] = ((engine.theRobotModel.limbs[Limbs::wristLeft].translation.y() < 90.f && engine.theJointAngles.angles[Joints::lShoulderPitch] > 0_deg) // check both arms
                                                     || (engine.theRobotModel.limbs[Limbs::wristRight].translation.y() > -90.f && engine.theJointAngles.angles[Joints::rShoulderPitch] > 0_deg)) ? 1.f : 0.f;
   variableValues[ConditionVar::TryCounter] = static_cast<float>(tryCounter);
+  variableValues[ConditionVar::AnotherFrontHack] = ((engine.theJointRequest.angles[Joints::lKneePitch] - engine.theJointAngles.angles[Joints::lKneePitch] < 10_deg &&
+                                                     engine.theJointRequest.angles[Joints::rKneePitch] - engine.theJointAngles.angles[Joints::rKneePitch] < 10_deg &&
+                                                     engine.theInertialData.angle.y() < 80_deg &&
+                                                     engine.theInertialData.gyro.y() < -100_deg) ||
+                                                    engine.theInertialData.angle.y() < 70_deg)
+                                                   ? 1.f : 0.f;
 
   // If a waitCondition is checked, this will help to abort the wait time IF it is impossible to fulfill the condition.
   // If a normal condition is checked, this code just wastes processor time and does stuff that has no consequences.
@@ -50,7 +58,7 @@ bool KeyframePhaseBase::checkConditions(const std::vector<C>& conditions, bool u
       const float diff = std::abs(variableValues[conditions[i].variable] - conditions[i].range.limit(variableValues[conditions[i].variable]));
       if(!increaseFailedWaitCounter && diff < variableValuesCompare[conditions[i].variable])
       {
-        failedWaitCounter += 100.f * Constants::motionCycleTime; // currently +1.2 for NAO V6
+        failedWaitCounter += 100.f * Global::getSettings().motionCycleTime; // currently +1.2 for NAO V6
         increaseFailedWaitCounter = true;
       }
       variableValuesCompare[conditions[i].variable] = diff;

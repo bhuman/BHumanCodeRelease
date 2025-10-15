@@ -14,7 +14,7 @@
 
 bool LeastSquares::LineFitter::fit(Vector2f& n0, float& d) const
 {
-  // see R.Duda, P. Hart: Pattern classification and scene analysis. Wiley, 1973. pp 332-335
+  // see R. Duda, P. Hart: Pattern classification and scene analysis. Wiley, 1973. pp 332-335
   ASSERT(count >= 2);
 
   const auto sum = this->sum.col(0);   // (sum(x), sum(y))

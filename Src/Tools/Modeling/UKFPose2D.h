@@ -45,7 +45,7 @@ public:
   }
 
   /** Pose update based on the assumed robot motion
-   * @param odometryOffset The pos(e)itional changes regarding translation and rotation (as reported by motion modules)
+   * @param odometryOffset The pos(e)itional changes regarding translation and rotation (as reported by motion modules) | cspell:disable-line
    * @param filterProcessDeviation Process noise for Kalman filter update
    * @param odometryDeviation The assumed uncertainty in odometry information
    * @param odometryRotationDeviation Additional odometry uncertainty of rotation that affects translation

@@ -38,6 +38,9 @@ MODULE(FieldInterceptBallProvider,
     (bool) useXAxisIntersection, /**< Use x axis interception. */
     (bool) useRiskyBallEstimate, /**< Use the risky ball estimate. */
     (Rangef) interpolateRiskyBallEstimateRange, /**< Interpolate between normal and risky ball estimate based on the distance to the ball. */
+    (Rangef) ballEndPositionX, /**< Ball needs to end beyond this value. Min is for starting intercepting, Max is for ending intercepting. */
+    (Rangef) ballEndPositionY, /**< Ball needs to end beyond this value. Min is for starting intercepting, Max is for ending intercepting. */
+    (Rangei) ballSeenTime, /**< if the ball was not seen recently, do not intercept. */
   }),
 });
 

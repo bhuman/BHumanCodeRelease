@@ -28,7 +28,7 @@ struct LabelImage
 
   /**
    * If bounding boxes overlap with an intersection over union score above the threshold,
-   * remove all bounding boxes with non-maximal prediction confodence
+   * remove all bounding boxes with non-maximal prediction confidence
    * @param threshold
    */
   void nonMaximumSuppression(float threshold = 0.7f);

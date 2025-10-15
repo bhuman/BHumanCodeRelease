@@ -113,10 +113,10 @@ STREAMABLE(KeyframeMotionParameters,
   {,
     (DirectionValue) maxValAdditionalScaling, // increaseFactorCap
     (DirectionValue) exponentFactorScaling, // powDegree
-    (PIDParameter)(0.f, 0.f) pidPPitchParameter,  // borderPIDPX,
-    (PIDParameter)(0.f, 0.f) pidPRollParameter, // borderPIDPY,
-    (PIDParameter)(0.f, 0.f) pidDPitchParameter, // borderPIDDX,
-    (PIDParameter)(0.f, 0.f) pidDRollParameter, // borderPIDDY,
+    (PIDParameter)(0.f, 0.f) pidPPitchParameter,  // border PID PX,
+    (PIDParameter)(0.f, 0.f) pidPRollParameter, // border PID PY,
+    (PIDParameter)(0.f, 0.f) pidDPitchParameter, // border PID DX,
+    (PIDParameter)(0.f, 0.f) pidDRollParameter, // border PID DY,
   });
 
   STREAMABLE(BalancingParameter,

@@ -15,7 +15,6 @@
 #include "Representations/Configuration/CameraSettings.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Configuration/JointCalibration.h"
@@ -27,7 +26,6 @@
 #include "Representations/Configuration/StaticJointPoses.h"
 #include "Representations/Infrastructure/StiffnessData.h"
 #include "Representations/MotionControl/KeyframeMotionParameters.h"
-#include "Representations/MotionControl/WalkModifier.h"
 #include <memory>
 
 MODULE(ConfigurationDataProvider,
@@ -42,7 +40,6 @@ MODULE(ConfigurationDataProvider,
   PROVIDES(DamageConfigurationBody),
   PROVIDES(DamageConfigurationHead),
   PROVIDES(FieldDimensions),
-  PROVIDES(FootOffset),
   PROVIDES(HeadLimits),
   PROVIDES(IMUCalibration),
   PROVIDES(JointCalibration),
@@ -54,7 +51,6 @@ MODULE(ConfigurationDataProvider,
   PROVIDES(RobotDimensions),
   PROVIDES(StaticJointPoses),
   PROVIDES(StiffnessSettings),
-  PROVIDES(WalkModifier),
 });
 
 class ConfigurationDataProvider : public ConfigurationDataProviderBase
@@ -68,7 +64,6 @@ private:
   std::unique_ptr<DamageConfigurationBody> theDamageConfigurationBody;
   std::unique_ptr<DamageConfigurationHead> theDamageConfigurationHead;
   std::unique_ptr<FieldDimensions> theFieldDimensions;
-  std::unique_ptr<FootOffset> theFootOffset;
   std::unique_ptr<HeadLimits> theHeadLimits;
   std::unique_ptr<IMUCalibration> theIMUCalibration;
   std::unique_ptr<JointCalibration> theJointCalibration;
@@ -80,17 +75,15 @@ private:
   std::unique_ptr<RobotDimensions> theRobotDimensions;
   std::unique_ptr<StaticJointPoses> theStaticJointPoses;
   std::unique_ptr<StiffnessSettings> theStiffnessSettings;
-  std::unique_ptr<WalkModifier> theWalkModifier;
 
   void update(BallSpecification& ballSpecification) override {update(ballSpecification, theBallSpecification);}
-  void update(BehaviorParameters& behaviorParameters) override {update(behaviorParameters, theBehaviorParameters);}
+  void update(BehaviorParameters& behaviorParameters) override;
   void update(CameraCalibration& cameraCalibration) override;
   void update(CameraIntrinsics& cameraIntrinsics) override { update(cameraIntrinsics, theCameraIntrinsics); }
   void update(CameraSettings& cameraSettings) override {update(cameraSettings, theCameraSettings);}
   void update(DamageConfigurationBody& damageConfigurationBody) override {update(damageConfigurationBody, theDamageConfigurationBody);}
   void update(DamageConfigurationHead& damageConfigurationHead) override {update(damageConfigurationHead, theDamageConfigurationHead);}
   void update(FieldDimensions& fieldDimensions) override {update(fieldDimensions, theFieldDimensions);}
-  void update(FootOffset& footOffset) override { update(footOffset, theFootOffset); }
   void update(HeadLimits& headLimits) override {update(headLimits, theHeadLimits);}
   void update(IMUCalibration& imuCalibration) override {update(imuCalibration, theIMUCalibration);}
   void update(JointCalibration& jointCalibration) override {update(jointCalibration, theJointCalibration);}
@@ -102,7 +95,6 @@ private:
   void update(RobotDimensions& robotDimensions) override;
   void update(StaticJointPoses& staticJointPoses) override { update(staticJointPoses, theStaticJointPoses); }
   void update(StiffnessSettings& stiffnessSettings) override {update(stiffnessSettings, theStiffnessSettings);}
-  void update(WalkModifier& walkModifier) override {update(walkModifier, theWalkModifier);}
 
   template<typename T> void update(T& representation, std::unique_ptr<T>& theRepresentation)
   {

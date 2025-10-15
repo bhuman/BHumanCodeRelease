@@ -5,19 +5,23 @@
 
 #include "IMUValueStateProvider.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
+#include "Streaming/Global.h"
 #include <cmath>
 
 MAKE_MODULE(IMUValueStateProvider);
 
 IMUValueStateProvider::IMUValueStateProvider()
 {
-  gyroValuesX.clear();
-  gyroValuesY.clear();
-  gyroValuesZ.clear();
+  gyroValuesX.reserve(bufferSize);
+  gyroValuesY.reserve(bufferSize);
+  gyroValuesZ.reserve(bufferSize);
 
-  accValuesX.clear();
-  accValuesY.clear();
-  accValuesZ.clear();
+  accValuesX.reserve(bufferSize);
+  accValuesY.reserve(bufferSize);
+  accValuesZ.reserve(bufferSize);
+
+  accelerometerLengths.reserve(accLengthBufferSize);
 }
 
 void IMUValueStateProvider::update(IMUValueState& imuValueState)
@@ -29,16 +33,16 @@ void IMUValueStateProvider::update(IMUValueState& imuValueState)
   DECLARE_PLOT("module:IMUValueStateProvider:acc:deviation:y");
   DECLARE_PLOT("module:IMUValueStateProvider:acc:deviation:z");
 
-  imuValueState.filterTimeWindow = static_cast<int>(gyroValuesX.capacity() * Constants::motionCycleTime * 1000.f);
+  imuValueState.filterTimeWindow = static_cast<int>(gyroValuesX.capacity() * Global::getSettings().motionCycleTime * 1000.f);
 
   // Sampling
-  gyroValuesX.push_front(theRawInertialSensorData.gyro.x());
-  gyroValuesY.push_front(theRawInertialSensorData.gyro.y());
-  gyroValuesZ.push_front(theRawInertialSensorData.gyro.z());
+  gyroValuesX.push_front(theInertialSensorData.gyro.x());
+  gyroValuesY.push_front(theInertialSensorData.gyro.y());
+  gyroValuesZ.push_front(theInertialSensorData.gyro.z());
 
-  accValuesX.push_front(theRawInertialSensorData.acc.x());
-  accValuesY.push_front(theRawInertialSensorData.acc.y());
-  accValuesZ.push_front(theRawInertialSensorData.acc.z());
+  accValuesX.push_front(theInertialSensorData.acc.x());
+  accValuesY.push_front(theInertialSensorData.acc.y());
+  accValuesZ.push_front(theInertialSensorData.acc.z());
 
   // We did enough sampling
   if(gyroValuesX.full())
@@ -140,7 +144,7 @@ void IMUValueStateProvider::update(IMUValueState& imuValueState)
   }
 }
 
-float IMUValueStateProvider::calcDeviation(const float mean, const RingBufferWithSum<float, 27>& buffer)
+float IMUValueStateProvider::calcDeviation(const float mean, const RingBufferWithSum<float>& buffer)
 {
   float deviation = 0;
   for(const float angle : buffer)

@@ -7,7 +7,9 @@
  */
 
 #include "KeyframePhaseBase.h"
+#include "Framework/Settings.h"
 #include "Modules/MotionControl/KeyframeMotionEngine/KeyframeMotionEngine.h"
+#include "Streaming/Global.h"
 
 void KeyframePhaseBase::selectMotionToBeExecuted()
 {
@@ -45,13 +47,24 @@ void KeyframePhaseBase::selectMotionToBeExecuted()
   bool overrideMirror = false;
   if(currentKeyframeMotionRequest.keyframeMotion < KeyframeMotionID::firstNonGetUpAction)
   {
+    if(tryCounter >= engine.maxTryCounter)
+    {
+      state = EngineState::breakUp;
+      return;
+    }
     overrideMirror = true;
     if((engine.safeUprightParameters.pitchDirection.isInside(engine.theInertialData.angle.y()) &&
         engine.safeUprightParameters.rollDirection.isInside(engine.theInertialData.angle.x())) ||
        forceStandMotionAfterPlaydead)
+    {
       currentMotion = engine.motions[KeyframeMotionListID::stand];
+      doSlowFrontRecovery = false;
+    }
     else
+    {
+      doSlowFrontRecovery = doSlowFrontRecovery && engine.theInertialData.angle.y() > 0.f;
       currentMotion = engine.motions[KeyframeMotionListID::recoverGeneric];
+    }
   }
   else
   {
@@ -83,7 +96,10 @@ void KeyframePhaseBase::isCurrentLineOver()
       if(engine.stepKeyframes || earlyBranchSwitch || checkConditions(currentKeyframe.waitConditions, true))
         initCurrentLine(true);
       else
+      {
         state = EngineState::waiting;
+        ratio = 1.f;
+      }
       // Init some values
       if(state == EngineState::working)
       {
@@ -116,7 +132,7 @@ void KeyframePhaseBase::initKeyframeMotion(const bool overrideMirror)
   isFirstLine = true;
   waitForFallenCheck = false;
   //odometry = engine.mofs[motionID].odometryOffset; TODO
-  lineStartTimestamp = engine.theFrameInfo.time - static_cast<unsigned int>(1000.f * Constants::motionCycleTime);
+  lineStartTimestamp = engine.theFrameInfo.time - static_cast<unsigned int>(1000.f * Global::getSettings().motionCycleTime);
 
   startJoints = lastJointRequest; //save the current joint angles
   lastUnbalanced.angles = lastJointRequest.angles;
@@ -129,13 +145,15 @@ void KeyframePhaseBase::initKeyframeMotion(const bool overrideMirror)
     }
   }
   lastOutputLineJointRequestAngles.angles = startJoints.angles;
+  lastKeyframeCompensation = lastCompensation;
+  lastCompensation = {};
   isInOptionalLine = false;
 
   // decide for the first get up try if it should be mirrored or not
   if(!didFirstGetUp)
   {
     didFirstGetUp = true;
-    const int frame = static_cast<int>(engine.theFrameInfo.time / static_cast<unsigned int>(1000.f * Constants::motionCycleTime));
+    const int frame = static_cast<int>(engine.theFrameInfo.time / static_cast<unsigned int>(1000.f * Global::getSettings().motionCycleTime));
     getUpMirror = frame % 2;
   }
 
@@ -148,7 +166,7 @@ void KeyframePhaseBase::initKeyframeMotion(const bool overrideMirror)
   // Is the requested motion broken?
   if(currentMotion.keyframes.empty() || engine.keyframeBlock[currentMotion.keyframes.front()].keyframes.empty())
   {
-    OUTPUT_ERROR("This Motion does not have Motionlines!");
+    OUTPUT_ERROR("This motion does not have motion lines!");
     errorTriggered = true;
   }
   else
@@ -160,7 +178,7 @@ void KeyframePhaseBase::initKeyframeMotion(const bool overrideMirror)
 void KeyframePhaseBase::safePreviousKeyframeData()
 {
   lastKeyframe = currentKeyframe;
-  lastKeyframeLineJointRequest.angles = lineJointRequest2Angles.angles;
+  lastKeyframeLineJointRequest.angles = targetJointRequestWithoutCompensation.angles;
 }
 
 void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
@@ -215,19 +233,19 @@ void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
   }
 
   waitTimestamp = engine.theFrameInfo.time;
-  lineStartTimestamp = engine.theFrameInfo.time - static_cast<unsigned int>(1000.f * Constants::motionCycleTime);
+  lineStartTimestamp = engine.theFrameInfo.time - static_cast<unsigned int>(1000.f * Global::getSettings().motionCycleTime);
   startJoints = lastUnbalanced;
   lastOutputLineJointRequestAngles.angles = startJoints.angles;
+  lastKeyframeCompensation = lastCompensation;
   for(unsigned int i = 0; i < numOfConditionVars; ++i)
     variableValuesCompare[i] = 0.f;
   failedWaitCounter = 0.f;
   initBalancerValues(false);
-  jointCompensationReducer.fill(0.f);
 
   // In case one joint was used for balancing on the previous keyframe but now is not anymore, the last requested angle for these joints shall be the start joints for the new keyframe.
   // Otherwise the balancing value would be missing in these joints and they would jump and damage the gears.
-  const std::vector<JointPair>& listY = currentKeyframe.balanceWithJoints.jointY;
-  const std::vector<JointPair>& listX = currentKeyframe.balanceWithJoints.jointX;
+  const std::vector<JointBalancePair>& listY = currentKeyframe.balanceWithJoints.jointY;
+  const std::vector<JointBalancePair>& listX = currentKeyframe.balanceWithJoints.jointX;
 
   std::vector<Joints::Joint> jointListY;
   std::vector<Joints::Joint> jointListX;
@@ -256,7 +274,8 @@ void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
     initBalancerValues(true);
     for(std::size_t i = 0; i < pastJointAnglesAngles.capacity(); i++)
       pastJointAnglesAngles[i].angles.fill(JointAngles::off);
-    jointDiff1Angles.angles.fill(0);
+    for(auto& filter : filteredJointDiffAngles)
+      filter.clear();
     jointDiffPredictedAngles.angles.fill(0);
   }
 
@@ -268,13 +287,18 @@ void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
   // Override reference com of last keyframe
   if(currentKeyframe.setLastCom)
   {
+    oldCom = comDiff;
     lastGoal = comDiff;
-    currentGoal = lastGoal + (currentKeyframe.goalCom - lastGoal) * ratio;
+    currentGoal = lastGoal;
+    lastComDiffBaseForBalancing = engine.theKeyframeMotionParameters.balanceList[Phase(currentKeyframe.phase)].comDiffBase;
   }
 
   if(doSlowKeyframeAfterFall)
     duration = 2000;
+  else if(doSlowFrontRecovery)
+    duration = 1000;
   doSlowKeyframeAfterFall = false;
+  doSlowFrontRecovery = false;
   balancerOn = currentKeyframe.balanceWithJoints.jointX.size() > 0 || currentKeyframe.balanceWithJoints.jointY.size() > 0;
   const bool energySavingLeg = (state == EngineState::waitForRequest && currentMotion.keyframeEndRequest.energySavingLegs == EnergySavingType::activeInWait) || currentMotion.keyframeEndRequest.energySavingLegs == EnergySavingType::activeAlways;
   const bool energySavingArms = (state == EngineState::waitForRequest && currentMotion.keyframeEndRequest.energySavingArms == EnergySavingType::activeInWait) || currentMotion.keyframeEndRequest.energySavingArms == EnergySavingType::activeAlways;
@@ -283,47 +307,48 @@ void KeyframePhaseBase::initCurrentLine(const bool safeLastKeyframeInfo)
     engine.theEnergySaving.reset();
 
   // Get current request
-  lineJointRequest.angles[Joints::headYaw] = currentKeyframe.angles.head[0];
-  lineJointRequest.angles[Joints::headPitch] = currentKeyframe.angles.head[1];
+  targetJointRequestWithCompensation.angles[Joints::headYaw] = currentKeyframe.angles.head[0];
+  targetJointRequestWithCompensation.angles[Joints::headPitch] = currentKeyframe.angles.head[1];
   for(unsigned int i = 0; i < 6; i++)
   {
-    lineJointRequest.angles[Joints::lShoulderPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::leftArm][i];
-    lineJointRequest.angles[Joints::rShoulderPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::rightArm][i];
-    lineJointRequest.angles[Joints::lHipYawPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::leftLeg][i];
-    lineJointRequest.angles[Joints::rHipYawPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::rightLeg][i];
+    targetJointRequestWithCompensation.angles[Joints::lShoulderPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::leftArm][i];
+    targetJointRequestWithCompensation.angles[Joints::rShoulderPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::rightArm][i];
+    targetJointRequestWithCompensation.angles[Joints::lHipYawPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::leftLeg][i];
+    targetJointRequestWithCompensation.angles[Joints::rHipYawPitch + i] = currentKeyframe.angles.positions[KeyframeLimb::rightLeg][i];
   }
   setJointStiffnessKeyframe();
   if(isMirror)
   {
     JointAngles mirroredJoints;
-    mirroredJoints.mirror(lineJointRequest);
-    lineJointRequest.angles = mirroredJoints.angles;
+    mirroredJoints.mirror(targetJointRequestWithCompensation, Global::getSettings().robotType != Settings::nao);
+    targetJointRequestWithCompensation.angles = mirroredJoints.angles;
   }
 
   // This is done because if a keyframe after the first uses off or ignore angles, the angles that are calculated will be off by up to 30 degree for the first frames
   // Also the difference check of set-joints and reached-joints are to high too.
   for(int i = 0; i < Joints::numOfJoints; ++i)
   {
-    if(lineJointRequest.angles[i] == JointAngles::off || lineJointRequest.stiffnessData.stiffnesses[i] == 0)
+    if(targetJointRequestWithCompensation.angles[i] == JointAngles::off || targetJointRequestWithCompensation.stiffnessData.stiffnesses[i] == 0)
     {
       if(!wasInWaiting)
-        lineJointRequest.angles[i] = lastUnbalanced.angles[i];
+        targetJointRequestWithCompensation.angles[i] = lastUnbalanced.angles[i];
       else
-        lineJointRequest.angles[i] = engine.theJointAngles.angles[i];
+        targetJointRequestWithCompensation.angles[i] = engine.theJointAngles.angles[i];
     }
-    if(lineJointRequest.angles[i] == JointAngles::ignore)
+    if(targetJointRequestWithCompensation.angles[i] == JointAngles::ignore)
     {
-      lineJointRequest.angles[i] = engine.theJointRequest.angles[i];
+      targetJointRequestWithCompensation.angles[i] = engine.theJointRequest.angles[i];
     }
   }
 
-  targetJoints = lineJointRequest;
+  targetJoints = targetJointRequestWithCompensation;
 
   wasInWaiting = false;
-  lineJointRequest2Angles.angles = lineJointRequest.angles;
+  targetJointRequestWithoutCompensation.angles = targetJointRequestWithCompensation.angles;
 
   ASSERT(currentMotionBlock.size() > 0);
-  currentKeyframe.interpolationType = currentMotionBlock[0].interpolationType;
+  if(InterpolationType::Default == currentKeyframe.interpolationType)
+    currentKeyframe.interpolationType = currentMotionBlock[0].interpolationType;
 }
 
 void KeyframePhaseBase::updateLineValues()
@@ -341,7 +366,7 @@ void KeyframePhaseBase::updateLineValues()
     ratio = 1.f;
 
   // This low-pass filter is really important! Otherwise the D-part of the PID-Controller gets to high!
-  goalGrowth = 0.75f * goalGrowth + 0.25f * (currentKeyframe.goalCom - lastGoal) * static_cast<float>(1000.f * Constants::motionCycleTime) / duration;
+  goalGrowth = 0.75f * goalGrowth + 0.25f * (currentKeyframe.goalCom - lastGoal) * static_cast<float>(1000.f * Global::getSettings().motionCycleTime) / duration;
   currentGoal = lastGoal + (currentKeyframe.goalCom - lastGoal) * ratio;
   currentComDiffBaseForBalancing = lastComDiffBaseForBalancing + (engine.theKeyframeMotionParameters.balanceList[Phase(currentKeyframe.phase)].comDiffBase - lastComDiffBaseForBalancing) * ratio;
   currentTorsoAngleBreakUp = lastTorsoAngleBreakUp + (currentKeyframe.torsoAngleBreakUpEnd - lastTorsoAngleBreakUp) * ratio;
@@ -394,6 +419,9 @@ void KeyframePhaseBase::setJointStiffnessBase()
   for(unsigned int i = 0; i < 2; i++)
     if(currentMotionBlock[0].baseLimbStiffness[0] != -1)
       targetJoints.stiffnessData.stiffnesses[i] = currentMotionBlock[0].baseLimbStiffness[0];
+
+  targetJoints.stiffnessData.stiffnesses[Joints::waistYaw] = 100;
+
   for(unsigned int i = 0; i < 6; i++)
   {
     for(unsigned int j = 0; j < 4; j++)
@@ -402,8 +430,8 @@ void KeyframePhaseBase::setJointStiffnessBase()
     if(engine.stepKeyframes)
       for(size_t i = 0; i < Joints::numOfJoints; i++)
         targetJoints.stiffnessData.stiffnesses[i] = std::min(engine.maxStiffnessDebugMode, targetJoints.stiffnessData.stiffnesses[i]);
-    lineJointRequest.stiffnessData = targetJoints.stiffnessData;
   }
+  targetJointRequestWithCompensation.stiffnessData = targetJoints.stiffnessData;
 }
 
 void KeyframePhaseBase::setJointStiffnessKeyframe()
@@ -412,7 +440,7 @@ void KeyframePhaseBase::setJointStiffnessKeyframe()
   for(std::size_t i = 0; i < currentKeyframe.singleMotorStiffnessChange.size(); i++)
     targetJoints.stiffnessData.stiffnesses[isMirror ? Joints::mirror(currentKeyframe.singleMotorStiffnessChange[i].joint) : currentKeyframe.singleMotorStiffnessChange[i].joint] =
       !engine.stepKeyframes ? currentKeyframe.singleMotorStiffnessChange[i].s : std::min(engine.maxStiffnessDebugMode, currentKeyframe.singleMotorStiffnessChange[i].s);
-  lineJointRequest.stiffnessData = targetJoints.stiffnessData;
+  targetJointRequestWithCompensation.stiffnessData = targetJoints.stiffnessData;
 }
 
 void KeyframePhaseBase::updateSensorArray()

@@ -50,7 +50,6 @@ protected:
   friend class DrawingWidget;
   friend class ImageWidget;
   friend class FieldWidget;
-  friend class SACFieldWidget;
 };
 
 /** The widget that is placed in the client area of the dock widget. */

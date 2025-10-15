@@ -5,9 +5,21 @@
 
 cd "$(dirname "$(which "$0")")"
 
-./generate >/dev/null
+if [ "$(uname -m)" != arm64 ]; then
+  GENERATE_OPTION=
+fi
 
-( xcodebuild -jobs `sysctl -n hw.ncpu` -parallelizeTargets -target $1 -configuration $2 \
+./generate $GENERATE_OPTION >/dev/null
+
+if [ "$1" == "SimRobot" ]; then
+  COMMAND="-scheme"
+  ARG="$1 - $2"
+else
+  COMMAND="-target $1 -configuration"
+  ARG="$2"
+fi
+
+( xcodebuild -jobs `sysctl -n hw.ncpu` -parallelizeTargets $COMMAND "$ARG" \
   | grep --line-buffered "^[^ -]" \
   | grep --line-buffered -v \
     -e "Build settings from command line:" \
@@ -27,6 +39,18 @@ cd "$(dirname "$(which "$0")")"
     -e "^.*/strip -S" \
     -e "^Touch" \
     -e "^RegisterWithLaunchServices" \
+    -e "^note: " \
+    -e "^ProcessProductPackaging" \
+    -e "^RegisterExecutionPolicyException" \
+    -e "^Command line invocation:" \
+    -e "^ComputeTargetDependencyGraph" \
+    -e "^GatherProvisioningInputs" \
+    -e "^CreateBuildDescription" \
+    -e "^Build description" \
+    -e "^SchemeAction" \
+    -e "^ExecuteExternalTool" \
+    -e "^Run pre-actions" \
+    -e "^}$" \
   | sed -l \
     -e "s%^CompileC [^ ]* \(.*/\)*\([^ ]*\).*%Compiling \2 ...%" \
     -e "s%^Ld \(.*/\)*\([^ ]*\).*%Linking \2 ...%" \
@@ -38,6 +62,3 @@ cd "$(dirname "$(which "$0")")"
     -e "s%^PBXCp.*/\([^ ]*\)%Copying \1 ...%"
   test ${PIPESTATUS[0]} -eq 0
 ) 2> >( grep "BUILD FAILED" >&2 )
-RESULT=$?
-sleep 1
-exit $RESULT

@@ -1,4 +1,5 @@
 #include "SkillBehaviorControl.h"
+#include "Tools/BehaviorControl/WalkSpeedConversion.h"
 
 option((SkillBehaviorControl) PenaltyTaker,
        vars((std::array<unsigned, 3>)({}) obstacleCellTimestamps)) /**< The timestamps when an obstacles was in each cell. */
@@ -76,7 +77,7 @@ option((SkillBehaviorControl) PenaltyTaker,
       LookLeftAndRight({.maxPan = 20_deg,
                         .tilt = 5.7_deg,
                         .speed = 30_deg});
-      Stand();
+      Stand({.energySavingWalk = false});
     }
   }
 
@@ -94,12 +95,13 @@ option((SkillBehaviorControl) PenaltyTaker,
       if(theDamageConfigurationBody.sides[Legs::left].weakLeg && !theDamageConfigurationBody.sides[Legs::right].weakLeg)
         kickType = KickInfo::forwardFastLeftLong;
 
+      const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(ReduceWalkSpeedType::slow, Pose2f(1.f, 1.f, 1.f), Pose2f(1.f, 1.f, 1.f), theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
+
       if(theGameState.isPenaltyKick())
         GoToBallAndKick({.targetDirection = Angle::normalize(angle - theRobotPose.rotation),
                          .kickType = kickType,
                          .alignPrecisely = KickPrecision::precise,
-                         .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed},
-                         .reduceWalkSpeedType = ReduceWalkSpeedType::slow});
+                         .speed = walkingSpeedRatio});
       else
       {
         Pose2f kickPoseOnField(angle, ballPositionOnField);
@@ -107,7 +109,7 @@ option((SkillBehaviorControl) PenaltyTaker,
         kickPoseOnField.translate(theKickInfo.kicks[kickType].ballOffset);
         PenaltyStrikerGoToBallAndKick({.kickPose = theRobotPose.inverse() * kickPoseOnField,
                                        .kickType = kickType,
-                                       .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed});
+                                       .walkSpeed = walkingSpeedRatio});
       }
     }
   }
@@ -126,12 +128,13 @@ option((SkillBehaviorControl) PenaltyTaker,
       if(theDamageConfigurationBody.sides[Legs::right].weakLeg && !theDamageConfigurationBody.sides[Legs::left].weakLeg)
         kickType = KickInfo::forwardFastRightLong;
 
+      const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(ReduceWalkSpeedType::slow, Pose2f(1.f, 1.f, 1.f), Pose2f(1.f, 1.f, 1.f), theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
+
       if(theGameState.isPenaltyKick())
         GoToBallAndKick({.targetDirection = Angle::normalize(angle - theRobotPose.rotation),
                          .kickType = kickType,
                          .alignPrecisely = KickPrecision::precise,
-                         .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed},
-                         .reduceWalkSpeedType = ReduceWalkSpeedType::slow });
+                         .speed = walkingSpeedRatio});
       else
       {
         Pose2f kickPoseOnField(angle, ballPositionOnField);
@@ -139,7 +142,7 @@ option((SkillBehaviorControl) PenaltyTaker,
         kickPoseOnField.translate(theKickInfo.kicks[kickType].ballOffset);
         PenaltyStrikerGoToBallAndKick({.kickPose = theRobotPose.inverse() * kickPoseOnField,
                                        .kickType = kickType,
-                                       .walkSpeed = theBehaviorParameters.penaltyStrikerWalkSpeed});
+                                       .walkSpeed = walkingSpeedRatio});
       }
     }
   }
@@ -167,7 +170,8 @@ option((SkillBehaviorControl) PenaltyTaker,
                   .onlyOwnBall = true});
       const Vector2f target = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOpponentPenaltyMark - 300.f, 0.f);
       WalkToPoint({.target = {-theRobotPose.rotation, target},
-                   .speed = {theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed, theBehaviorParameters.penaltyStrikerWalkSpeed},
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::slow,
+                   .disableEnergySavingWalk = true,
                    .rough = true,
                    .disableObstacleAvoidance = true});
     }

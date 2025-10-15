@@ -40,6 +40,11 @@ STREAMABLE(MotionInfo,
   bool isKeyframeMotion(KeyframeMotionRequest::KeyframeMotionID motion, bool mirror) const
   {
     return executedPhase == MotionPhase::keyframeMotion && executedKeyframeMotion.keyframeMotion == motion && executedKeyframeMotion.mirror == mirror;
+  }
+
+  void verify() const
+  {
+    ASSERT(lastKickType <= KickInfo::numOfKickTypes);
   },
 
   (MotionPhase::Type)(MotionPhase::playDead) executedPhase, /**< The type of the phase currently being executed. */

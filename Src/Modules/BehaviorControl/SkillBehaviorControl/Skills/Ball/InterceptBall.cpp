@@ -24,12 +24,22 @@ option((SkillBehaviorControl) InterceptBall,
 
   auto getWalkRadius = [&]() -> float
   {
-    return mapToRange(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, theBehaviorParameters.timeForIntercetionForMaxWalkRadius.min, theBehaviorParameters.timeForIntercetionForMaxWalkRadius.max, theBehaviorParameters.walkRadius.min, theBehaviorParameters.walkRadius.max);
+    return mapToRange(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, theBehaviorParameters.timeForInterceptionForMaxWalkRadius.min, theBehaviorParameters.timeForInterceptionForMaxWalkRadius.max, theBehaviorParameters.walkRadius.min, theBehaviorParameters.walkRadius.max);
   };
 
   auto getIntersectionAction = [&](const Interception::Method currentMethod, const unsigned interceptionMethods)
   {
-    const float positionIntersectionYAxis = theFieldInterceptBall.intersectionPositionWithOwnYAxis.y();
+    float positionIntersectionYAxis = theFieldInterceptBall.intersectionPositionWithOwnYAxis.y();
+    if(positionIntersectionYAxis == 0.f)
+    {
+      Vector2f intersection;
+      const Vector2f useVelocity = theBallModel.estimate.velocity != Vector2f::Zero() ? theBallModel.estimate.velocity : (theBallModel.riskyMovingEstimateIsValid ? theBallModel.riskyMovingEstimate.velocity : Vector2f::Zero());
+      if(useVelocity != Vector2f() && Geometry::getIntersectionOfLines(Geometry::Line(theBallModel.estimate.position, useVelocity),
+          Geometry::Line(Vector2f(0.f, 0.f), Vector2f(0.f, 1.f)), intersection))
+        positionIntersectionYAxis = intersection.y();
+      else
+        positionIntersectionYAxis = theBallModel.riskyMovingEstimateIsValid ? theBallModel.riskyMovingEstimate.position.y() : theBallModel.estimate.position.y();
+    }
     unsigned filteredInterceptionMethods = interceptionMethods;
 
     left = positionIntersectionYAxis > 0.f;
@@ -40,9 +50,9 @@ option((SkillBehaviorControl) InterceptBall,
       filteredInterceptionMethods &= ~bit(Interception::jumpLeft);
     ASSERT(filteredInterceptionMethods != 0);
 
-    const float standHysterese = currentMethod == Interception::stand ? 40.f : 0.f;
+    const float standHysteresis = currentMethod == Interception::stand ? 40.f : 0.f;
 
-    if((filteredInterceptionMethods & bit(Interception::stand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.standRadius - standHysterese, theBehaviorParameters.standRadius + standHysterese) || filteredInterceptionMethods < (bit(Interception::stand) << 1)))
+    if((filteredInterceptionMethods & bit(Interception::stand)) && (between<float>(positionIntersectionYAxis, -theBehaviorParameters.standRadius - standHysteresis, theBehaviorParameters.standRadius + standHysteresis) || filteredInterceptionMethods < (bit(Interception::stand) << 1)))
       return Interception::stand;
     if((filteredInterceptionMethods & bit(Interception::walk)) && (between<float>(positionIntersectionYAxis, -getWalkRadius(), getWalkRadius()) || filteredInterceptionMethods < (bit(Interception::walk) << 1)))
       return Interception::walk;
@@ -139,7 +149,7 @@ option((SkillBehaviorControl) InterceptBall,
       lastMethod = Interception::stand;
       Annotation({.annotation = "Intercept Ball Stand!"});
       LookAtBall();
-      Stand();
+      Stand({.energySavingWalk = false});
     }
   }
 
@@ -160,7 +170,7 @@ option((SkillBehaviorControl) InterceptBall,
       Annotation({.annotation = "Intercept Ball Walk!"});
       LookAtBall();
       WalkToPoint({.target = {0.f, 0.f, theFieldInterceptBall.intersectionPositionWithOwnYAxis.y()},
-                   .reduceWalkingSpeed = ReduceWalkSpeedType::noChange,
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::noChange,
                    .disableAligning = true});
     }
   }
@@ -230,7 +240,7 @@ option((SkillBehaviorControl) InterceptBall,
       lastMethod = Interception::genuflectStand;
       Say({.text = "Genuflect"});
       LookAtBall();
-      Stand();
+      Stand({.energySavingWalk = false});
     }
   }
 
@@ -245,7 +255,7 @@ option((SkillBehaviorControl) InterceptBall,
       lastMethod = left ? Interception::jumpLeft : Interception::jumpRight;
       Say({.text = left ? "Jump left" : "Jump right"});
       LookAtBall();
-      Stand();
+      Stand({.energySavingWalk = false});
     }
   }
 
@@ -255,7 +265,7 @@ option((SkillBehaviorControl) InterceptBall,
     {
       lastMethod = Interception::stand;
       LookAtBall();
-      Stand();
+      Stand({.energySavingWalk = false});
     }
   }
 }

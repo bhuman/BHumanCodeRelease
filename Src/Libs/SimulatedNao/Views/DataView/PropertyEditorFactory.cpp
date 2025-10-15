@@ -90,7 +90,7 @@ void PropertyEditorFactory::disconnectPropertyManager(QtVariantPropertyManager* 
 }
 
 /**
- * This slot is invoked whenever one of the managed DoubleSpinboxes (float really) changes its value.
+ * This slot is invoked whenever one of the managed DoubleSpinBoxes (float really) changes its value.
  * It updates the value of the property belonging to the box.
  */
 void PropertyEditorFactory::slotSpinBoxValueChanged(double newValue)

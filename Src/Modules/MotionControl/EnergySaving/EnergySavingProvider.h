@@ -32,7 +32,13 @@ MODULE(EnergySavingProvider,
   USES(MotionInfo),
   PROVIDES(EnergySaving),
   LOADS_PARAMETERS(
-  {,
+  {
+    STREAMABLE(SpecialJointHandling,
+    {,
+      (Joints::Joint) joint, /** The joint. */
+      (int) currentThreshold, /**< If the current is below this threshold, we do not want to adjust. */
+    }),
+
     (int) motionChangeWaitTime, /**< If we are in a motion for the first time, where we can adjust the joints, we want to wait this long. */
     (int) adjustWaitTime, /**< After every adjustment, wait this long. */
     (int) currentThresholdLegs, /**< If the current is below this threshold, we do not want to adjust the leg joints. */
@@ -43,6 +49,7 @@ MODULE(EnergySavingProvider,
     (Angle) maxGearStepLegs, /**< If we can adjust in a bigger chunks for the legs .*/
     (Angle) maxAngleMultipleJoints, /**< The maximal adjustment for the joints when the robot is standing, to insure that the robot will not fall after some time. */
     (Angle) maxAngleOneJoint, /**< The maximal adjustment for one joint when the robot is standing. If this threshold is exceeded, the adjustments are reset for all leg joints. */
+    (Angle) maxBaseOffsetOneJoint, /**< For the base offset, limit the offset to prevent too large values. */
     (int) minNumberForHeatAdjustmentReset, /**< Min number of joints that must have an adjustment equal to maxJointHeatAdjustment to reset all adjustments .*/
     (float) resetTimeNormal, /**< Time to reduce the offsets back to 0. */
     (float) resetTimeSlow, /**< Time to reduce the offsets back to 0. */
@@ -54,6 +61,9 @@ MODULE(EnergySavingProvider,
     (std::vector<Joints::Joint>) skipJoints, /**< Do not adjust these joints. HeadPitch and HeadYaw are assumed to be ignored by the motion engines. */
     (ENUM_INDEXED_ARRAY(int, Joints::Joint)) highStandSigns, /**< emergencyStep with maxGearStep with this sign in highStand. */
     (ENUM_INDEXED_ARRAY(int, Joints::Joint)) standSigns, /**< emergencyStep with maxGearStep with this sign in Stand. */
+    (std::vector<SpecialJointHandling>) specialJointHandling, /**< Use other parameters for those joints. */
+    (bool) allowBaseOffset, /**< Use base offset when starting the energy saving. */
+    (bool) useGroundContactChange,
   }),
 });
 
@@ -76,7 +86,8 @@ private:
   float usedResetInterpolation = resetTimeNormal;
   bool adjustOnlyOneLegJoint = false; /**< To improve energy saving, only adjust one joint at a time. */
 
-  JointAngles jointBaseOffset; /**< When energy saving mode started the first time after being off, use the difference between measurendand requested joints as initial offset */
+  Rangea maxJointBaseOffsetRange;
+  JointAngles jointBaseOffset; /**< When energy saving mode started the first time after being off, use the difference between measured and requested joints as initial offset */
   unsigned interpolateBaseOffsetStartTimestamp = 0; /**< Interpolate base offset over a very short time. */
 
   void applyJointEnergySaving(const std::size_t& joint,

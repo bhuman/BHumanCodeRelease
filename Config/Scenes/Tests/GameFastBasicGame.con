@@ -1,0 +1,7 @@
+call ../Includes/Fast
+call ../Includes/7vs7
+
+dr representation:SetupPoses:place
+dr debugDrawing3d:representation:GameState:playerNumber
+
+test game 1 q

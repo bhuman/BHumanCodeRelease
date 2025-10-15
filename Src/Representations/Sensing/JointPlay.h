@@ -19,6 +19,8 @@ STREAMABLE(JointPlay,
     damaged,
   });
 
+  static ENUM_NUM_OF_ALIAS(JointStatus, numOfJointStatuses);
+
   STREAMABLE(JointState,
   {,
     (JointPlay::JointStatus)(JointPlay::allFine) status,

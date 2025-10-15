@@ -16,6 +16,7 @@
 #include "Streaming/AutoStreamable.h"
 #include "Tools/Motion/KickPrecision.h"
 #include "Tools/Motion/PreStepType.h"
+#include "Tools/BehaviorControl/SideWalkingRequest.h"
 
 STREAMABLE(MotionRequest,
 {
@@ -32,6 +33,7 @@ STREAMABLE(MotionRequest,
     special, /**< Execute a special motion. */
     replayWalk, /**< Replay a recorded walkPhase history. */
     photoMode, /**< Photo mode, to knead the robot in custom positions. */
+    freeBallHolding, /**< Free a ball stuck between the robots legs. */
   });
 
   STREAMABLE(ObstacleAvoidance,
@@ -44,7 +46,7 @@ STREAMABLE(MotionRequest,
 
     /**
      * This operator is only needed to determine, whether the default parameter was passed to a skill.
-     * It does not really check equality, but is sufficuent for comparing with an empty object.
+     * It does not really check equality, but is sufficient for comparing with an empty object.
      * @param other The object this one is compared to.
      * @return Are they equal?
      */
@@ -93,15 +95,16 @@ STREAMABLE(MotionRequest,
   (Motion)(playDead) motion, /**< The requested motion type. */
 
   (bool)(false) standHigh, /**< Whether the robot should stretch its knees while standing (only used if type is stand). */
+  (bool)(false) energySavingWalk, /**< If true, the robot will walk higher (if possible), to heat up leg joints slower. */
 
   (Pose2f) walkSpeed, /**< The walk speed, interpreted as (average) mm/s for walkAtAbsoluteSpeed or else as ratios of the maximum speed (only used if type is one of the walk* types or dribble). */
   (Pose2f) walkTarget, /**< The walk target (only used if type is walkToPose). */
   (bool)(false) keepTargetRotation, /**< Whether the target rotation should be reached as soon as possible, i.e. takes away one degree of freedom from motion (only used if type is walkToPose). */
   (ObstacleAvoidance) obstacleAvoidance, /**< Information about which obstacles there are to avoid (only used if type is walkTo* or dribble). */
   (std::optional<Vector2f>) targetOfInterest, /**< If filled, the first entry is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. */
-  (bool)(false) forceSideWalking, /**< If set, the robot is forced to side walk. */
+  (SideWalkingRequest::SideWalkingRequest)(SideWalkingRequest::allowed) sideWalkingRequest, /**< Requests how side walking is allowed to be used. */
   (bool)(false) shouldInterceptBall, /**< If the ball should be intercepted. */
-  (bool)(false) shouldWalkOutOfBallLine, /**< If the robot should intenionally leave the ball line*/
+  (bool)(false) shouldWalkOutOfBallLine, /**< If the robot should intentionally leave the ball line*/
 
   (Angle)(0_deg) targetDirection, /**< The target direction of the ball (only used if type is walkToBallAndKick or dribble). */
   (Rangea) directionPrecision, /**< The min and max target direction difference of the ball (only used if type is walkToBallAndKick or dribble). */

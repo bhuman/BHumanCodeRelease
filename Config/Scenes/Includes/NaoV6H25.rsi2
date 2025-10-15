@@ -2,7 +2,15 @@
   <Body name="Nao"> <!-- Torso -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="skin"/>
+    <Set name="TeamColor" value="skin"/>
+    <Set name="UpperCameraPitch" value="1.2degree"/>
+    <Set name="UpperCameraRoll" value="0degree"/>
+    <Set name="LowerCameraPitch" value="39.7degree"/>
+    <Set name="LowerCameraRoll" value="0degree"/>
+    <Set name="UpperCameraWidth" value="640"/>
+    <Set name="UpperCameraHeight" value="480"/>
+    <Set name="LowerCameraWidth" value="320"/>
+    <Set name="LowerCameraHeight" value="240"/>
 
     <InertiaMatrixMass value="1049.56g" x="-4.13mm" z="43.42mm"
       ixx="5062341.69g*mm^2" ixy="14311.60g*mm^2" ixz="155190.83g*mm^2"
@@ -15,7 +23,7 @@
       <Translation z="-0.085"/>
     </Geometry>
 
-    <Geometry name="$NaoColor"/>
+    <Geometry name="$TeamColor"/>
 
     <Appearance ref="naoTorsoV6"/>
 
@@ -28,29 +36,14 @@
     <!-- When setting the max distance of ApproxDistanceSensor to more then 1400mm
          will result in false measurements from the ground.
     -->
-    <ApproxDistanceSensor name="SonarCenterRight" min="0mm" max="1400mm" angleX="90degree" angleY="20degree">
-      <Translation x="0.0507" y="-0.00375" z="0.06"/>
-      <Rotation z="-2.5degree"/>
-    </ApproxDistanceSensor>
-    <ApproxDistanceSensor name="SonarRight" min="0mm" max="1400mm" angleX="90degree" angleY="20degree">
-      <Translation x="0.0507" y="-0.03785" z="0.06"/>
-      <Rotation z="-22.5degree"/>
-    </ApproxDistanceSensor>
-    <ApproxDistanceSensor name="SonarCenterLeft" min="0mm" max="1400mm" angleX="90degree" angleY="20degree">
-      <Translation x="0.0507" y="0.00375" z="0.06"/>
-      <Rotation z="2.5degree"/>
-    </ApproxDistanceSensor>
-    <ApproxDistanceSensor name="SonarLeft" min="0mm" max="1400mm" angleX="90degree" angleY="20degree">
-      <Translation x="0.0507" y="0.03785" z="0.06"/>
-      <Rotation z="22.5degree"/>
-    </ApproxDistanceSensor>
+
 
     <!-- Head -->
     <Hinge name="HeadYaw">
       <Translation z="126.5mm"/><!-- NeckOffsetZ -->
       <Axis z="1.0">
         <Deflection min="-119.5degree" max="119.5degree"/>
-        <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
+        <ServoMotor maxVelocity="474degree/s" maxForce="3" p="40.0" d="2"/>
       </Axis>
       <Body name="Neck">
 
@@ -63,7 +56,7 @@
         <Hinge name="HeadPitch">
           <Axis y="1.0">
             <Deflection min="-38.5degree" max="29.5degree"/>
-            <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
+            <ServoMotor maxVelocity="412degree/s" maxForce="3" p="40.0" d="2"/>
           </Axis>
           <Body name="Head">
 
@@ -75,13 +68,13 @@
               <Translation z="55mm"/>
             </SphereGeometry>
 
-            <Camera name="CameraTop" imageWidth="640" imageHeight="480" angleX="54.7degree" angleY="42.5degree">
+            <Camera name="CameraTop" imageWidth="$UpperCameraWidth" imageHeight="$UpperCameraHeight" angleX="54.7degree" angleY="42.5degree">
               <Translation x="0.05871" z="0.06364"/>
-              <Rotation y="1.2degree"/>
+              <Rotation y="$UpperCameraPitch" x="$UpperCameraRoll"/>
             </Camera>
-            <Camera name="CameraBottom" imageWidth="320" imageHeight="240" angleX="54.7degree" angleY="42.5degree">
+            <Camera name="CameraBottom" imageWidth="$LowerCameraWidth" imageHeight="$LowerCameraHeight" angleX="54.7degree" angleY="42.5degree">
               <Translation x="0.05071" z="0.01774"/>
-              <Rotation y="39.7degree"/>
+              <Rotation y="$LowerCameraPitch" x="$LowerCameraRoll"/>
             </Camera>
 
             <Appearance ref="naoHeadPitchV6"/>
@@ -95,8 +88,8 @@
     <Hinge name="LShoulderPitch">
       <Translation y="98mm" z="100mm"/><!-- ShoulderOffsetY, ShoulderOffsetZ -->
       <Axis y="1.0">
-        <Deflection min="-119.5degree" max="119.5degree"/>
-        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+        <Deflection min="-119.5degree" max="119.5degree" init="90degree"/>
+        <ServoMotor maxVelocity="600degree/s" maxForce="5" p="40" d="2"/>
       </Axis>
       <Body name="LShoulder">
 
@@ -109,7 +102,7 @@
         <Hinge name="LShoulderRoll">
           <Axis z="1.0">
             <Deflection min="-18degree" max="76degree"/>
-            <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+            <ServoMotor maxVelocity="600degree/s" maxForce="5" p="40" d="2"/>
           </Axis>
           <Body name="LUpperArm">
 
@@ -128,7 +121,7 @@
               <Translation x="105mm" y="15mm"/><!-- UpperArmLength, ElbowOffsetY -->
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
-                <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                <ServoMotor maxVelocity="330degree/s" maxForce="3" p="40" d="0.5"/>
               </Axis>
               <Body name="LElbow">
 
@@ -139,7 +132,7 @@
                 <Hinge name="LElbowRoll">
                   <Axis z="1.0">
                     <Deflection min="-88.5degree" max="-2degree"/>
-                    <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                    <ServoMotor maxVelocity="330degree/s" maxForce="3" p="40" d="0.5"/>
                   </Axis>
                   <Body name="LLowerArm">
 
@@ -158,7 +151,7 @@
                       <Translation x="55.95mm"/><!-- LowerArmLength -->
                       <Axis x="1.0">
                         <Deflection min="-104.5degree" max="104.5degree"/>
-                        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                        <ServoMotor maxVelocity="600degree/s" maxForce="3" p="40" d="0.5"/>
                       </Axis>
 
                       <Body name="LWrist">
@@ -186,8 +179,8 @@
     <Hinge name="RShoulderPitch">
       <Translation y="-98mm" z="100mm"/><!-- -ShoulderOffsetY, ShoulderOffsetZ -->
       <Axis y="1.0">
-        <Deflection min="-119.5degree" max="119.5degree"/>
-        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+        <Deflection min="-119.5degree" max="119.5degree" init="90degree"/>
+        <ServoMotor maxVelocity="600degree/s" maxForce="5" p="40" d="2"/>
       </Axis>
       <Body name="RShoulder">
 
@@ -200,7 +193,7 @@
         <Hinge name="RShoulderRoll">
           <Axis z="1.0">
             <Deflection min="-76degree" max="18degree"/>
-            <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+            <ServoMotor maxVelocity="600degree/s" maxForce="5" p="40" d="2"/>
           </Axis>
           <Body name="RUpperArm">
 
@@ -219,7 +212,7 @@
               <Translation x="105mm" y="-15mm"/><!-- UpperArmLength, ElbowOffsetY -->
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
-                <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                <ServoMotor maxVelocity="600degree/s" maxForce="3" p="40" d="0.5"/>
               </Axis>
               <Body name="RElbow">
 
@@ -230,7 +223,7 @@
                 <Hinge name="RElbowRoll">
                   <Axis z="1.0">
                     <Deflection min="2degree" max="88.5degree"/>
-                    <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                    <ServoMotor maxVelocity="600degree/s" maxForce="3" p="40" d="0.5"/>
                   </Axis>
                   <Body name="RLowerArm">
 
@@ -249,7 +242,7 @@
                       <Translation x="55.95mm"/><!-- LowerArmLength -->
                       <Axis x="1.0">
                         <Deflection min="-104.5degree" max="104.5degree"/>
-                        <ServoMotor maxVelocity="600degree/s" maxForce="16" p="80.0" i="50.0"/>
+                        <ServoMotor maxVelocity="600degree/s" maxForce="3" p="40" d="0.5"/>
                       </Axis>
 
                       <Body name="RWrist">
@@ -278,7 +271,7 @@
       <Translation y="50mm" z="-85mm"/><!-- HipOffsetY, HipOffsetZ -->
       <Axis y="0.7" z="-0.7">
         <Deflection min="-65.62degree" max="42.44degree"/>
-        <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+        <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
       </Axis>
       <Body name="LHip1">
 
@@ -291,7 +284,7 @@
         <Hinge name="LHipRoll">
           <Axis x="1.0">
             <Deflection min="-21.74degree" max="45.29degree"/>
-            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+            <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
           </Axis>
           <Body name="LHip2">
 
@@ -308,7 +301,7 @@
             <Hinge name="LHipPitch">
               <Axis y="1.0">
                 <Deflection min="-88degree" max="27.73degree"/>
-                <ServoMotor maxVelocity="330degree/s" maxForce="16" p="80.0" i="50.0"/>
+                <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
               </Axis>
               <Body name="LThigh">
 
@@ -327,7 +320,7 @@
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
                     <Deflection min="-5.29degree" max="121.04degree"/>
-                    <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
+                    <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                   </Axis>
                   <Body name="LTibia">
 
@@ -346,7 +339,7 @@
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
                         <Deflection min="-68.15degree" max="52.86degree"/>
-                        <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
+                        <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                       </Axis>
                       <Body name="LAnkle">
 
@@ -359,7 +352,7 @@
                         <Hinge name="LAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-22.79degree" max="44.06degree"/>
-                            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+                            <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                           </Axis>
                           <Body name="LFoot">
 
@@ -390,7 +383,7 @@
       <Translation y="-50mm" z="-85mm"/><!-- -HipOffsetY, HipOffsetZ -->
       <Axis y="0.7" z="0.7">
         <Deflection min="-65.62degree" max="42.44degree"/>
-        <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+        <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
       </Axis>
       <Body name="RHip1">
 
@@ -403,7 +396,7 @@
         <Hinge name="RHipRoll">
           <Axis x="1.0">
             <Deflection min="-45.29degree" max="21.74degree"/>
-            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+            <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
           </Axis>
 
           <Body name="RHip2">
@@ -421,7 +414,7 @@
             <Hinge name="RHipPitch">
               <Axis y="1.0">
                 <Deflection min="-88degree" max="27.73degree"/>
-                <ServoMotor maxVelocity="330degree/s" maxForce="16" p="80.0" i="50.0"/>
+                <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
               </Axis>
               <Body name="RThigh">
 
@@ -440,7 +433,7 @@
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
                     <Deflection min="-5.90degree" max="121.47degree"/>
-                    <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
+                    <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                   </Axis>
                   <Body name="RTibia">
 
@@ -459,7 +452,7 @@
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
                         <Deflection min="-67.97degree" max="53.40degree"/>
-                        <ServoMotor maxVelocity="500degree/s" maxForce="16" p="80.0" i="50.0"/>
+                        <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                       </Axis>
                       <Body name="RAnkle">
 
@@ -472,7 +465,7 @@
                         <Hinge name="RAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-44.06degree" max="22.80degree"/>
-                            <ServoMotor maxVelocity="500degree/s" maxForce="24" p="80.0" i="50.0"/>
+                            <ServoMotor maxVelocity="400degree/s" maxForce="5" p="40" d="0.5"/>
                           </Axis>
                           <Body name="RFoot">
 
@@ -502,7 +495,7 @@
   <Body name="NaoDummy"><!-- A box that looks like a Nao -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="skin"/>
+    <Set name="TeamColor" value="skin"/>
 
     <BoxGeometry depth="100mm" width="200mm" height="566mm">
       <Translation x="5mm" z="-50mm"/>
@@ -117253,7 +117246,7 @@
   </ComplexAppearance>
 
   <ComplexAppearance name="naoTorsoV6_jersey">
-    <Surface ref="nao-$NaoColor"/>
+    <Surface ref="nao-$TeamColor"/>
     <Triangles>
 3420 3421 3422
 3420 3422 3423
@@ -121610,5 +121603,9 @@
     <ComplexAppearance ref="naoTorsoV6_3"/>
     <!--<ComplexAppearance ref="naoTorsoV6_4"/>-->
   </Appearance>
+
+  <Compound name="robot type">
+    <Compound name="nao"/>
+  </Compound>
 
 </Simulation>

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/BallSearchAreas.h"
+#include "Representations/BehaviorControl/BallSearchParticles.h"
 #include "Representations/BehaviorControl/ClearTarget.h"
 #include "Representations/BehaviorControl/DribbleTarget.h"
 #include "Representations/BehaviorControl/ExpectedGoals.h"
@@ -26,14 +26,15 @@
 #include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Framework/Blackboard.h"
 #include "Framework/Module.h"
 
 // Representations listed here will be available in classes derived from \c BehaviorBase.
 #define VISIT_BEHAVIOR_BASE_REPRESENTATIONS(_) \
-  _(BallSearchAreas) \
+  _(BallSearchParticles) \
   _(BallSpecification) \
   _(BehaviorParameters) \
   _(ClearTarget) \
@@ -51,7 +52,7 @@
   _(MotionInfo) \
   _(PassEvaluation) \
   _(RobotPose) \
-  _(TeammatesBallModel)
+  _(TeamBallModel)
 
 class BehaviorBase
 {

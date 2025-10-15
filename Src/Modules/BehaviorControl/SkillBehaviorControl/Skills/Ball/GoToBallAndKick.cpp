@@ -7,6 +7,7 @@
  */
 
 #include "SkillBehaviorControl.h"
+#include "Tools/BehaviorControl/WalkSpeedConversion.h"
 
 option((SkillBehaviorControl) GoToBallAndKick,
        args((Angle) targetDirection,
@@ -18,37 +19,18 @@ option((SkillBehaviorControl) GoToBallAndKick,
             (bool) turnKickAllowed,
             (bool) shiftTurnKickPose,
             (const Pose2f&) speed,
-            (ReduceWalkSpeedType) reduceWalkSpeedType,
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType,
             (const Rangea&) directionPrecision),
        defs((float)(1000.f) switchToPathPlannerDistance, /**< If the target is further away than this distance, the path planner is used. */
             (float)(900.f) switchToLibWalkDistance, /**< If the target is closer than this distance, LibWalk is used. */
             (float)(600.f) goalkeeperDoNotIgnoreObstaclesDistance, /**< If the target is further away than this distance, the goalkeeper will not ignore obstacles. */
-            (float)(500.f) goalkeeperIgnoreObstaclesDistance, /**< If the target is closer than this distance, the goalkeeper will ignore obstacles. */
-            (float)(175.f) targetForwardWalkingSpeedSlow, /**< Reduce walking speed to reach this forward speed (in mm/s). */
-            (float)(250.f) targetForwardWalkingSpeedNormal), /**< Normal walking speed forward (in mm/s). */
+            (float)(500.f) goalkeeperIgnoreObstaclesDistance), /**< If the target is closer than this distance, the goalkeeper will ignore obstacles. */
        vars((Angle)(0_deg) startRotation)) /**< The value of \c theOdometryData.rotation when the \c turnAfterKick state is entered. */
 {
   const Pose2f kickPose = Pose2f(targetDirection, theFieldInterceptBall.interceptedEndPositionRelative).rotate(theKickInfo[kickType].rotationOffset).translate(theKickInfo[kickType].ballOffset);
 
-  Pose2f walkingSpeedRatio = speed;
-  switch(reduceWalkSpeedType)
-  {
-    case ReduceWalkSpeedType::slow:
-    {
-      const float minimalSpeed = std::min(speed.translation.x(), Rangef::ZeroOneRange().limit(targetForwardWalkingSpeedSlow / theWalkingEngineOutput.maxSpeed.translation.x()));
-      walkingSpeedRatio = Pose2f(std::min(speed.rotation, Angle(minimalSpeed)), minimalSpeed, std::min(speed.translation.y(), minimalSpeed));
-      break;
-    }
-    case ReduceWalkSpeedType::normal:
-    {
-      const float minimalSpeed = std::min(speed.translation.x(), Rangef::ZeroOneRange().limit(targetForwardWalkingSpeedNormal / theWalkingEngineOutput.maxSpeed.translation.x()));
-      walkingSpeedRatio = Pose2f(std::min(speed.rotation, Angle(minimalSpeed)), minimalSpeed, std::min(speed.translation.y(), minimalSpeed));
-      break;
-    }
-    case ReduceWalkSpeedType::noChange:
-    default:
-      break;
-  }
+  ASSERT(reduceWalkSpeedType != ReduceWalkSpeedType::distanceBased);
+  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, Pose2f(1.f, 1.f, 1.f), theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
 
   initial_state(walkToBallFarRange)
   {

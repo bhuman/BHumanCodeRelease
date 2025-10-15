@@ -142,7 +142,7 @@ namespace MsgPack
   void write(const std::string& value, unsigned char*& p)
   {
     ASSERT(value.size() < 32);
-    *p++ = static_cast<unsigned char>(0xa0 |value.size()); // msgpack fixstr
+    *p++ = static_cast<unsigned char>(0xa0 | value.size()); // msgpack fixstr
     std::memcpy(p, value.data(), value.size());
     p += value.size();
   }

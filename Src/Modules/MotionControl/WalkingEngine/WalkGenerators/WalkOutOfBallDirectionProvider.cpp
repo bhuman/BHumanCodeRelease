@@ -28,7 +28,7 @@ void WalkOutOfBallDirectionProvider::update(WalkOutOfBallDirection& theWalkOutOf
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, motionRequest.ballEstimate.position);
     const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
     const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset);
+    const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theWalkStepData.yHipOffset : theWalkStepData.yHipOffset);
     const Pose2f scsCognition = hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * motionRequest.odometryData;
     const Vector2f positionOfGoal(theFieldDimensions.xPosOpponentGoal, 0.f);
     const Vector2f relativePositionOfGoal = scsCognition * (theRobotPose.inverse() * positionOfGoal);

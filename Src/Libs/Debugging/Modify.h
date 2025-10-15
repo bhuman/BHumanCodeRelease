@@ -34,7 +34,7 @@
   do \
   { \
     Global::getDebugDataTable().updateObject(id, object, once); \
-    DEBUG_RESPONSE_ONCE("debug data:" id) \
+    DEBUG_RESPONSE("debug data:" id) \
       OUTPUT(idDebugDataResponse, bin, id << TypeRegistry::demangle(typeid(object).name()) << object); \
   } \
   while(false)

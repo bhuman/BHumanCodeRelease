@@ -47,6 +47,7 @@ private:
   size_t sizeAfterFrameBegin; /**< The size of the message queue after the first message was added. */
   Logger* logger; /**< Points to the only logger of this robot. */
   const LoggingController* loggingController = nullptr; /**< The control interface to the logger, owned by this module container if it controls the logger. */
+  bool debugRequestWaiting = false; /**< Is a debug request waiting for this thread? */
 
 public:
   /**

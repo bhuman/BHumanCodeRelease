@@ -12,9 +12,6 @@
  */
 
 #include "FootSupportProvider.h"
-#include "Debugging/DebugDrawings3D.h"
-#include "Debugging/Plot.h"
-#include "Platform/File.h"
 #include <cmath>
 
 MAKE_MODULE(FootSupportProvider);
@@ -32,9 +29,6 @@ FootSupportProvider::FootSupportProvider()
 
 void FootSupportProvider::update(FootSupport& theFootSupport)
 {
-  DECLARE_PLOT("module:FootSupportProvider:supportSwitch");
-  DECLARE_PLOT("module:FootSupportProvider:supportPredictSwitch");
-  DECLARE_PLOT("module:FootSupportProvider:support");
   if(theFrameInfo.time == 0)
     return;
   float totalPressure = 0.f;
@@ -45,41 +39,41 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
   {
     FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
     {
-      const float weight = weights[leg][sensor] * theFsrData.pressures[leg][sensor];
+      const float weight = weights[leg][sensor] * theSolePressureState.pressures[leg][sensor];
       weightedSum += weight;
       totalPressure += std::abs(weight);
     }
   }
 
   // Update footSupport state
-  if(totalPressure > theFsrData.minPressure)
+  if(totalPressure > theSolePressureState.minPressure)
   {
-    theFootSupport.trustedSupport = theFsrData.isCalibrated;
+    theFootSupport.trustedSupport = theSolePressureState.isCalibrated;
     theFootSupport.support = weightedSum / totalPressure;
     theFootSupport.switched = (lastSupportWithPressure * theFootSupport.support < 0.f || (lastSupport == 0.f && theFootSupport.support != 0.f)) // switched base on sign
-                              && ((theFsrData.legInfo[Legs::left].hasPressure == theFrameInfo.time && theFootSupport.support > 0.f) || // new support foot has pressure
-                                  (theFsrData.legInfo[Legs::right].hasPressure == theFrameInfo.time && theFootSupport.support < 0.f));
+                              && ((theSolePressureState.legInfo[Legs::left].hasPressure && theFootSupport.support > 0.f) || // new support foot has pressure
+                                  (theSolePressureState.legInfo[Legs::right].hasPressure && theFootSupport.support < 0.f));
 
     // save the last measurement, when the feet had enough pressure
-    lastSupportWithPressure = ((theFsrData.legInfo[Legs::left].hasPressure == theFrameInfo.time && theFootSupport.support > 0.f) || // new support foot has pressure
-                               (theFsrData.legInfo[Legs::right].hasPressure == theFrameInfo.time && theFootSupport.support < 0.f)) ? theFootSupport.support : lastSupportWithPressure;
+    lastSupportWithPressure = ((theSolePressureState.legInfo[Legs::left].hasPressure && theFootSupport.support > 0.f) || // new support foot has pressure
+                               (theSolePressureState.legInfo[Legs::right].hasPressure && theFootSupport.support < 0.f)) ? theFootSupport.support : lastSupportWithPressure;
     if(theFootSupport.switched)
     {
       theFootSupport.lastSwitch = theFrameInfo.time - lastSupportSwitch;
       lastSupportSwitch = theFrameInfo.time;
     }
 
-    float predictedSupport = theFootSupport.support + 3.f * (theFootSupport.support - lastSupport); //current vel
+    float predictedSupport = theFootSupport.support + predictionFactor * (theFootSupport.support - lastSupport); //current vel
 
-    bool leftFSR = theFsrData.legInfo[Legs::left].forwardPressure == theFsrData.lastUpdateTimestamp
-                   || theFsrData.legInfo[Legs::left].backwardPressure == theFsrData.lastUpdateTimestamp;
-    bool rightFSR = theFsrData.legInfo[Legs::right].forwardPressure == theFsrData.lastUpdateTimestamp
-                    || theFsrData.legInfo[Legs::right].backwardPressure == theFsrData.lastUpdateTimestamp;
+    bool leftFSR = (theSolePressureState.pressures[Legs::left][FsrSensors::fl] + theSolePressureState.pressures[Legs::left][FsrSensors::fr]) * minSingleFSRPressureForPredictedSwitchFactor > theSolePressureState.minPressure
+                   || (theSolePressureState.pressures[Legs::left][FsrSensors::bl] + theSolePressureState.pressures[Legs::left][FsrSensors::br]) * minSingleFSRPressureForPredictedSwitchFactor > theSolePressureState.minPressure;
+    bool rightFSR = (theSolePressureState.pressures[Legs::right][FsrSensors::fl] + theSolePressureState.pressures[Legs::right][FsrSensors::fr]) * minSingleFSRPressureForPredictedSwitchFactor > theSolePressureState.minPressure
+                    || (theSolePressureState.pressures[Legs::right][FsrSensors::bl] + theSolePressureState.pressures[Legs::right][FsrSensors::br]) * minSingleFSRPressureForPredictedSwitchFactor > theSolePressureState.minPressure;
 
-    theFootSupport.predictedSwitched = theFsrData.isCalibrated // Min pressure must be calibrated first
+    theFootSupport.predictedSwitched = theSolePressureState.isCalibrated // Min pressure must be calibrated first
                                        && predictedSupport * theFootSupport.support < 0.f // support foot will switch
-                                       && ((theFootSupport.support < 0.f && leftFSR && theFsrData.legInfo[Legs::right].totals < currentSupportMaxPressure && theFsrData.legInfo[Legs::left].totals > currentSwingMinPressure) // new support foot has some pressure and had not have it before
-                                           || (theFootSupport.support > 0.f && rightFSR && theFsrData.legInfo[Legs::left].totals < currentSupportMaxPressure && theFsrData.legInfo[Legs::right].totals > currentSwingMinPressure));
+                                       && ((theFootSupport.support < 0.f && leftFSR && theSolePressureState.legInfo[Legs::right].totals < currentSupportMaxPressure && theSolePressureState.legInfo[Legs::left].totals > currentSwingMinPressure) // new support foot has some pressure and had not have it before
+                                           || (theFootSupport.support > 0.f && rightFSR && theSolePressureState.legInfo[Legs::left].totals < currentSupportMaxPressure && theSolePressureState.legInfo[Legs::right].totals > currentSwingMinPressure));
 
     lastSupport = theFootSupport.support;
   }
@@ -90,9 +84,4 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
     theFootSupport.switched = false;
     theFootSupport.predictedSwitched = false;
   }
-
-  PLOT("module:FootSupportProvider:support", theFootSupport.support);
-
-  PLOT("module:FootSupportProvider:supportPredictSwitch", theFootSupport.predictedSwitched ? 1.f : 0.f);
-  PLOT("module:FootSupportProvider:supportSwitch", theFootSupport.switched ? 1.f : 0.f);
 }

@@ -10,9 +10,11 @@
 #include "Streaming/InStreams.h"
 #include "Streaming/Output.h"
 
-Settings::Settings(const std::string& headName, const std::string& bodyName) :
+Settings::Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType) :
   headName(headName),
-  bodyName(bodyName)
+  bodyName(bodyName),
+  motionCycleTime(motionCycleTime),
+  robotType(robotType)
 {
   InMapFile stream("settings.cfg");
   if(stream.exists())
@@ -22,9 +24,13 @@ Settings::Settings(const std::string& headName, const std::string& bodyName) :
   updateSearchPath();
 }
 
-Settings::Settings(const std::string& headName, const std::string& bodyName, int teamNumber, TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber, const std::string& location, const std::string& scenario, unsigned char magicNumber) :
+Settings::Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType,
+                   int teamNumber, TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber,
+                   const std::string& location, const std::string& scenario, unsigned char magicNumber) :
   headName(headName),
   bodyName(bodyName),
+  motionCycleTime(motionCycleTime),
+  robotType(robotType),
   teamNumber(teamNumber),
   fieldPlayerColor(fieldPlayerColor),
   goalkeeperColor(goalkeeperColor),
@@ -36,8 +42,9 @@ Settings::Settings(const std::string& headName, const std::string& bodyName, int
   updateSearchPath();
 }
 
-Settings::Settings(const std::string& logFileName, const std::string* location, const std::string* scenario) :
-  Settings("Default", "Default")
+Settings::Settings(const std::string& logFileName, float motionCycleTime, RobotType robotType,
+                   const std::string* location, const std::string* scenario) :
+  Settings("Default", "Default", motionCycleTime, robotType)
 {
   InBinaryFile stream(logFileName);
   if(stream.exists())
@@ -62,16 +69,32 @@ settingsRead:
 void Settings::updateSearchPath()
 {
   searchPath.clear();
-  searchPath.reserve(8);
+  searchPath.reserve(13);
   const std::string configDir = std::string(File::getBHDir()) + "/Config/";
   searchPath.push_back(configDir + "Robots/" + headName + "/Head/");
   searchPath.push_back(configDir + "Robots/" + bodyName + "/Body/");
   searchPath.push_back(configDir + "Robots/" + headName + "/" + bodyName + "/");
+  std::string robotTypeName = TypeRegistry::getEnumName(robotType);
+  robotTypeName[0] &= ~0x20;
   if(location != "Default")
+  {
+    if(robotType != nao)
+      searchPath.push_back(configDir + "Locations/" + location + "/" + robotTypeName + "/");
     searchPath.push_back(configDir + "Locations/" + location + "/");
+  }
   if(scenario != "Default")
+  {
+    if(robotType != nao)
+      searchPath.push_back(configDir + "Scenarios/" + scenario + "/" + robotTypeName + "/");
     searchPath.push_back(configDir + "Scenarios/" + scenario + "/");
+  }
+  if(robotType != nao)
+    searchPath.push_back(configDir + "Robots/Default/" + robotTypeName + "/");
   searchPath.push_back(configDir + "Robots/Default/");
+  if(robotType != nao)
+    searchPath.push_back(configDir + "Locations/Default/" + robotTypeName + "/");
   searchPath.push_back(configDir + "Locations/Default/");
+  if(robotType != nao)
+    searchPath.push_back(configDir + "Scenarios/Default/" + robotTypeName + "/");
   searchPath.push_back(configDir + "Scenarios/Default/");
 }

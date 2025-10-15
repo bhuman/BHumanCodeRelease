@@ -379,7 +379,7 @@ bool LibWalkProvider::applyNotRough()
 {
   // Ball
   if(theGameState.isPlaying()
-     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.teammatesBallIsValid))
+     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.teamBallIsValid))
   {
     const Vector2f& ballPosition = theFieldBall.recentBallPositionRelative(ballTimeout);
     if(ballPosition.squaredNorm() < sqr(ballAvoidanceDistance))

@@ -38,7 +38,7 @@ public:
   /** Initializes the system time. */
   static void initialize();
 
-  /** Deinitializes the system time. */
+  /** De-initializes the system time. */
   static void deinitialize();
 
   /** Switches simulated time on/off. */

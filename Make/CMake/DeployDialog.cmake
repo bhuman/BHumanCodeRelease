@@ -51,12 +51,9 @@ set_property(TARGET DeployDialog PROPERTY FOLDER Apps)
 set_property(TARGET DeployDialog PROPERTY MACOSX_BUNDLE_INFO_PLIST "${DEPLOY_DIALOG_ROOT_DIR}/Info.plist")
 set_property(TARGET DeployDialog PROPERTY XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks")
 set_property(TARGET DeployDialog PROPERTY XCODE_ATTRIBUTE_COPY_PHASE_STRIP "NO")
-set_property(TARGET DeployDialog PROPERTY XCODE_GENERATE_SCHEME ON)
-set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_EXECUTABLE "${CMAKE_CURRENT_SOURCE_DIR}/../Common/deployDialog")
-set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_ARGUMENTS "Debug")
-set_property(TARGET DeployDialog PROPERTY XCODE_SCHEME_ENVIRONMENT "IDEPreferLogStreaming=YES")
 
 target_include_directories(DeployDialog PRIVATE "${DEPLOY_DIALOG_ROOT_DIR}")
+target_compile_definitions(DeployDialog PRIVATE CONFIGURATION=$<CONFIG>)
 
 target_link_libraries(DeployDialog PRIVATE Qt6::Concurrent Qt6::Core Qt6::Gui Qt6::Widgets)
 target_link_libraries(DeployDialog PRIVATE Platform)

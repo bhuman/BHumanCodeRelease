@@ -2,7 +2,7 @@
  * @file PerceptRegistration.cpp
  *
  * This file implements some functions declared by
- * the PerceptRegistration representation's subrepresentations.
+ * the PerceptRegistration representation's sub-representations.
  *
  * @author Tim Laue
  */

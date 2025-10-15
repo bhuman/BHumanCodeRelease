@@ -291,7 +291,7 @@ bool ObjectCNSStereoDetector::subpixelMaximum(float& max, float argMax[3], const
   int maxI = -0xffff, argMaxI = -1, argMaxI2[3];
   maximumUsingSSE2(maxI, argMaxI, 0, &response[0][0][0], 3 * 16 * 16);
   assert(maxI >= -0x7fff);
-  // Subpixelinterpolate max
+  // Subpixel-interpolate max
   max         = static_cast<float>(maxI);
   argMaxI2[0] = (argMaxI & 0xf);
   argMaxI2[1] = ((argMaxI >> 4) & 0xf);
@@ -427,7 +427,7 @@ void ObjectCNSStereoDetector::refine(const Image<CNSResponse>& cns, IsometryWith
   }
 }
 
-void ObjectCNSStereoDetector::rasteredConeOfOrientations(std::vector<Eigen::Isometry3d>& a2bList, const Eigen::Vector3d& az2b0, double delta, double eps)
+void ObjectCNSStereoDetector::rasterizedConeOfOrientations(std::vector<Eigen::Isometry3d>& a2bList, const Eigen::Vector3d& az2b0, double delta, double eps)
 {
   Eigen::Isometry3d a2b0 = fromTo(Eigen::Vector3d::UnitZ(), az2b0);
   a2bList.clear();

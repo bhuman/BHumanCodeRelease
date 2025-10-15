@@ -1,0 +1,30 @@
+# Helper to setup robot target
+# Defines the variables "TARGET_USER", "TARGET_NAME" and "TARGET_ARCH" based
+# on an IP address. In addition, "TARGET_MODEL" is set for Booster robots.
+
+_BASEPATH=$(cd "$(dirname "$(which "$0")")" && pwd)
+_NAME=$(cd "$_BASEPATH/../../Config/Robots"; grep "$1" */network.cfg | sed 's%/.*%%')
+_ROBOTTYPE=$(cd "$_BASEPATH/../../Config/Robots"; grep -E "\"$_NAME\"" robots.cfg | sed 's%.*robotType *= *\([^;]*\).*%\1%')
+case "$_ROBOTTYPE" in
+  nao)
+    TARGET_USER=nao
+    TARGET_NAME=Nao
+    TARGET_ARCH=
+    ;;
+  k1)
+    TARGET_USER=booster
+    TARGET_NAME=Booster
+    TARGET_ARCH=Arm64
+    TARGET_MODEL=K1
+    ;;
+  t1)
+    TARGET_USER=booster
+    TARGET_NAME=Booster
+    TARGET_ARCH=Arm64
+    TARGET_MODEL=T1
+    ;;
+esac
+
+unset _BASEPATH
+unset _NAME
+unset _ROBOTTYPE

@@ -39,6 +39,7 @@ MODULE(OdometryDataPreviewProvider,
     (float) useMeasuredSwingAfterStepStartedTime, /**< Use the measured swing foot and not the planned one when a new walk phase started for this time. */
     (unsigned int) usePlannedIsLeftPhaseAfterThisSwitchTime, /**< If last support foot switch took more than this time, use the planned left phase flag. */
     (Vector2f) odometryWalkScaling, /**< While walking scale the odometry with these factors. */
+    (bool) filterSupportSwitch, /**< When switching the support foot, filter which sole to use as supporting one. */
   }),
 });
 

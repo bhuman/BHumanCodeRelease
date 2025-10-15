@@ -49,17 +49,25 @@ float Forward::rating(const Vector2f& pos) const
     cellBorderRating = 1.f - std::exp(-0.5f * sqr(distanceToCellBorder) / sqr(p.sigmaCellBorder));
   }
 
+  //get the rating based on the nearest teammate
+  float teammateRating = 1.f;
+  if(!theGlobalTeammatesModel.teammates.empty())
+  {
+    //better rating far away from teammates
+    teammateRating = 1.f - std::exp(-0.5f * getClosestTeammateSquaredDistance(pos) / sqr(p.sigmaTeam));
+  }
+
   //do not stand directly near the ball as position role
   const float ballRating = 1.f - std::exp(-0.5f * (pos - theFieldBall.recentBallPositionOnField()).squaredNorm() / sqr(p.sigmaBall));
 
   // Positions near the last communicated target pose are better
   const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
   const float communicationRating = p.minCommunicationRating +
-      (1.f - p.minCommunicationRating) * std::exp(-0.5f * (pos - lastTargetInWorld).squaredNorm() / sqr(p.sigmaCommunication));
+                                    (1.f - p.minCommunicationRating) * std::exp(-0.5f * (pos - lastTargetInWorld).squaredNorm() / sqr(p.sigmaCommunication));
   CROSS("behavior:Forward:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
   //the focus is on the multiplication term because all ratings need to be good at the same time.
   // The additive term is for avoid getting stuck in large 0 areas where just one of the factors is 0. Should be deleted
-  return communicationRating * cellBorderRating * borderRating * ballRating * passRating * goalRating * baseRating * (1.f - p.addWeight) +
-         (p.addWeight / 7) * (baseRating + goalRating + passRating + ballRating + borderRating + cellBorderRating + communicationRating);
+  return communicationRating * cellBorderRating * borderRating * ballRating * passRating * goalRating * baseRating * teammateRating * (1.f - p.addWeight) +
+         (p.addWeight / 8.f) * (baseRating + goalRating + passRating + ballRating + borderRating + cellBorderRating + communicationRating + teammateRating);
 }

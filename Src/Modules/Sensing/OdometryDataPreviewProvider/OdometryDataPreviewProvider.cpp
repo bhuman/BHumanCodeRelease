@@ -34,7 +34,7 @@ Pose2f OdometryDataPreviewProvider::getOdometryOffset(const RobotModel& theRobot
   else
   {
     bool useIsLeftPhase = theMotionInfo.walkPhaseIsLeftPhase;
-    if(theFrameInfo.getTimeSince(theMotionInfo.lastMotionPhaseStarted) < useMeasuredSwingAfterStepStartedTime
+    if(filterSupportSwitch && theFrameInfo.getTimeSince(theMotionInfo.lastMotionPhaseStarted) < useMeasuredSwingAfterStepStartedTime
        && theFootSupport.lastSwitch < usePlannedIsLeftPhaseAfterThisSwitchTime)
       useIsLeftPhase = theFootSupport.support < 0.f;
     const Pose3f currentLeftSole3D = theTorsoMatrix * theRobotModel.soleLeft;

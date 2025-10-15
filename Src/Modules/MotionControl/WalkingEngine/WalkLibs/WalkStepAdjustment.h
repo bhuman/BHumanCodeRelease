@@ -6,17 +6,18 @@
 
 #pragma once
 
-#include "Platform/BHAssert.h"
-#include "Representations/Configuration/FootOffset.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Sensing/FootSupport.h"
-#include "Representations/Sensing/FsrData.h"
-#include "Representations/Sensing/InertialData.h"
-#include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/TorsoMatrix.h"
+#include "Framework/Settings.h"
 #include "Math/Rotation.h"
 #include "Math/Range.h"
+#include "Platform/BHAssert.h"
+#include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Sensing/FootSupport.h"
+#include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/RobotModel.h"
+#include "Representations/Sensing/SolePressureState.h"
+#include "Representations/Sensing/TorsoMatrix.h"
 #include "Streaming/AutoStreamable.h"
+#include "Streaming/Global.h"
 #include "Tools/Motion/LowPassFilterPR.h"
 
 STREAMABLE(SoleRotationParameter,
@@ -32,19 +33,21 @@ STREAMABLE(SoleRotationParameter,
   (Rangef) timeScaling, /**< Scale swing sole rotation over time. */
   (Rangef) timeScalingRoll, /**< Scale swing sole rotation over time. */
   (Rangef) sideSizeXRotationScaling,
+  (Angle) removeYCompensationAtStart, /**< At the start of the walk step, we prefer a reduction of the compensation by this value (with sign!). */
 
   (Rangea) tiltErrorDiffOffset,
   (float) tiltErrorDiffScaling,
   (Rangea) gyroScaling,
   (Rangea) torsoRange,
   (Rangef) deltaRange,
+  (Rangef) comXRange,
   (Rangef) maxStepRatioToStart,
   (Angle) minGyro,
   (float) minSideStepSize,
   (Rangef) deltaRangeSecondStep,
 
   (Rangef) scalingClipRange, /**< Clip the scaling values into this range. */
-  (Rangef) minMaxSumScaling, /**< Sum of scalings must be bigger than the min value and get scaled between [ûkneeScalingMin .. 1] */
+  (Rangef) minMaxSumScaling, /**< Sum of scalings must be bigger than the min value and get scaled between [kneeScalingMin .. 1] */
 });
 
 STREAMABLE(WalkStepAdjustmentParams,
@@ -53,20 +56,24 @@ STREAMABLE(WalkStepAdjustmentParams,
   (float) minVelX, /**< Min additional feet speed, that the walk adjustment can make in both directions (in mm/s). */
   (float) removeSpeedX, /**< The walk adjustment can be removed with this extra speed (in mm/s). */
   (float) comLowPassRatio, /**< To which ratio keep old com measurement? */
-  (float) unstableBackWalkThreshold, /**< When last max step adjustment was lower than this value, start the gyro balancing with the knee and hip pitch. */
-  (Rangef) desiredFootArea, /**< In which area of the feet can the com move, before the feet must be adjusted to ensure stability (in %)? */
-  (float) hipBalanceBackwardFootArea, /**< In which area of the feet can the com move, while the hip pitch is used to balancing when walking unstable. */
+  (Rangef) desiredFootAreaSmall, /**< In which area of the feet can the com move, before the feet must be adjusted to ensure stability (in %)? */
+  (Rangef) desiredFootAreaBig, /**< In which area of the feet can the com move, before the feet must be adjusted to ensure stability (in %)? */
+  (float) desiredFootAreaForwardOvertime, /**< In which forward area of the feet can the com move, before the feet must be adjusted to ensure stability (in %), after the step is taking too long? */
+  (float) overtimeRange, /**< How long is the max overtime to scale the forward stable area down? */
+  (Rangef) footAreaWalkSpeedScale, /**< Scale the desiredFootArea based on the planned walking direction. */
   (float) unstableWalkThreshold, /**< Thresholds for the lastLeftAdjustment and lastRightAdjustment values to trigger unstable sound. */
   (float) reduceWalkingSpeedTimeWindow, /**< If the step adjustment adjusted the feet too much two separate times in this time duration, then reduce the walking speed. */
+  (bool) useFullSwingSole, /**< If true, the com x-translation does not need to always be inside the swing sole. */
+  (float) swingAcc, /**< Allowed swing accelerations. */
+  (float) supportAcc, /**< Allowed support accelerations. */
+  (bool) useAccelerations, /**< Use adjustment version with accelerations. */
 });
 
 class WalkStepAdjustment
 {
 private:
-  float lowPassFilteredComX; // low pass filtered com in x axis
-  float swingFootXTranslationChange; // last swing x translation change. Used to scale the sole rotation compensation
-  float backwardsWalkingRotationCompensationFactor; // current factor for the back rotation compensation
-  float forwardsWalkingRotationCompensationFactor; // current factor for the forward rotation compensation
+  float motionCycleTime = Global::getSettings().motionCycleTime; /**< Local copy for simple access. */
+  float lowPassFilteredComX = 0.f; // low pass filtered com in x axis
   bool allowTouchingTheBallForBalancing = false; // If the robot is tilting too much forward, allow walking into the ball to prevent falling
 
   int adjustmentStopCounter = 0;
@@ -81,14 +88,11 @@ private:
   RingBuffer<Angle, 3> lastRightRollRequest;
 
 public:
-
   Pose3f lastLeft; // left foot pose from previous motion frame
   Pose3f lastRight; // right foot pose from previous motion frame
-  // Flags used by the walkPhase to determine the "special" gyro balancing in WalkPhaseBase::addGyroBalance()
-  bool isForwardBalance = false;
-  bool forwardBalanceWasActive = false;
-  bool isBackwardBalance = false;
-  bool backwardBalanceWasActive = false;
+
+  float lastMovementChangeLeft = 0.f;
+  float lastMovementChangeRight = 0.f;
 
   float lastLeftAdjustmentX; // left foot adjustment, to prevent falling
   float lastRightAdjustmentX; // right foot adjustment, to prevent falling
@@ -96,12 +100,6 @@ public:
   float highestAdjustmentX; // highest adjustment of current step, with sign. If current adjustment is 0, then highestAdjustment is reset to 0 too.
   float highestNegativeAdjustmentX; // highest negative adjustment of current step
   float previousHighestAdjustmentX; // highest adjustment of previous step, with sign
-
-  float kneeHipBalanceCounter; // count motion phases since the last time the step adjustment adjusted backwards
-
-  float balanceComIsForward = 0.f;
-  float hipBalanceIsSafeBackward; // hip can be used for balancing backward
-  float hipBalanceIsSafeForward; // hip can be used for balancing forward
 
   float delta = 0.f;
 
@@ -126,13 +124,14 @@ public:
    * so foot is actually moving forward/backward, independent of the current feet rotation.
    * @param left The left foot request from the walkGenerator
    * @param right The right foot request from the walkGenerator
-   * @param stepTime the current ratio, of how much the current step finished
+   * @param stepTime the current time, of how much the current step finished
+   * @param stepDuration the planned step duration
    * @param com x- and y-axis of com in foot plane
-   * @param footOffset Defines the edges of the feet
+   * @param footOffset Defines the edges of the feet. Min is for backward, Max for forward. Both are expected to be positive values
    * @param clipForwardPosition max allowed forward position
    * @param isLeftPhase is left foot swing foot
    * @param footSupport the footSupport representation
-   * @param fsrData the fsr pressure data
+   * @param SolePressureState the sole pressure data
    * @param frameInfo the frameInfo representation
    * @param hipRot the additional hip pitch rotation
    * @param isStepAdjustmentAllowed Use the step adjustment, or only update the variables?
@@ -141,12 +140,41 @@ public:
    * @param clipAtBallDistanceX The step adjustment shall not move the feet to close to the ball. Adjustment is clipped below the ball x-translation.
    * @param groundContact does the robot has ground contact?
    * @param walkStepParams the parameters for the walk step adjustment
+   * @param afterWalkKickPhase Was the previous walk phase an InWalkKick?
    */
-  void addBalance(Pose3f& left, Pose3f& right, const float stepTime, const Vector2f& com, const FootOffset& footOffset,
+  void addBalance(Pose3f& left, Pose3f& right, const float stepTime, const float stepDuration, const Vector2f& com, const Rangef& footOffset,
                   const Rangef& clipForwardPosition, const bool isLeftPhase, const FootSupport& footSupport,
-                  const FsrData& fsrData, const FrameInfo& frameInfo, const Angle hipRot, const bool isStepAdjustmentAllowed,
+                  const SolePressureState& solePressureState, const FrameInfo& frameInfo, const Angle hipRot, const bool isStepAdjustmentAllowed,
                   const int reduceWalkingSpeedStepAdjustmentSteps, const Vector2f& ball, const float clipAtBallDistanceX,
-                  const bool groundContact, const WalkStepAdjustmentParams& walkStepParams);
+                  const bool groundContact, const WalkStepAdjustmentParams& walkStepParams, const float forwardWalkingSpeed, const bool afterWalkKickPhase);
+
+  /*
+   * Same as addBalance, but with acceleration calculations.
+   * @param left The left foot request from the walkGenerator
+   * @param right The right foot request from the walkGenerator
+   * @param stepTime the current time, of how much the current step finished
+   * @param stepDuration the planned step duration
+   * @param com x- and y-axis of com in foot plane
+   * @param footOffset Defines the edges of the feet. Min is for backward, Max for forward. Both are expected to be positive values
+   * @param clipForwardPosition max allowed forward position
+   * @param isLeftPhase is left foot swing foot
+   * @param footSupport the footSupport representation
+   * @param SolePressureState the sole pressure data
+   * @param frameInfo the frameInfo representation
+   * @param hipRot the additional hip pitch rotation
+   * @param isStepAdjustmentAllowed Use the step adjustment, or only update the variables?
+   * @param reduceWalkingSpeedStepAdjustmentSteps Number of walking steps to reduce the walking speed
+   * @param ball The ball position relative to the swing foot zero position
+   * @param clipAtBallDistanceX The step adjustment shall not move the feet to close to the ball. Adjustment is clipped below the ball x-translation.
+   * @param groundContact does the robot has ground contact?
+   * @param walkStepParams the parameters for the walk step adjustment
+   * @param afterWalkKickPhase Was the previous walk phase an InWalkKick?
+   */
+  void addBalanceWithAccelerations(Pose3f& left, Pose3f& right, const float stepTime, const float stepDuration, const Vector2f& com, const Rangef& footOffset,
+                                   const Rangef& clipForwardPosition, const bool isLeftPhase, const FootSupport& footSupport,
+                                   const SolePressureState& solePressureState, const FrameInfo& frameInfo, const Angle hipRot, const bool isStepAdjustmentAllowed,
+                                   const int reduceWalkingSpeedStepAdjustmentSteps, const Vector2f& ball, const float clipAtBallDistanceX,
+                                   const bool groundContact, const WalkStepAdjustmentParams& walkStepParams, const float forwardWalkingSpeed, const bool afterWalkKickPhase);
 
   /**
    * Reset the WalkStepAdjustment based on the last one

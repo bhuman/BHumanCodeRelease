@@ -124,7 +124,7 @@ int SoundPlayer::play(const std::string& name)
 {
   SYNC_WITH(soundPlayer);
   soundPlayer.queue.push_back(name.c_str()); // avoid copy-on-write
-  int queuelen = static_cast<int>(soundPlayer.queue.size());
+  int queueLen = static_cast<int>(soundPlayer.queue.size());
   if(!soundPlayer.isRunning())
   {
     soundPlayer.filePrefix = File::getBHDir();
@@ -134,7 +134,7 @@ int SoundPlayer::play(const std::string& name)
   else if(!soundPlayer.playing)
     soundPlayer.sem.post();
 
-  return queuelen;
+  return queueLen;
 }
 
 int SoundPlayer::say(const std::string& text)

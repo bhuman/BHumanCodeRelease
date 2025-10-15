@@ -1,0 +1,10 @@
+call ../Includes/BoosterNormal
+
+# direct goals are allowed, because the robot is alone
+ar directGoals on
+
+# press any key to activate the joystick
+jc press 1 call Includes/Joystick
+jc press 2 call Includes/Joystick
+jc press 3 call Includes/Joystick
+jc press 4 call Includes/Joystick

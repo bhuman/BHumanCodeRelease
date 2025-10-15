@@ -45,7 +45,7 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
 
   request.createPhase = [this](const MotionRequest&, const MotionPhase& lastPhase)
   {
-    const bool lastLeft = theWalkGenerator.wasLastPhaseLeftPhase(lastPhase);
+    const bool lastLeft = lastPhase.type != MotionPhase::stand ? theWalkGenerator.wasLastPhaseLeftPhase(lastPhase) : !motionRequests[currentWalkRequest].isLeftPhaseStart;
     if(indexCurrentWalkRequest == -1)
     {
       if(currentWalkRequest < static_cast<int>(motionRequests.size()))
@@ -62,7 +62,7 @@ void ReplayWalkRequestProvider::update(ReplayWalkRequestGenerator& request)
         {
           // Fail safe, so robot does not damage itself
           const float yTarget = motionRequests[currentWalkRequest].walkRequests[indexCurrentWalkRequest].walkKickStep.keyframe[motionRequests[currentWalkRequest].walkRequests[indexCurrentWalkRequest].walkKickStep.keyframe.size() - 1].stepTarget.translation.y();
-          if(yTarget != 0.f && ((yTarget < 0.f) != lastLeft || (yTarget > 0.f) == lastLeft))
+          if(std::abs(yTarget) > 20.f && ((yTarget < 0.f) != lastLeft || (yTarget > 0.f) == lastLeft))
           {
             OUTPUT_ERROR("Wrong Foot Support");
             indexCurrentWalkRequest = static_cast<int>(motionRequests[currentWalkRequest].walkRequests.size());

@@ -118,7 +118,7 @@ inline ContourPoint decode(const CodedContourPoint& ccp)
 }
 
 //! A contour is a set of contourpoints
-/*! The points can be ordered arbitrarily and also consist of several subcurves.
+/*! The points can be ordered arbitrarily and also consist of several sub-curves.
     However, the code is more efficient if they are sorted vertically.
 
     Additional parameters define a linear scaling of the raw response.
@@ -163,7 +163,7 @@ public:
 };
 
 //! A contour is a set of contour points
-/*! The points can be ordered arbitrarily and also consist of several subcurves.
+/*! The points can be ordered arbitrarily and also consist of several sub-curves.
     However, the code is more efficient if they are sorted vertically.
 
     Additional parameters define a linear scaling of the raw response.
@@ -227,5 +227,5 @@ inline void scaleNormalVector(CodedContourPoint& ccp, int factor)
  */
 void line(Contour& contour, double x0, double y0, double x1, double y1);
 
-//! Adds a line (\c sparse=false) or just its middlepoint (\c sparse=true) to \c contour
+//! Adds a line (\c sparse=false) or just its middle point (\c sparse=true) to \c contour
 void line(Contour& contour, double x0, double y0, double x1, double y1, bool sparse);

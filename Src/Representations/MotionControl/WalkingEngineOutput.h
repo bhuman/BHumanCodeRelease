@@ -23,4 +23,7 @@ STREAMABLE(WalkingEngineOutput,
 
   (Pose2f)(45_deg, 50.f, 50.f) maxPossibleStepSize, /**< The maximum step size that is theoretical possible. DO NOT use for walking. */
   (float)(30.f) maxPossibleBackwardStepSize, /**< The maximum backward speed that is theoretical possible. DO NOT use for walking. */
+
+  (Pose2f)(45_deg, 50.f, 50.f) energyEfficientWalkSpeed, /**< In this walk speed the robot can walk higher and the knees heat up slower. */
+  (Pose2f)(45_deg, 50.f, 50.f) noEfficientWalkSpeed, /**< In this walk speed the robot can only walk at the normal height. */
 });

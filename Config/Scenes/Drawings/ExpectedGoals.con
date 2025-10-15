@@ -8,7 +8,7 @@ set module:ExpectedGoalsProvider:drawHeatmap true
 
 vfd expectedGoals fieldLines
 vfd expectedGoals goalFrame
-vfd expectedGoals representation:TeammatesBallModel
+vfd expectedGoals representation:TeamBallModel
 vfd expectedGoals cognition:RobotPose
 vfd expectedGoals representation:ObstacleModel:rectangle
 vfd expectedGoals cognition:Reset

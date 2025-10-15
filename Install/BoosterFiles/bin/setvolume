@@ -1,0 +1,12 @@
+#!/bin/sh
+
+usage()
+{
+  echo "usage: $0 <playback volume> - Sets the sound volume."
+  exit 1
+}
+
+[ $# -eq 1 ] || usage
+
+pactl set-sink-mute @DEFAULT_SINK@ false >/dev/null 2>&1
+pactl set-sink-volume @DEFAULT_SINK@ ${1}% >/dev/null 2>&1

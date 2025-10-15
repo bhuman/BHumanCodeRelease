@@ -14,6 +14,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/MotionControl/KeyframeMotionRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/Sensing/TorsoMatrix.h"
 #include "Streaming/EnumIndexedArray.h"
 #include <SimRobotCore2D.h>
 
@@ -24,11 +25,12 @@ public:
 
 protected:
   void getRobotPose(Pose2f& robotPose) const override;
+  void getTorsoMatrix(TorsoMatrix& torsoMatrix) override;
   void getImage(CameraImage& cameraImage, CameraInfo& cameraInfo) override;
   void getCameraInfo(CameraInfo& cameraInfo) override;
   void setJointCalibration(const JointCalibration& jointCalibration) override;
   void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const override;
-  void setJointRequest(const JointRequest& jointRequest) const override;
+  void setJointRequest(const JointRequest& jointRequest, const bool isPuppet) const override;
   void toggleCamera() override;
 
   void getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& rawInertialSensorData) override;

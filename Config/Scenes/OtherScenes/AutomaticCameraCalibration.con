@@ -1,4 +1,3 @@
-call Includes/Normal
-call Includes/Views
+call ../Includes/CameraCalibration
 
-call Includes/AutomaticCameraCalibration
+call ../Includes/AutomaticCameraCalibration

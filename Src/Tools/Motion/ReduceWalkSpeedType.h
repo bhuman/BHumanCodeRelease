@@ -8,9 +8,14 @@
 #pragma once
 #include "Streaming/Enum.h"
 
-ENUM(ReduceWalkSpeedType,
-{,
-  noChange, /**< No reduction is applied. */
-  normal, /**< Reduce down to a normal, non competition like, walking speed. */
-  slow, /**< Reduce down to a slow walk speed. */
-});
+namespace ReduceWalkSpeedType
+{
+  ENUM(ReduceWalkSpeedType,
+  {,
+    noChange, /**< No reduction is applied. */
+    normal, /**< Reduce down to a normal, non competition like, walking speed. */
+    slow, /**< Reduce down to a slow walk speed. */
+    timeBased, /**< Reduce the speed based on the time left in current state. */
+    distanceBased, /**< Reduce the speed based on the distance to the target. */
+  });
+}

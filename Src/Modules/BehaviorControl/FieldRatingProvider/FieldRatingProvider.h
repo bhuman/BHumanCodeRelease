@@ -93,8 +93,8 @@ MODULE(FieldRatingProvider,
     (float) drawMaxY,
     (Vector2f)(50.f, 50.f) drawGrid, // size of the draw grid
     (Vector2f)(Vector2f(20.f, 20.f)) drawGridArrow, // size of the draw grid
-    (int)(20) arrowwidth,
-    (float)(0.5f) arrowlenght,
+    (int)(20) arrowWidth,
+    (float)(0.5f) arrowLength,
   }),
 });
 

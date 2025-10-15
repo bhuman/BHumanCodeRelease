@@ -32,7 +32,7 @@ option((SkillBehaviorControl) HandleGoalkeeperCatchBall)
     {
       LookAtBall();
       KeyFrameArms({.motion = ArmKeyFrameRequest::keeperStand});
-      Stand();
+      Stand(/*{.energySavingWalk = false}*/); // TODO We do not want the keeper to stand still, for example in case the keeper is currently fighting for the ball.
     }
   }
 
@@ -49,7 +49,6 @@ option((SkillBehaviorControl) HandleGoalkeeperCatchBall)
       const auto [isNearLeftPost, isNearRightPost] = theLibPosition.isNearPost(theRobotPose);
 
       unsigned interceptionMethods = bit(Interception::stand) | bit(Interception::walk);
-      interceptionMethods |= bit(Interception::genuflectStandDefender);
       if(theLibPosition.isInOwnPenaltyArea(theRobotPose.translation))
       {
         if(!isNearLeftPost)

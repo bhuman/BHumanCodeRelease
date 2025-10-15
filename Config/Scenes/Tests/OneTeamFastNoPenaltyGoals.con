@@ -1,0 +1,5 @@
+call ../Includes/Fast
+
+dr representation:SetupPoses:place
+
+test situation 10 120 goalTeamA & not (penalized robot1) q

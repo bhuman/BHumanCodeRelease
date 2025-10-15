@@ -13,6 +13,8 @@
 #pragma once
 
 #include "Tools/Communication/TeamMessageChannel.h" // include this first to prevent WinSock2.h/Windows.h conflicts
+#include "Representations/BehaviorControl/AgentStates.h"
+#include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/Communication/BHumanMessageOutputGenerator.h"
 #include "Representations/Communication/GameControllerData.h"
@@ -20,9 +22,10 @@
 #include "Representations/Communication/SentTeamMessage.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
+#include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/FallDownState.h"
@@ -35,13 +38,17 @@
 MODULE(TeamMessageHandler,
 {,
   // for calculations
+  REQUIRES(BehaviorParameters),
   REQUIRES(FrameInfo),
   REQUIRES(GameControllerData),
   REQUIRES(MotionInfo),
+  USES(AgentStates),
+  USES(FieldBall),
   USES(GameState),
+  USES(ExtendedGameState),
   USES(MotionRequest),
   USES(TeamData),
-  USES(TeammatesBallModel),
+  USES(TeamBallModel),
 
   // extract data to send
   REQUIRES(FallDownState),
@@ -55,7 +62,7 @@ MODULE(TeamMessageHandler,
   USES(StrategyStatus),
   USES(Whistle),
   USES(IndirectKick),
-  USES(InitialToReady),
+  USES(RefereeSignal),
 
   PROVIDES(BHumanMessageOutputGenerator),
   PROVIDES(ReceivedTeamMessages),
@@ -66,12 +73,15 @@ MODULE(TeamMessageHandler,
 
   LOADS_PARAMETERS(
   {,
-    (int) minSendInterval, /**<  Minimum time in ms between two messages that are sent to the teammates */
+    (int) minSendInterval, /**< Minimum time in ms between two messages that are sent to the teammates */
+    (float) minTeamSendIntervalFactor, /**< When the team is currently over its budget, the whole team can only send with the normal expected send rate times this factor. */
+    (float) reduceBudgetMalusTime, /**< Start reducing the send interval further, if we can not reach the normal limit after this time in s. */
     (int) durationOfHalf, /**< Duration of a half in ms. */
     (unsigned) overallMessageBudget, /**< The message budget available for the whole game. */
     (unsigned) normalMessageReserve, /**< A reserve kept from the budget by normal messages, i.e. at the end of the game, this number of messages should be unused. */
     (unsigned) priorityMessageReserve, /**< A (smaller) reserve kept from the budget by priority messages to allow sending priority messages if normal messages cannot be sent. */
     (int) lookahead, /**< A time in ms in the future in which the message budget has to be kept. */
+    (int) maxOvertime, /**< The time in for how long we expect a overtime can be. */
     (float) positionThreshold, /**< How much must positions have changed at least to be considered as such (in mm)? */
     (Angle) bearingThreshold, /**< How much must angles to positions have changed at least to be considered as such (in radians)? */
     (float) assumedObservationHeight, /**< Height robots are assumed to observe the field (in mm). */
@@ -81,8 +91,9 @@ MODULE(TeamMessageHandler,
     (int) disappearedThreshold, /**< Threshold between disappeared and not disappeared (in ms). Crossing it initiates sending. */
     (int) ignoreWhistleBeforeEndOfHalf, /**< Time before the end of a half after which the whistle is not sent anymore (in ms). */
     (int) maxWhistleSendDelay, /**< The time after which whistle messages are not sent anymore (in ms). */
+    (int) maxRefereeSendDelay, /**< The time after which referee signals are not sent anymore (in ms). */
     (int) minTimeBetween2RejectSounds, /**< Time in ms after which another sound output is allowed */
-    (int) minTimeBallIsNotNearTeamBall, /**< Only send based on diferrences between own ball and team ball, if this difference remains for this time (in ms). */
+    (int) minTimeBallIsNotNearTeamBall, /**< Only send based on differences between own ball and team ball, if this difference remains for this time (in ms). */
     (float) teamBallMaxPositionThreshold, /**< Max position threshold for own ball distance to the team ball. */
     (Rangef) teamBallDistanceInterpolationRange, /**< Interpolate the position threshold for the team ball based on this distance of our own ball. */
     (Rangei) sendDelayRange, /**< Delay sending messages between those time windows. */
@@ -182,7 +193,8 @@ private:
   unsigned timeWhenLastSendTryStarted = 0; /**< Timestamp when we last tried to send a message, but the delay condition was not fulfilled. */
 
   // output stuff
-  unsigned timeWhenLastSent = 0;
+  unsigned timeWhenLastSent = 0; /**< Last time we send a message. */
+  unsigned timeWhenLastTeamSent = 0; /** Last time the team send a message. */
 
   void update(BHumanMessageOutputGenerator& outputGenerator) override;
   bool writeMessage(BHumanMessageOutputGenerator& outputGenerator, TeamMessageChannel::Container* const m);
@@ -205,8 +217,10 @@ private:
 
   static void regTeamMessage();
 
-  unsigned lastReceivedBudget = 0;
-  unsigned ownModeledBudget = 0;
+  unsigned lastReceivedBudget = 0; /**< Budget based on the last game controller package. */
+  unsigned ownModeledBudget = 0; /**< Budget based on our own send and received messages. */
+
+  bool wasPenalized = false; /**< Was the robot penalized? */
 
   void update(ReceivedTeamMessages& receivedTeamMessages) override;
   void update(SentTeamMessage& theSentTeamMessage) override {theSentTeamMessage = lastSent;}
@@ -281,6 +295,27 @@ private:
   bool withinNormalBudget() const;
 
   /**
+   * Checks whether a message can be send, while currently violating
+   * the floating message budget. This check targets to keep the
+   * "normalMessageReserve" at the end of the game, while also still
+   * allowing sending messages at a slower rate.
+   * @return Ok to send a message?
+   */
+  bool withinSlowedBudget() const;
+
+  /**
+   * Combines withinNormalBudget() and withinSlowedBudget() for better readability.
+   * @return Ok to send a message?
+   */
+  bool withinOverallBudget() const;
+
+  /**
+   * Returns the time assumed to be remained to be played
+   * @return Time remained to be played
+   */
+  int remainingTime(const int timeOffset) const;
+
+  /**
    * Checks whether a priority message could be sent without violating
    * the message budget. This check targets to keep the
    * "priorityMessageReserve" at the end of the game.
@@ -290,6 +325,22 @@ private:
 
   /** Was a whistle detected since the last message was sent? */
   bool whistleDetected() const;
+
+  /** Was a relevant referee signal detected since the last message was sent? */
+  bool refereeSignalDetected() const;
+
+  /** Is the robot freshly unpenalized, finished localisating itself and should give the team this information instantly? */
+  bool returnFromPenaltyRobotPoseCommunication() const;
+
+  /** Is the robot unpenalized long enough? */
+  bool allowCommunicationAfterPenalty() const;
+
+  /**
+   * Did teammates detect a specific referee signal?
+   * @param signal The referee signal in question.
+   * @return Was it detected by a teammate?
+   */
+  bool teammatesDetectedRefereeSignal(const RefereeSignal::Signal signal) const;
 
   /** Did the behavior status change since the last message was sent? */
   bool behaviorStatusChanged() const;
@@ -317,6 +368,12 @@ private:
 
   /** Check if we need to delay the sending. */
   bool checkTimeDelay() const;
+
+  /** Update the interval in which the team is allowed to send. */
+  float calcTeamSendInterval() const;
+
+  /** Calculate the current budget limit, meaning how many messages should be still have left. */
+  float calcCurrentBudgetLimit(const int timeOffset) const;
 
   /** Reset timestamp to start delaying messages once again. */
   void setTimeDelay();

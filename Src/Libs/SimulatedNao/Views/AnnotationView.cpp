@@ -4,7 +4,7 @@
  */
 
 #include "AnnotationView.h"
-#include "SimulatedNao/LogPlayer.h"
+#include "LogPlayback/LogPlayer.h"
 #include "SimulatedNao/RoboCupCtrl.h"
 #include "SimulatedNao/RobotConsole.h"
 #include "Platform/SystemCall.h"
@@ -160,25 +160,25 @@ void AnnotationWidget::update()
     if(view.info.newAnnotations.size() > 5) // Adding multiple rows is slow with sorting activated
       table->setSortingEnabled(false);
 
-    for(const AnnotationInfo::AnnotationData& data : view.info.newAnnotations)
+    for(const Annotation& annotation : view.info.newAnnotations)
     {
-      const QString name = data.name.c_str();
-      const QString annotation = data.annotation.c_str();
+      const QString name = annotation.name.c_str();
+      const QString description = annotation.description.c_str();
 
-      if(data.name == "CLEAR")
+      if(annotation.name == "CLEAR")
       {
         table->clearContents();
         annotationNumbers.clear();
       }
-      else if(annotationNumbers.find(data.annotationNumber) == annotationNumbers.end())
+      else if(annotationNumbers.find(annotation.number) == annotationNumbers.end())
       {
-        annotationNumbers.insert(data.annotationNumber);
+        annotationNumbers.insert(annotation.number);
         const int rowCount = table->rowCount();
         table->insertRow(rowCount);
-        QTableWidgetItem* item = new NumberTableWidgetItem(data.frame);
+        QTableWidgetItem* item = new NumberTableWidgetItem(annotation.frame);
         table->setItem(rowCount, 0, item);
         table->setItem(item->row(), 1, new QTableWidgetItem(name));
-        table->setItem(item->row(), 2, new QTableWidgetItem(annotation));
+        table->setItem(item->row(), 2, new QTableWidgetItem(description));
       }
     }
     view.info.newAnnotations.clear();
@@ -190,20 +190,20 @@ void AnnotationWidget::update()
   table->update();
 }
 
-void AnnotationWidget::handleAnnotation(const AnnotationInfo::AnnotationData& data)
+void AnnotationWidget::handleAnnotation(const Annotation& annotation)
 {
   if(view.stopOnFilter)
   {
-    const QString name = QString(data.name.c_str()).toLower();
-    const QString annotation = QString(data.annotation.c_str()).toLower();
+    const QString name = QString(annotation.name.c_str()).toLower();
+    const QString description = QString(annotation.description.c_str()).toLower();
 
     if(view.filterIsRegEx)
     {
       QRegularExpression regex(view.filter);
-      if(regex.globalMatch(name).hasNext() || regex.globalMatch(annotation).hasNext())
+      if(regex.globalMatch(name).hasNext() || regex.globalMatch(description).hasNext())
         simStop();
     }
-    else if(name.contains(view.filter) || annotation.contains(view.filter))
+    else if(name.contains(view.filter) || description.contains(view.filter))
       simStop();
   }
 }

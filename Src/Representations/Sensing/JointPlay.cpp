@@ -20,6 +20,8 @@ void JointPlay::draw() const
   PLOT("representation:JointPlay:play:lower:lAnklePitch", jointState[Joints::lAnklePitch].requestBoundary.min.toDegrees());
   PLOT("representation:JointPlay:play:upper:lAnkleRoll", jointState[Joints::lAnkleRoll].requestBoundary.max.toDegrees());
   PLOT("representation:JointPlay:play:lower:lAnkleRoll", jointState[Joints::lAnkleRoll].requestBoundary.min.toDegrees());
+  PLOT("representation:JointPlay:play:upper:rHipYawPitch", jointState[Joints::rHipYawPitch].requestBoundary.max.toDegrees());
+  PLOT("representation:JointPlay:play:lower:rHipYawPitch", jointState[Joints::rHipYawPitch].requestBoundary.min.toDegrees());
   PLOT("representation:JointPlay:play:upper:rHipRoll", jointState[Joints::rHipRoll].requestBoundary.max.toDegrees());
   PLOT("representation:JointPlay:play:lower:rHipRoll", jointState[Joints::rHipRoll].requestBoundary.min.toDegrees());
   PLOT("representation:JointPlay:play:upper:rHipPitch", jointState[Joints::rHipPitch].requestBoundary.max.toDegrees());

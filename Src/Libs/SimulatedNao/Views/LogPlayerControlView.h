@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SimRobot.h"
-#include "SimulatedNao/LogPlayer.h"
+#include "LogPlayback/LogPlayer.h"
 
 #include <QIcon>
 #include <QLineEdit>

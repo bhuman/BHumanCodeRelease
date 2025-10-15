@@ -39,8 +39,10 @@ void ClearTargetProvider::update(ClearTarget& theClearTarget)
   {
     return theRobotPose.translation + Vector2f::polar(theKickInfo[bestKick].range.max, bestSector.angleRange.getCenter());
   };
-  theClearTarget.getRating = [this]() -> float
+  theClearTarget.getRating = [&]() -> float
   {
+    if(theFrameInfo.time != timeWhenBestKickWasUpdated)
+      static_cast<void>(theClearTarget.getKickType());
     if(bestKick != KickInfo::numOfKickTypes)
     {
       return getAngleRating(bestSector.angleRange.getCenter(), theFieldBall.positionOnField, theKickInfo[bestKick].range.max);
@@ -58,14 +60,10 @@ bool ClearTargetProvider::isNotNearLine(const Vector2f targetPosition)
     LINE("option:ClearBall:borders", theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine, theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine, 20, Drawings::PenStyle::solidPen, ColorRGBA::blue);
     LINE("option:ClearBall:borders", theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine, theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine, 20, Drawings::PenStyle::solidPen, ColorRGBA::yellow);
   }
-  if(targetPosition.x() > theFieldDimensions.xPosOwnGoalLine + minDistanceToXLine
-     && targetPosition.x() < theFieldDimensions.xPosOpponentGoalLine - minDistanceToXLine
-     && targetPosition.y() < theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine
-     && targetPosition.y() > theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine)
-  {
-    return true;
-  }
-  return false;
+  return targetPosition.x() > theFieldDimensions.xPosOwnGoalLine + minDistanceToXLine
+         && targetPosition.x() < theFieldDimensions.xPosOpponentGoalLine - minDistanceToXLine
+         && targetPosition.y() < theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine
+         && targetPosition.y() > theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine;
 }
 
 float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vector2f basePosition, const float targetDistance,
@@ -81,7 +79,7 @@ float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vect
 
   //calculate field factor of current position
   //the factor is 1 in ownPenaltyArea, 1...0 between ownPenaltyArea and HalfwayLine and 0 in oppositeHalf
-  //except when it is a own freekick
+  //except when it is a own free kick
   float fieldFactor = mapToRange(theFieldBall.positionOnField.x(), theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.xPosHalfwayLine, 1.f, 0.f);
   if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
   {
@@ -249,11 +247,11 @@ void ClearTargetProvider::calcBestKick()
     sectors.push_back(item);
   sectors.remove_if([](SectorWheel::Sector item) { return item.angleRange.getSize() >= 30_deg; });
 
-  float bestXG = 0.f;//best xG of all sectors and kicktypes
+  float bestXG = 0.f;//best xG of all sectors and kick types
   float leftTeammateBonus = 0.0f; //when the current sector is obstacle or teammate we add or sub a bonus to the next sector if it is a free one
   bool applyRightTeamMateBonus = false;//when the current sector is free, we let the next sector know, that it has to add or sub a bonus to the current sector if next sector is obstacle/teammate
-  float goalRating = 0.f;//xG of current sector and shottype
-  KickInfo::KickType lastBestKick = KickInfo::numOfKickTypes; //kicktype of last sector
+  float goalRating = 0.f;//xG of current sector and shot type
+  KickInfo::KickType lastBestKick = KickInfo::numOfKickTypes; //kick type of last sector
   SectorWheel::Sector lastBestSector; //last sector
   Pose2f lastBestKickPoseRelative;//pose of last sector
   float bestXGOfSector = 0.0f;//best XG of last sector
@@ -364,7 +362,7 @@ void ClearTargetProvider::calcBestKick()
       applyRightTeamMateBonus = false;
     }
   }
-  //save last sector and kicktype for hysteresis
+  //save last sector and kick type for hysteresis
   lastKickType = bestKick;
   lastSector = bestSector;
   //print calculated best value of each free sector

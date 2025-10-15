@@ -11,11 +11,13 @@
 option((SkillBehaviorControl) CalibrationControl,
        defs((int)(3000) lookAroundDuration, /**< Min duration to look around before starting the calibration process. */
             (int)(6000) lookAroundDurationMax, /**< Max duration to look around before starting the calibration process. */
-            (int)(3) notMovingCycles), /**< Sample size from gyro state times this factor to check if we can calibrate. */
+            (int)(3) notMovingCycles, /**< Sample size from gyro state times this factor to check if we can calibrate. */
+            (int)(5000) imuInfoTextTimeDelay, /**< Start saying the imu info after the robot tried to calibrate for this time. */
+            (bool)(false) isManualCalibrationActive), /**< Whether the manual camera calibration is active. */
        vars((bool)(false) cameraCalibrationFinished,
             (bool)(false) imuCalibrationFinished,
             (bool)(false) initialized,
-            (CalibrationRequest)({}) theCalibrationRequest))
+            (CalibrationRequest) theCalibrationRequest))
 {
   common_transition
   {
@@ -42,6 +44,7 @@ option((SkillBehaviorControl) CalibrationControl,
       {
         initialized = true;
         theCalibrationRequest = {};
+        theCalibrationRequest.preciseJointPositions = true;
         CalibrateRobot({.request = theCalibrationRequest });
       }
       Stand();
@@ -93,7 +96,7 @@ option((SkillBehaviorControl) CalibrationControl,
     }
     action
     {
-      if(theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) < theIMUValueState.filterTimeWindow * notMovingCycles) // the time should be less than the robot needs to say the text
+      if(state_time > imuInfoTextTimeDelay && theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) < theIMUValueState.filterTimeWindow * notMovingCycles) // the time should be less than the robot needs to say the text
         Say({.text = "Please do not move me. I need to calibrate my i m u"});
       AutomaticIMUCalibration();
     }
@@ -111,7 +114,14 @@ option((SkillBehaviorControl) CalibrationControl,
     }
     action
     {
-      AutonomousCameraCalibration();
+      if(isManualCalibrationActive)
+      {
+        ManualCameraCalibration();
+      }
+      else
+      {
+        AutonomousCameraCalibration();
+      }
     }
   }
 

@@ -793,7 +793,7 @@ inline const char* DrawingManager::getTypeName(char id) const
   while(false)
 
 /**
- * A macro that sends a grid that has reactangle cells of different color intensity
+ * A macro that sends a grid that has rectangle cells of different color intensity
  * @param id A drawing id
  * @param x The x-coordinate of the grid center
  * @param y The y-coordinate of the grid center

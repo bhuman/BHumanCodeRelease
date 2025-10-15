@@ -51,7 +51,7 @@ MODULE(BallSpotsProvider,
     (float) greenPercent, //< the minimum ratio of detected green compared to all considered pixels in the green check
 
     (bool) allowScanLineTopSpotFitting, // Is it allowed to find a spot on top of a scanLine?
-    (bool) lessStrictChecks, // Allow more Ballspots?
+    (bool) lessStrictChecks, // Allow more ball spots?
   }),
 });
 

@@ -8,54 +8,58 @@
 
 #include "Debugging/Annotation.h"
 #include "Framework/Module.h"
+#include "Framework/Settings.h"
 #include "Math/Geometry.h"
 #include "Math/UnscentedKalmanFilter.h"
 #include "Representations/Configuration/MassCalibration.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/InertialSensorData.h"
 #include "Representations/Sensing/RobotModel.h"
+#include "Representations/Sensing/SolePressureState.h"
+#include "Streaming/Global.h"
 #include "Tools/BehaviorControl/Cabsl.h"
 
 MODULE(FallDownStateProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(FsrSensorData),
   REQUIRES(GroundContactState),
   REQUIRES(InertialData),
   REQUIRES(InertialSensorData),
   REQUIRES(MassCalibration),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
+  REQUIRES(SolePressureState),
   PROVIDES(FallDownState),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (Angle)(10_deg) maxGyroToRegainStableState,
-    (Angle)(100_deg) maxVelForPrediction,
-    (bool)(true) useInertiaData,
-    (bool)(false) playSounds,
-    (float)(.9f) velocityDiscountFactor,
-    (float)(0.1f) forwardingTime,
-    (float)(0.5f) minNormalizedFallVectorScalar,
-    (float)(0.65f) minFallVectorScalar,
-    (float)(0.91f) minPredictNormalizedFallVectorScalar,
-    (float)(1.1f) minPredictFallVectorScalar,
-    (float)(10.f) minComDistanceToFootCenter,
-    (float)(110.f) minComDistanceToDetetctFall,
-    (float)(225.f) maxTorsoHeightToKeepSquatting,
-    (float)(210.f) minTorsoHeightToKeepUpright,
-    (float)(3.f) sigmaArea,
-    (int)(150) minTimeBetweenSound,
-    (int)(0) minTimeWithoutGroundContactToAssumePickup,
-    (Vector2a)(55_deg, 55_deg) minTorsoOrientationToDetermineDirection,
-    (int)(5000) maxTimeStaggering, /**< If the robot stays this long staggering, something is wrong and the filter is reset. */
+    (Angle) maxGyroToRegainStableState,
+    (Angle) maxVelForPrediction,
+    (bool) useInertiaData,
+    (bool) playSounds,
+    (float) velocityDiscountFactor,
+    (float) forwardingTime,
+    (float) minNormalizedFallVectorScalar,
+    (float) minFallVectorScalar,
+    (float) minPredictNormalizedFallVectorScalar,
+    (float) minPredictFallVectorScalar,
+    (float) minComDistanceToFootCenter,
+    (float) minComDistanceToDetectFall,
+    (float) maxTorsoHeightToKeepSquatting,
+    (float) minTorsoHeightToKeepUpright,
+    (float) sigmaArea,
+    (int) minTimeBetweenSound,
+    (int) minTimeWithoutGroundContactToAssumePickup,
+    (Vector2a) minTorsoOrientationToDetermineDirection,
+    (int) maxTimeStaggering, /**< If the robot stays this long staggering, something is wrong and the filter is reset. */
 
-    (Vector3f)(16.f, 16.f, 16.f) positionProcessDeviation, //  dynamic noise density of the com-position
-    (Vector2a)(Vector2a::Constant(22_deg)) velocityProcessDeviation, // dynamic noise density of the velocity
-    (Vector3f)(2.f, 2.f, 2.f) positionMeasurementDeviation, // measure noise of the com position
-    (Vector2a)(Vector2a::Constant(3_deg)) velocityMeasurementDeviation, // measure noise of the gyro
+    (Vector3f) positionProcessDeviation, //  dynamic noise density of the com-position
+    (Vector2a) velocityProcessDeviation, // dynamic noise density of the velocity
+    (Vector3f) positionMeasurementDeviation, // measure noise of the com position
+    (Vector2a) velocityMeasurementDeviation, // measure noise of the gyro
   }),
 });
 
@@ -93,7 +97,7 @@ private:
 
   void initUKF(const Vector5f& initMean);
   void updateUKF();
-  void dynamicModel(const Pose3f& originToTorso, const Matrix3f& I, Vector5f& state, float dt = Constants::motionCycleTime) const;
+  void dynamicModel(const Pose3f& originToTorso, const Matrix3f& I, Vector5f& state, float dt = Global::getSettings().motionCycleTime) const;
   Matrix3f calcInertiaTensor(const Pose3f& originToTorso) const;
   Vector5f measure() const;
   void convertToNewOrigin(const Pose3f& originToTorso, const Pose3f& newOriginToTorso, Vector5f& state) const;

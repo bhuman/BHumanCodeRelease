@@ -13,6 +13,7 @@
 #include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
@@ -23,6 +24,7 @@
 
 MODULE(PathPlannerProvider,
 {,
+  REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
@@ -34,13 +36,13 @@ MODULE(PathPlannerProvider,
   PROVIDES(PathPlanner),
   LOADS_PARAMETERS(
   {,
-    (float) goalPostRadius, /**< Radius to walk around a goal post (in mm). */
+    (float) goalPostDistance, /**< Distance to walk around a goal post (in mm). */
     (float) uprightRobotRadius, /**< Radius to walk around an upright robot (in mm). */
     (float) fallenRobotRadius, /**< Radius to walk around a fallen robot (in mm). */
     (float) readyRobotRadius, /**< Radius to walk around a robot in ready state (in mm). */
-    (float) centerCircleRadius, /**< If != 0: Radius to walk around a the center circle in ready state in defensive kick-off (in mm). */
+    (float) centerCircleDistance, /**< If != 0: Radius to walk around a the center circle in ready state in defensive kick-off (in mm). */
     (float) penaltyAreaRadius, /**< Radius to walk around a corner of the own penalty area (in mm). */
-    (float) ballRadius, /**< Radius to walk around the ball (in mm). */
+    (float) ballDistance, /**< Distance to walk around the ball (in mm). */
     (float) freeKickRadius, /**< Radius to walk around the ball when defending a free kick (in mm). */
     (float) wrongBallSideCostFactor, /**< How much of a full circle is it more expensive to pass the ball on the wrong side? */
     (float) wrongBallSideRadius, /**< How far from the ball is passing it on the wrong side penalized? */
@@ -49,6 +51,7 @@ MODULE(PathPlannerProvider,
     (float) radiusAvoidanceTolerance, /**< Radius range in which robot is partially pushed away (in mm). */
     (float) rotationPenalty, /**< Penalty factor for rotating towards first intermediate target in mm/radian. Stabilizes path selection. */
     (float) switchPenalty, /**< Penalty for selecting a different turn direction around first obstacle in mm. */
+    (bool) useFastestWalkLeaderboardBarriers, /**< Whether the barriers for the Fastest Walk Leaderboard Challenge should be used. */
   }),
 });
 
@@ -215,7 +218,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
      * @param dummy Is this just a helper and should not be transformed into a real edge?
      */
     Tangent(const Edge& edge, Side side, float circleDistance, bool dummy)
-    : Edge(edge), side(side), circleDistance(circleDistance), dummy(dummy) {}
+      : Edge(edge), side(side), circleDistance(circleDistance), dummy(dummy) {}
   };
 
   using Tangents = std::array<std::vector<Tangent>, numOfRotations>;
@@ -256,8 +259,9 @@ class PathPlannerProvider : public PathPlannerProviderBase
    * @param target The target the robot tries to reach.
    * @param excludeOwnPenaltyArea Filter out obstacles inside the own penalty area and the own goal.
    * @param excludeOpponentPenaltyArea Filter out obstacles inside the opponents penalty area and the own goal.
+   * @param excludeCenterCircle Add the center circle as an obstacle.
    */
-  void createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea);
+  void createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle);
 
   /**
    * Determine the radius of an obstacle.

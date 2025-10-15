@@ -20,6 +20,21 @@
 #include "Streaming/Global.h"
 #include <algorithm>
 
+GameState::State GameState::stateForOtherTeam(const State state)
+{
+  std::string name = TypeRegistry::getEnumName(state);
+  size_t pos = name.find("wn");
+  if(pos != std::string::npos)
+    name.replace(pos, 2, "pponent");
+  else
+  {
+    pos = name.find("pponent");
+    if(pos != std::string::npos)
+      name.replace(pos, 7, "wn");
+  }
+  return static_cast<State>(TypeRegistry::getEnumValue(typeid(State).name(), name));
+}
+
 static void drawChar(int character, const Vector3f& pos, float size, [[maybe_unused]] const ColorRGBA& color)
 {
   static const Vector3f points[8] =

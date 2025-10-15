@@ -21,7 +21,7 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Math/RingBufferWithSum.h"
@@ -41,7 +41,7 @@ MODULE(LibLookActiveProvider,
   REQUIRES(ObstacleModel),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotPose),
-  REQUIRES(TeammatesBallModel),
+  REQUIRES(TeamBallModel),
   REQUIRES(MotionInfo),
   REQUIRES(TorsoMatrix),
   PROVIDES(LibLookActive),
@@ -65,7 +65,7 @@ MODULE(LibLookActiveProvider,
     (float) maxObstacleDistanceToBeLookedAt,
     (int) maxObstacleAgeToBeLookedAt,
     (Angle) cameraChoiceHysteresis,
-    (float) teammatesBallModelError, /**< estimation of the worst-case TeammatesBallModel error */
+    (float) teamBallModelError, /**< estimation of the worst-case TeamBallModel error */
   }),
 });
 

@@ -2,9 +2,8 @@
 # Downloads all log files from one or more robots
 
 BASEPATH=$(cd "$(dirname "$(which "$0")")" && pwd)
-LOGPATH=/home/nao/logs/
 
-# Try to make size calculation the the same locally and on the robot.
+# Try to make size calculation the same locally and on the robot.
 # Does not seem to work perfectly.
 DUOPTIONS_LINUX="-hc --apparent-size"
 if [ "$(uname)" = "Darwin" ]; then
@@ -27,22 +26,26 @@ usage()
 download()
 {
   local IP=$1
+
+  source "$BASEPATH/setupTarget" "$IP"
+  LOGPATH=/home/$TARGET_USER/logs/
+
   if $DOWNLOAD; then
-    local NAME="$(ssh $SSHOPTIONS -o ConnectTimeout=2 nao@$IP "hostname")"
+    local NAME="$(ssh $SSHOPTIONS -o ConnectTimeout=2 $TARGET_USER@$IP "hostname")"
     if [ -z "$NAME" ]; then
       echo >&2 "error: could not get name from robot!"
       RETURN=1
       return
     fi
 
-    ssh $SSHOPTIONS nao@$IP "test -d $LOGPATH"
+    ssh $SSHOPTIONS $TARGET_USER@$IP "test -d $LOGPATH"
     if [ $? -ne 0 ]; then
       echo >&2 "error: log file directory does not exist on robot!"
       RETURN=1
       return
     fi
 
-    if [ -z "$(ssh $SSHOPTIONS nao@$IP "ls $LOGPATH | grep .log")" ]; then
+    if [ -z "$(ssh $SSHOPTIONS $TARGET_USER@$IP "ls $LOGPATH | grep .log")" ]; then
       echo "no log files on robot"
       return # No error
     fi
@@ -51,10 +54,10 @@ download()
     mkdir -p "$LOCALPATH"
   fi
 
-  if [ ! -z "$(ssh $SSHOPTIONS nao@$IP "pgrep bhuman")" ]; then
+  if [ ! -z "$(ssh $SSHOPTIONS $TARGET_USER@$IP "pgrep bhuman")" ]; then
     local RESTART=true
     echo "stopping bhuman"
-    ssh $SSHOPTIONS nao@$IP "systemctl --user stop bhuman.service > /dev/null"
+    ssh $SSHOPTIONS $TARGET_USER@$IP "systemctl --user stop bhuman.service > /dev/null"
   else
     local RESTART=false
   fi
@@ -62,10 +65,10 @@ download()
   if $DOWNLOAD; then
     echo "downloading log files..."
 
-    SIZE=$(ssh $SSHOPTIONS nao@$IP "du $DUOPTIONS_LINUX $LOGPATH/*.log" | tail -n 1 | awk '{print $1}')
+    SIZE=$(ssh $SSHOPTIONS $TARGET_USER@$IP "du $DUOPTIONS_LINUX $LOGPATH/*.log" | tail -n 1 | awk '{print $1}')
 
     # -p = preserve original date and time
-    scp $SSHOPTIONS -p nao@$IP:$LOGPATH*.log "$LOCALPATH" >/dev/null &
+    scp $SSHOPTIONS -p $TARGET_USER@$IP:$LOGPATH*.log "$LOCALPATH" >/dev/null &
     SCPPID=$!
 
     while true; do
@@ -84,12 +87,12 @@ download()
 
   if $DELETE; then
     echo "deleting log files from robot"
-    ssh $SSHOPTIONS nao@$IP "rm -f $LOGPATH*"
+    ssh $SSHOPTIONS $TARGET_USER@$IP "rm -f $LOGPATH*"
   fi
 
   if $RESTART; then
     echo "starting bhuman"
-    ssh $SSHOPTIONS nao@$IP "systemctl --user start bhuman.service > /dev/null"
+    ssh $SSHOPTIONS $TARGET_USER@$IP "systemctl --user start bhuman.service > /dev/null"
   fi
 
   return 0

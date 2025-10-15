@@ -28,7 +28,7 @@ option(Dive, args((MotionRequest::Dive::Request) request));
  * @param obstacleAvoidance The obstacle avoidance request
  * @param alignPrecisely Whether the robot should align more precisely than usual
  * @param kickLength The distance the ball shall roll (in mm)
- * @param preStepType Is a prestep for the InWalkKick allowed?
+ * @param preStepType Is a pre-step for the InWalkKick allowed?
  * @param turnKickAllowed Does the forward kick not need to align with the kick direction?
  * @param directionPrecision The allowed deviation of the direction in which the ball should go. If default, the WalkToBallAndKickEngine uses its own precision.
  */
@@ -40,6 +40,9 @@ option(Dribble, args((Angle) targetDirection,
                      (PreStepType)(PreStepType::allowed) preStepType,
                      (bool)(true) turnKickAllowed,
                      (const Rangea&)({0_deg, 0_deg}) directionPrecision));
+
+/** This skill frees the ball from between the legs of the robot. */
+option(FreeBallHolding, args((Angle)(0_deg) targetDirection));
 
 /**
  * This skill executes a key frame motion with the arms.
@@ -97,7 +100,7 @@ option(LookAtAngles, args((Angle) pan,
                           (bool)(false) calibrationMode));
 
 /** This skill moves the head so that the ball is focused by one camera. */
-option(LookAtBall);
+option(LookAtBall, args((HeadMotionRequest::CameraControlMode)(HeadMotionRequest::autoCamera) camera));
 
 /**
  * This skill moves the head such that a specified (robot-relative) point is focused by one camera.
@@ -133,7 +136,7 @@ option(LookLeftAndRight, args((bool)(true) startLeft,
 option(LookAtBallAndTarget, args((bool)(true) startBall,
                                  (Angle)(23_deg) tilt,
                                  (Angle)(10_deg) thresholdAngle,
-                                 (Vector2f)(Vector2f::Zero()) walkingDirection));
+                                 (const Vector2f&)({0.f, 0.f}) walkingDirection));
 
 /**
  * This skill sets the passTarget member of the BehaviorStatus.
@@ -173,7 +176,7 @@ option(PointAt, args((const Vector3f&) localPoint,
  * @param target The target the robot is walking towards.
  * @param speed The desired relative speed.
  */
-option(PublishMotion, args((const Vector2f) target,
+option(PublishMotion, args((const Vector2f&) target,
                            (const Pose2f&)({1.f, 1.f, 1.f}) speed));
 
 /** This skill replays walk phases. */
@@ -198,20 +201,26 @@ option(Special, args((MotionRequest::Special::Request) request));
 /**
  * This skill makes the robot stand.
  * @param high Whether the knees should be stretched
+ * @param energySavingWalk Shall the energy saving walking be active?
  */
-option(Stand, args((bool)(false) high));
+option(Stand, args((bool)(false) high,
+                   (bool)(true) energySavingWalk));
 
 /**
  * This skill walks with a specified speed.
  * @param speed The walking speed in radians/s for the rotation and mm/s for the translation
+ * @param energySavingWalk Shall the energy saving walking be active?
  */
-option(WalkAtAbsoluteSpeed, args((const Pose2f&) speed));
+option(WalkAtAbsoluteSpeed, args((const Pose2f&) speed,
+                                 (bool)(false) energySavingWalk));
 
 /**
  * This skill walks with a specified speed relative to the configured maximum.
  * @param speed The walking speed as ratio of the maximum speed in [0, 1]
+ * @param energySavingWalk Shall the energy saving walking be active?
  */
-option(WalkAtRelativeSpeed, args((const Pose2f&) speed));
+option(WalkAtRelativeSpeed, args((const Pose2f&) speed,
+                                 (bool)(false) energySavingWalk));
 
 /**
  * This skill walks to the ball and kicks it.
@@ -221,7 +230,7 @@ option(WalkAtRelativeSpeed, args((const Pose2f&) speed));
  * @param kickLength The distance the ball shall roll (in mm)
  * @param speed The walking speed as ratio of the maximum speed in [0, 1]
  * @param obstacleAvoidance The obstacle avoidance request
- * @param preStepType Is a prestep for the InWalkKick allowed?
+ * @param preStepType Is a pre-step for the InWalkKick allowed?
  * @param turnKickAllowed Does the forward kick not need to align with the kick direction?
  * @param directionPrecision The allowed deviation of the direction in which the ball should go. If default, the WalkToBallAndKickEngine uses its own precision.
  */
@@ -243,11 +252,13 @@ option(WalkToBallAndKick, args((Angle) targetDirection,
  * @param obstacleAvoidance The obstacle avoidance request
  * @param keepTargetRotation Whether the target rotation should be headed for all the time (instead of allowing motion to plan it)
  * @param targetOfInterest If set, it is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. (Only applies for side walk)
- * @param forceSideWalking If true, force sidewalking
+ * @param sideWalkingRequest Requests how side walking is allowed to be used
+ * @param energySavingWalk Shall the energy saving walking be active?
  */
 option(WalkToPose, args((const Pose2f&) target,
                         (const Pose2f&)({1.f, 1.f, 1.f}) speed,
                         (const MotionRequest::ObstacleAvoidance&)({}) obstacleAvoidance,
                         (bool)(false) keepTargetRotation,
                         (const std::optional<Vector2f>&)({}) targetOfInterest,
-                        (bool)(false) forceSideWalking));
+                        (SideWalkingRequest::SideWalkingRequest)(SideWalkingRequest::allowed) sideWalkingRequest,
+                        (bool)(false) energySavingWalk));

@@ -8,8 +8,10 @@
 
 #include "FootBumperStateProvider.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
 #include "Math/Geometry.h"
 #include "Platform/SystemCall.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(FootBumperStateProvider);
 
@@ -71,7 +73,7 @@ void FootBumperStateProvider::update(FootBumperState& footBumperState)
     contactDurationRight = 0;
   }
   // Generate model
-  int thresholdContacts = static_cast<int>(1.f / Constants::motionCycleTime / contactThreshold);
+  int thresholdContacts = static_cast<int>(1.f / Global::getSettings().motionCycleTime / contactThreshold);
   if((theMotionInfo.executedPhase == MotionPhase::stand || theMotionInfo.executedPhase == MotionPhase::walk) &&
      (theGameState.isReady() || theGameState.isSet() || theGameState.isPlaying()) && //The bumper is used for configuration in initial
      (theFallDownState.state == FallDownState::upright))

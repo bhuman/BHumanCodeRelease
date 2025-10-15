@@ -22,7 +22,9 @@ fi
 
 ip=$1
 
-robotNames=`ssh $SSHOPTIONS -o ConnectTimeout=2 nao@$ip "hostname; cat /var/volatile/tmp/bodyName.txt 2>/dev/null"`
+source "$basePath/setupTarget" "$ip"
+
+robotNames=`ssh $SSHOPTIONS -o ConnectTimeout=2 $TARGET_USER@$ip "hostname; cat /var/volatile/tmp/bodyName.txt 2>/dev/null"`
 if [ -z "$robotNames" ]
 then
   echo "Could not get name from robot."
@@ -36,7 +38,7 @@ files=("Config/Robots/$headName/$bodyName/cameraCalibration.cfg"
        "Config/Robots/$bodyName/Body/imuCalibration.cfg")
 
 if [ "$(uname)" == "Darwin" ]; then
-  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "nao@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"
+  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "$TARGET_USER@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS $TARGET_USER@$ip "touch Config/settings.cfg"
 else
-  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" nao@$ip${files[*]//Config/:Config} "$basePath/../.." && ssh $SSHOPTIONS nao@$ip "touch Config/settings.cfg"
+  rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" $TARGET_USER@$ip${files[*]//Config/:Config} "$basePath/../.." && ssh $SSHOPTIONS $TARGET_USER@$ip "touch Config/settings.cfg"
 fi

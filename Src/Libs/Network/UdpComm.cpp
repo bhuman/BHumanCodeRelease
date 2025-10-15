@@ -319,13 +319,19 @@ int UdpComm::readLocal(char* data, int len)
 unsigned UdpComm::getLastReadTimestamp() const
 {
 #ifdef TARGET_ROBOT
-  ::timespec tsPacket, tsReal, tsMonotonic;
+  ::timespec tsPacket;
   VERIFY(::ioctl(sock, SIOCGSTAMPNS, &tsPacket) == 0);
+#ifdef __x86_64__
+  ::timespec tsReal, tsMonotonic;
   clock_gettime(CLOCK_REALTIME, &tsReal);
   clock_gettime(CLOCK_MONOTONIC, &tsMonotonic);
   const long long timeInMonotonic = (tsPacket.tv_sec - tsReal.tv_sec + tsMonotonic.tv_sec) * 1000ll +
                                     (tsPacket.tv_nsec - tsReal.tv_nsec + tsMonotonic.tv_nsec) / 1000000ll;
   return static_cast<unsigned>(timeInMonotonic - Time::getSystemTimeBase());
+#else
+  const long long realtime = tsPacket.tv_sec * 1000ll + tsPacket.tv_nsec / 1000000ll;
+  return static_cast<unsigned>(realtime - Time::getSystemTimeBase());
+#endif
 #else
   return Time::getCurrentSystemTime();
 #endif

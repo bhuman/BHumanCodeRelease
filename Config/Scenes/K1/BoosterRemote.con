@@ -1,0 +1,24 @@
+# connect to a robot
+call ../Includes/connectDialog ../Includes/connect
+
+for Upper vi JPEGImage
+
+# all views are defined in other scripts
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:CenterCircleWithLine:image
+vid all representation:BallPercept:image
+vid all representation:BallSpots:image
+call ../Includes/ManualHeadMotion
+call ../Includes/FieldViews1
+call ../Includes/FieldViews3
+
+call ../Includes/DebugResponses
+
+# press any key to activate the joystick
+jc press 1 call Includes/Joystick
+jc press 2 call Includes/Joystick
+jc press 3 call Includes/Joystick
+jc press 4 call Includes/Joystick
+
+echo mr JPEGImage off

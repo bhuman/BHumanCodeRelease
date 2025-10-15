@@ -12,6 +12,9 @@ option(AutomaticIMUCalibration);
 /** Lets the robot start the extrinsic camera calibration. */
 option(AutonomousCameraCalibration);
 
+/** Lets the robot start the manual camera calibration. */
+option(ManualCameraCalibration);
+
 /** This skill can be used to calibrate the robot. */
 option(CalibrateRobot, args((const CalibrationRequest&) request));
 

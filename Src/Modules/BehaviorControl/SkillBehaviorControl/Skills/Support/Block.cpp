@@ -13,7 +13,7 @@
 option((SkillBehaviorControl) Block,
        args((const Vector2f&) target,
             (bool) useAlternativeBall,
-            (Vector2f) alternativeBall),
+            (const Vector2f&) alternativeBall),
        defs((float)(300.f) distanceToTarget, /**< The reference distance to the target. */
             (float)(200.f) overrideArmsDistance, /**< When closer than this to the block target, the arms are not taken back anymore. */
             (float)(400.f) ignoreObstaclesDistance, /**< When closer than this to the block target, obstacle avoidance is disabled. */

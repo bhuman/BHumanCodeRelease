@@ -26,10 +26,10 @@
 
 TEST_P(ModuleGraphCreatorComplex, sharedTest)
 {
-  calcShared(GetParam().config);
+  EXPECT_TRUE(calcShared(GetParam().config));
   EXPECT_EQ(GetParam().received, received());
   EXPECT_EQ(GetParam().sent, sent());
-  calcShared(GetParam().config2);
+  EXPECT_TRUE(calcShared(GetParam().config2));
   EXPECT_EQ(GetParam().received2, received());
   EXPECT_EQ(GetParam().sent2, sent());
   ASSERT_DEATH(exit(-1), "^$");

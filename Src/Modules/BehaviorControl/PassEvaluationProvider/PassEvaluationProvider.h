@@ -18,6 +18,7 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Infrastructure/GameState.h"
+#include <map>
 
 MODULE(PassEvaluationProvider,
 {,
@@ -32,8 +33,9 @@ MODULE(PassEvaluationProvider,
   DEFINES_PARAMETERS(
   {,
     (float)(0.01f) minValue, /**< Minimum probability of a successful pass in the worst situation possible. */
-    (float)(1400.f) opponentDistToTargetThreshold, /**< Distance to the closest opponent for the pass target to be considered free */
-    (float)(1000.f) opponentDistToLineThreshold, /**< Distance to the closest opponent for the pass line to be considered free */
+    (Rangef)({50.f, 1000.f}) opponentDistToTargetThreshold, /**< Distance to the closest opponent for the pass target to be considered free */
+    (Rangef)({200.f, 1000.f}) opponentDistToLineThreshold, /**< Distance to the closest opponent for the pass line to be considered free */
+    (Rangef)({750.f, 3000.f}) opponentDistToBaseThreshold, /**< Scaling range based on the distance from the base to the closest opponent. */
     (float)(4000.f) distancePenaltyThresholdPlaying, /**< if the point is further away than this the distance rating is below 1 */
     (float)(6000.f) distancePenaltyThresholdFreeKick, /**< if the point is further away than this the distance rating is below 1 */
     (float)(1000.f) distancePenaltyDeviation, /**< standard deviation for the upper limit of the distance */
@@ -45,6 +47,8 @@ MODULE(PassEvaluationProvider,
     (unsigned char)(255) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
     (ColorRGBA)(213, 17, 48) worstRatingColor, /**< Red color in RGB corresponding to a pass rating value of 0 in the heatmap */
     (ColorRGBA)(0, 104, 180) bestRatingColor, /**< Blue color in RGB corresponding to a pass rating value of 1 in the heatmap */
+    (float)(500.f) crossPassWidth, /**< Absolute y-coordinate of Ball must be bigger than this value. Also interpolate cross pass value with this width range. */
+    (float)(1000.f) crossPassBlockMaxYBallPos, /**< Absolute y-coordinate of Ball must be above this value to result in worst possible cross pass value. */
   }),
 });
 
@@ -62,6 +66,7 @@ private:
   bool calcPassTargetInField = true;
   bool calcShotLineFree = true;
   bool calcShotDistance = true;
+  bool calcCrossPass = true;
   bool isPositioningDrawing = false;
   unsigned int lastUpdateParameters;
   Vector2f leftGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal - theBallSpecification.radius * 2.f);
@@ -71,6 +76,8 @@ private:
   std::vector<Vector2f> opponentsOnField;
   Vector2i cellsNumber; /**< Resolution for the heatmap i.e. number of grid cells on the corresponding axis */
   std::vector<ColorRGBA> cellColors;
+
+  std::vector<float> minOpponentDistToBaseList; /**< The distance of the obstacles to the base position. The base position is used as a key. */
 
   /**
    * Estimates the probability that a pass from a given start position (e.g. the current ball position) to a given target position would be successful, taking into account the known obstacles.
@@ -93,8 +100,9 @@ private:
    * @param obstacleOnField The obstacle to check the distance for.
    * @param minDistToTarget The distance of the closest obstacle to the target position (could be updated by reference).
    * @param minDistToLine The distance of the closest obstacle to the line from the ball to the target position (could be updated by reference).
+   * @param isPositioning Are we currently calculating for positioning on the field?
    */
-  void updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine) const;
+  void updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine, const bool isPositioning) const;
 
   /**
    * Estimates the probability that the position is not blocking a teammate's direct shot at the opponent's goal.

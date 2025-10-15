@@ -1,0 +1,40 @@
+#!/bin/bash
+# Start the version of SimRobot that was compiled most recently and
+# replay the logs that were passed as parameters.
+
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
+
+rm -f "$basePath/../../Config/Scenes/Includes/replay.con"
+log=
+scene=ReplayRobot
+while [ $# -gt 0 ]; do
+  echo "sl LOG$log \"$(realpath "$1")\"" >>"$basePath/../../Config/Scenes/Includes/replay.con"
+  log=$((log+1))
+  name="$(basename "$1")"
+  ip="$(grep '^ *lan' "$basePath/../../Config/Robots/${name%%_*}/network.cfg" | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+  source "$basePath/setupTarget" "$ip"
+  if [ "$TARGET_NAME" == "Booster" ]; then
+    scene=$TARGET_MODEL/BoosterReplay
+  fi
+  shift
+done
+
+cd "$basePath"
+
+if [ "$(uname)" == "Darwin" ]; then
+  app=$(ls -1dt $(find ../../Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
+elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+  app=$(ls -1dt ../../Build/Windows/SimRobot/*/SimRobot.exe | head -1)
+else
+  app=$(ls -1dt ../../Build/Linux/SimRobot/*/SimRobot | head -1)
+fi
+
+if [ ! -z "$app" ]; then
+  if [ "$(uname)" == "Darwin" ]; then
+    open -n "$app" --args "$basePath/../../Config/Scenes/$scene.ros2"
+  elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    cmd.exe /c start "$app" "../../Config/Scenes/$scene.ros2"
+  else
+    "$app" "../../Config/Scenes/$scene.ros2" </dev/null >/dev/null 2>&1 &
+  fi
+fi

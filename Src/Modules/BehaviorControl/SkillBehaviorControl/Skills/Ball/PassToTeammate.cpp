@@ -47,16 +47,19 @@ option((SkillBehaviorControl) PassToTeammate,
             (Angle) headTilt, /**< tilt of the head when looking around when waiting before executing a free kick */
             (float) maxDistanceToCommunicatePass, /**< Our distance to the ball must be lower than this value to allow for communication. */
             (float) maxDistanceToCommunicatePassHysteresis, /**< If we were communicating, the ball is allowed to be further away. */
-            (float) ballDistanceForSlowWalk), /**< If the ball is close, walk slow. */
+            (float) ballDistanceForSlowWalk, /**< If the ball is close, walk slow. */
+            (float) keepOldTargetDistance, /**< Keep the old communicated target if it is close enough to our last calculated one. */
+            (Angle) keepOldTargetBearing), /**< Keep the old communicated target if the kick direction is similar. */
        vars((const GlobalTeammatesModel::TeammateEstimate*)(nullptr) teammate,
             (Vector2f)(Vector2f::Zero()) teammatePosition,
-            (bool)(false) isAngleFree,
+            (bool)(true) isAngleFree,
             (bool)(false) isTargetFree,
             (bool)(false) isCommunicatingPass, /**< If true, we are currently communicating the pass. */
+            (bool)(false) didSendPassTarget, /**< Our current pass target was send to the team. */
             (Angle)(0_deg) kickAngle,
             (float)(0.f) kickLength,
             (Vector2f)(Vector2f::Zero()) kickTarget,
-            (Rangea)({0_deg, 0_deg}) precisionRange,
+            (Rangea)(0_deg, 0_deg) precisionRange,
             (KickInfo::KickType)(KickInfo::numOfKickTypes) lastKickType,
             (int)(-1) lastPassTarget,
             (Vector2f)(Vector2f::Zero()) lastKickTarget))
@@ -73,7 +76,7 @@ option((SkillBehaviorControl) PassToTeammate,
 
   const auto reset = [&]
   {
-    isAngleFree = false;
+    isAngleFree = true;
     isTargetFree = false;
     kickAngle = 0_deg;
     kickLength = 0.f;
@@ -81,6 +84,7 @@ option((SkillBehaviorControl) PassToTeammate,
     precisionRange = {0_deg, 0_deg};
     lastPassTarget = -1;
     lastKickTarget = Vector2f::Zero();
+    didSendPassTarget = false;
   };
 
   // Check whether or not there is still enough time left to wait this many milliseconds during any restart in play (free kick, corner kick, goal kick, kick-in, kick-off).
@@ -138,13 +142,14 @@ option((SkillBehaviorControl) PassToTeammate,
   const auto calculateObstacleSectors = [&](const Vector2f& ballPositionOnField) -> std::list<SectorWheel::Sector>
   {
     SectorWheel sectorWheel;
+    const float radius = isAngleFree || isFreeKick() ? 4.f : 6.f;
     sectorWheel.begin(ballPositionOnField);
     for(const auto& obstacle : theGlobalOpponentsModel.opponents)
     {
       const Vector2f& obstacleOnField = obstacle.position;
       if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGoalLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
         continue;
-      const float obstacleWidth = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
+      const float obstacleWidth = (obstacle.left - obstacle.right).norm() + radius * theBallSpecification.radius;
       const float obstacleDistance = std::sqrt(std::max((obstacleOnField - ballPositionOnField).squaredNorm() - sqr(obstacleWidth / 2.f), 1.f));
       if(obstacleDistance < theBallSpecification.radius)
         continue;
@@ -273,7 +278,7 @@ option((SkillBehaviorControl) PassToTeammate,
     const std::list<SectorWheel::Sector>& sectors = calculateObstacleSectors(ballPositionOnField);
 
     ASSERT(teammate);
-    teammatePosition = teammate->pose.translation;
+    teammatePosition = didSendPassTarget ? kickTarget : teammate->pose.translation;
     if(lookAhead)
     {
       // Approximate the time the pass will take by estimating the time to reach kick position, kick execution time and ball rolling time.
@@ -295,14 +300,14 @@ option((SkillBehaviorControl) PassToTeammate,
     Angle targetAngle = (targetPosition - ballPositionOnField).angle();
 
     // During kick-off, the target angle will not be modified because obstacles can be ignored (there can not legally be any opponents in the own half).
-    isAngleFree = isKickOff() || (Global::getSettings().scenario.starts_with("SharedAutonomy") && findNextFreeAngle(sectors, targetAngle, precisionRange, passToLeftSide, maxAngleOffset, 0_deg));
+    isAngleFree = isKickOff();
     // When the initial target angle is blocked, it is shifted to a free sector (not blocked by obstacles) in the direction of the opponent's goal first (ideally placing it in front of the receiver).
     Angle modifiedMinAngleOffset = minAngleOffset; // The modifiedMinAngleOffset gets reduced if no free angle can be found.
     while(!isAngleFree)
     {
       Angle firstSideAngle = targetAngle;
       Angle secondSideAngle = targetAngle;
-      // Calculate the clostest angles in both directions and pick the one with be best combined target rating. Prefer first angle, because a pass to the goal side of the teammate is more "natural".
+      // Calculate the closest angles in both directions and pick the one with be best combined target rating. Prefer first angle, because a pass to the goal side of the teammate is more "natural".
       const bool isFirstSideValid = findNextFreeAngle(sectors, firstSideAngle, precisionRange, passToLeftSide, maxAngleOffset, modifiedMinAngleOffset);
       const bool isSecondSideValid = findNextFreeAngle(sectors, secondSideAngle, precisionRange, !passToLeftSide, maxAngleOffsetBehind, modifiedMinAngleOffset);
       isAngleFree = isFirstSideValid || isSecondSideValid;
@@ -513,17 +518,35 @@ option((SkillBehaviorControl) PassToTeammate,
     COMPLEX_DRAWING3D("option:PassToTeammate:trajectory")
     {
       const float radius = theBallSpecification.radius;
-      CYLINDERARROW3D("option:PassToTeammate:trajectory",
-                      (Vector3f() << theFieldInterceptBall.interceptedEndPositionOnField, radius).finished(),
-                      (Vector3f() << kickTarget, radius).finished(),
-                      radius, radius, radius,
-                      isAngleFree ? ColorRGBA::fromTeamColor(theGameState.ownTeam.color(lastPassTarget)) : ColorRGBA::red);
+      CYLINDER_ARROW3D("option:PassToTeammate:trajectory",
+                       (Vector3f() << theFieldInterceptBall.interceptedEndPositionOnField, radius).finished(),
+                       (Vector3f() << kickTarget, radius).finished(),
+                       radius, radius, radius,
+                       isAngleFree ? ColorRGBA::fromTeamColor(theGameState.ownTeam.color(lastPassTarget)) : ColorRGBA::red);
     }
+  };
+
+  const auto checkForCommunicatedPass = [&]()
+  {
+    if(lastPassTarget != -1 && isCommunicatingPass && teammate && theSentTeamMessage.theBehaviorStatus.passTarget == playerNumber
+       && theSentTeamMessage.theBehaviorStatus.shootingTo.has_value())
+    {
+      const Vector2f shootingToInField = theSentTeamMessage.theRobotPose * theSentTeamMessage.theBehaviorStatus.shootingTo.value();
+      const Vector2f ballInField = theFieldInterceptBall.interceptedEndPositionOnField;
+      const Angle oldKickAngle = (shootingToInField - ballInField).angle();
+      const Angle lastKickAngle = (kickTarget - ballInField).angle();
+      didSendPassTarget = std::abs(Angle::normalize(oldKickAngle - lastKickAngle)) < keepOldTargetBearing &&
+                          (shootingToInField - kickTarget).squaredNorm() < sqr(keepOldTargetDistance);
+    }
+    else
+      didSendPassTarget = false;
   };
 
   setTeammate();
   if(!keepLastKickTarget())
     reset();
+
+  checkForCommunicatedPass();
 
   common_transition
   {
@@ -586,10 +609,12 @@ option((SkillBehaviorControl) PassToTeammate,
 
       const Pose2f targetPose = calculateWaitingPose();
       WalkToPoint({.target = targetPose,
-                   .reduceWalkingSpeed = targetPose.translation.squaredNorm() > sqr(distanceForNormalWalk) ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::normal,
+                   .reduceWalkSpeedType = targetPose.translation.squaredNorm() > sqr(distanceForNormalWalk) ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::normal,
+                   .disableEnergySavingWalk = true,
                    .rough = targetPose.translation.squaredNorm() <= sqr(ignoreObstaclesThreshold),
                    .disableObstacleAvoidance = targetPose.translation.squaredNorm() <= sqr(ignoreDynamicObstaclesThreshold),
-                   .disableAvoidFieldBorder = true});
+                   .disableAvoidFieldBorder = true,
+                   .targetOfInterest = theFieldBall.recentBallPositionRelative()});
     }
   }
 
@@ -610,18 +635,11 @@ option((SkillBehaviorControl) PassToTeammate,
 
     action
     {
-      Stand();
-
-      // TODO: maybe split into two states
-      // TODO: compute a angle range to not look outside the field
-      // TODO: decide the side in which to look first (maybe based on y coordinate (hysteresis needed))
-      if(state_time < 4 * maxHeadAngle.toDegrees() / headSpeed.toDegrees() * 1000)
-        LookLeftAndRight({.startLeft = true,
-                          .maxPan = maxHeadAngle,
-                          .tilt = headTilt,
-                          .speed = headSpeed});
-      else
-        LookActive({.withBall = false});
+      Stand({.energySavingWalk = false});
+      LookLeftAndRight({.startLeft = true,
+                        .maxPan = maxHeadAngle,
+                        .tilt = headTilt,
+                        .speed = headSpeed});
       lastKickType = KickInfo::numOfKickTypes;
     }
   }
@@ -656,11 +674,13 @@ option((SkillBehaviorControl) PassToTeammate,
 
       const Pose2f targetPose = calculateWaitingPose();
       WalkToPoint({.target = targetPose,
-                   .reduceWalkingSpeed = targetPose.translation.squaredNorm() > sqr(distanceForNormalWalk) ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::normal,
+                   .reduceWalkSpeedType = targetPose.translation.squaredNorm() > sqr(distanceForNormalWalk) ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::normal,
+                   .disableEnergySavingWalk = true,
                    .rough = targetPose.translation.squaredNorm() <= sqr(ignoreObstaclesThreshold),
                    .disableObstacleAvoidance = targetPose.translation.squaredNorm() <= sqr(ignoreDynamicObstaclesThreshold),
                    .disableStanding = true,
-                   .disableAvoidFieldBorder = true});
+                   .disableAvoidFieldBorder = true,
+                   .targetOfInterest = theFieldBall.recentBallPositionRelative()});
     }
   }
 
@@ -701,15 +721,18 @@ option((SkillBehaviorControl) PassToTeammate,
       const PreStepType preStepType = getPreStepType(kickType);
       const bool turnKickAllowed = false;
       // TODO: Opponents running into the planned trajectory can regularly (unintentionally) block and intercept the ball, because the kick angle is not adjusted in the two'ish seconds it takes the robot to go to the ball and kick.
-      GoToBallAndKick({.targetDirection = kickAngle,
-                       .kickType = kickType,
-                       .alignPrecisely = KickPrecision::notPrecise,
-                       .length = kickLength,
-                       .preStepType = preStepType,
-                       .turnKickAllowed = turnKickAllowed,
-                       .reduceWalkSpeedType = theGameState.isFreeKick() && theFieldBall.positionRelative.squaredNorm() < sqr(ballDistanceForSlowWalk) ? ReduceWalkSpeedType::slow : ReduceWalkSpeedType::noChange,
-                       .directionPrecision = precisionRange});
-      if(theFieldInterceptBall.interceptedEndPositionRelative.squaredNorm() < sqr(maxDistanceToCommunicatePass + (isCommunicatingPass ? maxDistanceToCommunicatePassHysteresis : 0.f)))
+      if(isAngleFree || isFreeKick())
+        GoToBallAndKick({ .targetDirection = kickAngle,
+                          .kickType = kickType,
+                          .alignPrecisely = KickPrecision::notPrecise,
+                          .length = kickLength,
+                          .preStepType = preStepType,
+                          .turnKickAllowed = turnKickAllowed,
+                          .reduceWalkSpeedType = theGameState.isFreeKick() && theFieldBall.positionRelative.squaredNorm() < sqr(ballDistanceForSlowWalk) ? ReduceWalkSpeedType::slow : ReduceWalkSpeedType::noChange,
+                          .directionPrecision = precisionRange });
+      else
+        DribbleToGoal();
+      if((isAngleFree || isFreeKick()) && theFieldInterceptBall.interceptedEndPositionRelative.squaredNorm() < sqr(maxDistanceToCommunicatePass + (isCommunicatingPass ? maxDistanceToCommunicatePassHysteresis : 0.f)))
       {
         isCommunicatingPass = true;
         PassTarget({.passTarget = playerNumber,

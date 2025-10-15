@@ -2,6 +2,7 @@
 
 #include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Infrastructure/RobotHealth.h"
+#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/GyroOffset.h"
@@ -20,6 +21,7 @@ MODULE(InertialDataProvider,
   REQUIRES(InertialSensorData),
   USES(MotionInfo),
   REQUIRES(MotionRobotHealth),
+  REQUIRES(RawInertialSensorData),
   PROVIDES(InertialData),
   LOADS_PARAMETERS(
   {,
@@ -28,6 +30,8 @@ MODULE(InertialDataProvider,
     (Vector3f) accVarianceWhileWalking, /**< Acc variance while walking */
     (Vector3f) accVarianceWhileStanding, /**< Acc variance while standing */
     (Vector3f) accVarianceFactor, /**< Acc variance factor */
+    (float) fakeMeasurementVariance, /**< Variance of the fake measurement. */
+    (bool) copyRawData, /**< If true, just copy the raw measurements. */
   }),
 });
 

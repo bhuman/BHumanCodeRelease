@@ -7,16 +7,20 @@
 #include "RemoteConsole.h"
 #include "ConsoleRoboCupCtrl.h"
 #include "SimulatedRobot3D.h"
+#include "Math/Constants.h"
 #include "Platform/Time.h"
 
-RemoteConsole::RemoteConsole(const std::string& robotName, const std::string& ip, ConsoleRoboCupCtrl* ctrl) :
-  RobotConsole(Settings("Nao", "Nao"), robotName, ctrl, SystemCall::remoteRobot, nullptr, nullptr), ip(ip)
+RemoteConsole::RemoteConsole(const std::string& robotName, const std::string& ip, ConsoleRoboCupCtrl* ctrl, const Settings& settings) :
+  RobotConsole(settings, robotName, ctrl, SystemCall::remoteRobot, nullptr, nullptr), ip(ip)
 {
   if(!ctrl->is2D)
   {
     SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
     if(puppet)
+    {
       simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
+      simulatedRobot->enableGravity(false);
+    }
   }
 
   // try to connect for one second
@@ -129,9 +133,10 @@ void RemoteConsole::update()
   {
     SYNC;
     if(RobotConsole::jointSensorData.timestamp)
-      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData), true);
     else
-      simulatedRobot->setJointRequest(jointRequest);
+      simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
+    simulatedRobot->moveRobot({ 0, 0, -1000.f }, {0, 0, 0}, true, true);
   }
   if(Time::getTimeSince(timestamp) >= 2000)
   {

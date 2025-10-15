@@ -2,4 +2,4 @@
 mr Whistle LogDataProvider
 
 # Everything else is the same in 2D
-call Includes/GameStates2D
+call GameStates2D

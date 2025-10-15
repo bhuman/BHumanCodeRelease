@@ -63,12 +63,12 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
       std::vector<Spot> spots;
       predictSpots(spots);
       bool odd = boundaryIsOdd(spots);
-      (odd && ! theOtherFieldBoundary.extrapolated) ? projectPrevious(fieldBoundary) : validatePrediction(fieldBoundary, spots);
+      (useOtherFieldBoundary && odd && !theOtherFieldBoundary.extrapolated) ? projectPrevious(fieldBoundary) : validatePrediction(fieldBoundary, spots);
       fieldBoundary.odd = odd;
     }
     else if(theCameraInfo.camera == CameraInfo::lower)
     {
-      if(theOtherFieldBoundary.odd || theOtherFieldBoundary.extrapolated || theOtherFieldBoundary.boundaryInImage.empty())
+      if(useOtherFieldBoundary && (theOtherFieldBoundary.odd || theOtherFieldBoundary.extrapolated || theOtherFieldBoundary.boundaryInImage.empty()))
       {
         std::vector<Spot> spots;
         predictSpots(spots);
@@ -92,7 +92,7 @@ void FieldBoundaryProvider::validatePrediction(FieldBoundary& fieldBoundary, std
 {
   if((fieldBoundary.isValid = (spots.size() >= minNumberOfSpots)))
   {
-    if(fittingMethod == Ransac)
+    if(fittingMethod == ransac)
     {
       std::vector<Spot> newSpots;
       for(auto s : spots)
@@ -103,7 +103,7 @@ void FieldBoundaryProvider::validatePrediction(FieldBoundary& fieldBoundary, std
       STOPWATCH("FieldBoundaryProvider:fitBoundaryRansac")
         fitBoundaryRansac(newSpots, fieldBoundary);
     }
-    else if(fittingMethod == NotRansac)
+    else if(fittingMethod == notRansac)
     {
       std::vector<Spot> newSpots;
       for(auto s : spots)
@@ -114,7 +114,7 @@ void FieldBoundaryProvider::validatePrediction(FieldBoundary& fieldBoundary, std
       STOPWATCH("FieldBoundaryProvider:fitBoundaryNotRansac")
         fitBoundaryNotRansac(newSpots, fieldBoundary);
     }
-    else if(fittingMethod == NoFitting)
+    else if(fittingMethod == noFitting)
     {
       for(const Spot& spot : spots)
       {
@@ -239,8 +239,8 @@ bool FieldBoundaryProvider::boundaryIsOdd(const std::vector<Spot>& spots) const
 
 void FieldBoundaryProvider::fitBoundaryRansac(const std::vector<Spot>& spots, FieldBoundary& fieldBoundary)
 {
-  std::vector<Spot> fbmodel;
-  fbmodel.reserve(3);
+  std::vector<Spot> fbModel;
+  fbModel.reserve(3);
 
   int minError = std::numeric_limits<int>::max();
   const int goodEnough = static_cast<int>(static_cast<float>(maxSquaredError * spots.size()) * acceptanceRatio);
@@ -304,20 +304,20 @@ void FieldBoundaryProvider::fitBoundaryRansac(const std::vector<Spot>& spots, Fi
     if(error < minError)
     {
       minError = error;
-      fbmodel.clear();
-      fbmodel.emplace_back(leftSpot);
+      fbModel.clear();
+      fbModel.emplace_back(leftSpot);
 
       if(errorRightLine < errorRightStraight)
       {
-        fbmodel.emplace_back(corner);
-        fbmodel.emplace_back(rightSpot);
+        fbModel.emplace_back(corner);
+        fbModel.emplace_back(rightSpot);
       }
       else
-        fbmodel.emplace_back(middleSpot);
+        fbModel.emplace_back(middleSpot);
     }
   }
 
-  for(const Spot& spot : fbmodel)
+  for(const Spot& spot : fbModel)
   {
     fieldBoundary.boundaryInImage.emplace_back(spot.inImage);
     fieldBoundary.boundaryOnField.emplace_back(spot.onField);

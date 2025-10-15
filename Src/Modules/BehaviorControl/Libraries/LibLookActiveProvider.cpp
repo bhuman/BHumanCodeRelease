@@ -44,10 +44,10 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
 
   if(!onlyOwnBall
      && (theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout || theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 1000)
-     && theTeammatesBallModel.isValid)
+     && theTeamBallModel.isValid)
   {
-    theBallPositionRelative = theRobotPose.inverse() * theTeammatesBallModel.position;
-    theBallSpeedRelative = theTeammatesBallModel.velocity.rotated(-theRobotPose.rotation);
+    theBallPositionRelative = theRobotPose.inverse() * theTeamBallModel.position;
+    theBallSpeedRelative = theTeamBallModel.velocity.rotated(-theRobotPose.rotation);
 
     teamBallIsUsed = true;
   }
@@ -177,8 +177,8 @@ Angle LibLookActiveProvider::clipPanToBall(const Angle pan) const
 
   if(teamBallIsUsed)
   {
-    const float distance = (theTeammatesBallModel.position - theRobotPose.translation).norm();
-    tolerance += std::atan(teammatesBallModelError / distance);
+    const float distance = (theTeamBallModel.position - theRobotPose.translation).norm();
+    tolerance += std::atan(teamBallModelError / distance);
   }
   return Rangea(ballAngle - tolerance, ballAngle + tolerance).limit(pan);
 }
@@ -235,7 +235,7 @@ bool LibLookActiveProvider::ballPositionUnknown(const bool onlyOwnBall) const
 {
   const bool disappeared = theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 100;
   const bool notSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout;
-  const bool globalNotSeen = !theTeammatesBallModel.isValid;
+  const bool globalNotSeen = !theTeamBallModel.isValid;
 
   return (disappeared && onlyOwnBall) || // Only our own ball counts and this one is lost
          (notSeen && globalNotSeen); // We and our team did not see the ball for a long time

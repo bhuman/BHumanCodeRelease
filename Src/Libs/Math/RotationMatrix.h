@@ -203,14 +203,12 @@ public:
   static RotationMatrix fromEulerAngles(const float x, const float y, const float z);
 
   /**
-   * Creates a RotationMatrix rotatied around the z, y and x components of the Vector3 (in this order!).
+   * Creates a RotationMatrix rotated around the z, y and x components of the Vector3 (in this order!).
    * Equivalent to fromRotationZ(rotation.z).rotateY(rotation.y).rotateX(rotation.x);
    */
   static RotationMatrix fromEulerAngles(const Vector3f& rotation);
 
 private:
-  // The following is a hack in order to keep the kicks from the Kickengine working...
-  friend class KickViewWidget;
   friend class RotationMatrix_getPackedAngleAxisFaulty_Test;
 
   Vector3f getPackedAngleAxisFaulty() const;

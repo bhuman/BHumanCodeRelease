@@ -1,5 +1,7 @@
 #include "ArmKeyFrameEngine.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(ArmKeyFrameEngine);
 
@@ -118,7 +120,7 @@ void ArmKeyFrameEngine::createOutput(Arm& arm, const ArmKeyFrameMotion::ArmKeyFr
                           : target.stiffness[i];
   }
 
-  arm.time += Constants::motionCycleTime * 1000.f;
+  arm.time += Global::getSettings().motionCycleTime * 1000.f;
 }
 
 void ArmKeyFrameEngine::updateOutput(const Arm& arm, JointRequest& jointRequest, const ArmKeyFrameMotion::ArmAngles& values) const
@@ -127,10 +129,7 @@ void ArmKeyFrameEngine::updateOutput(const Arm& arm, JointRequest& jointRequest,
   for(unsigned i = 0; i < values.angles.size(); ++i)
   {
     if(arm.id == Arms::right &&
-       (i == Joints::shoulderRoll ||
-        i == Joints::elbowYaw ||
-        i == Joints::elbowRoll ||
-        i == Joints::wristYaw))
+       Joints::canNegate(static_cast<Joints::Joint>(startJoint + i), Global::getSettings().robotType != Settings::nao))
       jointRequest.angles[startJoint + i] = -values.angles[i];
     else
       jointRequest.angles[startJoint + i] = values.angles[i];

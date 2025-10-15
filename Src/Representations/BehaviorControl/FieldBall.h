@@ -26,7 +26,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's position in field coordinates.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballSeenTimeout Time in ms during which the ball must have been seen in order
    *     to rely on own ball model.
    * @param ballDisappearedTimeout Time in ms during which the ball should not have been disappeared in order
@@ -37,7 +37,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's position in relative coordinates.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @return Position of the ball in relative coordinates.
@@ -46,7 +46,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's end position in field coordinates, i.e. the position where it will come to a stop.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @return Position of the ball's end position in field coordinates.
@@ -55,7 +55,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's end position in relative coordinates, i.e. the position where it will come to a stop.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @return Position of the ball's end position in relative coordinates.
@@ -64,7 +64,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's propagated position in field coordinates, i.e. the position where it will come to a stop.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param t Time to propagate the ball into the future.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
@@ -75,7 +75,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Returns the ball's propagated position in relative coordinates, i.e. the position where it will come to a stop.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param t Time to propagate the ball into the future.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
@@ -86,7 +86,7 @@ STREAMABLE(FieldBall,
 
   /**
    * Obtains the ball's position in field coordinates as well as robot coordinates.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballPositionOnField Is filled with the ball position in field coordinates.
    * @param ballPositionRelative Is filled with the ball position in robot coordinates.
    * @param ballSeenTimeout See recentBallPositionOnField.
@@ -96,19 +96,13 @@ STREAMABLE(FieldBall,
 
   /**
    * Obtains the ball's end position (i.e. the position where it will come to a stop) in field coordinates as well as robot coordinates.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
+   * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param ballEndPositionOnField Is filled with the ball's end position in field coordinates.
    * @param ballEndPositionRelative Is filled with the ball's end position in robot coordinates.
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    */
   void recentBallEndPositions(Vector2f& ballEndPositionOnField, Vector2f& ballEndPositionRelative, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
-
-  /**
-   * Obtains the information whether the ball position is consistent with the game state.
-   * Regarding to which ball model is used, the semantics of useTeammatesBall are used.
-   */
-  bool isBallPositionConsistentWithGameState(const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
 
   /**
    * Implements the decision whether to favor the teammates ball over the own one.
@@ -118,7 +112,7 @@ STREAMABLE(FieldBall,
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @return True, if the teammates ball should be used, false otherwise
    */
-  bool useTeammatesBall(const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
+  bool useTeamBall(const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
 
   /** Debug drawings */
   void draw() const,
@@ -139,12 +133,12 @@ STREAMABLE(FieldBall,
   (Vector2f)(Vector2f::Zero()) teamVelocityRelative,      /**< The ball velocity in relative robot coordinates, as estimated by the whole team */
   (int)(0) timeSinceBallWasSeen,                          /**< Yes, you guessed it */
   (int)(0) timeSinceBallDisappeared,                      /**< Yes, you guessed it */
-  (bool)(false) teammatesBallIsValid,                     /**< Yes, you guessed it */
+  (bool)(false) teamBallIsValid,                     /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOpponentGoal,             /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOwnGoal,                  /**< Yes, you guessed it */
   (bool)(false) isInsideOwnPenaltyArea,                   /**< Yes, you guessed it */
   (float)(0.f) distanceToOwnPenaltyArea,                  /**< Yes, you guessed it. If the ball is inside the area, member is set to 0.f. If the position is unknown, member is set to -1.f. */
-  (bool)(false) teammatesBallNewerThanOwnBall,            /**< Is my ball older than the team's? Only to use in internal function, do not get it from here */
+  (bool)(false) teamBallNewerThanOwnBall,            /**< Is my ball older than the team's? Only to use in internal function, do not get it from here */
   (bool)(false) ballPositionConsistentWithGameState,      /**< Is the ball position consistent with the ball drop in positions of the current game state? */
   (bool)(false) teamBallPositionConsistentWithGameState,  /**< Is the team ball position consistent with the ball drop in positions of the current game state? */
 });

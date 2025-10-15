@@ -16,6 +16,7 @@
 #include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkToBallGenerator.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Framework/Module.h"
 

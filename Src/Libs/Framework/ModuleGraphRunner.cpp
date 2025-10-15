@@ -107,8 +107,7 @@ void ModuleGraphRunner::execute()
        ((duration > 100 &&
          !Global::getDebugRequestTable().isActive("representation:JPEGImage") &&
          !Global::getDebugRequestTable().isActive("representation:CameraImage")) ||
-        duration > 500) &&
-       std::string(p.representation) != "Keypoints") // @todo Remove again later
+        duration > 500))
       OUTPUT_ERROR("TIMING: providing " << p.representation << " took " << duration
                    << " ms at " << timestamp / 1000 - 100 << " s after start");
 #endif

@@ -8,12 +8,12 @@
 
 #include "Behavior.h"
 #include "BallSearch.h"
-#include "ActiveRoles/ClosestToTeammatesBall.h"
+#include "ActiveRoles/ClosestToTeamBall.h"
 #include "ActiveRoles/FreeKickWall.h"
+#include "ActiveRoles/KickOffForward.h"
 #include "ActiveRoles/PlayBall.h"
 #include "PositionRoles/Defender.h"
 #include "PositionRoles/Forward.h"
-#include "PositionRoles/SACPasser.h"
 #include "PositionRoles/Goalkeeper.h"
 #include "PositionRoles/AttackingGoalkeeper.h"
 #include "PositionRoles/Midfielder.h"
@@ -28,13 +28,13 @@
 #include <functional>
 #include <random>
 
-Behavior::Behavior(const BallDropInModel& theBallDropInModel, const BallSpecification& theBallSpecification,
-                   const ExtendedGameState& theExtendedGameState, const FieldBall& theFieldBall,
-                   const FieldDimensions& theFieldDimensions, const FieldInterceptBall& theFieldInterceptBall,
-                   const FrameInfo& theFrameInfo, const GameState& theGameState,
-                   const IndirectKick& theIndirectKick, const OpposingKickoff& theOpposingKickoff,
-                   const TeammatesBallModel& theTeammatesBallModel) :
+Behavior::Behavior(const BallDropInModel& theBallDropInModel, const BallSearchParticles& theBallSearchParticles,
+                   const BallSpecification& theBallSpecification, const ExtendedGameState& theExtendedGameState,
+                   const FieldBall& theFieldBall, const FieldDimensions& theFieldDimensions,
+                   const FieldInterceptBall& theFieldInterceptBall, const FrameInfo& theFrameInfo,
+                   const GameState& theGameState, const TeamBallModel& theTeamBallModel, const LibDemo& theLibDemo) :
   theBallDropInModel(theBallDropInModel),
+  theBallSearchParticles(theBallSearchParticles),
   theBallSpecification(theBallSpecification),
   theExtendedGameState(theExtendedGameState),
   theFieldBall(theFieldBall),
@@ -42,20 +42,19 @@ Behavior::Behavior(const BallDropInModel& theBallDropInModel, const BallSpecific
   theFieldInterceptBall(theFieldInterceptBall),
   theFrameInfo(theFrameInfo),
   theGameState(theGameState),
-  theIndirectKick(theIndirectKick),
-  theOpposingKickoff(theOpposingKickoff),
-  theTeammatesBallModel(theTeammatesBallModel)
+  theTeamBallModel(theTeamBallModel),
+  theLibDemo(theLibDemo)
 {
   activeRoles[ActiveRole::playBall] = new PlayBall;
+  activeRoles[ActiveRole::kickOffForward] = new KickOffForward;
   activeRoles[ActiveRole::freeKickWall] = new FreeKickWall;
-  activeRoles[ActiveRole::closestToTeammatesBall] = new ClosestToTeammatesBall;
+  activeRoles[ActiveRole::closestToTeamBall] = new ClosestToTeamBall;
 
   positionRoles[PositionRole::goalkeeper] = new Goalkeeper;
   positionRoles[PositionRole::attackingGoalkeeper] = new AttackingGoalkeeper;
   positionRoles[PositionRole::defender] = new Defender;
   positionRoles[PositionRole::midfielder] = new Midfielder;
   positionRoles[PositionRole::forward] = new Forward;
-  positionRoles[PositionRole::sacPasser] = new SACPasser;
 
   roles.resize(Role::Type_Info::numOfElements, nullptr);
   FOREACH_ENUM(ActiveRole::Type, type)
@@ -472,8 +471,7 @@ SkillRequest Behavior::update(Strategy::Type strategy, Agent& self, std::vector<
              condition.scoreDifferenceLE >= scoreDifference &&
              condition.scoreDifferenceGE <= scoreDifference &&
              condition.timeSinceBallAheadOfThresholdGE <= theFrameInfo.getTimeSince(ballXTimestamp->second.lastTimeWhenNotAhead) &&
-             condition.timeSinceBallBehindThresholdGE <= theFrameInfo.getTimeSince(ballXTimestamp->second.lastTimeWhenNotBehind) &&
-             (!condition.sacAlternateTactic.has_value() || condition.sacAlternateTactic == theIndirectKick.sacAlternateTactic);
+             condition.timeSinceBallBehindThresholdGE <= theFrameInfo.getTimeSince(ballXTimestamp->second.lastTimeWhenNotBehind);
     };
     for(const Strategy::TacticState& state : strategies[strategy].tactics)
     {
@@ -514,6 +512,7 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
   const auto* voronoiRegionSubsets = &tactics[tactic].voronoiRegionSubsetsPerNumOfAgents;
   ASSERT(positionSubsets->size() == voronoiRegionSubsets->size());
   auto positions = tactics[tactic].positions;
+  std::array<bool, Tactic::Position::numOfTypes> relativeToTeamBallMap{ false };
 
   // Integrate positions from set plays.
   if(setPlay != SetPlay::none)
@@ -526,6 +525,11 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
         if(positionOverride.position == position.type)
         {
           position.pose = positionOverride.pose;
+          if(positionOverride.relativeToTeamBall)
+          {
+            position.pose.translation += theTeamBallModel.position;
+            relativeToTeamBallMap[position.type] = true;
+          }
           break;
         }
   }
@@ -598,7 +602,7 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
     const auto& suitableVoronoiRegionSubsets = (*voronoiRegionSubsets)[remainingAgents.size() - 1];
 
     // Sort remaining agents because there is at least one point where the results depend on the order of the rows of the cost matrix (minCoeff in startPositionSpecialHandling).
-    // Okay, it's not minCoeff anymore, but I am hesitatant to remove this now. (2023-06-24)
+    // Okay, it's not minCoeff anymore, but I am hesitant to remove this now. (2023-06-24)
     std::sort(remainingAgents.begin(), remainingAgents.end(), [](const Agent* a1, const Agent* a2) { return a1->number < a2->number; });
 
     // Initialize a set of pointers to the positions that haven't been assigned to an agent yet.
@@ -641,7 +645,11 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
             theOneAndOnlyAgent = agent->number;
             break;
           }
-      const Vector2f target(p->pose.translation.x(), mirror ? -p->pose.translation.y() : p->pose.translation.y());
+      Vector2f target = Vector2f(p->pose.translation.x(), mirror ? -p->pose.translation.y() : p->pose.translation.y());
+      if(relativeToTeamBallMap[p->type])
+      {
+        target += theTeamBallModel.position;
+      }
       for(Eigen::MatrixXf::Index agentIndex = 0; agentIndex < costMatrix.rows(); ++agentIndex)
       {
         costMatrix(agentIndex, positionIndex) = (target - remainingAgents[agentIndex]->lastKnownPose.translation).norm();
@@ -730,11 +738,6 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
     else if(!dontChangePositions)
       proposedMirror = std::lexicographical_compare(bestAssignmentCost[true].begin(), bestAssignmentCost[true].end(), bestAssignmentCost[false].begin(), bestAssignmentCost[false].end());
 
-    // A hack for the Visual Referee Challenge in the preliminary games of RoboCup 2023. The offensive and defensive kick-offs both have a player on the right side. Mirror the positions in the plan for the kick-off so that these players are next to the GameController table and therefore have sufficient distance to the Referee on the other side.
-    if(theGameState.isKickOff() &&
-       theGameState.competitionPhase == GameState::CompetitionPhase::roundRobin)
-      proposedMirror = !theGameState.leftHandTeam;
-
     if(theGameState.isReady() || theGameState.isSet())
       acceptedMirror = proposedMirror;
     else
@@ -745,16 +748,25 @@ void Behavior::assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::
       const size_t positionIndex = bestAssignment[acceptedMirror][i] / 2;
       const Tactic::Position& position = *remainingPositions[positionIndex];
       remainingAgents[i]->position = Tactic::Position::mirrorIf(position.type, acceptedMirror);
-      remainingAgents[i]->basePose = acceptedMirror ? Pose2f(-position.pose.rotation,
-                                                             position.pose.translation.x(),
-                                                             -position.pose.translation.y())
+      remainingAgents[i]->basePose = acceptedMirror ? Pose2f(-position.pose.rotation, position.pose.translation.x(), -position.pose.translation.y())
                                      : position.pose;
+      if(relativeToTeamBallMap[position.type])
+      {
+        remainingAgents[i]->basePose.translation += theTeamBallModel.position;
+      }
+
       if(!remainingVoronoiRegions[positionIndex])
         continue;
-      remainingAgents[i]->baseArea = *remainingVoronoiRegions[positionIndex];
-      if(acceptedMirror)
+
+      if(!acceptedMirror)
+        remainingAgents[i]->baseArea = *remainingVoronoiRegions[positionIndex];
+      else
+      {
+        remainingAgents[i]->baseArea.resize((*remainingVoronoiRegions[positionIndex]).size());
+        std::reverse_copy(std::begin(*remainingVoronoiRegions[positionIndex]), std::end(*remainingVoronoiRegions[positionIndex]), std::begin(remainingAgents[i]->baseArea));
         for(Vector2f& point : remainingAgents[i]->baseArea)
           point = Vector2f(point.x(), -point.y());
+      }
     }
 
     COMPLEX_DRAWING("behavior:Tactic:voronoiDiagram")
@@ -778,7 +790,16 @@ void Behavior::assignRoles(std::vector<Agent>& agents, Agent& self, const std::v
   {
     // By default, assign everyone to their position role.
     for(Agent& agent : agents)
+    {
       agent.nextRole = PositionRole::toRole(PositionRole::fromPosition(agent.position));
+      if(theExtendedGameState.stateLastFrame == theGameState.ownKickOff && (agent.position == Tactic::Position::forwardL ||
+          agent.position == Tactic::Position::forwardM || agent.position == Tactic::Position::forwardR
+          || agent.position == Tactic::Position::forward))
+        agent.nextRole = ActiveRole::toRole(ActiveRole::kickOffForward);
+      if((agent.role == ActiveRole::toRole(ActiveRole::kickOffForward) || agent.role == PositionRole::toRole(PositionRole::forward))
+         && theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) <= kickOffForwardDuration)
+        agent.nextRole = ActiveRole::toRole(ActiveRole::kickOffForward);
+    }
 
     determineActiveAgent(self, otherAgents, true);
   }
@@ -807,26 +828,12 @@ void Behavior::assignRoles(std::vector<Agent>& agents, Agent& self, const std::v
 SkillRequest Behavior::execute(const Agent& agent, const Agents& otherAgents)
 {
   if(theGameState.isReady())
-  {
-    if(!theOpposingKickoff.lastVariations.empty())
-    {
-      // the agent's basePose gets changed depending on the predicted kickoff variation and the agent's position
-      if(theOpposingKickoff.kickoffPrediction == OpposingKickoff::kick)
-      {
-        if(agent.position == Tactic::Position::midfielderL)
-          return SkillRequest::Builder::walkTo(agent.basePose + Vector2f(0.f, theOpposingKickoff.absKickYMean - agent.basePose.translation.y()));
-
-        if(agent.position == Tactic::Position::midfielderR)
-          return SkillRequest::Builder::walkTo(agent.basePose + Vector2f(0.f, -theOpposingKickoff.absKickYMean - agent.basePose.translation.y()));
-      }
-    }
     return SkillRequest::Builder::walkTo(agent.basePose);
-  }
   else if(theGameState.isSet())
     return SkillRequest::Builder::stand();
 
-  if(!theTeammatesBallModel.isValid && theFrameInfo.getTimeSince(agent.timeWhenBallLastSeen) > yetAnotherBallThreshold)
-    return ballSearch->execute(agent, otherAgents);
+  if(!theTeamBallModel.isValid && theFrameInfo.getTimeSince(agent.timeWhenBallLastSeen) > yetAnotherBallThreshold && theBallSearchParticles.anyParticlesInRegion(agent))
+    return ballSearch->execute(agent);
 
   if(agent.proposedSetPlay != SetPlay::none && agent.setPlayStep >= 0 /* TODO: if < 0, the agents should still go to their positions... */)
   {
@@ -890,11 +897,7 @@ bool Behavior::checkSetPlayStartConditions(SetPlay::Type setPlay, const std::vec
         if(priority <= kickOff.lowestRequiredPriority)
           ++numOfRequiredNonGoalkeeperAgents;
     const std::size_t numOfNonGoalkeeperAgents = std::count_if(agents.begin(), agents.end(), [](auto& agent) {return !agent.isGoalkeeper; });
-    // conditions to select other kick-off variations
-    const KickOff::Condition& condition = wasSelected ? kickOff.invariants : kickOff.preconditions;
-    const bool nothingPrediction = theOpposingKickoff.kickoffPrediction == OpposingKickoff::nothing;
-    return numOfNonGoalkeeperAgents >= numOfRequiredNonGoalkeeperAgents &&
-           (condition.nothingPrediction == nothingPrediction || SetPlay::isOwnKickOff(setPlay));
+    return numOfNonGoalkeeperAgents >= numOfRequiredNonGoalkeeperAgents;
   }
   else if(SetPlay::isPenaltyKick(setPlay))
   {
@@ -905,7 +908,7 @@ bool Behavior::checkSetPlayStartConditions(SetPlay::Type setPlay, const std::vec
   {
     const auto& freeKick = *static_cast<const FreeKick*>(setPlays[setPlay]);
     const FreeKick::Condition& condition = wasSelected ? freeKick.invariants : freeKick.preconditions;
-    const bool useBallDropInModel = !(theTeammatesBallModel.isValid || theFieldBall.ballWasSeen(yetAnotherBallThreshold)) && theBallDropInModel.isValid && !theBallDropInModel.dropInPositions.empty();
+    const bool useBallDropInModel = !(theTeamBallModel.isValid || theFieldBall.ballWasSeen(yetAnotherBallThreshold)) && theBallDropInModel.isValid && !theBallDropInModel.dropInPositions.empty();
     // It doesn't matter which drop in position is used because the sign of the y coordinate is not important.
     const Vector2f ballPosition = useBallDropInModel ? theBallDropInModel.dropInPositions[0] : theFieldBall.recentBallPositionOnField(yetAnotherBallThreshold);
     const Vector2f opponentGoal(theFieldDimensions.xPosOpponentGoalLine, 0.f);
@@ -929,7 +932,7 @@ bool Behavior::checkSetPlayStartConditions(SetPlay::Type setPlay, const std::vec
 
 void Behavior::updateBallXTimestamps()
 {
-  if(theTeammatesBallModel.isValid || theFieldBall.ballWasSeen(yetAnotherBallThreshold))
+  if(theTeamBallModel.isValid || theFieldBall.ballWasSeen(yetAnotherBallThreshold))
   {
     const float ballX = theFieldBall.recentBallPositionOnField(yetAnotherBallThreshold).x();
     for(auto& ballXTimestamp : ballXTimestamps)
@@ -962,17 +965,23 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
 
   const bool isOpponentFreeKick = theGameState.isFreeKick() && theGameState.isForOpponentTeam();
   const bool isOwnGoalKick = theGameState.isGoalKick() && theGameState.isForOwnTeam();
-  const bool isSharedAutonomyChallenge = Global::getSettings().scenario.starts_with("SharedAutonomy");
 
   // This function checks if the ball is in an area where the goalkeeper would want to play it.
   // The area is enlarged if the goalkeeper was already wanting to play the ball.
   const auto ballInGoalkeeperArea = [this](const Vector2f& ballOnField, bool wasAtBall) -> bool
   {
+    if(theLibDemo.isOneVsOneDemoActive)
+    {
+      // Become active when the ball has crossed the penalty mark
+      return ballOnField.x() < theFieldDimensions.xPosOwnPenaltyMark + (wasAtBall ? oscillationBuffer : 0);
+    }
     // This should probably replaced with something elliptic.
     const float offset = wasAtBall ? 0.f : -300.f;
-    return ballOnField.x() < theFieldDimensions.xPosOwnPenaltyArea + offset &&
-    ballOnField.y() < (theFieldDimensions.yPosLeftPenaltyArea + theFieldDimensions.yPosLeftGoalArea) * 0.5f + 150.f + offset &&
-    ballOnField.y() > (theFieldDimensions.yPosRightPenaltyArea + theFieldDimensions.yPosRightGoalArea) * 0.5f - 150.f - offset;
+    return (
+      ballOnField.x() < theFieldDimensions.xPosOwnPenaltyArea + offset &&
+      ballOnField.y() < (theFieldDimensions.yPosLeftPenaltyArea + theFieldDimensions.yPosLeftGoalArea) * 0.5f + 150.f + offset &&
+      ballOnField.y() > (theFieldDimensions.yPosRightPenaltyArea + theFieldDimensions.yPosRightGoalArea) * 0.5f - 150.f - offset
+    );
   };
 
   // This function calculates a pose which is assumed to be the target of agents who want an active role.
@@ -1024,7 +1033,7 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
       ttrb += std::max(ttrbGetUpDuration / 10.f, ttrbGetUpDuration - static_cast<float>(theFrameInfo.getTimeSince(agent.timeWhenLastUpright)));
 
     // Own goal kicks are preferred to be played by field players.
-    if(!isSharedAutonomyChallenge && Tactic::Position::isGoalkeeper(agent.position) && isOwnGoalKick)
+    if(Tactic::Position::isGoalkeeper(agent.position) && isOwnGoalKick)
       ttrb += ttrbGoalkeeperGoalKickPenalty;
 
     return ttrb;
@@ -1036,17 +1045,24 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
   // the ball.
   const auto canBeActive = [&](const Agent& agent, bool wasActive, bool ballNeeded) -> bool
   {
+    if(agent.position == Tactic::Position::goalkeeper && wasActive && theLibDemo.isOneVsOneDemoActive)
+    {
+      return (
+        ballInGoalkeeperArea(theFieldBall.recentBallPositionOnField(), wasActive) ||
+        (agent.pose.translation - theFieldBall.recentBallPositionOnField()).squaredNorm() < sqr(ballDistanceThresholdDemo)
+      );
+    }
     // This checks for the ball age when the message was sent.
     const bool ballWasSeen = agent.timestamp <= agent.timeWhenBallLastSeen + ballSeenThreshold;
     // Agents who believe in a different ball don't compete.
     if(agent.disagreeOnBall)
       return false;
     // For the goalkeeper to go to the ball, the ball must be in a specific area.
-    if(!isSharedAutonomyChallenge && ((agent.position == Tactic::Position::goalkeeper && !wasActive) || (Tactic::Position::isGoalkeeper(agent.position) && theGameState.isFreeKick())))
+    if((agent.position == Tactic::Position::goalkeeper && !wasActive) || (Tactic::Position::isGoalkeeper(agent.position) && theGameState.isFreeKick()))
     {
-      if(!ballWasSeen && ((ballNeeded && !wasActive) || !theTeammatesBallModel.isValid))
+      if(!ballWasSeen && ((ballNeeded && !wasActive) || !theTeamBallModel.isValid))
         return false;
-      if(!ballInGoalkeeperArea(ballNeeded ? agent.pose* agent.ballPosition : theTeammatesBallModel.position, wasActive))
+      if(!ballInGoalkeeperArea(ballNeeded ? agent.pose* agent.ballPosition : theTeamBallModel.position, wasActive))
         return false;
     }
     if(!wasActive)
@@ -1062,10 +1078,10 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
     return true;
   };
 
-  // closestToTeammatesBall does not count as active in some cases.
+  // closestToTeamBall does not count as active in some cases.
   auto wasActive = [](const Agent& agent) -> bool
   {
-    return Role::isActiveRole(agent.role) && agent.role != ActiveRole::toRole(ActiveRole::closestToTeammatesBall);
+    return Role::isActiveRole(agent.role) && agent.role != ActiveRole::toRole(ActiveRole::closestToTeamBall);
   };
 
   // Only the previously active agent with the lowest player number gets special treatment.
@@ -1117,10 +1133,10 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
   }
   // Case 2: I can be active but do not see the ball, but teammates have seen a ball. This can mean that I should turn to the ball
   //         to have the chance to see the ball and become active then.
-  else if(assign && canBeActive(self, self.role == ActiveRole::toRole(ActiveRole::closestToTeammatesBall), false) && theTeammatesBallModel.isValid)
+  else if(assign && canBeActive(self, self.role == ActiveRole::toRole(ActiveRole::closestToTeamBall), false) && theTeamBallModel.isValid)
   {
-    const Vector2f teammatesBallOnField = BallPhysics::getEndPosition(theTeammatesBallModel.position, theTeammatesBallModel.velocity, theBallSpecification.friction);
-    float minTTRBWithoutBall = calcTTRB(self, teammatesBallOnField, self.role == ActiveRole::toRole(ActiveRole::closestToTeammatesBall), false);
+    const Vector2f teamBallOnField = BallPhysics::getEndPosition(theTeamBallModel.position, theTeamBallModel.velocity, theBallSpecification.friction);
+    float minTTRBWithoutBall = calcTTRB(self, teamBallOnField, self.role == ActiveRole::toRole(ActiveRole::closestToTeamBall), false);
     if(assign)
       DRAW_TEXT("behavior:activeRole", self.pose.translation.x(), self.pose.translation.y(), 100, ColorRGBA::blue, std::to_string(static_cast<int>(minTTRBWithoutBall)));
     const Agent* minAgentWithoutBall = &self;
@@ -1134,9 +1150,9 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
       const bool itWasActive = agent->number == theOneAndOnlyPreviouslyActiveAgent;
       if(!canBeActive(*agent, itWasActive, true))
       {
-        if(!canBeActive(*agent, agent->role == ActiveRole::toRole(ActiveRole::closestToTeammatesBall), false))
+        if(!canBeActive(*agent, agent->role == ActiveRole::toRole(ActiveRole::closestToTeamBall), false))
           continue;
-        const float itsTTRB = calcTTRB(*agent, teammatesBallOnField, agent->role == ActiveRole::toRole(ActiveRole::closestToTeammatesBall), false);
+        const float itsTTRB = calcTTRB(*agent, teamBallOnField, agent->role == ActiveRole::toRole(ActiveRole::closestToTeamBall), false);
         if(assign)
           DRAW_TEXT("behavior:activeRole", agent->pose.translation.x(), agent->pose.translation.y(), 100, ColorRGBA::blue, std::to_string(static_cast<int>(itsTTRB)));
         if(itsTTRB < minTTRBWithoutBall)
@@ -1159,7 +1175,7 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
     // ttrbWithoutBallPenalty somehow accounts for the fact that finding the ball takes some time, so it isn't sufficient to be *just a bit* closer to the ball
     // than a agent who can already see it, especially since there is uncertainty in the transformation of the ball into my local coordinate system.
     if(minTTRBWithoutBall + ttrbWithoutBallPenalty < minTTRBWithBall)
-      const_cast<Agent*>(minAgentWithoutBall)->nextRole = ActiveRole::toRole(ActiveRole::closestToTeammatesBall);
+      const_cast<Agent*>(minAgentWithoutBall)->nextRole = ActiveRole::toRole(ActiveRole::closestToTeamBall);
     if(minAgentWithBall)
       const_cast<Agent*>(minAgentWithBall)->nextRole = ActiveRole::toRole(isOpponentFreeKick ? ActiveRole::freeKickWall : ActiveRole::playBall);
     return minAgentWithBall;
@@ -1167,7 +1183,7 @@ const Agent* Behavior::determineActiveAgent(Agent& self, const std::vector<const
   else
   {
     // Just maintain some belief which other agent should be play the ball.
-    // We don't assign closestToTeammatesBall to other agents here because it does not matter.
+    // We don't assign closestToTeamBall to other agents here because it does not matter.
     float minTTRB = std::numeric_limits<float>::max();
     const Agent* minAgent = nullptr;
     for(const Agent* agent : otherAgents)
