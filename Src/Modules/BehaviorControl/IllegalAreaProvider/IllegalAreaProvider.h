@@ -15,6 +15,7 @@
 #include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
+#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -25,17 +26,21 @@ MODULE(IllegalAreaProvider,
   REQUIRES(AgentStates),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
+  REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(LibPosition),
   REQUIRES(RobotPose),
   REQUIRES(StrategyStatus),
-  REQUIRES(FrameInfo),
+  REQUIRES(TeamBallModel),
   PROVIDES(IllegalAreas),
   DEFINES_PARAMETERS(
   {,
     (float)(750.f) freeKickClearAreaRadius, /**< The radius of the area that has to be cleared by the defending team during a free kick. */
     (float)(400.f) outsideGoalAreaDistanceThreshold, /**< Expansion of the own goal area to determine whether a teammate is in it if the calculating robot is outside. */
     (float)(50.f) insideGoalAreaDistanceThreshold, /**< Expansion of the own goal area to determine whether a teammate is in it if the calculating robot is inside. */
+    (float)(300.f) goalKeeperDistanceToBallGoalKick, /**< The goal keeper target positio must be this much away from the ball. */
+    (int)(15000) ownGoalKickTimeIgnoreGoalKeeper, /**< When we have less than this time in a goal kick left, ignore the goal keeper. */
+    (int)(7000) ballSeenBeforeFreeKickTime, /**< Ball must have been seen at least this time before a free kick started, to consider avoiding it. */
   }),
 });
 
@@ -81,6 +86,14 @@ class IllegalAreaProvider : public IllegalAreaProviderBase
    * @return number of teammates in the own goal area excluding the goalkeeper
    */
   unsigned int nonKeeperTeammatesInOwnGoalArea() const;
+
+  /**
+   * Returns whether the goal area is currently allowed.
+   * This check is for goal kicks, to prevent field players entering the goal area,
+   * while the goal keeper is still outside of the goal area. Otherwise a striker executing
+   * the goal kick might block the goal keeper, which is currently trying to return to its position.
+   */
+  bool isGoalAreaAllowed() const;
 
   /**
    * Visualizes the most common illegal areas with debug drawings.

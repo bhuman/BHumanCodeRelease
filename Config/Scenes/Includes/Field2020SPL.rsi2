@@ -2,21 +2,21 @@
 
   <Compound name="field">
 
-    <BoxGeometry width="8m" height="0.2m" depth="11m" color="rgb(80, 80, 80)">
+    <BoxGeometry width="10m" height="0.2m" depth="13m" color="rgb(80, 80, 80)">
       <Translation z="-0.1m"/>
       <Material name="fieldCarpet"/>
     </BoxGeometry>
-    <BoxGeometry width="0.1m" height="0.3m" depth="11m" color="rgb(80, 80, 80)">
-      <Translation y="-4.05m" z="0.15m"/>
+    <BoxGeometry width="0.1m" height="0.3m" depth="13m" color="rgb(80, 80, 80)">
+      <Translation y="-5.05m" z="0.15m"/>
     </BoxGeometry>
-    <BoxGeometry width="0.1m" height="0.3m" depth="11m" color="rgb(80, 80, 80)">
-      <Translation y="4.05m" z="0.15m"/>
+    <BoxGeometry width="0.1m" height="0.3m" depth="13m" color="rgb(80, 80, 80)">
+      <Translation y="5.05m" z="0.15m"/>
     </BoxGeometry>
-    <BoxGeometry width="8m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
-      <Translation x="-5.55m" z="0.15m"/>
+    <BoxGeometry width="10m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
+      <Translation x="-6.55m" z="0.15m"/>
     </BoxGeometry>
-    <BoxGeometry width="8m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
-      <Translation x="5.55m" z="0.15m"/>
+    <BoxGeometry width="10m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
+      <Translation x="6.55m" z="0.15m"/>
     </BoxGeometry>
 
     <ComplexAppearance ref="fieldLines" name="fieldLines1"/>

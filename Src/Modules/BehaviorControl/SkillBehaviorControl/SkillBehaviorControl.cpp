@@ -20,8 +20,10 @@ SkillBehaviorControl::SkillBehaviorControl() :
 
 void SkillBehaviorControl::update(ActivationGraph&)
 {
+  DECLARE_DEBUG_RESPONSE("option:ManualCameraCalibration:finishNow");
   DECLARE_DEBUG_RESPONSE("option:AutonomousCameraCalibration:finishNow");
   DECLARE_DEBUG_DRAWING("option:AutonomousCameraCalibration:position", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("option:BallControlLeaderboard", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:bonus", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:borders", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:clearBall", "drawingOnField");
@@ -50,6 +52,7 @@ void SkillBehaviorControl::update(ActivationGraph&)
   DECLARE_DEBUG_DRAWING("option:WalkPotentialField:potentialField", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:WalkToPointObstacle:obstacleAtMyPosition", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Zweikampf:wheel", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("option:Zweikampf:kickDirections", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Zweikampf:kicks", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Zweikampf:wheelSteal", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Zweikampf:sidewardRange", "drawingOnField");
@@ -72,15 +75,15 @@ void SkillBehaviorControl::update(ActivationGraph&)
   theHeadMotionRequest.speed = 150_deg;
   theHeadMotionRequest.stopAndGoMode = false;
 
-  theMotionRequest.shouldInterceptBall = false;
   theMotionRequest.odometryData = theOdometryData;
   theMotionRequest.ballEstimate = theBallModel.estimate;
   theMotionRequest.ballEstimateTimestamp = theFrameInfo.time;
   theMotionRequest.ballTimeWhenLastSeen = theBallModel.timeWhenLastSeen;
   theMotionRequest.shouldInterceptBall = !theLibDemo.isDemoActive && theGameState.isPlaying() && !theGameState.isPenalized() && (theFieldInterceptBall.interceptBall || theFieldInterceptBall.predictedInterceptBall);
   theMotionRequest.shouldWalkOutOfBallLine = theFieldBall.isRollingTowardsOpponentGoal;
+  theMotionRequest.targetOfInterest.reset();
 
-  theOptionalImageRequest.sendImage = false;
+  theRefereeDetectionRequest.detectReferee = false;
 
   // On request, tell the user whether a USB drive is mounted.
   if(theEnhancedKeyStates.hitStreak[KeyStates::headMiddle] == 3)
@@ -127,140 +130,6 @@ void SkillBehaviorControl::update(ActivationGraph&)
 
 void SkillBehaviorControl::executeRequest()
 {
-  if(theSharedAutonomyRequest.isValid)
-  {
-    const auto playBall = [&]()
-    {
-      auto state = theGameState.state;
-      if(theGameState.isKickOff())
-        const_cast<GameState&>(theGameState).state = GameState::playing;
-      PlayBall();
-      const_cast<GameState&>(theGameState).state = state;
-    };
-
-    bool headMotion = false;
-    switch(theSharedAutonomyRequest.controlOperations)
-    {
-      case SharedAutonomyRequest::dribbleInDirection:
-      case SharedAutonomyRequest::dribbleToPoint:
-      case SharedAutonomyRequest::passToMate:
-      case SharedAutonomyRequest::passToPoint:
-      case SharedAutonomyRequest::playBallDribbleInDirection:
-      case SharedAutonomyRequest::playBallDribbleToPoint:
-      case SharedAutonomyRequest::playBallKickToPoint:
-      case SharedAutonomyRequest::playBallPassToMate:
-        headMotion = true;
-        const_cast<StrategyStatus&>(theStrategyStatus).role = ActiveRole::toRole(ActiveRole::playBall);
-      default:
-        break;
-    }
-    switch(theSharedAutonomyRequest.controlOperations)
-    {
-      case SharedAutonomyRequest::stand:
-      case SharedAutonomyRequest::standHigh:
-      {
-        Stand({.high = theSharedAutonomyRequest.controlOperations == SharedAutonomyRequest::standHigh});
-        break;
-      }
-      case SharedAutonomyRequest::sit:
-      {
-        PlayDead();
-        break;
-      }
-      case SharedAutonomyRequest::walkAtRelativeSpeed:
-      {
-        WalkAtRelativeSpeed({.speed = theSharedAutonomyRequest.targetPose});
-        break;
-      }
-      case SharedAutonomyRequest::walkToTarget:
-      {
-        WalkToPointObstacle({.target = theRobotPose.inverse() * theSharedAutonomyRequest.targetPose, .targetOfInterest = theFieldBall.recentBallPositionRelative()});
-        break;
-      }
-      case SharedAutonomyRequest::dribbleInDirection:
-      {
-        GoToBallAndDribble({.targetDirection = theSharedAutonomyRequest.targetPose.translation.angle(),
-                            .kickLength = 100.f});
-        break;
-      }
-      case SharedAutonomyRequest::dribbleToPoint:
-      {
-        GoToBallAndDribble({.targetDirection = Angle::normalize((theSharedAutonomyRequest.targetPose.translation - theFieldBall.positionOnField).angle() - theRobotPose.rotation),
-                            .kickLength = 100.f});
-        break;
-      }
-      case SharedAutonomyRequest::passToMate:
-      {
-        for(int i = 0; i < static_cast<int>(theGameState.ownTeam.playerStates.size()); ++i)
-        {
-          if(theGameState.ownTeam.playerStates[Settings::lowestValidPlayerNumber + i] == GameState::active && Settings::lowestValidPlayerNumber + i != theGameState.playerNumber)
-          {
-            PassToTeammate({.playerNumber = Settings::lowestValidPlayerNumber + i});
-            break;
-          }
-        }
-        break;
-      }
-      case SharedAutonomyRequest::passToPoint:
-      {
-        GlobalTeammatesModel::TeammateEstimate target;
-        target.playerNumber = 10;
-        target.pose = theSharedAutonomyRequest.targetPose;
-        target.speed = 0.f;
-        const_cast<GlobalTeammatesModel&>(theGlobalTeammatesModel).teammates.push_back(target);
-        PassToTeammate({.playerNumber = 10});
-        const_cast<GlobalTeammatesModel&>(theGlobalTeammatesModel).teammates.pop_back();
-        break;
-      }
-      case SharedAutonomyRequest::playBallDribbleInDirection:
-      {
-        const_cast<SkillRequest&>(theSkillRequest) = SkillRequest::Builder::dribbleTo(theSharedAutonomyRequest.targetPose.rotation);
-        break;
-      }
-      case SharedAutonomyRequest::playBallDribbleToPoint:
-      {
-        const_cast<SkillRequest&>(theSkillRequest) = SkillRequest::Builder::dribbleTo((theSharedAutonomyRequest.targetPose.translation - theFieldBall.positionOnField).angle());
-        playBall();
-        break;
-      }
-      case SharedAutonomyRequest::playBallPassToMate:
-      {
-        const_cast<SkillRequest&>(theSkillRequest) = SkillRequest::Builder::passTo(Settings::lowestValidPlayerNumber);
-        for(int i = 0; i < static_cast<int>(theGameState.ownTeam.playerStates.size()); i += 2)
-          if(theGameState.ownTeam.playerStates[i] == GameState::active)
-            const_cast<SkillRequest&>(theSkillRequest) = SkillRequest::Builder::passTo(Settings::lowestValidPlayerNumber + i);
-        playBall();
-        break;
-      }
-      case SharedAutonomyRequest::playBallKickToPoint:
-      {
-        const_cast<SkillRequest&>(theSkillRequest) = SkillRequest::Builder::passTo(10);
-        const_cast<SkillRequest&>(theSkillRequest).target = theSharedAutonomyRequest.targetPose;
-        GlobalTeammatesModel::TeammateEstimate target;
-        target.playerNumber = 10;
-        target.pose = theSharedAutonomyRequest.targetPose;
-        target.speed = 0.f;
-        const_cast<GlobalTeammatesModel&>(theGlobalTeammatesModel).teammates.push_back(target);
-        playBall();
-        break;
-      }
-    }
-    if(theSharedAutonomyRequest.headRequest.manual)
-    {
-      if(headMotion)
-        theLibCheck.dec(LibCheck::headMotionRequest);
-
-      // Manual head control
-      LookAtAngles({.pan = theSharedAutonomyRequest.headRequest.angle.x(),
-                    .tilt = theSharedAutonomyRequest.headRequest.angle.y(),
-                    .speed = 60_deg});
-    }
-    else if(!headMotion)
-    {
-      LookActive({.withBall = true});
-    }
-    return;
-  }
   if(theSkillRequest.skill == SkillRequest::none)
   {
     if(theFrameInfo.getTimeSince(timeWhenAnnouncedEmptySkillRequest) > 5000)
@@ -322,12 +191,15 @@ void SkillBehaviorControl::executeRequest()
       case SkillRequest::walk:
       {
         const Pose2f targetPose = theRobotPose.inverse() * theSkillRequest.target;
-        if((theFieldBall.ballWasSeen(7000) || theTeammatesBallModel.isValid) && theFieldBall.isBallPositionConsistentWithGameState())
+        const ReduceWalkSpeedType::ReduceWalkSpeedType reduceWalkSpeedType = theGameState.isGoalkeeper() ? ReduceWalkSpeedType::distanceBased : ReduceWalkSpeedType::slow;
+
+        if(theFieldBall.ballWasSeen(7000) || theTeamBallModel.isValid)
         {
           WalkToPointObstacle({.target = theRobotPose.inverse() * theSkillRequest.target,
-                               .rough = theGameState.isGoalkeeper(),
-                               .disableObstacleAvoidance = theGameState.isGoalkeeper(),
+                               .reduceWalkSpeedType = reduceWalkSpeedType,
+                               .disableObstacleAvoidance = theGameState.isGoalkeeper() && (!theGameState.isGoalKick() || !theGameState.isForOwnTeam()),
                                .targetOfInterest = theFieldBall.recentBallPositionRelative()}); // TODO: set the right parameters
+
           if(theMotionInfo.isMotion(MotionPhase::stand))
             LookActive({.withBall = true,
                         .slowdownFactor = isSlowingDownLookActive ? 0.4f : 1.f});
@@ -338,7 +210,7 @@ void SkillBehaviorControl::executeRequest()
         else
         {
           WalkToPointObstacle({.target = theRobotPose.inverse() * theSkillRequest.target,
-                               .rough = theGameState.isGoalkeeper(),
+                               .reduceWalkSpeedType = reduceWalkSpeedType,
                                .disableObstacleAvoidance = theGameState.isGoalkeeper()}); // TODO: set the right parameters
           LookActive();
         }

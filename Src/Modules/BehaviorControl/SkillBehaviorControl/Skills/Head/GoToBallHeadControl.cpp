@@ -11,7 +11,7 @@
 option((SkillBehaviorControl) GoToBallHeadControl,
        args((float) distanceToTarget,
             (bool) lookAtKickTarget,
-            (Vector2f) kickTargetRelative),
+            (const Vector2f&) kickTargetRelative),
        defs((float)(250.f) lookAtBallDistanceLow, /**< If the distance to the target becomes smaller than this, the head looks at the ball. */
             (float)(310.f) lookAtBallDistanceHigh, /**< If the distance to the target becomes larger than this, other things than the ball may be looked at. */
             (float)(500.f) mayLookAtKickTargetDistanceLow, /**< If the distance to the target becomes smaller than this, the head may look at the kick target. */

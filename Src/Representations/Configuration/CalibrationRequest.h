@@ -19,6 +19,7 @@ ENUM(SampleType,
   cornerAngle, /**< An angle in the penalty area that must be 90 degrees. */
   parallelAngle, /**< An angle in the penalty area that must be 180 degrees. */
   parallelLinesDistance, /**< The (known) distance between the goal line and the front goal area line. */
+  parallelLinesDistanceShort, /**< The (known) distance between the goal line and the front goal area line. */
   goalAreaDistance, /**< The (known) distance between the penalty mark and the front goal area line. */
   goalLineDistance, /**< The (known) distance between the penalty mark and the goal line. */
 });
@@ -29,6 +30,7 @@ STREAMABLE(SampleConfigurationRequest,
   (unsigned)(0) index,
   (CameraInfo::Camera)(CameraInfo::Camera::upper) camera,
   (Angle)(0) headPan,
+  (Angle)(0) orgHeadPan, /**< Original pan angle before adjusting head when not seeing lines. */
   (Angle)(0) headTilt,
   (unsigned)(0) sampleTypes,
 });

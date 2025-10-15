@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Wait for 500 error messages
+journalctl -u booster-daemon -n 0 -f \
+| grep --line-buffered "app sem timeout RobotCore" \
+| head -n 500
+
+# Then fail
+exit 1

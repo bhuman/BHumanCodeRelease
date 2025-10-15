@@ -1,1 +1,4 @@
 call Includes/PerceptOracle
+
+# direct goals are allowed, because the robot is alone
+ar directGoals on

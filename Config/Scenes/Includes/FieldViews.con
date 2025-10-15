@@ -1,4 +1,4 @@
-call Includes/FieldViews1
+call FieldViews1
 
 # ground truth view layers
 vfd worldState representation:GroundTruthRobotPose
@@ -6,4 +6,4 @@ vfd worldState representation:GroundTruthRobotPose
 vfd worldState cognition:GroundTruthRobotPose
 vfd worldState representation:GroundTruthBallModel
 
-call Includes/FieldViews2
+call FieldViews2

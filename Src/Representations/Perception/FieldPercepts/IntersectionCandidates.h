@@ -44,7 +44,7 @@ STREAMABLE(IntersectionCandidates,
     (Vector2f) absPos,           /**< The field coordinates of the intersection absolute */
     (Matrix2f) cov,              /**< The covariance of pos */
     (Vector2f) dir1,             /**< The first direction of the lines intersected (in field coordinates, relative to the robot) */
-    (Vector2f) dir2,             /**< The second direction of the lines intersected (in field coordinates, realative to the robot) */
+    (Vector2f) dir2,             /**< The second direction of the lines intersected (in field coordinates, relative to the robot) */
     (unsigned) line1Index,       /**< The first line of the intersection*/
     (unsigned) line2Index,       /**< The second line of the intersection*/
     (Vector2f) line1CloserEnd,   /**< The closer end of the first line to the intersection in field coordinates */

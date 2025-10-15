@@ -1,0 +1,57 @@
+# replay a log file.
+# you have to adjust the name of the log file.
+call ../Includes/replayDialog ../Includes/replay
+
+# Select all robots in case Includes/replay starts multiple replays
+robot all
+
+# simulation time on, otherwise log data may be skipped
+st on
+dt 576
+
+for Upper vi JPEGImage
+
+# all views are defined in other scripts
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:CenterCircleWithLine:image
+vid all representation:BallPercept:image
+vid all representation:BallSpots:image
+call ../Includes/FieldViews1
+call ../Includes/FieldViews3
+
+vid upper representation:FieldBoundary:image
+vid upper representation:PenaltyMarkPercept:image
+
+vfd worldState representation:GameState
+vfd worldState representation:GameState:ownTeam
+
+# deactivate game info provided in Cognition
+mr GameControllerData default
+mr GameState default
+
+log mr
+
+# enable behavior graph
+dr representation:ActivationGraph
+
+# send joint angles to control puppet
+dr representation:JointSensorData
+
+# send more data
+dr representation:JointRequest
+dr representation:InertialData:asRaw
+dr representation:FsrSensorData
+dr representation:SystemSensorData
+dr representation:KeyStates
+
+echo Use keyboard to navigate log if console does not have focus:
+echo "Space	" Play/pause
+echo "Home	" Stop
+echo "End	" Repeat frame
+echo "Left	" Go to previous frame
+echo "Right	" Go to next frame
+echo "Up	" Go to previous image
+echo "Down	" Go to next image
+echo "PageUp	" Go 100 frames back
+echo "PageDown	" Go 100 frames forward

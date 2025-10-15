@@ -27,6 +27,7 @@ option((SkillBehaviorControl) Dribble,
   theMotionRequest.kickLength = kickLength;
   theMotionRequest.turnKickAllowed = turnKickAllowed;
   theMotionRequest.preStepType = preStepType;
+  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

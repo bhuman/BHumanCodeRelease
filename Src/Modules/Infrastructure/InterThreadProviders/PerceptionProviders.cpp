@@ -12,7 +12,6 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/JPEGImage.h"
-#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
@@ -65,6 +64,19 @@ void PerceptionImageCoordinateSystemProvider::update(ImageCoordinateSystem& theI
   }
 }
 
+MODULE(UpperFrameInfoProvider,
+{,
+  REQUIRES(UpperFrameInfo),
+  PROVIDES(FrameInfo),
+});
+
+class UpperFrameInfoProvider : public UpperFrameInfoProviderBase
+{
+  void update(FrameInfo& theFrameInfo) override {theFrameInfo = theUpperFrameInfo;}
+};
+
+MAKE_MODULE(UpperFrameInfoProvider);
+
 // Define a module that updates a representation with the newer one of both aliases
 #define ALIAS_MODULE(Representation) \
   MODULE(Perception##Representation##Provider, \
@@ -101,7 +113,6 @@ ALIAS(CirclePercept);
 ALIAS(FieldBoundary);
 ALIAS(FieldLines);
 ALIAS(FieldLineIntersections);
-ALIAS(GoalPostsPercept);
 ALIAS(IntersectionsPercept);
 ALIAS(JPEGImage);
 ALIAS(LinesPercept);

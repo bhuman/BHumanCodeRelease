@@ -118,7 +118,7 @@ private:
 
   /**
    * Fills the representation provided by this module and
-   * calls all internal functions to compute the informatik.
+   * calls all internal functions to compute the representation.
    * @param globalOpponentsModel The representation
    */
   void update(GlobalTeammatesModel& globalTeammatesModel) override;

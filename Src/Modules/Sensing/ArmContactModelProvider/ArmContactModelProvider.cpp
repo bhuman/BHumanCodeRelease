@@ -6,15 +6,28 @@
  */
 
 #include "ArmContactModelProvider.h"
-#include "Platform/SystemCall.h"
 #include "Debugging/Annotation.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/Plot.h"
-#include "Math/Constants.h"
+#include "Framework/Settings.h"
+#include "Platform/SystemCall.h"
+#include "Streaming/Global.h"
 #include <algorithm>
 #include <cmath>
 
 MAKE_MODULE(ArmContactModelProvider);
+
+ArmContactModelProvider::ArmContactModelProvider() :
+  errorBuffer{ RingBufferWithSum<Vector2f>(Vector2f::Zero()), RingBufferWithSum<Vector2f>(Vector2f::Zero()) }
+{
+  FOREACH_ENUM(Arms::Arm, arm)
+  {
+    errorBuffer[arm].reserve(errorBufferSize);
+    for(int i = 0; i < errorBufferSize; i++)
+      errorBuffer[arm].push_front(Vector2f::Zero());
+    angleBuffer[arm].reserve(frameBufferSize);
+  }
+}
 
 void ArmContactModelProvider::decideArmMovementDone(ArmContactModel& model)
 {
@@ -112,10 +125,11 @@ void ArmContactModelProvider::determinePushDirection(ArmContactModel& model)
 
 void ArmContactModelProvider::calculateForce()
 {
+  ASSERT(angleBuffer[Arms::left].full() && angleBuffer[Arms::right].full());
   const Vector2f actualLeftHand = calculateActualHandPosition(Arms::left).head<2>();
-  const Vector2f requestedLeftHand = angleBuffer[Arms::left][frameDelay].head<2>();
+  const Vector2f requestedLeftHand = angleBuffer[Arms::left].back().head<2>();
   const Vector2f actualRightHand = calculateActualHandPosition(Arms::right).head<2>();
-  const Vector2f requestedRightHand = angleBuffer[Arms::right][frameDelay].head<2>();
+  const Vector2f requestedRightHand = angleBuffer[Arms::right].back().head<2>();
 
   const Vector2f leftError = actualLeftHand - requestedLeftHand;
   const Vector2f rightError = actualRightHand - requestedRightHand;
@@ -202,7 +216,7 @@ void ArmContactModelProvider::updateError(ArmContactModel& model)
 
 void ArmContactModelProvider::reset(ArmContactModel& model)
 {
-  for(std::size_t i = 0; i < errorBufferSize; i++)
+  for(int i = 0; i < errorBufferSize; i++)
   {
     errorBuffer[Arms::left].push_front(Vector2f::Zero());
     errorBuffer[Arms::right].push_front(Vector2f::Zero());
@@ -228,7 +242,7 @@ void ArmContactModelProvider::calcCorrectionFactor(Arms::Arm arm)
 {
   handPosRequested[arm] = flattenSpeed(angleBuffer[arm]);
 
-  const Vector2f handSpeedRequested = (handPosRequested[arm] - lastHandPosRequested[arm]) / Constants::motionCycleTime;
+  const Vector2f handSpeedRequested = (handPosRequested[arm] - lastHandPosRequested[arm]) / Global::getSettings().motionCycleTime;
   if(std::abs(handSpeedRequested.x()) <= 500.f)
     speedFactor.x() = std::pow(0.85f, std::abs(handSpeedRequested.x()) / 40.f);
   else
@@ -243,9 +257,11 @@ void ArmContactModelProvider::calcCorrectionFactor(Arms::Arm arm)
   handSpeed[arm] = handSpeedRequested;
 }
 
-Vector2f ArmContactModelProvider::flattenSpeed(const RingBuffer<Vector3f, frameBufferSize>& angleBuffer) const
+Vector2f ArmContactModelProvider::flattenSpeed(const RingBuffer<Vector3f>& angleBuffer) const
 {
-  return (angleBuffer[frameDelay - 2].head<2>() + angleBuffer[frameDelay - 1].head<2>() + angleBuffer[frameDelay].head<2>() + angleBuffer[frameDelay + 1].head<2>() + angleBuffer[frameDelay + 2].head<2>()) / 5.f;
+  ASSERT(angleBuffer.full());
+  const std::size_t lastIndex = angleBuffer.capacity() - 1;
+  return (angleBuffer[lastIndex - 2].head<2>() + angleBuffer[lastIndex - 1].head<2>() + angleBuffer[lastIndex].head<2>() + angleBuffer[lastIndex + 1].head<2>() + angleBuffer[lastIndex + 2].head<2>()) / 5.f;
 }
 
 Vector2f ArmContactModelProvider::calcWalkDirectionFactor() const

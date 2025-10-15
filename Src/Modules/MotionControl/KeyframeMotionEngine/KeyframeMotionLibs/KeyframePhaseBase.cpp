@@ -15,7 +15,6 @@ KeyframePhaseBase::KeyframePhaseBase(KeyframeMotionEngine& engine, const Keyfram
   engine(engine),
   currentKeyframeMotionRequest(keyframeMotionRequest)
 {
-  jointCompensationReducer.fill(1.f);
   motionListIDLoops.fill(0);
   blockIDLoops.fill(0);
 }
@@ -27,7 +26,7 @@ bool KeyframePhaseBase::isInBreakUpRange()
   const Angle pitchVal = engine.theInertialData.angle.y();
   const Angle rollVal = engine.theInertialData.angle.x();
 
-  if(((engine.theFilteredCurrent.legMotorMalfunction && engine.motorMalfunctionBreakUp) // motor malfunction
+  if(((engine.theFilteredCurrent.legMotorMalfunction && engine.motorMalfunctionBreakUp && !motorMalfunctionRecovery) // motor malfunction
       || !currentTorsoAngleBreakUp.pitchDirection.isInside(pitchVal) // tilting forward/backward
       || !currentTorsoAngleBreakUp.rollDirection.isInside(rollVal)) // tilting left/right
      && breakUpOn)
@@ -40,9 +39,11 @@ bool KeyframePhaseBase::isInBreakUpRange()
     currentMotion = KeyframeMotionList();
     currentMotionBlock.clear();
     currentKeyframe = Keyframe();
+    lastKeyframeCompensation = {};
+    lastCompensation = {};
+    lastKeyframe = {};
     waitForFallenCheck = true;
-    if(SystemCall::getMode() != SystemCall::logFileReplay && !(engine.theFilteredCurrent.legMotorMalfunction && engine.motorMalfunctionBreakUp))
-      SystemCall::say("Abort");
+    motorMalfunctionRecovery = false;
     for(std::size_t i = 0; i < jointRequestOutput.angles.size(); i++)
       jointRequestOutput.stiffnessData.stiffnesses[i] = 10;
     return true;
@@ -67,12 +68,12 @@ void KeyframePhaseBase::waitForFallen()
     else
     {
       MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFrontGetUp], jointRequestOutput, static_cast<Joints::Joint>(0), Joints::numOfJoints);
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = 30;
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = 30;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = engine.safeFallParameters.hipPitchStiffness;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = engine.safeFallParameters.hipPitchStiffness;
       jointRequestOutput.angles[Joints::lElbowRoll] = -40_deg;
       jointRequestOutput.angles[Joints::rElbowRoll] = 40_deg;
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::lElbowRoll] = 20;
-      jointRequestOutput.stiffnessData.stiffnesses[Joints::rElbowRoll] = 20;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::lElbowRoll] = engine.safeFallParameters.elbowRollStiffness;
+      jointRequestOutput.stiffnessData.stiffnesses[Joints::rElbowRoll] = engine.safeFallParameters.elbowRollStiffness;
       jointRequestOutput.stiffnessData.stiffnesses[Joints::lElbowYaw] = 0;
       jointRequestOutput.stiffnessData.stiffnesses[Joints::rElbowYaw] = 0;
     }
@@ -98,6 +99,7 @@ void KeyframePhaseBase::waitForFallen()
       {
         state = EngineState::decideAction;
         lastNotActiveTimestamp = engine.theFrameInfo.time;
+        doSlowFrontRecovery = true;
       }
     }
   }
@@ -157,9 +159,10 @@ void KeyframePhaseBase::setNextJoints()
   float useRatio = ratio;
   calculateJointDifference();
   removePreviousKeyframeJointCompensation();
-  applyJointCompensation();
+  targetJointRequestWithCompensation.angles = targetJointRequestWithoutCompensation.angles;
+  lastCompensation = applyJointCompensation(currentKeyframe.jointCompensation, targetJointRequestWithCompensation);
 
-  targetJoints = lineJointRequest;
+  targetJoints = targetJointRequestWithCompensation;
   ASSERT(currentKeyframe.interpolationType != InterpolationType::Default);
 
   if(currentKeyframe.interpolationType == SinusMinToMax)
@@ -191,6 +194,7 @@ void KeyframePhaseBase::checkFinishedState()
     wasHelpMe = false;
     waitForFallenCheck = false;
     errorTriggered = false;
+    motorMalfunctionRecovery = engine.theFilteredCurrent.legMotorMalfunction;
     currentMotion = engine.motions[KeyframeMotionListID::stand];
     // TODO Set stand motion
     initKeyframeMotion(true);

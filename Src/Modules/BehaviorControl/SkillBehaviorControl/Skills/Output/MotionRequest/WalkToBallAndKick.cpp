@@ -15,7 +15,7 @@ option((SkillBehaviorControl) WalkToBallAndKick,
             (float) kickLength,
             (const Pose2f&) speed,
             (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
-            (PreStepType)preStepType,
+            (PreStepType) preStepType,
             (bool) turnKickAllowed,
             (bool) shiftTurnKickPose,
             (const Rangea&) directionPrecision),
@@ -33,6 +33,7 @@ option((SkillBehaviorControl) WalkToBallAndKick,
   theMotionRequest.preStepType = preStepType;
   theMotionRequest.turnKickAllowed = turnKickAllowed;
   theMotionRequest.shiftTurnKickPose = shiftTurnKickPose;
+  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

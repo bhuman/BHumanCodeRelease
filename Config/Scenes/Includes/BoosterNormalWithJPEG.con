@@ -1,0 +1,60 @@
+# Includes/Normal.con without Lower
+
+# activate simulation time
+st on
+
+# use 30 Hz for now
+ci 30
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameState
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+for Upper mr CameraImage LogDataProvider
+for Upper mr CameraInfo LogDataProvider
+for Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
+
+# Representations not required anymore
+mr ModifiedJointRequest off
+
+call GameStates
+call DebugResponses
+
+# all views are defined in another script
+for Upper vi CameraImage
+
+# Drawings for normal views
+
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:CenterCircleWithLine:image
+vid all representation:BallPercept:image
+vid all representation:BallSpots:image
+
+call ManualHeadMotion
+
+call FieldViews1
+
+# ground truth view layers
+vfd worldState representation:GroundTruthRobotPose
+# from now, relative to ground truth robot pose
+vfd worldState cognition:GroundTruthRobotPose
+vfd worldState representation:GroundTruthBallModel
+
+call FieldViews3
+vfd worldState perception:Reset
+
+dr debugDrawing3d:representation:RobotPose
+
+# clear ball is not working correctly
+ar clearBall off

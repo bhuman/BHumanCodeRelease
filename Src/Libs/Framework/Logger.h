@@ -100,5 +100,6 @@ private:,
   (unsigned) sizeOfBuffer, /**< The size of each buffer in bytes. */
   (int) writePriority, /**< The scheduling priority of the writer thread. */
   (unsigned) minFreeDriveSpace, /**< Logging will stop if less MB are available to the target device. */
+  (std::vector<std::string>) loggablePerThread, /**< List of representations that can be logged in a thread that does not provide them. */
   (std::vector<RepresentationsPerThread>) representationsPerThread, /**< Representations to log per thread. */
 });

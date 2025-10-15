@@ -14,6 +14,7 @@
 #include "GlobalOpponentsHypothesis.h"
 
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/GlobalOpponentsModel.h"
@@ -48,6 +49,7 @@ MODULE(GlobalOpponentsTracker,
   REQUIRES(MotionInfo),
   REQUIRES(ObstaclesFieldPercept),
   REQUIRES(Odometer),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(RobotPose),
   REQUIRES(TorsoMatrix),
@@ -101,7 +103,7 @@ class GlobalOpponentsTracker : public GlobalOpponentsTrackerBase
 public:
   /** Constructor */
   GlobalOpponentsTracker();
-  std::vector<GlobalOpponentsHypothesis, Eigen::aligned_allocator<GlobalOpponentsHypothesis>> obstacleHypotheses; /**< List of obstacles. */
+  std::vector<GlobalOpponentsHypothesis> obstacleHypotheses; /**< List of obstacles. */
   std::vector<bool> merged; /**< This is to merge obstacles once for every "percept" per frame. */
   // Used for writing annotations only once per contact.
   bool armContact[Arms::numOfArms] = { false, false }, footContact[Legs::numOfLegs] = { false, false };
@@ -177,7 +179,7 @@ private:
 
   /**
    * Computes a merge radius for a given measurement. The farther the measurement, the higher the radius.
-   * @param measurement A position in 2D that denotes a mearuement of an opponent
+   * @param measurement A position in 2D that denotes a measurement of an opponent
    * @return A radius (in mm)
    */
   float calculateMergeRadius(const Vector2f& measurement) const

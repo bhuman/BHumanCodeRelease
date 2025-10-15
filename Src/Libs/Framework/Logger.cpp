@@ -74,7 +74,8 @@ Logger::Logger(const Configuration& config) :
             for(const auto& representationProvider : thread.representationProviders)
               if(loggerRepresentation == representationProvider.representation)
                 goto representationFound;
-            PRINT("Logger: Thread " << rpt.thread << " does not contain representation " << loggerRepresentation);
+            if(loggablePerThread.end() == std::find(loggablePerThread.begin(), loggablePerThread.end(), loggerRepresentation))
+              PRINT("Logger: Thread " << rpt.thread << " does not contain representation " << loggerRepresentation);
           representationFound:
             if(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + loggerRepresentation) == -1)
               PRINT("Logger: Representation " << loggerRepresentation << " does not have a message id");

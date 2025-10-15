@@ -24,9 +24,12 @@
 #include <Carbon/Carbon.h>
 #endif
 
+#define STR(x) STR2(x)
+#define STR2(x) #x
+
 DeployDialog::DeployDialog(int argc, char* argv[])
 {
-  setWindowTitle("Deploy");
+  setWindowTitle("Deploy - " STR(CONFIGURATION));
   setWindowIcon(QPixmap(":Icons/DeployDialog.png"));
 
   QSettings settings("B-Human", "DeployDialog");
@@ -285,10 +288,10 @@ void DeployDialog::createProcesses()
         const bool active = output[7] == "active";
         const bool inactive = output[7] == "inactive";
         const int battery = active ? static_cast<int>(output[0].toFloat() * 100.f + 0.5f) : 100;
-        const bool charging = !active || static_cast<short>(output[1].trimmed().toFloat()) & 0b10000000;
+        const bool charging = !active || output[1].trimmed().toInt() != 0;
         const int temperature = active ? output[2].toInt() : 0;
         const int internalLogs = output[3].toInt() - (active && !usb ? 1 : 0); // Don't count log currently written
-        const bool usbReadable= output[5] != "no";
+        const bool usbReadable = output[5] != "no";
         const int usbLogs = usbReadable ? output[5].toInt() - (active ? 1 : 0) : 0; // Don't count log currently written
         const bool calibration = output[6] == "yes";
         const bool dump = output[8] == "yes";
@@ -347,22 +350,22 @@ void DeployDialog::createProcesses()
             table->setCell(robot.name, column, "");
         else if(Time::getRealTimeSince(robot.lastStatusUpdate) > statusUpdateTime && statusProcess->state() == QProcess::NotRunning)
         {
-          statusProcess->startCommand(remoteCommand(ip, "( cat /var/volatile/tmp/internalState.txt; "
+          statusProcess->startCommand(remoteCommand(ip, "( cat /var/volatile/tmp/internalState.txt 2>/dev/null || echo '0 0 0'; "
                                                           "echo -n ' '; "
-                                                          "ls /home/nao/logs | wc -l; "
+                                                          "ls /home/TARGET_USER/logs | wc -l; "
                                                           "echo -n ' '; "
                                                           "mount | grep media/usb >/dev/null && echo yes || echo no; "
                                                           "echo -n ' '; "
                                                           "ls >/dev/null 2>&1 /media/usb/logs && ls /media/usb/logs | wc -l || echo no; "
                                                           "echo -n ' '; "
-                                                          "ls /home/nao/Config/settings.cfg"
-                                                            " /home/nao/Config/Robots/*/*/cameraCalibration.cfg"
-                                                            " /home/nao/Config/Robots/*/Body/imuCalibration.cfg 2>/dev/null"
+                                                          "ls /home/TARGET_USER/Config/settings.cfg"
+                                                            " /home/TARGET_USER/Config/Robots/*/*/cameraCalibration.cfg"
+                                                            " /home/TARGET_USER/Config/Robots/*/Body/imuCalibration.cfg 2>/dev/null"
                                                             " | xargs ls -t | head -1 | grep settings.cfg >/dev/null && echo no || echo yes; "
                                                           "echo -n ' '; "
                                                           "systemctl --user is-failed bhuman.service; "
                                                           "echo -n ' '; "
-                                                          "[ -e /home/nao/bhdump.log ] && echo yes || echo no ) | tr -d '\\n'").c_str());
+                                                          "[ -e /home/TARGET_USER/bhdump.log ] && echo yes || echo no ) | tr -d '\\n'").c_str());
           robot.lastStatusUpdate = Time::getRealSystemTime();
         }
       });
@@ -386,7 +389,7 @@ std::string DeployDialog::remoteCommand(const std::string& ip, std::string comma
 #ifdef WINDOWS
     "cmd /c "
 #endif
-    "bash -c \"../Make/Common/robotSSH nao@" + ip + " \"\"\"" + command + "\"\"\"\"";
+    "bash -c \"../Make/Common/robotSSH " + ip + " \"\"\"" + command + "\"\"\"\"";
 }
 
 std::string DeployDialog::localCommand(const std::string& command)

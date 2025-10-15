@@ -31,7 +31,7 @@
  * \f}
  *
  * Where $I$ is the image, \f$\ast\f$ denotes convolution and all other operations are
- * applied pointwise. The nominator is a simple Sobel image gradient, while the
+ * applied point-wise. The nominator is a simple Sobel image gradient, while the
  * denominator normalizes with respect to contrast. It is the Gaussian weighted image
  * std. deviation with a regularizer parameter \f$\sigma\f$. This regularizer avoids avoids
  * $0/0$ situation for a constant image.

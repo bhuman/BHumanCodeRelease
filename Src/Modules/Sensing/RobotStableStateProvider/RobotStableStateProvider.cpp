@@ -1,13 +1,15 @@
 /**
  * @file RobotStableStateProvider.h
- * TODO
+ * Provides information about the predicted center of mass in the soles
  * @author Philip Reichenberg
  */
 
 #include "RobotStableStateProvider.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
 #include "Math/Rotation.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(RobotStableStateProvider);
 
@@ -22,9 +24,6 @@ RobotStableStateProvider::RobotStableStateProvider()
 void RobotStableStateProvider::update(RobotStableState& theRobotStableState)
 {
   DECLARE_DEBUG_DRAWING3D("module:RobotStableStateProvider:footMid", "robot");
-  DECLARE_PLOT("module:RobotStableState:prediction:x");
-  DECLARE_PLOT("module:RobotStableState:prediction:y");
-  DECLARE_DEBUG_RESPONSE("module:RobotStableState:prediction");
 
   theRobotStableState.predictRotation = [this, &theRobotStableState](const bool isLeftPhase, const bool prediction, const bool findTurnPoint)
   {
@@ -35,7 +34,8 @@ void RobotStableStateProvider::update(RobotStableState& theRobotStableState)
     lastIsLeftPhase = isLeftPhase;
 
     RobotModel lightModel = theRobotModel;
-    lightModel.updateCenterOfMass(lightMassCalibration);
+    if(useLightModel)
+      lightModel.updateCenterOfMass(lightMassCalibration);
     theRobotStableState.lightCenterOfMass = lightModel.centerOfMass;
 
     const RotationMatrix tiltInTorso(Rotation::AngleAxis::unpack(Vector3f(-theInertialData.angle.x(), -theInertialData.angle.y(), 0.f)));
@@ -46,10 +46,10 @@ void RobotStableStateProvider::update(RobotStableState& theRobotStableState)
 
   theRobotStableState.getTurnPoint = [this, &theRobotStableState](const Legs::Leg leg)
   {
-    // Do not use this function is no prediction happened before!
+    // Do not use this function when no prediction happened before!
     ASSERT(theFrameInfo.time == lastTurnPointMatrixUpdate);
     RobotStableState newState = theRobotStableState; // For CoM position
-    newState.predictedTorsoRotation = turnPointMatrix;
+    newState.predictedTorsoRotationMatrix = turnPointMatrix;
     calculateCoMInPositionPercent(newState);
     return newState.comInFeet[leg];
   };
@@ -62,10 +62,10 @@ void RobotStableStateProvider::update(RobotStableState& theRobotStableState)
 
 void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& theRobotStableState)
 {
-  const Vector3f soleLeft = theRobotStableState.predictedTorsoRotation.inverse() * theRobotModel.soleLeft.translation;
-  const Vector3f soleRight = theRobotStableState.predictedTorsoRotation.inverse() * theRobotModel.soleRight.translation;
+  const Vector3f soleLeft = theRobotStableState.predictedTorsoRotationMatrix.inverse() * theRobotModel.soleLeft.translation;
+  const Vector3f soleRight = theRobotStableState.predictedTorsoRotationMatrix.inverse() * theRobotModel.soleRight.translation;
   const float supportheight = std::min(soleRight.z(), soleLeft.z());
-  const Vector3f comInTorso = theRobotStableState.predictedTorsoRotation * (Vector3f() << (theRobotStableState.predictedTorsoRotation.inverse() * theRobotStableState.lightCenterOfMass).head<2>(), supportheight).finished();
+  const Vector3f comInTorso = theRobotStableState.predictedTorsoRotationMatrix * (Vector3f() << (theRobotStableState.predictedTorsoRotationMatrix.inverse() * theRobotStableState.lightCenterOfMass).head<2>(), supportheight).finished();
 
   float heelFeetInTorso[Legs::numOfLegs];
   float toeFeetInTorso[Legs::numOfLegs];
@@ -73,16 +73,16 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
   float outerEdgeFeetInTorso[Legs::numOfLegs];
   float middleOfFeetInTorso[Legs::numOfLegs];
 
-  heelFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.x() - theFootOffset.backward;
-  heelFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.x() - theFootOffset.backward;
-  toeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.x() + theFootOffset.forward;
-  toeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.x() + theFootOffset.forward;
+  heelFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.x() - theRobotDimensions.soleToBackEdgeLength;
+  heelFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.x() - theRobotDimensions.soleToBackEdgeLength;
+  toeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.x() + theRobotDimensions.soleToFrontEdgeLength;
+  toeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.x() + theRobotDimensions.soleToFrontEdgeLength;
 
-  innerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() - theFootOffset.leftFoot.right;
-  outerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() + theFootOffset.leftFoot.left;
+  innerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() - theRobotDimensions.soleToInnerEdgeLength;
+  outerEdgeFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y() + theRobotDimensions.soleToOuterEdgeLength;
   middleOfFeetInTorso[Legs::left] = theRobotModel.soleLeft.translation.y();
-  innerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() + theFootOffset.rightFoot.left;
-  outerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() - theFootOffset.rightFoot.right;
+  innerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() + theRobotDimensions.soleToInnerEdgeLength;
+  outerEdgeFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y() - theRobotDimensions.soleToOuterEdgeLength;
   middleOfFeetInTorso[Legs::right] = theRobotModel.soleRight.translation.y();
 
   FOREACH_ENUM(Legs::Leg, leg)
@@ -95,6 +95,8 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
     theRobotStableState.comInTorso[leg].outerSide =
       calcPercentInFeet(sign * comInTorso.y(), 0.f, sign * innerEdgeFeetInTorso[leg], sign * middleOfFeetInTorso[leg], sign * outerEdgeFeetInTorso[leg]);
 
+    theRobotStableState.comInTorso[leg].outerSideAbsolute = sign * comInTorso.y();
+
     const Pose3f& sole = leg == Legs::left ? theRobotModel.soleLeft : theRobotModel.soleRight;
     const Vector2f comInFeetRotated = (comInTorso.head<2>() - sole.translation.head<2>()).rotated(-sole.rotation.getZAngle());
     const Vector2f zeroPointInFeet = (-sole.translation.head<2>()).rotated(-sole.rotation.getZAngle());
@@ -102,13 +104,14 @@ void RobotStableStateProvider::calculateCoMInPositionPercent(RobotStableState& t
     // To be honest: the difference between torso and feet space is not even that much (on the outer edge like 0.1 points difference).
     // And in such state the robot would probably fall anyway
     theRobotStableState.comInFeet[leg].forward = Rangef::ZeroOneRange().limit(
-                                                   (comInFeetRotated.x() + theFootOffset.backward) /
-                                                   (theFootOffset.backward + theFootOffset.forward));
+                                                   (comInFeetRotated.x() + theRobotDimensions.soleToBackEdgeLength) /
+                                                   (theRobotDimensions.soleToBackEdgeLength + theRobotDimensions.soleToFrontEdgeLength));
 
-    const float useInner = leg == Legs::left ? -theFootOffset.leftFoot.right : -theFootOffset.rightFoot.left;
-    const float useOuter = leg == Legs::left ? theFootOffset.leftFoot.left : theFootOffset.rightFoot.right;
+    const float useInner = leg == Legs::left ? -theRobotDimensions.soleToInnerEdgeLength : -theRobotDimensions.soleToInnerEdgeLength;
+    const float useOuter = leg == Legs::left ? theRobotDimensions.soleToOuterEdgeLength : theRobotDimensions.soleToOuterEdgeLength;
     theRobotStableState.comInFeet[leg].outerSide =
       calcPercentInFeet(sign * comInFeetRotated.y(), sign * zeroPointInFeet.y(), useInner, 0.f, useOuter);
+    theRobotStableState.comInFeet[leg].outerSideAbsolute = sign * comInFeetRotated.y();
   }
 }
 
@@ -128,7 +131,7 @@ float RobotStableStateProvider::calcPercentInFeet(const float refPoint, const fl
 void RobotStableStateProvider::predictRotation(RobotStableState& state, RotationMatrix rotationMatrix, const RobotModel& model, const bool isLeftPhase, const bool prediction, const bool findTurnPoint)
 {
   calcSupportPolygon(isLeftPhase);
-  Vector2a velocity(-theInertialData.angleChange.x(), -theInertialData.angleChange.y()); // the usage is not correct because of 3D rotation. But this is just an approximation!
+  Vector2a velocity(-theInertialData.gyro.x() * Global::getSettings().motionCycleTime, -theInertialData.gyro.y() * Global::getSettings().motionCycleTime); // the usage is not correct because of 3D rotation. But this is just an approximation!
   const Vector2a startVelocity = velocity;
 
   auto predictStep = [this, &startVelocity](RotationMatrix& useMatrixForUpdate, const RobotModel& model, Vector2a& velocity, const bool isLeftPhase, const RobotModel& theRobotModel)
@@ -163,8 +166,8 @@ void RobotStableStateProvider::predictRotation(RobotStableState& state, Rotation
     const float length = currentDiff.tail<2>().norm();
 
     //
-    const Vector2a acc(Angle::fromDegrees(-Constants::g / length * angle.x() * Constants::motionCycleTime),
-                       Angle::fromDegrees(-Constants::g / length * angle.y() * Constants::motionCycleTime));
+    const Vector2a acc(Angle::fromDegrees(-Constants::g / length * angle.x() * Global::getSettings().motionCycleTime),
+                       Angle::fromDegrees(-Constants::g / length * angle.y() * Global::getSettings().motionCycleTime));
 
     // 6. calc velocity
     velocity = velocity + acc;
@@ -189,7 +192,7 @@ void RobotStableStateProvider::predictRotation(RobotStableState& state, Rotation
   turnPointMatrix = rotationMatrix;
   if(findTurnPoint)
   {
-    if(returnType != PredictReturnType::noIntersection) // ignore velocity change if it happened here already too
+    if(returnType != PredictReturnType::none)
     {
       ASSERT(turnPointSteps - predictionSteps > 0);
       for(std::size_t i = 0; i < turnPointSteps - predictionSteps; i++)
@@ -202,13 +205,8 @@ void RobotStableStateProvider::predictRotation(RobotStableState& state, Rotation
     lastTurnPointMatrixUpdate = theFrameInfo.time;
   }
 
-  DEBUG_RESPONSE("module:RobotStableState:prediction")
-  {
-    PLOT("module:RobotStableState:prediction:x", -Angle(rotationMatrix.getXAngle()).toDegrees());
-    PLOT("module:RobotStableState:prediction:y", -Angle(rotationMatrix.getYAngle()).toDegrees());
-  }
-
-  state.predictedTorsoRotation = rotationMatrix;
+  state.predictedTorsoRotationMatrix = rotationMatrix;
+  state.predictedTorsoRotation = Vector2a(-rotationMatrix.getXAngle(), -rotationMatrix.getYAngle());
 }
 
 bool RobotStableStateProvider::getTiltingPoint(const Vector3f& currentCom, const Vector3f& lastCom, Vector3f& intersection3D)
@@ -252,12 +250,12 @@ void RobotStableStateProvider::calcSupportPolygon(const bool isLeftPhase)
 {
   supportPolygon = std::vector<Vector3f>();
   const Pose3f& useFoot = !isLeftPhase ? theRobotModel.soleLeft : theRobotModel.soleRight;
-  const float left = !isLeftPhase ? theFootOffset.leftFoot.left : theFootOffset.rightFoot.left;
-  const float right = !isLeftPhase ? theFootOffset.leftFoot.right : theFootOffset.rightFoot.right;
-  supportPolygon.push_back(((useFoot + Vector3f(theFootOffset.forward, left, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(-theFootOffset.backward, left, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(-theFootOffset.backward, -right, 0.f))).translation);
-  supportPolygon.push_back(((useFoot + Vector3f(theFootOffset.forward, -right, 0.f))).translation);
+  const float left = !isLeftPhase ? theRobotDimensions.soleToOuterEdgeLength : theRobotDimensions.soleToInnerEdgeLength;
+  const float right = !isLeftPhase ? theRobotDimensions.soleToInnerEdgeLength : theRobotDimensions.soleToOuterEdgeLength;
+  supportPolygon.push_back(((useFoot + Vector3f(theRobotDimensions.soleToFrontEdgeLength, left, 0.f))).translation);
+  supportPolygon.push_back(((useFoot + Vector3f(-theRobotDimensions.soleToBackEdgeLength, left, 0.f))).translation);
+  supportPolygon.push_back(((useFoot + Vector3f(-theRobotDimensions.soleToBackEdgeLength, -right, 0.f))).translation);
+  supportPolygon.push_back(((useFoot + Vector3f(theRobotDimensions.soleToFrontEdgeLength, -right, 0.f))).translation);
 
   // calculate centroid of the convex, counter-clockwise ordered polygon
   const size_t size = supportPolygon.size();

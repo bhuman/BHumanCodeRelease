@@ -10,9 +10,7 @@ extend-exclude = [
 ]
 
 [default]
-extend-ignore-identifiers-re = [
-  "numOf[^ ]*ss",
-]
+extend-ignore-identifiers-re = []
 extend-ignore-words-re = []
 
 # Don't correct identifiers from this list.
@@ -29,9 +27,6 @@ goalkeeperColour = "goalkeeperColour"
 iterm2 = "iterm2"
 NaoMat_Buton_nao_pantone445C = "NaoMat_Buton_nao_pantone445C"
 numer = "numer"
-numOfColorInputIndexs = "numOfColorInputIndexs"
-numOfImageInputShapeIndexs = "numOfImageInputShapeIndexs"
-numOfOutputIndexs = "numOfOutputIndexs"
 O_CREAT = "O_CREAT"
 pBA = "pBA"
 VIDIOC_G_PARM = "VIDIOC_G_PARM"

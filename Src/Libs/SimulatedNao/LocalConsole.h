@@ -20,6 +20,7 @@
 #include "Representations/Modeling/Whistle.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
+#include "Representations/Sensing/TorsoMatrix.h"
 #include <memory>
 
 class Debug;
@@ -43,6 +44,7 @@ private:
   GroundTruthWorldState worldState; /**< The current world state of the simulation scene, sent to the robot code. */
   GroundTruthOdometryData odometryData; /**< The simulated odometry data sent to the robot code. */
   GameControllerData gameControllerData; /**< The simulated game controller data sent to the robot code. */
+  TorsoMatrix torsoMatrix; /**< The robot's torso matrix, used for internal computations. */
   Whistle whistle; /**< The simulated whistle sent to the robot code. */
   unsigned nextImageTimestamp = 0; /**< The theoretical timestamp of the next image to be calculated. */
   unsigned imageLastTimestampSent = 0; /**< The timestamp of the last sent image. */

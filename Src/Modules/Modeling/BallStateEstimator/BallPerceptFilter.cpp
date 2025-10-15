@@ -80,10 +80,11 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 
   Vector2f perceivedBallPosition = theBallPercept.positionOnField;
   // Only do this for far away balls:
-  if(correctBallDistanceByPerceivedSize && theCameraInfo.camera == CameraInfo::upper)
+  if(correctBallDistanceByPerceivedSize != 0_deg)
   {
     const float usedShakiness = shakiness > 0.5f ? 0.5f : shakiness;
     float sizeFactor = mapToRange(usedShakiness, 0.f, 0.5f, 0.f, 1.f);
+    sizeFactor *= std::cos(std::min(pi_2, std::atan2(theCameraMatrix.translation.z(), perceivedBallPosition.norm()) * pi_2 / correctBallDistanceByPerceivedSize));
     float angleFactor = 1.f - sizeFactor;
     const float sizeBasedDistance = 1.1f * Projection::getDistanceBySize(theCameraInfo, theBallSpecification.radius, theBallPercept.radiusInImage); // Multiply by 1.1, as size-based distance seems to underestimate the real distance. Hacky! ;-)
     Vector2f sizeBasedBallPosition(theBallPercept.positionOnField);
@@ -199,7 +200,7 @@ bool BallPerceptFilter::perceptIsInsideTeammateAndCanBeExcludedByTeamBall()
         // ... and finally check, if the ball has been seen recently by a teammate at a
         // completely different place!
         // TL: Not sure, if this is cool :-|
-        if(theTeammatesBallModel.isValid && (theTeammatesBallModel.position - ballOnField).norm() > 1500)
+        if(theTeamBallModel.isValid && (theTeamBallModel.position - ballOnField).norm() > 1500)
         {
           // Only annotate seen balls to avoid spamming with information about guessed ones (which appear very often ...):
           if(theBallPercept.status == BallPercept::seen)

@@ -6,7 +6,7 @@
 
 /**
  * @struct IntersectionsPercept
- * This struct contains all the intersections between lines fitted through linespots.
+ * This struct contains all the intersections between lines fitted through line spots.
  */
 STREAMABLE(IntersectionsPercept,
 {
@@ -35,7 +35,7 @@ STREAMABLE(IntersectionsPercept,
     (Vector2f) pos,        /**< The field coordinates of the intersection, relative to the robot */
     (Matrix2f) cov,        /**< The covariance of pos */
     (Vector2f) dir1,       /**< The first direction of the lines intersected (in field coordinates, relative to the robot) */
-    (Vector2f) dir2,       /**< The second direction of the lines intersected (in field coordinates, realative to the robot) */
+    (Vector2f) dir2,       /**< The second direction of the lines intersected (in field coordinates, relative to the robot) */
     (unsigned) line1Index, /**< The first line of the intersection*/
     (unsigned) line2Index, /**< The second line of the intersection*/
   });

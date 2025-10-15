@@ -17,7 +17,8 @@ option((SkillBehaviorControl) PanAndTiltGrid,
             (Angle) speed),
        vars((HeadOrientation)(original) currentHeadTarget,
             (bool)(false) panHeadRight,
-            (bool)(false) tiltHeadDown))
+            (bool)(false) tiltHeadDown,
+            (bool)(false) forceBreakUp))
 {
   const auto getPanOffset = [&]
   {
@@ -64,17 +65,28 @@ option((SkillBehaviorControl) PanAndTiltGrid,
   {
     transition
     {
-      goto waitAfterPan;
+      if(!forceBreakUp)
+        goto waitAfterPan;
+      goto done;
     }
     action
     {
-      if(getPanOffset() > maximum.pan || currentHeadTarget.pan > theHeadLimits.maxPan())
+      do
       {
-        panHeadRight = true;
-        setPanOffset(0_deg);
+        currentHeadTarget.pan += panHeadRight ? -panStep : panStep;
+        if(getPanOffset() > maximum.pan)
+        {
+          panHeadRight = true;
+          setPanOffset(0_deg);
+          currentHeadTarget.pan += panHeadRight ? -panStep : panStep;
+        }
+        if(getPanOffset() < -maximum.pan)
+        {
+          forceBreakUp = true;
+          break;
+        }
       }
-      currentHeadTarget.pan += panHeadRight ? -panStep : panStep;
-
+      while(currentHeadTarget.pan > theHeadLimits.maxPan() || currentHeadTarget.pan < theHeadLimits.minPan());
       moveHeadTo(currentHeadTarget);
     }
   }
@@ -87,13 +99,19 @@ option((SkillBehaviorControl) PanAndTiltGrid,
     }
     action
     {
-      if(getTiltOffset() < -maximum.tilt || currentHeadTarget.tilt < theHeadLimits.getTiltBound(currentHeadTarget.pan).min)
+      do
       {
-        tiltHeadDown = true;
-        setTiltOffset(0_deg);
+        currentHeadTarget.tilt += tiltHeadDown ? tiltStep : -tiltStep;
+        if(getTiltOffset() < -maximum.tilt)
+        {
+          tiltHeadDown = true;
+          setTiltOffset(0_deg);
+          currentHeadTarget.tilt += tiltHeadDown ? tiltStep : -tiltStep;
+        }
+        if(getTiltOffset() > maximum.tilt)
+          break;
       }
-      currentHeadTarget.tilt += tiltHeadDown ? tiltStep : -tiltStep;
-
+      while((currentHeadTarget.tilt < theHeadLimits.getTiltBound(currentHeadTarget.pan).min || currentHeadTarget.tilt > theHeadLimits.getTiltBound(currentHeadTarget.pan).max));
       moveHeadTo(currentHeadTarget);
     }
   }
@@ -110,7 +128,7 @@ option((SkillBehaviorControl) PanAndTiltGrid,
           setPanOffset(0_deg);
           goto done;
         }
-        goto panHead; //for now, turn head only to the left and right. TODO: the states tiltHead and waitAfterTilt are now unused
+        goto tiltHead;
       }
     }
     action

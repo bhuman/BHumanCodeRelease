@@ -4,8 +4,7 @@ set(TESTS_OUTPUT_DIR "${OUTPUT_PREFIX}/Build/${PLATFORM}/Tests/$<CONFIG>")
 file(GLOB_RECURSE TESTS_SOURCES CONFIGURE_DEPENDS
     "${TESTS_ROOT_DIR}/*.cpp" "${TESTS_ROOT_DIR}/*.h")
 
-if(MACOS)
-  list(REMOVE_ITEM TESTS_SOURCES "${TESTS_ROOT_DIR}/Test.cpp")
+if(MACOS AND NOT DEFINED ENV{NO_XCTEST})
   list(APPEND TESTS_SOURCES "${TESTS_ROOT_DIR}/Test.mm")
 endif()
 
@@ -15,7 +14,9 @@ set_property(TARGET Tests PROPERTY RUNTIME_OUTPUT_DIRECTORY "${TESTS_OUTPUT_DIR}
 set_property(TARGET Tests PROPERTY FOLDER Apps)
 set_property(TARGET Tests PROPERTY MACOSX_BUNDLE_INFO_PLIST "${TESTS_ROOT_DIR}/Info.plist")
 set_property(TARGET Tests PROPERTY XCODE_GENERATE_SCHEME ON)
-set_property(TARGET Tests PROPERTY XCODE_PRODUCT_TYPE "com.apple.product-type.bundle.unit-test")
+if(NOT DEFINED ENV{NO_XCTEST})
+  set_property(TARGET Tests PROPERTY XCODE_PRODUCT_TYPE "com.apple.product-type.bundle.unit-test")
+endif()
 set_property(TARGET Tests PROPERTY XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@loader_path/../../../../../../../Util/onnxruntime/lib/${PLATFORM}")
 
 target_include_directories(Tests PRIVATE "${TESTS_ROOT_DIR}")
@@ -36,3 +37,8 @@ target_compile_definitions(Tests PRIVATE GTEST_DONT_DEFINE_FAIL GTEST_DONT_DEFIN
 target_link_libraries(Tests PRIVATE Flags::DebugInDevelop)
 
 source_group(TREE "${TESTS_ROOT_DIR}" FILES ${TESTS_SOURCES})
+
+if(WINDOWS)
+  add_custom_command(TARGET Tests POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CONTROLLER_DYLIBS} "$<TARGET_FILE:FFTW::FFTW>" "$<TARGET_FILE:FFTW::FFTWF>" "$<TARGET_FILE_DIR:Tests>")
+endif()

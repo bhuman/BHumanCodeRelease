@@ -16,14 +16,7 @@
 #include <vector>
 
 STREAMABLE_WITH_BASE(KickOff, SetPlay,
-{
-  STREAMABLE(Condition,
-  {,
-    (bool)(false) nothingPrediction, /** Is the current kickoff prediction 'nothing'? */
-  }),
-
-  (Condition)preconditions, /**< The conditions under which the kickoff may be selected. */
-  (Condition)invariants, /**< The conditions under which the kickoff can stay selected. */
+{,
 });
 
 STREAMABLE_WITH_BASE(OwnKickOff, KickOff,
@@ -31,6 +24,7 @@ STREAMABLE_WITH_BASE(OwnKickOff, KickOff,
   ENUM(Type,
   {,
     directKickOff,
+    directKickOff5v5,
   });
 
   static SetPlay::Type toSetPlay(Type type)
@@ -44,7 +38,8 @@ STREAMABLE_WITH_BASE(OpponentKickOff, KickOff,
   ENUM(Type,
   {,
     kiteKickOff,
-    kiteKickOffensive,
+    diamondKickOff5v5,
+    arrowKickOff5v5,
   });
 
   static SetPlay::Type toSetPlay(Type type)

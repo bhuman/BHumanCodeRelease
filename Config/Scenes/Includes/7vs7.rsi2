@@ -4,73 +4,73 @@
     <Body ref="Nao" name="robot1">
       <Translation x="4" y="-3" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="purple"/>
+      <Set name="TeamColor" value="purple"/>
     </Body>
     <Body ref="Nao" name="robot2">
       <Translation x="3" y="-3" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
     <Body ref="Nao" name="robot3">
       <Translation x="2" y="-3" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
     <Body ref="Nao" name="robot4">
       <Translation x="1" y="-3" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
     <Body ref="Nao" name="robot5">
       <Translation x="0" y="-3" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
     <Body ref="Nao" name="robot6">
       <Translation x="3" y="-2" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
     <Body ref="Nao" name="robot7">
       <Translation x="2" y="-2" z="320mm"/>
       <Rotation z="-90degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
 
     <Body ref="Nao" name="robot21">
       <Translation x="-4" y="3" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="blue"/>
+      <Set name="TeamColor" value="blue"/>
     </Body>
     <Body ref="Nao" name="robot22">
       <Translation x="-3" y="3" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
     <Body ref="Nao" name="robot23">
       <Translation x="-2" y="3" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
     <Body ref="Nao" name="robot24">
       <Translation x="-1" y="3" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
     <Body ref="Nao" name="robot25">
       <Translation x="0" y="3" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
     <Body ref="Nao" name="robot26">
       <Translation x="-3" y="2" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
     <Body ref="Nao" name="robot27">
       <Translation x="-2" y="2" z="320mm"/>
       <Rotation z="90degree"/>
-      <Set name="NaoColor" value="red"/>
+      <Set name="TeamColor" value="red"/>
     </Body>
   </Compound>
 

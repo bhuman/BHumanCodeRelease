@@ -224,8 +224,10 @@ const char* File::getBHDir()
   if(!dir[0])
   {
 #ifndef TARGET_ROBOT
-    VERIFY(getcwd(dir, sizeof(dir) - 7) != 0);
+    VERIFY(getcwd(dir, sizeof(dir) - 8) != 0);
     char* end = dir + strlen(dir) - 1;
+    if(end >= dir && *end != '/')
+      *++end = '/';
     struct stat buff;
     while(true)
     {

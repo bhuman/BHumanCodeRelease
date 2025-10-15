@@ -13,7 +13,7 @@
  * The module declared in this file is based on the implementation that has been used by
  * B-Human for multiple years: estimating the ball position and velocity by maintaining
  * a set of normal Kalman filters.
- * It is a reimplementation of the module used during RoboCup 2018.
+ * It is a re-implementation of the module used during RoboCup 2018.
  *
  * @author Tim Laue
  */
@@ -86,12 +86,8 @@ private:
   BallStateEstimate* bestState;                             /**< Pointer to the hypothesis that is most likely */
   BallStateEstimate* bestMovingState;                       /**< Pointer to the moving hypothesis that is most likely */
   bool recomputeBestState;                                  /**< If true, the bestState pointer is set again. Needed, if balls are removed from a list. */
-  std::vector<StationaryBallKalmanFilter,
-              Eigen::aligned_allocator<StationaryBallKalmanFilter>>
-                                           stationaryBalls; /**< The list of hypotheses */
-  std::vector<RollingBallKalmanFilter,
-              Eigen::aligned_allocator<RollingBallKalmanFilter>>
-                                              rollingBalls; /**< The list of hypotheses */
+  std::vector<StationaryBallKalmanFilter> stationaryBalls;  /**< The list of hypotheses */
+  std::vector<RollingBallKalmanFilter> rollingBalls;        /**< The list of hypotheses */
   RingBufferWithSum<unsigned short, 60> seenStats;          /**< Contains a 100 for time the ball was seen and 0 when it was not, used for statistics in ball model */
   bool ballWasSeenInThisFrame;                              /**< Internal flag to keep some expressions short */
   unsigned timeWhenBallFirstDisappeared;                    /**< A point of time from which on a ball seems to have disappeared (is not seen anymore although it should be) */
@@ -123,7 +119,7 @@ private:
   void integrateCollisionWithFeet();
   void normalizeMeasurementLikelihoods();
   void findBestState();
-  template <typename T> void pruneBallBuffer(std::vector<T, Eigen::aligned_allocator<T>>& balls);
+  template <typename T> void pruneBallBuffer(std::vector<T>& balls);
 
   void createNewFilters(const Vector2f& ballPercept, const float ballPerceptRadius, const Matrix2f& ballPerceptCov);
   void plotAndDraw();

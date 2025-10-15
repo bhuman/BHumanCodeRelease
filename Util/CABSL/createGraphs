@@ -179,7 +179,7 @@ echo "Writing graph '$file'" >&2
   echo "  margin = 0;"
   echo "  node [shape = box, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
   echo "  edge [arrowsize=0.8];"
-  sort <"$optionsTmp" | uniq
+  cat -n <"$optionsTmp" | sort -uk2 | sort -n | sed 's%[^	]*%%'
   rm "$optionsTmp"
   echo "}"
 ) | "$dot" -T$format >"$file"
@@ -210,11 +210,11 @@ while read option; do
       echo "fontname = Arial;"
       echo "fontsize=12;"
       echo "fontcolor = \"#005A9C\";"
-      sort <"$internalTmp" | uniq
+      cat -n <"$internalTmp" | sort -uk2 | sort -n | sed 's%[^	]*%%'
       rm "$internalTmp"
       echo "}"
       if [ -e "$externalTmp" ]; then
-        sort <"$externalTmp" | uniq
+        cat -n <"$externalTmp" | sort -uk2 | sort -n | sed 's%[^	]*%%'
       rm "$externalTmp"
       fi
       echo "}"

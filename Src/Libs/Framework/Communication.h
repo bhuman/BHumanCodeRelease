@@ -149,7 +149,7 @@ public:
   const std::string receiverThreadName; /**< The name of the receiver thread. */
 
 private:
-  Receiver<PacketType>& receiver; /**< The recipient of the packets. */
+  Receiver<PacketType>* receiver; /**< The recipient of the packets. */
 
 public:
   /**
@@ -158,7 +158,7 @@ public:
    * @param receiverThreadName The name of the receiver thread.
    */
   Sender(Receiver<PacketType>& receiver, const std::string& receiverThreadName) :
-    receiverThreadName(receiverThreadName), receiver(receiver) {}
+    receiverThreadName(receiverThreadName), receiver(&receiver) {}
 
   virtual ~Sender() = default;
 
@@ -173,7 +173,7 @@ public:
     const PacketType& data = *static_cast<const PacketType*>(this);
     OutBinaryMemory stream(16384);
     stream << data;
-    receiver.setPacket(stream.obtainData());
+    receiver->setPacket(stream.obtainData());
   }
 
   /**
@@ -184,7 +184,16 @@ public:
    */
   bool requestedNew() const
   {
-    return (!receiver.hasPendingPacket());
+    return (!receiver->hasPendingPacket());
+  }
+
+  /**
+   * Sets a new receiver.
+   * @param receiver The new receiver.
+   */
+  void setReceiver(Receiver<PacketType>& receiver)
+  {
+    this->receiver = &receiver;
   }
 };
 

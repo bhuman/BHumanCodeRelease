@@ -29,6 +29,17 @@ void TeamDataProvider::update(TeamData& teamData)
       ++it;
     }
   }
+
+  // Assume all teammates reached their target pose
+  if(theGameState.isSet() && theExtendedGameState.wasReady())
+  {
+    for(const Agent& agent : theAgentStates.agents)
+    {
+      auto it = std::find_if(teamData.teammates.begin(), teamData.teammates.end(), [&](const Teammate& teammate) {return teammate.number == agent.number; });
+      if(it != teamData.teammates.end())
+        it->theRobotPose.translation = agent.basePose.translation;
+    }
+  }
 }
 
 Teammate& TeamDataProvider::getTeammate(TeamData& teamData, int number) const
@@ -50,5 +61,5 @@ void TeamDataProvider::handleMessage(Teammate& teammate, const ReceivedTeamMessa
   teammate.theWhistle = teamMessage.theWhistle;
   teammate.theStrategyStatus = teamMessage.theStrategyStatus;
   teammate.theIndirectKick = teamMessage.theIndirectKick;
-  teammate.theInitialToReady = teamMessage.theInitialToReady;
+  teammate.theRefereeSignal = teamMessage.theRefereeSignal;
 }

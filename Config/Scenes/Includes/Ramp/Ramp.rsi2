@@ -1,0 +1,188 @@
+
+<Simulation>
+  <Surface name="Ramp" diffuseColor="rgb(40%, 40%, 40%)"/>
+
+  <Include href="AngleBar.rsi2"/>
+  <Include href="BaseFront.rsi2"/>
+  <Include href="BaseLeftExtension.rsi2"/>
+  <Include href="BaseRightExtension.rsi2"/>
+  <Include href="BaseRear.rsi2"/>
+  <Include href="RampLeftFront.rsi2"/>
+  <Include href="RampRightFront.rsi2"/>
+  <Include href="RampLeftExtension.rsi2"/>
+  <Include href="RampRightExtension.rsi2"/>
+  <Include href="RampRear.rsi2"/>
+
+  <Material name="ramp">
+    <Friction material="ballPlastic" value="0.3"/>
+    <RollingFriction material="ballPlastic" value="0.3"/>
+  </Material>
+
+  <Body name="ramp">
+    <!-- 0degree, 45degree, 68degree -->
+    <Set name="Angle" value="94degree"/>
+
+    <Set name="YOffset" value="-110mm"/>
+    <Set name="BaseWidth" value="11cm"/>
+    <Set name="BaseDepth" value="533mm"/>
+    <Set name="BaseHeight" value="10mm"/>
+    <Set name="BaseYOffset" value="45mm"/>
+    <Set name="BaseZOffset" value="5mm"/>
+    <Set name="BaseFrontDepth" value="421mm"/>
+    <Set name="BaseFrontXOffset" value="210.5mm"/>
+    <Set name="BaseExtXOffset" value="180mm"/>
+    <Set name="BaseExtYOffset" value="60mm"/>
+    <Set name="BaseRearXOffset" value="193mm"/>
+    <Set name="BaseYOffset2" value="50mm"/>
+    <Set name="BaseSplitterDepth" value="5mm"/>
+    <Set name="BaseSplitter1XOffset" value="435mm"/>
+    <Set name="BaseSplitter2XOffset" value="450mm"/>
+    <Set name="BaseSplitter3XOffset" value="465mm"/>
+    <Set name="BaseSplitter4XOffset" value="480mm"/>
+    <Set name="BaseSplitter5XOffset" value="495mm"/>
+    <Set name="BaseSplitter6XOffset" value="510mm"/>
+    <Set name="BaseEndDepth" value="10mm"/>
+    <Set name="BaseEndXOffset" value="528mm"/>
+    <Set name="BaseMassXOffset" value="267mm"/>
+    <Set name="RampDepth" value="54cm"/>
+    <Set name="RampWidth" value="10cm"/>
+    <Set name="RampRadius" value="10mm"/>
+    <Set name="RampXOffset" value="26.1cm"/>
+    <Set name="RampYOffset" value="4cm"/>
+    <Set name="RampZOffset" value="-5mm"/>
+    <Set name="RampFrontXOffset" value="-17mm"/>
+    <Set name="RampLeftYOffset" value="-70mm"/>
+    <Set name="RampRightYOffset" value="-150mm"/>
+    <Set name="RampExtXOffset" value="352.5mm"/>
+    <Set name="RampExtYOffset" value="24.5mm"/>
+    <Set name="RampRearXOffset" value="340mm"/>
+    <Set name="RampPitch" value="-9degree"/>
+    <Set name="RampXOffset3" value="54.2cm"/>
+    <Set name="RampMassXOffset" value="27.1cm"/>
+    <Set name="HingeXOffset" value="6mm"/>
+    <Set name="HingeZOffset" value="19mm"/>
+    <Set name="BarRadius" value="4.5mm"/>
+    <Set name="BarXOffset" value="417mm"/>
+    <Set name="BarZOffset" value="-3mm"/>
+    <Set name="BarXOffset2" value="73mm"/>
+    <Set name="BarZOffset2" value="1.5mm"/>
+
+    <ComplexAppearance ref="baseFront">
+      <Translation y="-$BaseYOffset"/>
+    </ComplexAppearance>
+    <ComplexAppearance ref="baseLeftExtension">
+      <Translation x="$BaseExtXOffset" y="$BaseExtYOffset"/>
+      <Rotation z="90degree"/>
+    </ComplexAppearance>
+    <ComplexAppearance ref="baseRightExtension">
+      <Translation x="$BaseExtXOffset" y="-$BaseExtYOffset"/>
+      <Rotation z="90degree"/>
+    </ComplexAppearance>
+    <ComplexAppearance ref="baseRear">
+      <Translation x="$BaseRearXOffset" y="-$BaseYOffset"/>
+    </ComplexAppearance>
+    <BoxGeometry depth="$BaseFrontDepth" width="$BaseHeight" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseFrontXOffset" y="$BaseYOffset2" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseFrontDepth" width="$BaseHeight" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseFrontXOffset" y="-$BaseYOffset2" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="102mm" width="$BaseWidth" height="3mm" color="rgb(80, 20, 20)">
+      <Translation x="472mm" z="1.5mm"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter1XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter2XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter3XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter4XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter5XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseSplitterDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseSplitter6XOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxGeometry depth="$BaseEndDepth" width="$BaseWidth" height="$BaseHeight" color="rgb(80, 20, 20)">
+      <Translation x="$BaseEndXOffset" z="$BaseZOffset"/>
+      <Material name="ramp"/>
+    </BoxGeometry>
+    <BoxMass value="0.1kg" depth="$BaseDepth" width="$BaseWidth" height="$BaseHeight">
+      <Translation x="$BaseMassXOffset" z="$BaseZOffset"/>
+    </BoxMass>
+    <Hinge>
+      <Translation x="$HingeXOffset" z="$HingeZOffset"/>
+      <Rotation y="$RampPitch"/>
+      <Axis y="1.0"/>
+      <Body>
+        <ComplexAppearance ref="rampLeftFront">
+          <Translation x="$RampFrontXOffset" y="$RampLeftYOffset" z="$RampZOffset"/>
+        </ComplexAppearance>
+        <ComplexAppearance ref="rampRightFront">
+          <Translation x="$RampFrontXOffset" y="$RampRightYOffset" z="$RampZOffset"/>
+        </ComplexAppearance>
+        <ComplexAppearance ref="rampLeftExtension">
+          <Translation x="$RampExtXOffset" y="$RampExtYOffset" z="$RampZOffset"/>
+          <Rotation z="-90degree"/>
+        </ComplexAppearance>
+        <ComplexAppearance ref="rampRightExtension">
+          <Translation x="$RampExtXOffset" y="-$RampExtYOffset" z="$RampZOffset"/>
+          <Rotation z="-90degree"/>
+        </ComplexAppearance>
+        <ComplexAppearance ref="rampRear">
+          <Translation x="$RampRearXOffset" y="$YOffset" z="$RampZOffset"/>
+        </ComplexAppearance>
+        <CapsuleGeometry height="$RampDepth" radius="$RampRadius" color="rgb(80, 20, 20)">
+          <Translation x="$RampXOffset" y="$RampYOffset" z="$RampZOffset"/>
+          <Rotation y="90degree"/>
+          <Material name="ramp"/>
+        </CapsuleGeometry>
+        <CapsuleGeometry height="$RampDepth" radius="$RampRadius" color="rgb(80, 20, 20)">
+          <Translation x="$RampXOffset" y="-$RampYOffset" z="$RampZOffset"/>
+          <Rotation y="90degree"/>
+          <Material name="ramp"/>
+        </CapsuleGeometry>
+        <CapsuleGeometry height="$RampWidth" radius="$RampRadius" color="rgb(80, 20, 20)">
+          <Translation x="$RampXOffset3" z="$RampZOffset"/>
+          <Rotation x="90degree"/>
+          <Material name="ramp"/>
+        </CapsuleGeometry>
+        <BoxMass value="0.1kg" depth="$RampDepth" width="$RampWidth" height="$RampRadius">
+          <Translation x="$RampMassXOffset" z="$RampZOffset"/>
+        </BoxMass>
+        <Hinge>
+          <Translation x="$BarXOffset"/>
+          <Rotation y="$Angle"/>
+          <Axis y="1.0"/>
+          <Body collideWithParent="true">
+            <ComplexAppearance ref="angleBar">
+              <Translation x="-$BarXOffset2" y="$YOffset" z="$BarZOffset"/>
+            </ComplexAppearance>
+            <CylinderGeometry height="$RampWidth" radius="$BarRadius" color="rgb(80, 20, 20)">
+              <Translation x="$BarXOffset2" z="$BarZOffset2"/>
+              <Rotation x="90degree"/>
+              <Material name="ramp"/>
+            </CylinderGeometry>
+            <CylinderMass value="0.05kg" height="$RampWidth" radius="$BarRadius">
+              <Translation x="$BarXOffset2" z="$BarZOffset2"/>
+            </CylinderMass>
+          </Body>
+        </Hinge>
+      </Body>
+    </Hinge>
+  </Body>
+</Simulation>

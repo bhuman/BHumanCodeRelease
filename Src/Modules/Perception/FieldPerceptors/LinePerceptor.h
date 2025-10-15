@@ -13,6 +13,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Perception/MeasurementCovariance.h"
+#include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -31,6 +32,7 @@
 
 MODULE(LinePerceptor,
 {,
+  REQUIRES(BallPercept),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(ColorScanLineRegionsVerticalClipped),
@@ -60,6 +62,8 @@ MODULE(LinePerceptor,
     (unsigned) whiteCheckStepSize,           /**< step size in px when checking if lines are white */
     (float) minWhiteRatio,                   /**< minimum ratio of white pixels in lines */
     (float) minSquaredLineLength,            /**< minimum squared length of found lines in mm */
+    (float) minSquaredSpotToCircleCenterDistance, /**< minimum distance in mm between a fieldSpot and the estimated circle center for a spot to be kept */
+    (float) minCircleDeviation,              /**< minimum deviation in mm allowed for the spots to be considered as a potential circle */
     (float) maxCircleFittingError,           /**< maximum error of fitted circles through spots on the field in mm */
     (float) maxCircleRadiusDeviation,        /**< maximum deviation in mm of the perceived center circle radius to the expected radius */
     (Angle) minCircleAngleBetweenSpots,      /**< minimum angular distance around the circle center that has to be spanned by a circle candidate */
@@ -77,6 +81,7 @@ MODULE(LinePerceptor,
     (bool) relaxedGreenCheckAtImageBorder,   /**< accept line spots with too small neighboring green regions if they reach to the image border */
     (bool) perspectivelyCorrectWhiteCheck,   /**< true: transform image to field, compute test points on field, project back; false: compute test points in image */
     (bool) highResolutionScan,               /**< use all the vertical scan lines or only the low resolution subset */
+    (float) ballCheckRadiusFactor,           /**< margin factor multiplied with the ball radius when checking of a line spot is inside a seen ball */
   }),
 });
 
@@ -167,6 +172,29 @@ private:
     }
 
     /**
+     * Remove field spots that are close to the estimated circle center.
+     * @param minSquaredSpotToCircleCenterDistance
+     */
+    void removeSpotsCloseToCenter(float minSquaredSpotToCircleCenterDistance)
+    {
+      bool spotWasRemoved = false;
+      auto spotCloseToCenter = [this, minSquaredSpotToCircleCenterDistance](Vector2f& spot) {
+        return std::abs((center - spot).squaredNorm()) < minSquaredSpotToCircleCenterDistance;
+      };
+      do
+      {
+        spotWasRemoved = false;
+        size_t removedSpots = std::erase_if(fieldSpots, spotCloseToCenter);
+        if(removedSpots > 0)
+        {
+          spotWasRemoved = true;
+          if(!fitter.fit(center, radius))
+            radius = std::numeric_limits<float>::max();
+        }
+      } while(spotWasRemoved);
+    }
+
+    /**
      * Calculates the distance of the given point to this circle candidate.
      *
      * @param point point to calculate the distance to
@@ -200,8 +228,9 @@ private:
       ++spot;
       for(; spot != fieldSpots.cend(); ++spot)
       {
-        Vector2f spotAngleVector = *spot - center;
-        Angle spotToReference = spotAngleVector.angleTo(referenceVector);
+        const Vector2f spotAngleVector = *spot - center;
+        ASSERT(spotAngleVector != Vector2f::Zero());
+        const Angle spotToReference = spotAngleVector.angleTo(referenceVector);
         if(spotAngleVector.x()*referenceVector.y() - spotAngleVector.y()*referenceVector.x() < 0)
         {
           if(spotToReference > low)
@@ -234,7 +263,7 @@ private:
   std::vector<std::vector<Spot>> spotsH;
   std::vector<std::vector<Spot>> spotsV;
   std::vector<Candidate> candidates;
-  std::vector<CircleCandidate, Eigen::aligned_allocator<CircleCandidate>> circleCandidates;
+  std::vector<CircleCandidate> circleCandidates;
 
   /** distance in mm where the field next to the line is sampled during white checks */
   const float whiteCheckDistance = theFieldDimensions.fieldLinesWidth * 2;
@@ -331,6 +360,21 @@ private:
   void markLinesOnCircle(const Vector2f& center);
 
   /**
+   * Determines whether a given circle candidate is valid by verifying that
+   * its points deviate sufficiently from being aligned in a straight line.
+   *
+   * This function calculates the maximum perpendicular distance of the points in
+   * the circle candidate from the line passing through the first and last points.
+   * If this maximum deviation is below a predefined threshold, the candidate is
+   * considered invalid.
+   *
+   * @param circle The circle candidate to evaluate, containing field spots to analyze.
+   * @return true if the circle candidate exhibits sufficient deviation from a straight line.
+   * @return false if the circle candidate's points are too close to forming a straight line.
+   */
+  bool isPotentialCircle(const CircleCandidate& circle) const;
+
+  /**
    * Checks if the model error of the circle is lower than the error if the spots
    * were fitted to a line.
    *
@@ -399,8 +443,18 @@ private:
    * @param toX right coordinate of the region
    * @param fromY upper coordinate of the region
    * @param toY lower coordinate of the region
+   * @return `true` if the region is inside an obstable, else `false`
    */
   bool isSpotInsideObstacle(const int fromX, const int toX, const int fromY, const int toY) const;
+
+  /**
+   * Checks if a line spot overlaps a seen ball.
+   *
+   * @param xPos in image X-coordinate of the region
+   * @param yPos in image Y-coordinate of the region
+   * @return `true`, if the region is inside the ball, else `false`
+   */
+  bool isSpotInsideBall(const float xPos, const float yPos) const;
 
   bool debugIsPointWhite = false;
 

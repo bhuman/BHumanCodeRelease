@@ -200,7 +200,7 @@ template<typename T, std::size_t n> T RingBufferWithSum<T, n>::average() const
   if(RingBuffer<T, n>::empty())
     return zero;
   else
-    return static_cast<T>(sum() / RingBuffer<T, n>::size());
+    return static_cast<T>(sum() / static_cast<std::ptrdiff_t>(RingBuffer<T, n>::size()));
 }
 
 template<typename T, std::size_t n> float RingBufferWithSum<T, n>::averagef() const

@@ -1,0 +1,26 @@
+# Setup local robot, but do not switch off JPEG images.
+call ../Includes/BoosterNormalWithJPEG
+
+# direct goals are allowed, because the robot is alone
+ar directGoals on
+
+# Add robot processes used for visualization.
+sl remote remote DigitalTwin/T1
+robot remote
+
+# Must be started before sending debug requests, so that
+# Cognition receives new data from Upper.
+rc local 5
+
+# Request data to animate the remote puppet.
+dr representation:JointSensorData
+dr representation:RawInertialSensorData
+
+# Add views for camera images.
+for Upper vi CameraImage
+call ../Includes/DigitalTwin
+
+# Switch back to simulated robot, so we can use it.
+robot robot2
+
+gc playing

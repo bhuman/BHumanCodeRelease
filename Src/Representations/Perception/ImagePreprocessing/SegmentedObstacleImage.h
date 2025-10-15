@@ -1,7 +1,7 @@
 /**
  * @file SegmentedObstacleImage.h
  *
- * Declares a representation containing a downscaled obstacle segmented version of the camera image.
+ * Declares a representation containing a down-scaled obstacle segmented version of the camera image.
  *
  * @author Laurens Müller-Groh
  */

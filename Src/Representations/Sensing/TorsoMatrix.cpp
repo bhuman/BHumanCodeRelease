@@ -14,8 +14,8 @@ void TorsoMatrix::draw()
 
   DEBUG_DRAWING3D("representation:TorsoMatrix:coordinateSystem", "robot")
   {
-    CYLINDERARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(200.f, 0.f, 0.f), 5.f, 35.f, 15.f, ColorRGBA::red);
-    CYLINDERARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(0.f, 200.f, 0.f), 5.f, 35.f, 15.f, ColorRGBA::green);
-    CYLINDERARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(0.f, 0.f, 200.f), 5.f, 35.f, 15.f, ColorRGBA::blue);
+    CYLINDER_ARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(200.f, 0.f, 0.f), 5.f, 35.f, 15.f, ColorRGBA::red);
+    CYLINDER_ARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(0.f, 200.f, 0.f), 5.f, 35.f, 15.f, ColorRGBA::green);
+    CYLINDER_ARROW3D("representation:TorsoMatrix:coordinateSystem", Vector3f::Zero(), Vector3f(0.f, 0.f, 200.f), 5.f, 35.f, 15.f, ColorRGBA::blue);
   }
 }

@@ -12,7 +12,7 @@
 #include "Debugging/TcpConnection.h"
 #include "Streaming/MessageQueue.h"
 
-class DebugHandler : TcpConnection
+class DebugHandler : public TcpConnection
 {
 private:
   MessageQueue& in; /**< Incoming debug data is stored here. */

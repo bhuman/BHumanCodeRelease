@@ -26,35 +26,39 @@ using namespace AutonomousCameraCalibration;
 
 option((SkillBehaviorControl) AutonomousCameraCalibration,
        defs((Pose2f)(Pose2f(0.7f, 0.7f, 0.7f)) walkSpeed,
-            (float)(400) adjustmentRadius, /**< The maximum distance to the calibrationPose for adjustment, in mm. */
-            (float)(1200) goalAreaCornerDistance, /**< The distance to the goal area corner in the first calibration phase, in mm.*/
-            (float)(1200) penaltyMarkDistance, /**< The distance to the penalty mark in the second calibration phase, in mm. */
+            (float)(300) adjustmentRadius, /**< The maximum distance to the calibrationPose for adjustment, in mm. */
+            (float)(1500) goalAreaCornerDistance, /**< The distance to the goal area corner in the first calibration phase, in mm.*/
+            //(float)(1200) penaltyMarkDistance, /**< The distance to the penalty mark in the second calibration phase, in mm. */
             (int)(7000) settleAfterWalkDuration, /**< The duration the robot will wait before recording samples after walking, in milliseconds. */
             (int)(3000) settleAfterHeadMovementDuration, /**< The duration the robot will wait before recording samples after turning its head, in milliseconds. */
-            (int)(1000) panAndTilGridWaitInPositionTime, /**< While searching for a good head position wait this long between the head movements. */
-            (int)(2500) waitDurationForSamplesWhenRecording, /**< The time we look for samples when recording before adjusting head or position, in milliseconds. */
+            (int)(1500) panAndTiltGridWaitInPositionTime, /**< While searching for a good head position wait this long between the head movements. */
+            (int)(4500) waitDurationForSamplesWhenRecording, /**< The time we look for samples when recording before adjusting head or position, in milliseconds. */
             (int)(2000) walkInPlaceDuration, /**< When stopping to walk, walk in place for this duration. */
+            (int)(1000) notVisibleThreshold, /**< Assume not all lines are visible after this time in not visible state. */
+            (int)(50) visibleThreshold, /**< Assume visibility of all lines after this time in visible state. */
             (Angle)(10_deg) maxHorizontalAdjustmentAngle, /**< The maximum additional head pan angle for adjustment. */
-            (Angle)(5_deg) horizontalAdjustmentAngleStep, /**< The step size by which the head pan angle is increased. */
-            (Angle)(5_deg) maxVerticalAdjustmentAngle, /**< The maximum additional head pan angle for adjustment. */
-            (Angle)(5_deg) verticalAdjustmentAngleStep, /**< The step size by which the head pan angle is increased. */
-            (std::vector<Angle>)({0.f, -0.9f, 0.9f}) headPans, /**< The head pan angles for recording samples. */
-            (Angle)(70_deg) headSpeed, /**< The maximum speed with which the head moves between targets (deg/s). */
-            (Angle)(0.38f) headTiltUpper, /**< The head tilt angle for recording samples with the upper camera. */
-            (Angle)(-.25f) headTiltLower, /**< The head tilt angle for recording samples with the lower camera. */
-            (float)(150.f) standStillTranslationThreshold,
-            (Angle)(6_deg) standStillOrientationThreshold),
+            (Angle)(9.9_deg) horizontalAdjustmentAngleStep, /**< The step size by which the head pan angle is increased. */
+            (Angle)(10_deg) maxVerticalAdjustmentAngle, /**< The maximum additional head tilt angle for adjustment. */
+            (Angle)(9.9_deg) verticalAdjustmentAngleStep, /**< The step size by which the head pitch angle is increased. */
+            (std::vector<Angle>)({0.f, -0.9f, -2.07f, 0.9f, 2.07f }) headPans, /**< The head pan angles for recording samples. */
+            (std::vector<Angle>)({0.34f, 0.26f, 0.26f, 0.26f, 0.26f}) upperHeadTilts,
+            (std::vector<Angle>)({-0.25f, -0.34f, -0.33f, -0.34f, -0.33f}) lowerHeadTilts,
+            (Angle)(50_deg) headSpeed, /**< The maximum speed with which the head moves between targets (deg/s). */
+            (float)(100.f) standStillTranslationThreshold,
+            (Angle)(6_deg) standStillOrientationThreshold,
+            (Angle)(1.5_deg) turnAngleThreshold,
+            (bool)(true) useGoalAreaConnectingLineDistance),
        vars((bool)(false) forceWalkToPoseAfterInterruption,
             (bool)(false) finishedCalibration,
             (unsigned)(0) totalNumOfSamples,
-            (std::vector<SampleConfigurationInfo>)({}) sampleConfigurations,
-            (std::vector<SampleConfigurationInfo>::iterator)({}) currentSampleConfiguration,
+            (std::vector<SampleConfigurationInfo>) sampleConfigurations,
+            (std::vector<SampleConfigurationInfo>::iterator) currentSampleConfiguration,
             (SampleConfigurationInfo*)(nullptr) lastSampleConfiguration,
             (bool)(false) switchedToLower,
-            (std::unique_ptr<Pose2f>)({}) adjustmentTarget,
-            (Pose2f)(Pose2f()) currentWalkTarget,
-            (std::unique_ptr<HeadOrientation>)({}) origHeadOrientation,
-            (CalibrationRequest)({}) theCalibrationRequest))
+            (std::unique_ptr<Pose2f>) adjustmentTarget,
+            (Pose2f) currentWalkTarget,
+            (std::unique_ptr<HeadOrientation>) origHeadOrientation,
+            (CalibrationRequest) theCalibrationRequest))
 {
   theCalibrationRequest.preciseJointPositions = true;
   const auto poseTowards = [&](const Vector2f& position, const Vector2f& target)
@@ -63,13 +67,13 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
     return Pose2f(angle, position);
   };
 
-  const auto addSampleConfiguration = [&](unsigned index, const Vector2f& position, const Vector2f& lookTarget, CameraInfo::Camera camera, const Angle& headPan, unsigned sampleTypes)
+  const auto addSampleConfiguration = [&](unsigned index, const Vector2f& position, const Vector2f& lookTarget, CameraInfo::Camera camera, const Angle& headPan, const Angle& headTilt, unsigned sampleTypes)
   {
-    Angle headTilt = (camera == CameraInfo::Camera::upper) ? headTiltUpper : headTiltLower;
     SampleConfigurationRequest request;
     request.index = index;
     request.camera = camera;
     request.headPan = headPan;
+    request.orgHeadPan = headPan;
     request.headTilt = headTilt;
     request.sampleTypes = sampleTypes;
 
@@ -185,29 +189,43 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
       adjustmentTarget.reset();
       totalNumOfSamples = 0;
 
+      // For head control
+      const Vector2f firstLookTarget = useGoalAreaConnectingLineDistance ?
+                                       Vector2f(theFieldDimensions.xPosOwnGoal, 0.f) : // look at middle of goal to see all 4 goal area lines
+                                       (theRobotPose.translation.y() > 0
+                                        ? Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea)
+                                        : Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea));
+
+      // For positioning
       const Vector2f goalAreaShortLineMiddle = theRobotPose.translation.y() > 0
-                                               ? Vector2f(theFieldDimensions.xPosOwnGoalLine + 0.5f * (theFieldDimensions.xPosOwnGoalArea - theFieldDimensions.xPosOwnGoalLine), theFieldDimensions.yPosLeftGoalArea)
-                                               : Vector2f(theFieldDimensions.xPosOwnGoalLine + 0.5f * (theFieldDimensions.xPosOwnGoalArea - theFieldDimensions.xPosOwnGoalLine), theFieldDimensions.yPosRightGoalArea);
+                                               ? Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea)
+                                               : Vector2f(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea);
 
-      const Vector2f awayFromGoalAreaCorner = theRobotPose.translation.y() > 0 ? Vector2f(4, 5) : Vector2f(4, -5);
+      const Vector2f awayFromGoalAreaCorner = theRobotPose.translation.y() > 0 ? Vector2f(1, 1) : Vector2f(1, -1);
 
-      const Vector2f firstLookTarget = goalAreaShortLineMiddle;
       Vector2f firstPosition = goalAreaShortLineMiddle + awayFromGoalAreaCorner.normalized() * goalAreaCornerDistance;
       theFieldDimensions.clipToField(firstPosition);
 
-      const Vector2f secondPosition(theFieldDimensions.xPosOwnPenaltyMark + penaltyMarkDistance, 0);
-      const Vector2f secondLookTarget(theFieldDimensions.xPosOwnPenaltyMark, 0);
+      //const Vector2f secondPosition(theFieldDimensions.xPosOwnPenaltyMark + penaltyMarkDistance, 0);
+      //const Vector2f secondLookTarget(theFieldDimensions.xPosOwnPenaltyMark, 0);
 
       int index = 0;
+      std::size_t cameraIndex = 0;
+      ASSERT(upperHeadTilts.size() == lowerHeadTilts.size());
+      ASSERT(upperHeadTilts.size() == headPans.size());
+      unsigned sampleTypes = bit(cornerAngle) | bit(parallelAngle) | bit(parallelLinesDistance);
+      if(useGoalAreaConnectingLineDistance)
+        sampleTypes |= bit(parallelLinesDistanceShort);
       for(auto& headPan : headPans)
       {
-        addSampleConfiguration(index++, firstPosition, firstLookTarget, CameraInfo::upper, headPan, bit(cornerAngle) | bit(parallelAngle) | bit(parallelLinesDistance));
-        addSampleConfiguration(index++, firstPosition, firstLookTarget, CameraInfo::lower, headPan, bit(cornerAngle) | bit(parallelAngle) | bit(parallelLinesDistance));
+        ASSERT(cameraIndex < upperHeadTilts.size());
+        addSampleConfiguration(index++, firstPosition, firstLookTarget, CameraInfo::upper, headPan, upperHeadTilts[cameraIndex], sampleTypes);
+        addSampleConfiguration(index++, firstPosition, firstLookTarget, CameraInfo::lower, headPan, lowerHeadTilts[cameraIndex++], sampleTypes);
       }
 
       ASSERT(!sampleConfigurations.empty());
       currentSampleConfiguration = sampleConfigurations.begin();
-      lastSampleConfiguration = nullptr;
+      lastSampleConfiguration = &*currentSampleConfiguration;
 
       theCalibrationRequest.totalNumOfSamples = totalNumOfSamples;
       theCalibrationRequest.targetState = CameraCalibrationStatus::State::recordSamples;
@@ -249,12 +267,14 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
           switchedToLower = true;
           // Use the head pan from the previous sample configuration, in case we had to adjust the head angle to record.
           currentSampleConfiguration->request.headPan = lastSampleConfiguration->request.headPan;
+          currentSampleConfiguration->request.orgHeadPan = lastSampleConfiguration->request.orgHeadPan;
           Stand();
         }
         else
         {
           TurnAngle({.angle = lastSampleConfiguration->request.headPan - currentSampleConfiguration->request.headPan,
-                     .margin = standStillOrientationThreshold});
+                     .margin = turnAngleThreshold,
+                     .reduceWalkSpeedType = ReduceWalkSpeedType::slow});
         }
       }
       else
@@ -281,7 +301,7 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
     transition
     {
       const auto& status = theCameraCalibrationStatus.sampleConfigurationStatus;
-      if(status == SampleConfigurationStatus::visible || status == SampleConfigurationStatus::finished)
+      if((status == SampleConfigurationStatus::visible && theFrameInfo.getTimeSince(theCameraCalibrationStatus.inStatusSince) > visibleThreshold) || status == SampleConfigurationStatus::finished)
       {
         currentSampleConfiguration->request.headPan = theJointAngles.angles[Joints::headYaw];
         currentSampleConfiguration->request.headTilt = theJointAngles.angles[Joints::headPitch];
@@ -313,7 +333,7 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
                       .maximum = max,
                       .panStep = horizontalAdjustmentAngleStep,
                       .tiltStep = verticalAdjustmentAngleStep,
-                      .waitInPosition = panAndTilGridWaitInPositionTime,
+                      .waitInPosition = panAndTiltGridWaitInPositionTime,
                       .speed = headSpeed});
     }
   }
@@ -330,7 +350,7 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
         walkIsDone = poseTarget.translation.squaredNorm() < sqr(standStillTranslationThreshold) && std::abs(poseTarget.rotation) < standStillOrientationThreshold;
       }
 
-      if(status == SampleConfigurationStatus::visible || status == SampleConfigurationStatus::finished || (adjustmentTarget && (action_done || walkIsDone)))
+      if(status == SampleConfigurationStatus::finished || (adjustmentTarget && (action_done || walkIsDone)))
       {
         // Try to record the samples now.
         adjustmentTarget.reset();
@@ -345,14 +365,23 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
         float r = Random::uniform(0.f, adjustmentRadius);
         float t = Random::uniform(0.f, pi2);
         Vector2f pos = Vector2f::polar(r, t);
-        theFieldDimensions.clipToField(pos);
 
         auto pose = poseTowards(
                       currentSampleConfiguration->calibrationPose.translation + pos,
                       currentSampleConfiguration->lookTarget);
-        pose = pose.rotate(-currentSampleConfiguration->request.headPan);
+
+        theFieldDimensions.clipToField(pose.translation);
+        ASSERT(lastSampleConfiguration != nullptr);
+        pose = pose.rotate(-currentSampleConfiguration->request.orgHeadPan);
 
         adjustmentTarget = std::make_unique<Pose2f>(std::move(pose));
+
+        if(useGoalAreaConnectingLineDistance) // use RobotPose to look look at the middle of the goal
+        {
+          const Pose2f fieldPose = *adjustmentTarget;
+          const Angle targetAngle = (Vector2f(theFieldDimensions.xPosOwnGoal, 0.f) - fieldPose.translation).angle();
+          adjustmentTarget->rotation = targetAngle - currentSampleConfiguration->request.orgHeadPan;
+        }
       }
 
       COMPLEX_DRAWING("option:AutonomousCameraCalibration:position")
@@ -364,6 +393,7 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
       }
 
       Say({.text = "Adjusting position."});
+
       setHeadMotionRequest(currentSampleConfiguration->request);
       WalkToPoint({.target = theRobotPose.inverse() * *adjustmentTarget,
                    .speed = walkSpeed,
@@ -392,7 +422,10 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
   {
     transition
     {
-      if(state_time > settleAfterWalkDuration)
+      if(state_time > settleAfterWalkDuration &&
+         theFallDownState.state != FallDownState::pickedUp &&
+         theFallDownState.timestampSinceStateSwitch != theFrameInfo.time &&
+         theFrameInfo.getTimeSince(theFallDownState.timestampSinceStateSwitch) > settleAfterWalkDuration)
         goto recordSamples;
     }
     action
@@ -407,7 +440,11 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
   {
     transition
     {
-      if(state_time > settleAfterHeadMovementDuration)
+      if(state_time > settleAfterHeadMovementDuration &&
+         theFallDownState.state != FallDownState::pickedUp &&
+         theFallDownState.timestampSinceStateSwitch != theFrameInfo.time &&
+         theFrameInfo.getTimeSince(theFallDownState.timestampSinceStateSwitch) > settleAfterHeadMovementDuration &&
+         theCameraCalibrationStatus.sampleConfigurationStatus != SampleConfigurationStatus::waiting)
         goto recordSamples;
     }
     action
@@ -423,6 +460,8 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
     transition
     {
       const auto& status = theCameraCalibrationStatus.sampleConfigurationStatus;
+      if(status == SampleConfigurationStatus::waiting && theFallDownState.state != FallDownState::pickedUp)
+        goto waitAndSettleAfterHeadMoved;
       if(status == SampleConfigurationStatus::finished)
       {
         if(hasNextSampleConfiguration())
@@ -436,7 +475,9 @@ option((SkillBehaviorControl) AutonomousCameraCalibration,
           goto optimize;
         }
       }
-      if(status != SampleConfigurationStatus::recording && state_time > waitDurationForSamplesWhenRecording)
+      if(theFallDownState.state == FallDownState::pickedUp)
+        goto waitAndSettleAfterHeadMoved;
+      if(status != SampleConfigurationStatus::recording && status != SampleConfigurationStatus::waiting && state_time > waitDurationForSamplesWhenRecording && theFrameInfo.getTimeSince(theCameraCalibrationStatus.inStatusSince) > notVisibleThreshold)
       {
         currentSampleConfiguration->request.doRecord = false;
         goto adjustHeadAngle;

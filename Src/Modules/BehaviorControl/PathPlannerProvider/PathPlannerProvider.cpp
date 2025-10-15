@@ -87,9 +87,13 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
   {
     const bool excludeOwnPenaltyArea = theIllegalAreas.illegal & bit(IllegalAreas::ownPenaltyArea);
     const bool excludeOpponentPenaltyArea = theIllegalAreas.illegal & bit(IllegalAreas::opponentPenaltyArea);
+    const bool excludeCenterCircle = (theGameState.isReady() && theIllegalAreas.anticipatedTimestamp && -theFrameInfo.getTimeSince(theIllegalAreas.anticipatedTimestamp) < static_cast<int>((theGameState.timeWhenStateEnds - theGameState.timeWhenStateStarted) / 2))
+                                     ? theIllegalAreas.anticipatedIllegal & bit(IllegalAreas::centerCircle)
+                                     : theIllegalAreas.illegal & bit(IllegalAreas::centerCircle);
+
     pathPlannerWasActive = true;
     createBarriers(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea);
-    createNodes(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea);
+    createNodes(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea, excludeCenterCircle);
     plan(nodes[0], nodes[1], speed.translation.x() / speed.rotation);
 
     bool foundPath = false;
@@ -139,7 +143,7 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
 void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea)
 {
   barriers.clear();
-  barriers.reserve(8);
+  barriers.reserve(20);
 
   // Add sides of the goal nets
   barriers.emplace_back(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal,
@@ -150,6 +154,18 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
                         theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftGoal);
   barriers.emplace_back(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal,
                         theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightGoal);
+
+  if(useFastestWalkLeaderboardBarriers)
+  {
+    barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea,
+                          theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftPenaltyArea);
+    barriers.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea,
+                          theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightGoalArea);
+    barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyMark, 0.f,
+                          theFieldDimensions.xPosOwnFieldBorder, 0.f);
+    barriers.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea,
+                          theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftGoalArea);
+  }
 
   if(excludeOwnPenaltyArea)
   {
@@ -191,7 +207,7 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
     if((ballPosition - target.translation).norm() >= 1.f)
     {
       Vector2f end = ballPosition + (ballPosition - Vector2f(theFieldDimensions.xPosOwnGoal, 0)).normalized(wrongBallSideRadius);
-      barriers.emplace_back(ballPosition.x(), ballPosition.y(), end.x(), end.y(), ballRadius * pi2 * wrongBallSideCostFactor);
+      barriers.emplace_back(ballPosition.x(), ballPosition.y(), end.x(), end.y(), (ballDistance + theBallSpecification.radius) * pi2 * wrongBallSideCostFactor);
     }
   }
 }
@@ -213,13 +229,13 @@ void PathPlannerProvider::clipPenaltyArea(const Vector2f& position, float& left,
   }
 }
 
-void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea)
+void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle)
 {
   nodes.clear();
 
   // Reserve enough space that prevents any reallocation, because the addresses of entries are used.
-  nodes.reserve(sqr((excludeOwnPenaltyArea ? 8 : 6) + (excludeOpponentPenaltyArea ? 2 : 0) +
-                    theObstacleModel.obstacles.size()));
+  nodes.reserve(sqr((excludeOwnPenaltyArea ? 4 : 0) + (excludeOpponentPenaltyArea ? 4 : 0) +
+                    (excludeCenterCircle ? 1 : 0) + 7 + theObstacleModel.obstacles.size()));
 
   // Insert start and target
   nodes.emplace_back(theRobotPose.translation, 0.f);
@@ -228,6 +244,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenal
   Node& to(nodes.back());
 
   // Insert goalposts
+  const float goalPostRadius = goalPostDistance + theFieldDimensions.goalPostRadius;
   nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal), goalPostRadius - radiusControlOffset);
   nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal), goalPostRadius - radiusControlOffset);
   nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal), goalPostRadius - radiusControlOffset);
@@ -269,14 +286,14 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenal
   if(theGameState.isPlaying())
   {
     const Vector2f& ballPosition = theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall) ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
-    if(theGameState.isFreeKick() && theGameState.isForOpponentTeam())
+    if(theGameState.isFreeKick() && !theGameState.isForOwnTeam())
       addObstacle(ballPosition, freeKickRadius);
     else if((ballPosition - to.center).norm() >= 1.f)
-      addObstacle(ballPosition, ballRadius);
+      addObstacle(ballPosition, ballDistance + theBallSpecification.radius);
   }
 
-  if(centerCircleRadius != 0.f && theGameState.state == GameState::setupOpponentKickOff)
-    addObstacle(Vector2f::Zero(), centerCircleRadius);
+  if(centerCircleDistance != 0.f && excludeCenterCircle)
+    addObstacle(Vector2f::Zero(), centerCircleDistance + theFieldDimensions.centerCircleRadius);
 
   // If other nodes surround start or target, shrink them.
   for(auto node = nodes.begin(); node != nodes.begin() + 2; ++node)

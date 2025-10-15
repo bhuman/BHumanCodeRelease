@@ -19,12 +19,12 @@ STREAMABLE(Tactic,
   ENUM(Type,
   {,
     none,
-    t011,
-    t020,
     t123,
-    t100,
     t222,
     t033,
+    t211,
+    t121,
+    t112,
   });
 
   STREAMABLE(Position,
@@ -45,7 +45,6 @@ STREAMABLE(Tactic,
       forwardM,
       forwardL,
       forwardR,
-      sacPasser,
     });
 
     Position() = default;

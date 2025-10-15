@@ -29,6 +29,8 @@ class RatingRole : public PositionRole
     (float)(1000.f) baseDeviation, /**< The deviation around the base pose from where to draw sample points for random new initialization */
     (float)(1.2f) lastPosBonus, /**< Hysteresis for last position rating. */
 
+    (float)(1500.f) stopTeammateDistance, /**< Min distance to teammates to allow stopping based on rating alone */
+
     // start and stop thresholds (can (and some should) be overridden by the explicit role)
     (float)(0.f) startThreshold, /**< the rating has to be at least this much better at the destination (normalized for the target pose) to start moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
     (float)(0.f) stopThreshold, /**< if the rating is not at least this much better at the destination (normalized for the target pose) stop moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
@@ -91,4 +93,6 @@ protected:
   bool drawHeatmap = false;
 
   void preProcess() override;
+
+  float getClosestTeammateSquaredDistance(const Vector2f& fieldPos) const;
 };

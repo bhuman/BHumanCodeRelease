@@ -1,6 +1,6 @@
 #include "Random.h"
 
-#ifndef TARGET_ROBOT
+#if !defined TARGET_ROBOT || !defined __x86_64__
 #include <chrono>
 
 std::mt19937& Random::getGenerator()

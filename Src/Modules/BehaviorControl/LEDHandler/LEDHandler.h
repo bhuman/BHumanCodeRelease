@@ -8,6 +8,7 @@
 
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/Challenge/RollingBallState.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
@@ -16,6 +17,7 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/MotionControl/PhotoModeGenerator.h"
+#include "Representations/Perception/RefereeGestures/RefereeGesture.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
 #include "Representations/Infrastructure/RobotHealth.h"
@@ -30,7 +32,9 @@ MODULE(LEDHandler,
   REQUIRES(GroundContactState),
   REQUIRES(JointSensorData),
   REQUIRES(LibDemo),
+  REQUIRES(RefereeGesture),
   USES(RobotHealth),
+  REQUIRES(RollingBallState),
   REQUIRES(SystemSensorData),
   REQUIRES(StrategyStatus),
   REQUIRES(PhotoModeGenerator),
@@ -77,6 +81,7 @@ private:
   void setRightFoot(LEDRequest& ledRequest);
 
   void setPhotoModeLights(LEDRequest& ledRequest);
+  void setRollingBallChallengeLights(LEDRequest& ledRequest);
 
   size_t chargingLED = 0;
   const LEDRequest::LED headLEDCircle[LEDRequest::numOfHeadLEDs] =

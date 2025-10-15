@@ -10,6 +10,7 @@
 #include "AutomaticCameraCalibrator.h"
 #include "Platform/SystemCall.h"
 #include "Debugging/Annotation.h"
+#include "Math/Random.h"
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 #include <cmath>
@@ -17,16 +18,8 @@
 MAKE_MODULE(AutomaticCameraCalibrator);
 
 AutomaticCameraCalibrator::AutomaticCameraCalibrator() :
-  state(CameraCalibrationStatus::State::idle),
   functor(*this)
 {
-  numOfSamples = 0;
-  inStateSince = 0;
-  lastSampleConfigurationIndex = -1;
-
-  currentSampleConfiguration = nullptr;
-
-  createLookUpTables();
   parallelDisRangeLower = parallelDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.fieldLinesWidth,
                                                          theFieldDimensions.xPosOpponentGoalLine - theFieldDimensions.xPosOpponentGoalArea + theFieldDimensions.fieldLinesWidth);
   goalAreaDisRangeLower = goalAreaDisRangeUpper = Rangef(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.fieldLinesWidth,
@@ -36,18 +29,6 @@ AutomaticCameraCalibrator::AutomaticCameraCalibrator() :
 
   // Load the cameraCalibration from disk, if it exists.
   loadModuleParameters(const_cast<CameraCalibration&>(theCameraCalibration), "CameraCalibration", nullptr);
-}
-
-void AutomaticCameraCalibrator::createLookUpTables()
-{
-  sinAngles.resize(numOfAngles);
-  cosAngles.resize(numOfAngles);
-  int index = 0;
-  for(float deg = 0.f; index < numOfAngles; ++index, deg += 180_deg / numOfAngles)
-  {
-    cosAngles[index] = std::cos(deg);
-    sinAngles[index] = std::sin(deg);
-  }
 }
 
 float AutomaticCameraCalibrator::calculateAngle(const Vector2f& lineAFirst, const Vector2f& lineASecond, const Vector2f& lineBFirst, const Vector2f& lineBSecond)
@@ -60,8 +41,6 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
 {
   DEBUG_DRAWING("module:AutomaticCameraCalibrator:fieldLines", "drawingOnImage")
     THREAD("module:AutomaticCameraCalibrator:fieldLines", theCameraInfo.getThreadName());
-  DEBUG_DRAWING("module:AutomaticCameraCalibrator:correctedLines", "drawingOnImage")
-    THREAD("module:AutomaticCameraCalibrator:correctedLines", theCameraInfo.getThreadName());
 
   nextCameraCalibration = theCameraCalibration;
   updateSampleConfiguration();
@@ -120,81 +99,13 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
 
   COMPLEX_DRAWING("module:AutomaticCameraCalibrator:fieldLines")
     drawFieldLines();
-}
 
-#define CHECK_LINE_PROJECTION(line, coordSys, camMat, camInf) \
-  (Transformation::imageToRobot(coordSys.toCorrected(line.aInImage), camMat, camInf, line.aOnField) && \
-   Transformation::imageToRobot(coordSys.toCorrected(line.bInImage), camMat, camInf, line.bOnField))
-
-bool AutomaticCameraCalibrator::fitLine(CorrectedLine& cline)
-{
-  Vector2f& correctedStart = cline.aInImage;
-  Vector2f& correctedEnd = cline.bInImage;
-  if(correctedEnd.x() < correctedStart.x()) std::swap(correctedStart, correctedEnd);
-
-  // Determine the size of the image section to be processed
-  const Vector2i mid = ((correctedStart + correctedEnd) * 0.5f).cast<int>();
-  const int sizeX = ((std::max(32, static_cast<int>(correctedEnd.x() - correctedStart.x())) + 15) / 16) * 16;
-  const int sizeY = std::max(32, std::abs(static_cast<int>(correctedEnd.y() - correctedStart.y())));
-  const int startX = mid.x() - sizeX / 2, startY = mid.y() - sizeY / 2;
-
-  // Extract the image patch and calculate the Sobel image
-  Sobel::Image1D grayImage(sizeX, sizeY, sizeof(Sobel::Image1D::PixelType));
-  extractImagePatch(Vector2i(startX, startY), Vector2i(sizeX, sizeY), grayImage);
-  Sobel::SobelImage sobelImage(grayImage.width, grayImage.height);
-  Sobel::sobelSSE(grayImage, sobelImage);
-
-  // Since we know the approximate angle of the straight line, we only consider angles in this sector
-  Vector2f dirLine = (correctedEnd.cast<float>() - correctedStart.cast<float>()).normalized();
-  dirLine.rotateLeft();
-  const float angle = std::fmod(static_cast<float>(atan2f(dirLine.y(), dirLine.x()) + 180_deg), static_cast<float>(180_deg));
-  const float minAngle = std::fmod(static_cast<float>(Angle::normalize(angle - 10_deg) + 180_deg), static_cast<float>(180_deg));
-  const float maxAngle = std::fmod(static_cast<float>(Angle::normalize(angle + 10_deg) + 180_deg), static_cast<float>(180_deg));
-  const int minIndex = static_cast<int>(minAngle * numOfAngles / 180_deg) % numOfAngles;
-  const int maxIndex = static_cast<int>(maxAngle * numOfAngles / 180_deg) % numOfAngles;
-
-  // Calculate the values in the hough space
-  const int dMax = static_cast<int>(std::ceil(std::hypot(sobelImage.height, sobelImage.width)));
-  std::vector<std::vector<int> > houghSpace(numOfAngles, std::vector<int>(2 * dMax + 1, 0));
-  calcHoughSpace(sobelImage, minIndex, maxIndex, dMax, houghSpace);
-
-  // Determine the local maxima in the hough space
-  std::vector<Maximum> localMaxima;
-  determineLocalMaxima(houghSpace, minIndex, maxIndex, localMaxima);
-
-  if(localMaxima.size() > 1)
+  if(currentSampleConfiguration && currentSampleConfiguration->camera == theCameraInfo.camera)
   {
-    // Calculate the corrected start/end of the upper or lower edge
-    std::sort(localMaxima.begin(), localMaxima.end(), [](const Maximum& a, const Maximum& b) { return a.maxAcc > b.maxAcc; });
-    int angle = localMaxima[0].angleIndex, distance = localMaxima[0].distanceIndex - dMax;
-    Vector2f pointOnLine = Vector2f(distance * cosAngles[angle], distance * sinAngles[angle]) + Vector2f(startX, startY);
-    Vector2f n0(cosAngles[angle], sinAngles[angle]);
-
-    Eigen::Hyperplane<float, 2> optimalLine = Eigen::Hyperplane<float, 2>(n0, pointOnLine);
-    Vector2f norm = std::abs(correctedStart.x() - correctedEnd.x()) < std::abs(correctedStart.y() - correctedEnd.y()) ? Vector2f(0, 1) : Vector2f(1, 0);
-    Eigen::Hyperplane<float, 2> lineStart = Eigen::Hyperplane<float, 2>(norm, correctedStart);
-    Eigen::Hyperplane<float, 2> lineEnd = Eigen::Hyperplane<float, 2>(norm, correctedEnd);
-    cline.aInImage = optimalLine.intersection(lineStart);
-    cline.bInImage = optimalLine.intersection(lineEnd);
-
-    // Check if we found the upper or lower edge and set the offset accordingly
-    for(unsigned int i = 1; i < localMaxima.size(); ++i)
-    {
-      int angle = localMaxima[i].angleIndex, distance = localMaxima[i].distanceIndex - dMax;
-      pointOnLine = Vector2f(distance * cosAngles[angle], distance * sinAngles[angle]) + Vector2f(startX, startY);
-      n0 = Vector2f(cosAngles[angle], sinAngles[angle]);
-      Eigen::Hyperplane<float, 2> oppositeOptimalLine = Eigen::Hyperplane<float, 2>(n0, pointOnLine);
-      Vector2f startOpposite = oppositeOptimalLine.intersection(lineStart), endOpposite = oppositeOptimalLine.intersection(lineEnd);
-
-      float disInImage = optimalLine.signedDistance((startOpposite + endOpposite) * 0.5f);
-      if((optimalLine.signedDistance(startOpposite) < 0.f) != (optimalLine.signedDistance(endOpposite) < 0.f) ||
-         optimalLine.absDistance(startOpposite) < minDisImage || optimalLine.absDistance(endOpposite) < minDisImage)
-        continue;
-      cline.offset = disInImage > 0.f ? theFieldDimensions.fieldLinesWidth / 2.f : -theFieldDimensions.fieldLinesWidth / 2.f;
-      return CHECK_LINE_PROJECTION(cline, theImageCoordinateSystem, theCameraMatrix, theCameraInfo);
-    }
+    if(theFrameInfo.getTimeSince(lastCameraInfoTimestamp) > maxTimeBetweenExecutionCycle)
+      noCameraTimeoutSinceTimestamp = theFrameInfo.time;
+    lastCameraInfoTimestamp = theFrameInfo.time;
   }
-  return false;
 }
 
 void AutomaticCameraCalibrator::update(CameraCalibrationStatus& cameraCalibrationStatus)
@@ -205,11 +116,14 @@ void AutomaticCameraCalibrator::update(CameraCalibrationStatus& cameraCalibratio
   cameraCalibrationStatus.state = state;
   cameraCalibrationStatus.inStateSince = inStateSince;
 
+  const SampleConfigurationStatus oldStatus = cameraCalibrationStatus.sampleConfigurationStatus;
   cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::none;
   if(theCalibrationRequest.sampleConfigurationRequest)
   {
     cameraCalibrationStatus.sampleConfigurationStatus = allRequiredFeaturesVisible ? SampleConfigurationStatus::visible : SampleConfigurationStatus::notVisible;
-    if(allRequiredFeaturesVisible && theCalibrationRequest.sampleConfigurationRequest->doRecord)
+    if(theFrameInfo.getTimeSince(noCameraTimeoutSinceTimestamp) < minTimeSinceNoCameraTimeout)
+      cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::waiting;
+    else if(allRequiredFeaturesVisible && theCalibrationRequest.sampleConfigurationRequest->doRecord)
       cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::recording;
     updateSampleConfiguration();
     if(currentSampleConfiguration && currentSampleConfiguration->samplesExist(samples))
@@ -219,106 +133,30 @@ void AutomaticCameraCalibrator::update(CameraCalibrationStatus& cameraCalibratio
       cameraCalibrationStatus.sampleConfigurationStatus = SampleConfigurationStatus::finished;
     }
   }
+  if(oldStatus != cameraCalibrationStatus.sampleConfigurationStatus)
+    cameraCalibrationStatus.inStatusSince = theFrameInfo.time;
 }
 
 void AutomaticCameraCalibrator::update(CameraResolutionRequest& cameraResolutionRequest)
 {
   if(SystemCall::getMode() == SystemCall::Mode::physicalRobot)
   {
-    if(state == CameraCalibrationStatus::State::idle)
+    if(state == CameraCalibrationStatus::State::idle || state == CameraCalibrationStatus::State::optimize)
     {
       cameraResolutionRequest.resolutions[CameraInfo::lower] = CameraResolutionRequest::Resolutions::defaultRes;
       cameraResolutionRequest.resolutions[CameraInfo::upper] = CameraResolutionRequest::Resolutions::defaultRes;
     }
     else
     {
-      cameraResolutionRequest.resolutions[CameraInfo::lower] = resRequest[CameraInfo::lower];
-      cameraResolutionRequest.resolutions[CameraInfo::upper] = resRequest[CameraInfo::upper];
+      if(currentSampleConfiguration && currentSampleConfiguration->camera == CameraInfo::lower)
+        cameraResolutionRequest.resolutions[CameraInfo::lower] = resRequest[CameraInfo::lower];
+      else
+        cameraResolutionRequest.resolutions[CameraInfo::lower] = CameraResolutionRequest::Resolutions::defaultRes;
+      if(!currentSampleConfiguration || currentSampleConfiguration->camera == CameraInfo::upper)
+        cameraResolutionRequest.resolutions[CameraInfo::upper] = resRequest[CameraInfo::upper];
+      else
+        cameraResolutionRequest.resolutions[CameraInfo::upper] = CameraResolutionRequest::Resolutions::defaultRes;
     }
-  }
-}
-
-void AutomaticCameraCalibrator::extractImagePatch(const Vector2i& start, const Vector2i& size, Sobel::Image1D& grayImage)
-{
-  const ECImage& theECImage = *theOptionalECImage.image;
-  int currentY = start.y();
-  for(int y = 0; y < size.y(); ++y, ++currentY)
-  {
-    if(currentY >= theCameraInfo.height || currentY < 0)
-      continue;
-
-    int currentX = start.x();
-    const PixelTypes::GrayscaledPixel* pix = theECImage.grayscaled[currentY];
-    for(int x = 0; x < size.x(); ++x, ++currentX)
-    {
-      if(currentX < theCameraInfo.width && currentX >= 0)
-        grayImage[y][x] = *(pix + currentX);
-    }
-  }
-}
-
-float AutomaticCameraCalibrator::determineSobelThresh(const Sobel::SobelImage& sobelImage)
-{
-  int thresh = 0;
-  for(unsigned int y = 1; y < sobelImage.height - 1; ++y)
-    for(unsigned int x = 1; x < sobelImage.width - 1; ++x)
-    {
-      const Sobel::SobelPixel& pixel = sobelImage[y][x];
-      const int value = pixel.x * pixel.x + pixel.y * pixel.y;
-      if(value > thresh) thresh = value;
-    }
-  return sqr(std::sqrt(static_cast<float>(thresh)) * sobelThreshValue);
-}
-
-void AutomaticCameraCalibrator::calcHoughSpace(const Sobel::SobelImage& sobelImage, const int minIndex, const int maxIndex, const int dMax, std::vector<std::vector<int> >& houghSpace)
-{
-  const float thresh = determineSobelThresh(sobelImage);
-  for(unsigned int y = 1; y < sobelImage.height - 1; ++y)
-    for(unsigned int x = 1; x < sobelImage.width - 1; ++x)
-    {
-      const Sobel::SobelPixel& pixel = sobelImage[y][x];
-      if(pixel.x * pixel.x + pixel.y * pixel.y >= thresh)
-      {
-        for(int index = minIndex; index != maxIndex; ++index)
-        {
-          int d = static_cast<int>(std::ceil(x * cosAngles[index] + y * sinAngles[index]));
-          ++houghSpace[index][d + dMax];
-          if(minIndex > maxIndex && index == numOfAngles - 1)
-            index = -1;
-        }
-      }
-    }
-}
-
-void AutomaticCameraCalibrator::determineLocalMaxima(const std::vector<std::vector<int> >& houghSpace, const int minIndex, const int maxIndex, std::vector<Maximum>& localMaxima)
-{
-  const int maxDisIndex = static_cast<int>(houghSpace[0].size());
-  auto localMaximum = [&houghSpace, maxDisIndex](const int value, const int angleIndex, const int distanceIndex, const int numOfAngles) -> bool
-  {
-    for(int i = -1; i <= 1; ++i)
-    {
-      int index = ((angleIndex + i) + numOfAngles) % numOfAngles;
-      for(int j = std::max(0, distanceIndex - 1); j <= std::min(maxDisIndex - 1, distanceIndex + 1); ++j)
-      {
-        if(index == angleIndex && j == distanceIndex)
-          continue;
-        if(houghSpace[index][j] > value)
-          return false;
-      }
-    }
-    return true;
-  };
-
-  for(int angleIndex = minIndex; angleIndex != maxIndex; ++angleIndex)
-  {
-    for(int distanceIndex = 0; distanceIndex < maxDisIndex; ++distanceIndex)
-    {
-      int value = houghSpace[angleIndex][distanceIndex];
-      if(value != 0 && localMaximum(value, angleIndex, distanceIndex, numOfAngles))
-        localMaxima.push_back({value, angleIndex, distanceIndex});
-    }
-    if(minIndex > maxIndex && angleIndex == numOfAngles - 1)
-      angleIndex = -1;
   }
 }
 
@@ -341,27 +179,18 @@ void AutomaticCameraCalibrator::determineLocalMaxima(const std::vector<std::vect
 
 void AutomaticCameraCalibrator::recordSamples()
 {
-  if(theCameraInfo.camera != currentSampleConfiguration->camera)
+  if(theCameraInfo.camera != currentSampleConfiguration->camera ||
+     theFrameInfo.getTimeSince(noCameraTimeoutSinceTimestamp) < minTimeSinceNoCameraTimeout) // Wait for camera finishing resetting
     return;
 
-  COMPLEX_DRAWING("module:AutomaticCameraCalibrator:correctedLines")
-  {
-    for(unsigned int i = 0; i < theLinesPercept.lines.size(); ++i)
-    {
-      CorrectedLine cLine = {theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(), Vector2f(), Vector2f()};
-      if(fitLine(cLine))
-      {
-        const Vector2f cLineMid = (cLine.aInImage + cLine.bInImage) * 0.5;
-        DRAW_TEXT("module:AutomaticCameraCalibrator:correctedLines", cLineMid.x(), cLineMid.y(), 10, ColorRGBA::black, cLine.offset);
-        CROSS("module:AutomaticCameraCalibrator:correctedLines", cLine.aInImage.x(), cLine.aInImage.y(), 4, 2, Drawings::solidPen, ColorRGBA::red);
-        CROSS("module:AutomaticCameraCalibrator:correctedLines", cLine.bInImage.x(), cLine.bInImage.y(), 4, 2, Drawings::solidPen, ColorRGBA::black);
-        LINE("module:AutomaticCameraCalibrator:correctedLines", cLine.aInImage.x(), cLine.aInImage.y(), cLine.bInImage.x(), cLine.bInImage.y(), 1, Drawings::solidPen, ColorRGBA::yellow);
-      }
-    }
-  }
+  const LinesPercept::Line& customLineI = theCustomCalibrationLines.lines[CustomCalibrationLines::closeGoalAreaConnectingLine];
+  const LinesPercept::Line& customLineJ = theCustomCalibrationLines.lines[CustomCalibrationLines::outerGoalAreaParallelLine];
+  const LinesPercept::Line& customLineK = theCustomCalibrationLines.lines[CustomCalibrationLines::innerGoalAreaParallelLine];
+  const LinesPercept::Line& customLineL = theCustomCalibrationLines.lines[CustomCalibrationLines::farGoalAreaConnectingLine];
+  const bool allCustomLinesSet = !customLineI.isEmpty() && !customLineJ.isEmpty() && !customLineK.isEmpty() && !customLineL.isEmpty();
 
   allRequiredFeaturesVisible = false;
-  if(theLinesPercept.lines.size() >= 3 && theLinesPercept.lines.size() <= 8 &&
+  if(((theLinesPercept.lines.size() >= 3 && theLinesPercept.lines.size() <= 9) || allCustomLinesSet) &&
      (currentSampleConfiguration->needToRecord(samples, cornerAngle) || currentSampleConfiguration->needToRecord(samples, parallelAngle) || currentSampleConfiguration->needToRecord(samples, parallelLinesDistance)) &&
      !(currentSampleConfiguration->needToRecord(samples, goalAreaDistance) || currentSampleConfiguration->needToRecord(samples, goalLineDistance)))
   {
@@ -371,62 +200,156 @@ void AutomaticCameraCalibrator::recordSamples()
     {
       for(size_t j = 0; j < theLinesPercept.lines.size(); ++j)
       {
-        if(i == j)
+        if(i == j || foundParallelLines || allRequiredFeaturesVisible)
           continue;
         for(size_t k = j + 1; k < theLinesPercept.lines.size(); ++k)
         {
-          if(i == k)
+          if(i == k || foundParallelLines || allRequiredFeaturesVisible)
             continue;
+
+          const LinesPercept::Line& lineI = !customLineI.isEmpty() ? customLineI : theLinesPercept.lines[i];
+          const LinesPercept::Line& lineJ = !customLineJ.isEmpty() ? customLineJ : theLinesPercept.lines[j];
+          const LinesPercept::Line& lineK = !customLineK.isEmpty() ? customLineK : theLinesPercept.lines[k];
+
           // i is the index of the "short" connecting line, j and k are the indices for the orthogonal lines (goal line and front goal area line).
           // It is checked whether the line i has one end in one line and the other end in the other line.
           // TODO: This should be done in image coordinates because otherwise the camera would have to be calibrated. But still works.
-          const float distInImage1 = std::min(Geometry::getDistanceToEdge(theLinesPercept.lines[j].line, theLinesPercept.lines[i].firstField.cast<float>()),
-                                              Geometry::getDistanceToEdge(theLinesPercept.lines[j].line, theLinesPercept.lines[i].lastField.cast<float>()));
+          const float distInImage1 = std::min(Geometry::getDistanceToEdge(lineJ.line, lineI.firstField.cast<float>()),
+                                              Geometry::getDistanceToEdge(lineJ.line, lineI.lastField.cast<float>()));
           if(distInImage1 > 100.f)
             continue;
-          const float distInImage2 = std::min(Geometry::getDistanceToEdge(theLinesPercept.lines[k].line, theLinesPercept.lines[i].firstField.cast<float>()),
-                                              Geometry::getDistanceToEdge(theLinesPercept.lines[k].line, theLinesPercept.lines[i].lastField.cast<float>()));
+          const float distInImage2 = std::min(Geometry::getDistanceToEdge(lineK.line, lineI.firstField.cast<float>()),
+                                              Geometry::getDistanceToEdge(lineK.line, lineI.lastField.cast<float>()));
           if(distInImage2 > 100.f)
             continue;
 
           // Make sure that the short connecting line is the closest as seen from the robot.
-          const float squaredDistanceToShortLine = ((theLinesPercept.lines[i].firstField + theLinesPercept.lines[i].lastField) * 0.5f).squaredNorm();
-          if(((theLinesPercept.lines[j].firstField + theLinesPercept.lines[j].lastField) * 0.5f).squaredNorm() < squaredDistanceToShortLine ||
-             ((theLinesPercept.lines[k].firstField + theLinesPercept.lines[k].lastField) * 0.5f).squaredNorm() < squaredDistanceToShortLine)
+          const float squaredDistanceToShortLineStart = lineI.firstField.squaredNorm();
+          const float squaredDistanceToShortLineEnd = lineI.lastField.squaredNorm();
+          const float squaredDistanceToShortLine = squaredDistanceToShortLineStart < squaredDistanceToShortLineEnd ? squaredDistanceToShortLineStart : squaredDistanceToShortLineEnd;
+
+          if(((lineJ.firstField + lineJ.lastField) * 0.5f).squaredNorm() < squaredDistanceToShortLine ||
+             ((lineK.firstField + lineK.lastField) * 0.5f).squaredNorm() < squaredDistanceToShortLine)
             continue;
 
+          // Sort image points based on the x-coordinate. Otherwise the angles might be wrong
+          Vector2f iFirstImg = lineI.firstImg.cast<float>();
+          Vector2f iLastImg = lineI.lastImg.cast<float>();
+          Vector2f jFirstImg = lineJ.firstImg.cast<float>();
+          Vector2f jLastImg = lineJ.lastImg.cast<float>();
+          Vector2f kFirstImg = lineK.firstImg.cast<float>();
+          Vector2f kLastImg = lineK.lastImg.cast<float>();
+
+          auto swapImgPoints = [](Vector2f& vec1, Vector2f& vec2)
+          {
+            if(vec1.x() > vec2.x())
+            {
+              const Vector2f temp1 = vec1;
+              vec1 = vec2;
+              vec2 = temp1;
+            }
+          };
+
+          swapImgPoints(iFirstImg, iLastImg);
+          swapImgPoints(jFirstImg, jLastImg);
+          swapImgPoints(kFirstImg, kLastImg);
+
           // Roughly check whether the angles are reasonable (in image coordinates)
-          const Angle angleIJ = calculateAngle(theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(),
-                                               theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>());
-          const Angle angleIK = calculateAngle(theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(),
-                                               theLinesPercept.lines[k].firstImg.cast<float>(), theLinesPercept.lines[k].lastImg.cast<float>());
-          const Angle angleJK = calculateAngle(theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>(),
-                                               theLinesPercept.lines[k].firstImg.cast<float>(), theLinesPercept.lines[k].lastImg.cast<float>());
+          const Angle angleIJ = calculateAngle(iFirstImg, iLastImg,
+                                               jFirstImg, jLastImg);
+          const Angle angleIK = calculateAngle(iFirstImg, iLastImg,
+                                               kFirstImg, kLastImg);
+          const Angle angleJK = calculateAngle(jFirstImg, jLastImg,
+                                               kFirstImg, kLastImg);
           if(angleIJ < 20_deg || angleIJ > 160_deg || angleIK < 20_deg || angleIK > 160_deg || angleJK > 40_deg)
             continue;
 
-          allRequiredFeaturesVisible = true;
-          if(!theCalibrationRequest.sampleConfigurationRequest->doRecord) continue;
+          const float iImgLengthSqr = (iFirstImg - iLastImg).squaredNorm();
+          if(iImgLengthSqr > (kFirstImg - kLastImg).squaredNorm() || iImgLengthSqr > (jFirstImg - jLastImg).squaredNorm())
+            continue;
 
           // Fit lines through the start/end points of the lines
-          CorrectedLine cLine1 = {theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(), Vector2f(), Vector2f()};
-          CorrectedLine cLine2 = {theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>(), Vector2f(), Vector2f()};
-          CorrectedLine cLine3 = {theLinesPercept.lines[k].firstImg.cast<float>(), theLinesPercept.lines[k].lastImg.cast<float>(), Vector2f(), Vector2f()};
-          if(!fitLine(cLine1) || !fitLine(cLine2) || !fitLine(cLine3))
+          LineCorrector::Line cLine1 = { iFirstImg, iLastImg, !customLineI.isEmpty() ? customLineI.firstField : Vector2f(), !customLineI.isEmpty() ? customLineI.lastField : Vector2f()};
+          LineCorrector::Line cLine2 = { jFirstImg, jLastImg, !customLineJ.isEmpty() ? customLineJ.firstField : Vector2f(), !customLineJ.isEmpty() ? customLineJ.lastField : Vector2f() };
+          LineCorrector::Line cLine3 = { kFirstImg, kLastImg, !customLineK.isEmpty() ? customLineK.firstField : Vector2f(), !customLineK.isEmpty() ? customLineK.lastField : Vector2f() };
+          if((customLineI.isEmpty() && !theLineCorrector.fitLine(cLine1)) || (customLineJ.isEmpty() && !theLineCorrector.fitLine(cLine2)) || (customLineK.isEmpty() && !theLineCorrector.fitLine(cLine3)))
             continue;
 
           const Geometry::Line line2(cLine2.aOnField, (cLine2.bOnField - cLine2.aOnField).normalized());
           const float distance = Geometry::getDistanceToLineSigned(line2, (cLine3.aOnField + cLine3.bOnField) * 0.5f);
           const float combinedOffset = distance > 0 ? cLine2.offset - cLine3.offset : cLine3.offset - cLine2.offset;
 
-          if(parallelLinesRange.isInside(std::abs(distance) - combinedOffset))
+          foundParallelLines = parallelLinesRange.isInside(std::abs(distance) - combinedOffset);
+
+          // Check if we see the the other short connecting line of the goal area
+          bool sampleFinished = !currentSampleConfiguration->needToRecord(samples, parallelLinesDistanceShort);
+          allRequiredFeaturesVisible |= !currentSampleConfiguration->needToRecord(samples, parallelLinesDistanceShort);
+          if((theLinesPercept.lines.size() >= 4 || !customLineL.isEmpty()) && currentSampleConfiguration->needToRecord(samples, parallelLinesDistanceShort))
           {
-            foundParallelLines = true;
+            for(size_t l = 0; l < theLinesPercept.lines.size(); ++l)
+            {
+              if(l == i || l == j || l == k || allRequiredFeaturesVisible)
+                continue;
+
+              const LinesPercept::Line& lineL = !customLineL.isEmpty() ? customLineL : theLinesPercept.lines[l];
+
+              const float distInImage1 = std::min(Geometry::getDistanceToEdge(lineJ.line, lineL.firstField.cast<float>()),
+                                                  Geometry::getDistanceToEdge(lineJ.line, lineL.lastField.cast<float>()));
+              if(distInImage1 > 100.f)
+                continue;
+              const float distInImage2 = std::min(Geometry::getDistanceToEdge(lineK.line, lineL.firstField.cast<float>()),
+                                                  Geometry::getDistanceToEdge(lineK.line, lineL.lastField.cast<float>()));
+              if(distInImage2 > 100.f)
+                continue;
+
+              const float squaredDistanceToOtherShortLine = (lineI.firstField - lineI.lastField).squaredNorm();
+
+              if(((lineJ.firstField + lineJ.lastField) * 0.5f).squaredNorm() < squaredDistanceToOtherShortLine ||
+                 ((lineK.firstField + lineK.lastField) * 0.5f).squaredNorm() < squaredDistanceToOtherShortLine)
+                continue;
+
+              Vector2f lFirstImg = lineL.firstImg.cast<float>();
+              Vector2f lLastImg = lineL.lastImg.cast<float>();
+
+              swapImgPoints(lFirstImg, lLastImg);
+
+              const Angle angleLJ = calculateAngle(lFirstImg, lLastImg,
+                                                   jFirstImg, jLastImg);
+              const Angle angleLK = calculateAngle(lFirstImg, lLastImg,
+                                                   kFirstImg, kLastImg);
+
+              if(angleLJ < 15_deg || angleLJ > 160_deg || angleLK < 15_deg || angleLK > 160_deg)
+                continue;
+
+              const float lImgLengthSqr = (lFirstImg - lLastImg).squaredNorm();
+              if(lImgLengthSqr > (kFirstImg - kLastImg).squaredNorm() || lImgLengthSqr > (jFirstImg - jLastImg).squaredNorm())
+                continue;
+
+              LineCorrector::Line cLine4 = { lFirstImg, lLastImg, !customLineL.isEmpty() ? customLineL.firstField : Vector2f(), !customLineL.isEmpty() ? customLineL.lastField : Vector2f() };
+
+              if(customLineL.isEmpty() && !theLineCorrector.fitLine(cLine4))
+                continue;
+
+              allRequiredFeaturesVisible = true;
+              if(!theCalibrationRequest.sampleConfigurationRequest->doRecord) continue;
+
+              sampleFinished = true;
+              const Geometry::Line line1(cLine1.aOnField, (cLine1.bOnField - cLine1.aOnField).normalized());
+              const float distanceOther = Geometry::getDistanceToLineSigned(line1, (cLine4.aOnField + cLine4.bOnField) * 0.5f);
+              const float combinedOffsetOther = distanceOther > 0 ? cLine1.offset - cLine4.offset : cLine4.offset - cLine1.offset;
+              OUTPUT_TEXT("ParallelLinesDistance Short: " << std::abs(distanceOther) << ", CombinedOffset: " << combinedOffsetOther);
+              ADD_SAMPLE(parallelLinesDistanceShort, ParallelLinesDistanceShortSample, cLine1, cLine4)
+              ANNOTATION("AutomaticCameraCalibrator", "Sample Recorded (l): " << std::to_string(l));
+              break;
+            }
+          }
+          if(sampleFinished)
+          {
+            if(!theCalibrationRequest.sampleConfigurationRequest->doRecord) continue;
 
             OUTPUT_TEXT("ParallelLinesDistance: " << std::abs(distance) << ", CombinedOffset: " << combinedOffset);
-            ANNOTATION("AutomaticCameraCalibrator", "Sample Recorded: " << std::to_string(i) << " " << std::to_string(j) << " " << std::to_string(k));
+            ANNOTATION("AutomaticCameraCalibrator", "Sample Recorded (i, j, k): " << std::to_string(i) << " " << std::to_string(j) << " " << std::to_string(k));
 
-            // Use the longer line as orthogonal line.
             ADD_SAMPLE(cornerAngle, CornerAngleSample, cLine1, ((cLine2.bOnField - cLine2.aOnField).squaredNorm() <
                                                                 (cLine3.bOnField - cLine3.aOnField).squaredNorm() ? cLine2 : cLine3))
             ADD_SAMPLE(parallelAngle, ParallelAngleSample, cLine2, cLine3)
@@ -454,29 +377,32 @@ void AutomaticCameraCalibrator::recordSamples()
     {
       for(size_t j = i + 1; j < theLinesPercept.lines.size(); ++j)
       {
+        const LinesPercept::Line& lineI = !customLineI.isEmpty() ? customLineI : theLinesPercept.lines[i];
+        const LinesPercept::Line& lineJ = !customLineJ.isEmpty() ? customLineJ : theLinesPercept.lines[j];
+
         // Heuristic: Goal line and front goal area line should span at least half the image width.
-        if(std::abs(theLinesPercept.lines[i].firstImg.x() - theLinesPercept.lines[i].lastImg.x()) < theCameraInfo.width / 2 ||
-           std::abs(theLinesPercept.lines[j].firstImg.x() - theLinesPercept.lines[j].lastImg.x()) < theCameraInfo.width / 2)
+        if(std::abs(lineI.firstImg.x() - lineI.lastImg.x()) < theCameraInfo.width / 2 ||
+           std::abs(lineJ.firstImg.x() - lineJ.lastImg.x()) < theCameraInfo.width / 2)
           continue;
         // Make sure the lines dont intersect
-        if(Geometry::isPointLeftOfLine(theLinesPercept.lines[i].firstField, theLinesPercept.lines[i].lastField, theLinesPercept.lines[j].firstField) !=
-           Geometry::isPointLeftOfLine(theLinesPercept.lines[i].firstField, theLinesPercept.lines[i].lastField, theLinesPercept.lines[j].lastField))
+        if(Geometry::isPointLeftOfLine(lineI.firstField, lineI.lastField, lineJ.firstField) !=
+           Geometry::isPointLeftOfLine(lineI.firstField, lineI.lastField, lineJ.lastField))
           continue;
         // Both lines should be behind the penalty mark (filter the front penalty area line)
-        const float squaredDistanceToFirst = ((theLinesPercept.lines[i].firstField + theLinesPercept.lines[i].lastField) * 0.5f).squaredNorm();
-        const float squaredDistanceToSecond = ((theLinesPercept.lines[j].firstField + theLinesPercept.lines[j].lastField) * 0.5f).squaredNorm();
+        const float squaredDistanceToFirst = ((lineI.firstField + lineI.lastField) * 0.5f).squaredNorm();
+        const float squaredDistanceToSecond = ((lineJ.firstField + lineJ.lastField) * 0.5f).squaredNorm();
         if(std::min(squaredDistanceToFirst, squaredDistanceToSecond) < thePenaltyMarkPercept.positionOnField.squaredNorm())
           continue;
 
         allRequiredFeaturesVisible = true;
         if(!theCalibrationRequest.sampleConfigurationRequest->doRecord) continue;
 
-        CorrectedLine cLineGoalArea = {theLinesPercept.lines[i].firstImg.cast<float>(), theLinesPercept.lines[i].lastImg.cast<float>(), Vector2f(), Vector2f()};
-        CorrectedLine cLineGoalLine = {theLinesPercept.lines[j].firstImg.cast<float>(), theLinesPercept.lines[j].lastImg.cast<float>(), Vector2f(), Vector2f()};
+        LineCorrector::Line cLineGoalArea = { lineI.firstImg.cast<float>(), lineI.lastImg.cast<float>(), Vector2f(), Vector2f()};
+        LineCorrector::Line cLineGoalLine = { lineJ.firstImg.cast<float>(), lineJ.lastImg.cast<float>(), Vector2f(), Vector2f()};
         // Use the farther line as the goal line
         if(squaredDistanceToFirst > squaredDistanceToSecond)
           std::swap(cLineGoalArea, cLineGoalLine);
-        if(!fitLine(cLineGoalArea) || !fitLine(cLineGoalLine))
+        if(!theLineCorrector.fitLine(cLineGoalArea) || !theLineCorrector.fitLine(cLineGoalLine))
           continue;
         float goalAreaLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGoalArea.aOnField, (cLineGoalArea.bOnField - cLineGoalArea.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
         float goalLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGoalLine.aOnField, (cLineGoalLine.bOnField - cLineGoalLine.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
@@ -510,7 +436,8 @@ void AutomaticCameraCalibrator::recordSamples()
      !currentSampleConfiguration->needToRecord(samples, parallelAngle) &&
      !currentSampleConfiguration->needToRecord(samples, parallelLinesDistance) &&
      !currentSampleConfiguration->needToRecord(samples, goalAreaDistance) &&
-     !currentSampleConfiguration->needToRecord(samples, goalLineDistance))
+     !currentSampleConfiguration->needToRecord(samples, goalLineDistance) &&
+     !currentSampleConfiguration->needToRecord(samples, parallelLinesDistanceShort))
   {
     numOfDiscardedParallelLines = numOfDiscardedGoalAreaLines = numOfDiscardedGoalLines = 0;
     allRequiredFeaturesVisible = true;
@@ -584,12 +511,12 @@ void AutomaticCameraCalibrator::resetOptimization(const bool finished)
   else
   {
     OUTPUT_TEXT("Restart optimize! An optimization error occurred!");
-    optimizationParameters(lowerCameraRollCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
-    optimizationParameters(lowerCameraTiltCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
-    optimizationParameters(upperCameraRollCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
-    optimizationParameters(upperCameraTiltCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
-    optimizationParameters(bodyRollCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
-    optimizationParameters(bodyTiltCorrection) = (float(rand()) / float(RAND_MAX)) * 1_deg - 0.5_deg;
+    optimizationParameters(lowerCameraRollCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
+    optimizationParameters(lowerCameraTiltCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
+    optimizationParameters(upperCameraRollCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
+    optimizationParameters(upperCameraTiltCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
+    optimizationParameters(bodyRollCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
+    optimizationParameters(bodyTiltCorrection) = Random::uniform<float>(-0.5_deg, 0.5_deg);
     unpack(optimizationParameters, nextCameraCalibration);
   }
 
@@ -650,6 +577,10 @@ void AutomaticCameraCalibrator::updateSampleConfiguration()
   lastSampleConfigurationIndex = static_cast<int>(theCalibrationRequest.sampleConfigurationRequest->index);
 }
 
+#define CHECK_LINE_PROJECTION(line, coordSys, camMat, camInf) \
+  (Transformation::imageToRobot(coordSys.toCorrected(line.aInImage), camMat, camInf, line.aOnField) && \
+   Transformation::imageToRobot(coordSys.toCorrected(line.bInImage), camMat, camInf, line.bOnField))
+
 #define CHECK_PROJECTION_2_LINES(SampleName, line1, line2) \
   if(!CHECK_LINE_PROJECTION(line1, coordSys, cameraMatrix, cameraInfo) || \
      !CHECK_LINE_PROJECTION(line2, coordSys, cameraMatrix, cameraInfo)) \
@@ -699,28 +630,31 @@ float AutomaticCameraCalibrator::ParallelLinesDistanceSample::computeError(const
 
   const Geometry::Line line1(cLine1.aOnField, (cLine1.bOnField - cLine1.aOnField).normalized());
   const Geometry::Line line2(cLine2.aOnField, (cLine2.bOnField - cLine2.aOnField).normalized());
-  const float distance1 = Geometry::getDistanceToLineSigned(line1, cLine2.aOnField);
-  const float distance2 = Geometry::getDistanceToLineSigned(line1, cLine2.bOnField);
-
-  const float distance3 = Geometry::getDistanceToLineSigned(line2, cLine1.aOnField);
-  const float distance4 = Geometry::getDistanceToLineSigned(line2, cLine1.bOnField);
-
-  const float distance1ErrorRange = cLine2.aOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
-  const float distance2ErrorRange = cLine2.bOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
-
-  const float distance3ErrorRange = cLine1.aOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
-  const float distance4ErrorRange = cLine1.bOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
+  const float distance1 = Geometry::getDistanceToLineSigned(line1, 0.5f * (cLine2.aOnField + cLine2.bOnField));
+  const float distance2 = Geometry::getDistanceToLineSigned(line2, 0.5f * (cLine1.aOnField + cLine1.bOnField));
 
   const float combinedOffset = distance1 > 0 ? cLine1.offset - cLine2.offset : cLine2.offset - cLine1.offset;
-
   const float optimalDistance = calibrator.theFieldDimensions.xPosOpponentGoalLine - calibrator.theFieldDimensions.xPosOpponentGoalArea + combinedOffset;
-  std::vector<float> distanceErrorList;
-  distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance1) - optimalDistance) - distance1ErrorRange)));
-  distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance2) - optimalDistance) - distance2ErrorRange)));
-  distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance3) - optimalDistance) - distance3ErrorRange)));
-  distanceErrorList.push_back(std::max(0.f, (std::abs(std::abs(distance4) - optimalDistance) - distance4ErrorRange)));
-  const float lineDistanceError = *std::max_element(distanceErrorList.cbegin(), distanceErrorList.cend());
+
+  const float lineDistanceError = std::max(std::abs(std::abs(distance1) - optimalDistance), std::abs(std::abs(distance2) - optimalDistance));
   OUTPUT_TEXT("LineDistanceError: " << lineDistanceError);
+  return lineDistanceError / calibrator.distanceErrorDivisor;
+}
+
+float AutomaticCameraCalibrator::ParallelLinesDistanceShortSample::computeError(const CameraMatrix& cameraMatrix) const
+{
+  CHECK_PROJECTION_2_LINES("ParallelLinesDistanceShortSample", cLine1, cLine2)
+
+  const Geometry::Line line1(cLine1.aOnField, (cLine1.bOnField - cLine1.aOnField).normalized());
+  const Geometry::Line line2(cLine2.aOnField, (cLine2.bOnField - cLine2.aOnField).normalized());
+  const float distance1 = Geometry::getDistanceToLineSigned(line1, 0.5f * (cLine2.aOnField + cLine2.bOnField));
+  const float distance2 = Geometry::getDistanceToLineSigned(line2, 0.5f * (cLine1.aOnField + cLine1.bOnField));
+
+  const float combinedOffset = distance1 > 0 ? cLine1.offset - cLine2.offset : cLine2.offset - cLine1.offset;
+  const float optimalDistance = calibrator.theFieldDimensions.yPosLeftGoalArea - calibrator.theFieldDimensions.yPosRightGoalArea + combinedOffset;
+
+  const float lineDistanceError = (std::abs(std::abs(distance1) - optimalDistance) + std::abs(std::abs(distance2) - optimalDistance)) * 0.5f;
+  OUTPUT_TEXT("LineDistanceShortError: " << lineDistanceError);
   return lineDistanceError / calibrator.distanceErrorDivisor;
 }
 
@@ -752,6 +686,8 @@ float AutomaticCameraCalibrator::GoalLineDistanceSample::computeError(const Came
 
 float AutomaticCameraCalibrator::Functor::operator()(const Parameters& params, size_t measurement) const
 {
+  if(calibrator.samples[measurement] == nullptr)
+    return 0.f;
   CameraCalibration cameraCalibration = calibrator.nextCameraCalibration;
   calibrator.unpack(params, cameraCalibration);
   return calibrator.samples[measurement]->computeError(cameraCalibration);

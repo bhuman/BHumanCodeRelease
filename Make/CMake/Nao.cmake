@@ -27,26 +27,29 @@ if(BUILD_NAO)
   endif()
 
   target_link_libraries(Nao PRIVATE Flags::Default)
-elseif(WINDOWS)
-  set(CMAKE_MSVCIDE_RUN_PATH "%systemroot%\\Sysnative")
-  add_custom_target(Nao ALL bash -c "cd Linux/CMake/$<CONFIG>; stdbuf -e0 -oL cmake --build . --target Nao | stdbuf -e0 -oL sed 's@^/mnt/\\([a-z]\\)@\\U\\1:@'"
-      WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build"
-      SOURCES ${NAO_SOURCES})
-  add_custom_command(TARGET Nao PRE_BUILD COMMAND bash -c "rm -f Linux/Nao/$<CONFIG>/success" WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build")
-  add_custom_command(TARGET Nao POST_BUILD COMMAND bash -c "touch Linux/Nao/$<CONFIG>/success" WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build")
-  set_property(TARGET Nao PROPERTY FOLDER Apps)
+  if(MACOS)
+    add_dependencies(Nao DeployDialog)
+  endif()
+elseif(NOT BUILD_BOOSTER)
+  if(WINDOWS)
+    set(CMAKE_MSVCIDE_RUN_PATH "%systemroot%\\Sysnative")
+    add_custom_target(Nao ALL bash -c "cd Linux/CMake/$<CONFIG>/Nao-prefix; stdbuf -e0 -oL cmake --build . --target Nao | stdbuf -e0 -oL sed 's@^/mnt/\\([a-z]\\)@\\U\\1:@'"
+        WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build"
+        SOURCES ${NAO_SOURCES})
+    add_custom_command(TARGET Nao PRE_BUILD COMMAND bash -c "rm -f Linux/Nao/$<CONFIG>/success" WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build")
+    add_custom_command(TARGET Nao POST_BUILD COMMAND bash -c "touch Linux/Nao/$<CONFIG>/success" WORKING_DIRECTORY "${OUTPUT_PREFIX}/Build")
+    set_property(TARGET Nao PROPERTY FOLDER Apps)
 
-  source_group(TREE "${NAO_ROOT_DIR}" FILES ${NAO_SOURCES})
-else()
-  include(ExternalProject)
-  ExternalProject_Add(Nao
-      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-      CMAKE_ARGS -DCMAKE_BUILD_TYPE=$<CONFIG> -DBUILD_NAO=ON
-      BUILD_ALWAYS 1
-      USES_TERMINAL_BUILD ON
-      INSTALL_COMMAND "")
-  set_property(TARGET Nao PROPERTY FOLDER "")
-  if(NOT MACOS)
+    source_group(TREE "${NAO_ROOT_DIR}" FILES ${NAO_SOURCES})
+  else()
+    include(ExternalProject)
+    ExternalProject_Add(Nao
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=$<CONFIG> -DBUILD_NAO=ON
+        BUILD_ALWAYS 1
+        USES_TERMINAL_BUILD ON
+        INSTALL_COMMAND "")
+    set_property(TARGET Nao PROPERTY FOLDER "")
     add_dependencies(Nao DeployDialog)
   endif()
 endif()

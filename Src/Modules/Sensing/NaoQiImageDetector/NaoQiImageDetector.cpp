@@ -29,9 +29,9 @@ void NaoQiImageDetector::update(NaoQiImageInfo& theNaoQiImageInfo)
 
   theNaoQiImageInfo.isCorrectImage = !noData;
 
-  if(!theNaoQiImageInfo.isCorrectImage && theFrameInfo.getTimeSince(lastSirene) > wrongImageTime)
+  if(!theNaoQiImageInfo.isCorrectImage && theFrameInfo.getTimeSince(lastSiren) > wrongImageTime)
   {
-    lastSirene = theFrameInfo.time;
+    lastSiren = theFrameInfo.time;
     SystemCall::say("You need to flash me with the NAO! Qi! Image! 2!8!5! I can not read my sensor values!", true);
     SystemCall::say("After visiting the repair you need to flash me with the correct image!", true);
   }

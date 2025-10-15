@@ -1,0 +1,114 @@
+#!/bin/bash
+# install <name>
+
+# Make script path the current directory
+cd "$(dirname "$(which "$0")")"
+
+# Handle Motion PC
+if [ $USER == master ]; then
+  # Install watchdog script
+  mkdir -p /home/master/bin
+  cp bin/watchdog /home/master/bin
+  chmod +x /home/master/bin/watchdog
+
+  # Install watchdog service
+  sudo cp watchdog.service /etc/systemd/system
+  if [ -z "$(grep 'watchdog.service' /etc/systemd/system/booster-daemon.service)" ]; then
+    echo "Patching booster-daemon.service"
+    sudo sed -i 's%\(StartLimitBurst.*\)%\1\nPartOf=watchdog.service%' /etc/systemd/system/booster-daemon.service
+  fi
+  sudo systemctl daemon-reload
+  sudo systemctl enable watchdog
+
+  exit 0
+fi
+
+# Set hostname to $1
+if [ -n "$1" ]; then
+  echo "Setting hostname to $1"
+  sudo sed -i "s%$(hostname)%$1%g" /etc/hosts
+  sudo hostnamectl set-hostname "$1"
+fi
+
+# Create directory for status information in ram
+if [ ! -f /etc/tmpfiles.d/00-create-volatile.conf ]; then
+  echo "Creating directory for status information in ram"
+  sudo bash -c "cat >/etc/tmpfiles.d/00-create-volatile.conf <<EOF
+d       /var/volatile/log 1777  - - -
+d       /var/volatile/tmp 1777  - - -
+L+      /var/log          1777  - - - volatile/log
+L+      /var/tmp          1777  - - - volatile/tmp
+EOF"
+fi
+
+# Extend rights of user booster
+if [ -z "$(grep "booster" /etc/security/limits.conf)" ]; then
+  echo "Extending rights for user booster"
+  sudo bash -c 'echo "booster - rtprio 65" >>/etc/security/limits.conf'
+  sudo bash -c 'echo "booster - nice -10" >>/etc/security/limits.conf'
+  sudo bash -c 'echo "booster - memlock 40000" >>/etc/security/limits.conf'
+fi
+
+# Deactivate automatic suspend for USB
+if [ -z "$(grep "usbcore.autosuspend=-1" /boot/extlinux/extlinux.conf)" ]; then
+  echo "Disabling automatic suspend for USB"
+  sudo sed -i 's%\(APPEND.*\)%\1 usbcore.autosuspend=-1%' /boot/extlinux/extlinux.conf
+fi
+
+# setvolume should not ask for password
+if [ -z "$(sudo grep "/home/booster/bin/setprofile" /etc/sudoers)" ]; then
+  echo "Allowing setvolume to change volume without password"
+  sudo bash -c 'echo "%sudo ALL=(ALL) NOPASSWD: /home/booster/bin/setprofile" >>/etc/sudoers'
+fi
+
+# sudo nmcli should not ask for password
+if [ -z "$(sudo grep "/usr/bin/nmcli" /etc/sudoers)" ]; then
+  echo "Allowing nmcli to activate connection without password"
+  sudo bash -c 'echo "%sudo ALL=(ALL) NOPASSWD: /usr/bin/nmcli" >>/etc/sudoers'
+fi
+
+# Disable Booster services (TODO: there were more on the T1 in Brazil)
+for service in daemon-perception battery-daemon rtc-speech; do
+  sudo systemctl stop booster-$service
+  sudo systemctl disable booster-$service
+done
+
+# Allow user access to /dev/input/event*
+sudo bash -c 'cat >/etc/udev/rules.d/99-input.rules <<EOF
+KERNEL=="event*", SUBSYSTEM=="input", OWNER="booster", MODE="0600"
+EOF'
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# Create directory for scripts, logs, and network profiles
+mkdir -p /home/booster/bin /home/booster/logs /home/booster/Profiles
+
+# Copy scripts and make them executable
+cp bin/bhuman bin/chmod-usb bin/setprofile bin/setvolume /home/booster/bin
+chmod +x /home/booster/bin/bhuman /home/booster/bin/chmod-usb /home/booster/bin/setprofile /home/booster/bin/setvolume
+
+# Add second IP address for LAN
+LAN_IP="$(grep "^lan *=" network.cfg | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+LAN_DEVICE="$(nmcli device show | tr '\n' '|' | sed 's%||%!%g' | tr '!' '\n' | grep 192.168.10.102 | tr '|' '\n' | grep GENERAL.CONNECTION | sed 's%GENERAL.CONNECTION: *%%')"
+sudo nmcli connection modify "$LAN_DEVICE" +ipv4.address "$LAN_IP/24"
+sudo nmcli connection reload "$LAN_DEVICE"
+
+# Setup wireless network connection
+WLAN_IP="$(grep "^wlan *=" network.cfg | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+WLAN_DEVICE="$(nmcli device | grep " wifi " | head -1 | sed 's% .*%%')"
+sudo cp B-Human.nmconnection /etc/NetworkManager/system-connections
+sudo chmod 600 /etc/NetworkManager/system-connections/B-Human.nmconnection
+sudo nmcli connection reload
+sudo nmcli connection modify "B-Human" connection.interface-name "$WLAN_DEVICE"
+sudo nmcli connection modify "B-Human" ipv4.address "$WLAN_IP/16"
+sudo nmcli radio wifi off
+
+# Setup bhuman service
+mkdir -p /home/booster/.config/systemd/user
+cp bhuman.service /home/booster/.config/systemd/user
+systemctl --user daemon-reload
+systemctl --user enable bhuman
+
+# Make sure everything is written to disk before a reboot
+sync
+echo "Please reboot the robot!"

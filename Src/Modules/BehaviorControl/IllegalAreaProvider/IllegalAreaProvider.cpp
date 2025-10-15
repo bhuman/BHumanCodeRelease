@@ -19,6 +19,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
   DECLARE_DEBUG_DRAWING("module:IllegalAreaProvider:illegalAreas", "drawingOnField");
 
   illegalAreas.illegal = 0u;
+  illegalAreas.illegal |= bit(IllegalAreas::fieldBorder);
   illegalAreas.anticipatedIllegal = 0u;
   illegalAreas.anticipatedTimestamp = 0u;
 
@@ -60,7 +61,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
   }
 
   // The rules don't make a difference between the goalkeeper and field players, but we want the goalkeeper to always be able to enter the own goal area.
-  const bool ownGoalAreaIsFull = !theGameState.isGoalkeeper() && nonKeeperTeammatesInOwnGoalArea() >= 2;
+  const bool ownGoalAreaIsFull = !theGameState.isGoalkeeper() && (nonKeeperTeammatesInOwnGoalArea() >= 2 || !isGoalAreaAllowed());
 
   if(theGameState.isReady())
   {
@@ -81,7 +82,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     else
     {
       illegalAreas.anticipatedIllegal |= bit(IllegalAreas::opponentHalf);
-      if(theGameState.isForOpponentTeam())
+      if(!theGameState.isForOwnTeam())
         illegalAreas.anticipatedIllegal |= bit(IllegalAreas::centerCircle);
     }
   }
@@ -103,7 +104,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     else
     {
       illegalAreas.illegal |= bit(IllegalAreas::opponentHalf);
-      if(theGameState.isForOpponentTeam())
+      if(!theGameState.isForOwnTeam())
         illegalAreas.illegal |= bit(IllegalAreas::centerCircle);
     }
   }
@@ -183,7 +184,8 @@ unsigned IllegalAreaProvider::getIllegalAreas(unsigned illegal, const Vector2f& 
      (positionOnField.squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + halfLineWidth + margin))))
     illegalAreas |= bit(IllegalAreas::centerCircle);
   if((illegal & bit(IllegalAreas::ballArea)) &&
-     (positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm() < sqr(std::max(0.f, freeKickClearAreaRadius + margin)))
+     (positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm() < sqr(std::max(0.f, freeKickClearAreaRadius + margin)) &&
+     (theTeamBallModel.isValid || theFieldBall.timeSinceBallWasSeen < theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) + ballSeenBeforeFreeKickTime))
     illegalAreas |= bit(IllegalAreas::ballArea);
   if((illegal & bit(IllegalAreas::notOwnGoalLine)) &&
      (std::abs(positionOnField.x() - theFieldDimensions.xPosOwnGoalLine) > halfLineWidth - std::min(0.f, margin) ||
@@ -201,6 +203,29 @@ bool IllegalAreaProvider::isPositionIllegal(unsigned illegal, const Vector2f& po
 bool IllegalAreaProvider::isSameIllegalArea(unsigned illegal, const Vector2f& positionOnField, const Vector2f& targetOnField, float margin) const
 {
   return getIllegalAreas(illegal, positionOnField, margin) & getIllegalAreas(illegal, targetOnField, margin);
+}
+
+bool IllegalAreaProvider::isGoalAreaAllowed() const
+{
+  if(!theGameState.isGoalKick() || theGameState.isForOpponentTeam() || theGameState.isGoalkeeper() || -theFrameInfo.getTimeSince(theGameState.timeWhenStateEnds) < ownGoalKickTimeIgnoreGoalKeeper)
+    return true;
+
+  for(const auto& agent : theAgentStates.agents)
+  {
+    if(!agent.isGoalkeeper)
+      continue;
+    const Vector2f& teammatePosition = agent.currentPosition;
+    const Vector2f fieldBallPosition = theFieldBall.recentBallPositionOnField();
+    // GoalKeeper is standing on the other side of the goal area
+    if(fieldBallPosition.y() * teammatePosition.y() <= 0.f)
+      return true;
+
+    return std::abs(teammatePosition.y()) < theFieldDimensions.yPosLeftGoalArea - goalKeeperDistanceToBallGoalKick || // GoalKeeper reached a position far away from the ball
+           agent.lastKnownTarget.y() * fieldBallPosition.y() > 0.f || // GoalKeeper does not plan to reach a position far away from the ball
+           std::abs(agent.lastKnownTarget.y()) >= theFieldDimensions.yPosLeftGoalArea - goalKeeperDistanceToBallGoalKick;
+  }
+
+  return true;
 }
 
 unsigned int IllegalAreaProvider::nonKeeperTeammatesInOwnGoalArea() const

@@ -123,6 +123,7 @@ private:
 using GrayscaledImage = Image<PixelTypes::GrayscaledPixel>;
 using YUYVImage = Image<PixelTypes::YUYVPixel>;
 using BGRAPixel = Image<PixelTypes::BGRAPixel>;
+using YUVImage = Image<PixelTypes::YUVPixel>;
 
 template<typename Pixel>
 class ImageWrapper : public Image<Pixel>

@@ -32,6 +32,7 @@
       <file path="$PROJECT_DIR$/../../Util/hdf5" />
       <file path="$PROJECT_DIR$/../../Util/libjpeg" />
       <file path="$PROJECT_DIR$/../../Util/onnxruntime" />
+      <file path="$PROJECT_DIR$/../../Util/openssl" />
       <file path="$PROJECT_DIR$/../../Util/pybind11" />
       <file path="$PROJECT_DIR$/../../Util/qtpropertybrowser" />
       <file path="$PROJECT_DIR$/../../Util/snappy" />

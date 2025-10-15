@@ -48,15 +48,16 @@ MODULE(ArmContactModelProvider,
   USES(JointRequest),
   USES(MotionInfo),
   PROVIDES(ArmContactModel),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (int)(4) frameDelay, //Delay with which the hand positions shpould be accessed
-    (unsigned int)(4) minimalContactDuration,
-    (float)(13.f) yErrorThresholdBase, //Minimal yErrorThreshold. The y threshold base cant never be less than this!
-    (float)(11.f) xErrorThresholdBase, //Minimal xErrorThreshold. The x threshold base cant never be less than this!
-    (float)(3.f) yErrorThresholdExtension, //The y threshold extension which is added when the robot is moving in -y or y direction, this means left or right.
-    (float)(3.f) xErrorThresholdExtension, //The x threshold extension which is added when the robot is moving in -x or x direction, this means back or forward.
-    (int)(2000) soundWaitTime, //Play the arm sound only once in this time frame.
+    (int) frameBufferSize, /**< Buffer of the requested angles. */
+    (int) errorBufferSize, /**< Buffer of the errors. */
+    (unsigned int) minimalContactDuration,
+    (float) yErrorThresholdBase, /**< Minimal yErrorThreshold. The y threshold base cant never be less than this! */
+    (float) xErrorThresholdBase, /**< Minimal xErrorThreshold. The x threshold base cant never be less than this! */
+    (float) yErrorThresholdExtension, /**< The y threshold extension which is added when the robot is moving in -y or y direction, this means left or right. */
+    (float) xErrorThresholdExtension, /**< The x threshold extension which is added when the robot is moving in -x or x direction, this means back or forward. */
+    (int) soundWaitTime, /**< Play the arm sound only once in this time frame. */
   }),
 });
 
@@ -66,23 +67,16 @@ MODULE(ArmContactModelProvider,
  */
 class ArmContactModelProvider: public ArmContactModelProviderBase
 {
-  /**
-   * Buffer to store multiple hand positions.
-   * This is necessary to eliminate flatten the handspeed with flattenSpeed()
-   */
-  static constexpr int frameBufferSize = 5;
-  static constexpr int errorBufferSize = 100;
-
   //Timestamp when the arm sound was played last.
   unsigned int lastArmSoundTimestamp = 0;
 
   RobotModel requestedRobotModel;
 
   //Buffer of the requested hand positions
-  RingBuffer<Vector3f, frameBufferSize> angleBuffer[Arms::numOfArms];
+  RingBuffer<Vector3f> angleBuffer[Arms::numOfArms];
 
   //The buffer for the UNdimmed errors calculated by the subtracting the actual and requested hand position
-  RingBufferWithSum<Vector2f, errorBufferSize> errorBuffer[Arms::numOfArms];
+  RingBufferWithSum<Vector2f> errorBuffer[Arms::numOfArms];
 
   //Was the keyFrameMotion to put the arms on the back active last frame? 0 is left 1 is right arm.
   bool armOnBackLastFrame[Arms::numOfArms] = {false, false};
@@ -124,14 +118,14 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
   //Calculates the xOffsets
   /**
    * Offsets added to the undimmed error.
-   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certains statuses.
+   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certain statuses.
    */
   float calcXOffset(bool armOnBack) const;
 
   //Calculates the y Offsets
   /**
    * Offsets added to the undimmed error.
-   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certains statuses.
+   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certain statuses.
    */
   float calcYOffset(Arms::Arm arm, bool armOnBack) const;
 
@@ -141,21 +135,21 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
   //Calculates the difference between actual and requested hand position. Fills the errorBuffer with UNdimmed error values.
   void calculateForce();
 
-  //Building a RobotModel with the requested joint angles. Those are the positions which the robot desires to reach, not were they are right now! Returns the requested hand position. German: Soll-Wert
+  //Building a RobotModel with the requested joint angles. Those are the positions which the robot desires to reach, not were they are right now! Returns the requested hand position.
   Vector3f calculateRequestedHandPosition(Arms::Arm arm) const;
 
   void update(ArmContactModel& model);
 
   void updateError(ArmContactModel& model);
 
-  //Resets the wholeRepresentation (ArmContactModel) when the robot is in a state in which this Module shouldnt regularly run.
+  //Resets the wholeRepresentation (ArmContactModel) when the robot is in a state in which this Module should not regularly run.
   void reset(ArmContactModel& model);
 
   //Calculates the speedFactor regarding the speed of the requested hand Positions
   void calcCorrectionFactor(Arms::Arm arm);
 
   //Calculates the average requested position of the arms of the last five frames to eliminate stray.
-  Vector2f flattenSpeed(const RingBuffer<Vector3f, frameBufferSize>& angleBuffer) const;
+  Vector2f flattenSpeed(const RingBuffer<Vector3f>& angleBuffer) const;
 
   //Calculates the walkDirection factor with the information from theMotionInfo.speed.
   /**
@@ -166,5 +160,5 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
    */
   Vector2f calcWalkDirectionFactor() const;
 public:
-  ArmContactModelProvider() : errorBuffer{ RingBufferWithSum<Vector2f, errorBufferSize>(Vector2f::Zero()), RingBufferWithSum<Vector2f, errorBufferSize>(Vector2f::Zero()) } {};
+  ArmContactModelProvider();
 };

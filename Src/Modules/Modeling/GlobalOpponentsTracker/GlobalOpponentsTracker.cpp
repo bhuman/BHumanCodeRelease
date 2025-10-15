@@ -132,7 +132,7 @@ void GlobalOpponentsTracker::deleteObstacles()
 {
   for(auto obstacle = obstacleHypotheses.begin(); obstacle != obstacleHypotheses.end();)
   {
-    const float obstacleRadius = Obstacle::getRobotDepth();
+    const float obstacleRadius = theRobotDimensions.robotDepth;
     const float centerDistanceSquared = obstacle->center.squaredNorm();
     Vector2f absObsPos = theRobotPose * obstacle->center;
     if(obstacle->notSeenButShouldSeenCount >= notSeenThreshold
@@ -184,9 +184,9 @@ void GlobalOpponentsTracker::addArmContacts()
         armContact[arm] = true;
       }
       Vector2f center = (theTorsoMatrix.inverse() * theRobotModel.limbs[Limbs::combine(arm, Limbs::shoulder)].translation).topRows(2);
-      center.y() += sgn(center.y()) * (Obstacle::getRobotDepth() + 15.f);
+      center.y() += sgn(center.y()) * (theRobotDimensions.robotDepth + 15.f);
       GlobalOpponentsHypothesis obstacle(armCov, center, Vector2f::Zero(), Vector2f::Zero(), theFrameInfo.time, Obstacle::unknown, 1);
-      obstacle.setLeftRight(Obstacle::getRobotDepth());
+      obstacle.setLeftRight(theRobotDimensions.robotDepth);
       // Insert valid obstacle.
       tryToMerge(obstacle);
     }
@@ -209,9 +209,9 @@ void GlobalOpponentsTracker::addFootContacts()
         footContact[leg] = true;
       }
       Vector2f center = (theTorsoMatrix.inverse() * theRobotModel.limbs[Limbs::combine(leg, Limbs::foot)].translation).topRows(2);
-      center.x() += Obstacle::getRobotDepth() + distJointToToe + distToeToBumper;
+      center.x() += theRobotDimensions.robotDepth + distJointToToe + distToeToBumper;
       GlobalOpponentsHypothesis obstacle(feetCov, center, Vector2f::Zero(), Vector2f::Zero(), theFrameInfo.time, Obstacle::unknown, 1);
-      obstacle.setLeftRight(Obstacle::getRobotDepth());
+      obstacle.setLeftRight(theRobotDimensions.robotDepth);
       // Insert valid obstacle.
       tryToMerge(obstacle);
     }
@@ -240,12 +240,12 @@ void GlobalOpponentsTracker::addPlayerPercepts()
         : (percept.fallen ? Obstacle::fallenSomeRobot : Obstacle::someRobot));
 
     GlobalOpponentsHypothesis obstacle(percept.covariance, percept.center,
-      percept.left.normalized(percept.left.norm() + Obstacle::getRobotDepth()),
-      percept.right.normalized(percept.right.norm() + Obstacle::getRobotDepth()), theFrameInfo.time, type, 1);
+      percept.left.normalized(percept.left.norm() + theRobotDimensions.robotDepth),
+      percept.right.normalized(percept.right.norm() + theRobotDimensions.robotDepth), theFrameInfo.time, type, 1);
 
     // Obstacles have a minimum size
-    if((obstacle.left - obstacle.right).squaredNorm() < sqr(2 * Obstacle::getRobotDepth()))
-      obstacle.setLeftRight(Obstacle::getRobotDepth());
+    if((obstacle.left - obstacle.right).squaredNorm() < sqr(2 * theRobotDimensions.robotDepth))
+      obstacle.setLeftRight(theRobotDimensions.robotDepth);
     tryToMerge(obstacle);
   }
 }
@@ -286,7 +286,7 @@ void GlobalOpponentsTracker::tryToMerge(const GlobalOpponentsHypothesis& measure
 
     obstacleHypotheses[atMerge].lastSeen = measurement.lastSeen;
 
-    obstacleHypotheses[atMerge].measurement(measurement, modelWidthWeighting); // EKF
+    obstacleHypotheses[atMerge].measurement(measurement, modelWidthWeighting, theRobotDimensions.robotDepth * 2.f); // EKF
     obstacleHypotheses[atMerge].determineAndSetType(measurement, teamThreshold, uprightThreshold);
     obstacleHypotheses[atMerge].seenCount += measurement.seenCount;
     obstacleHypotheses[atMerge].notSeenButShouldSeenCount = 0; // Reset that counter.
@@ -324,7 +324,7 @@ void GlobalOpponentsTracker::mergeOverlapping()
       const float distanceOfCenters = (other.center - actual.center).norm();
 
       // Merge the obstacles.
-      if(((distanceOfCenters <= overlap || distanceOfCenters < 2 * Obstacle::getRobotDepth()) // The obstacles are overlapping
+      if(((distanceOfCenters <= overlap || distanceOfCenters < 2 * theRobotDimensions.robotDepth) // The obstacles are overlapping
         || (actual.squaredMahalanobis(other) < sqr(minMahalanobisDistance)
           && (actual.seenCount >= minPercepts && other.seenCount >= minPercepts))) // they were seen at least minPercepts times
         && (actual.isUnknown() || actual.isSomeRobot() || other.isUnknown() || other.isSomeRobot()

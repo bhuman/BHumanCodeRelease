@@ -17,7 +17,7 @@ namespace Resize
 
   inline void shrinkY(const unsigned int downScales, const Image<PixelTypes::GrayscaledPixel>& src, Image<PixelTypes::GrayscaledPixel>& dest)
   {
-    dest.setResolution(src.width, src.height); // The shrinking algorithm uses more than the final downscaled size.
+    dest.setResolution(src.width, src.height); // The shrinking algorithm uses more than the final down-scaled size.
     dest.setResolution(src.width >> downScales, src.height >> downScales);
     shrinkY(downScales, src, dest[0]);
   }
@@ -26,7 +26,7 @@ namespace Resize
 
   inline void shrinkUV(const unsigned int downScales, const Image<PixelTypes::YUYVPixel>& src, Image<unsigned short>& dest)
   {
-    dest.setResolution(src.width, src.height); // The shrinking algorithm uses more than the final downscaled size.
+    dest.setResolution(src.width, src.height); // The shrinking algorithm uses more than the final down-scaled size.
     dest.setResolution(src.width >> downScales, src.height >> (downScales + 1));
     shrinkUV(downScales, src, dest[0]);
   }

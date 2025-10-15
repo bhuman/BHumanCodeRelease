@@ -7,22 +7,6 @@
 #include "Platform/Time.h"
 #include <algorithm>
 
-void AnnotationInfo::AnnotationData::read(MessageQueue::Message message)
-{
-  auto stream = message.bin();
-  stream >> annotationNumber;
-  if(!(annotationNumber & 0x80000000))
-    stream >> frame; // Compatibility with old annotations
-  const size_t size = stream.getSize() - stream.getPosition();
-  std::string text;
-  text.resize(size);
-  stream.read(text.data(), size);
-  InTextMemory textStream(text.data(), size);
-  textStream >> name;
-  annotation = textStream.readAll();
-  annotationNumber &= ~0x80000000;
-}
-
 void AnnotationInfo::clear()
 {
   SYNC;
@@ -36,8 +20,8 @@ void AnnotationInfo::addMessage(MessageQueue::Message message, unsigned currentF
   SYNC;
   timeOfLastMessage = Time::getCurrentSystemTime();
   newAnnotations.emplace_back();
-  AnnotationData& data = newAnnotations.back();
-  data.read(message);
+  Annotation& data = newAnnotations.back();
+  message.bin() >> data;
   data.frame = currentFrame;
 
   for(auto* listener : listeners)

@@ -199,8 +199,9 @@ bool Joystick::update()
   for(int i = 0; i < numOfAxes; ++i)
     if(p->axisIds[i])
     {
-      IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
-                          static_cast<IOHIDElementRef>(const_cast<void*>(p->axisIds[i])), &valueRef);
+      if(IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                             static_cast<IOHIDElementRef>(const_cast<void*>(p->axisIds[i])), &valueRef) != kIOReturnSuccess)
+        return false;
       p->axisState[i] = static_cast<int>(IOHIDValueGetIntegerValue(valueRef));
     }
 
@@ -208,8 +209,9 @@ bool Joystick::update()
   for(int i = 0; i < numOfButtons; ++i)
     if(p->buttonIds[i])
     {
-      IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
-                          static_cast<IOHIDElementRef>(const_cast<void*>(p->buttonIds[i])), &valueRef);
+      if(IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                             static_cast<IOHIDElementRef>(const_cast<void*>(p->buttonIds[i])), &valueRef) != kIOReturnSuccess)
+        return false;
       newState |= IOHIDValueGetIntegerValue(valueRef) ? 1 << i : 0;
     }
   p->buttonEvents[0] |= p->buttonState[0] ^ newState;
@@ -217,8 +219,9 @@ bool Joystick::update()
 
   if(p->hatId)
   {
-    IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
-                        static_cast<IOHIDElementRef>(const_cast<void*>(p->hatId)), &valueRef);
+    if(IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                           static_cast<IOHIDElementRef>(const_cast<void*>(p->hatId)), &valueRef) != kIOReturnSuccess)
+      return false;
     int dir = static_cast<int>(IOHIDValueGetIntegerValue(valueRef));
     newState = !(dir & 8) ? 1 << dir : 0;
     p->buttonEvents[1] |= p->buttonState[1] ^ newState;

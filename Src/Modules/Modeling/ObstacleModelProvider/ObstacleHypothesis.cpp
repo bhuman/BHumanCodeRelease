@@ -84,7 +84,7 @@ void ObstacleHypothesis::dynamic(const float odometryRotation, const Vector2f& o
   Covariance::fixCovariance<2>(covariance);
 }
 
-void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, const float weightedSum)
+void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, const float weightedSum, const float minWidth)
 {
   ASSERT(covariance(0, 1) == covariance(1, 0));
   Matrix2f newCov = measurement.covariance;
@@ -98,8 +98,8 @@ void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, cons
   const float measurementWidth = (measurement.left - measurement.right).norm();
   const float obstacleWidth = (left - right).norm();
   float width = (obstacleWidth * (weightedSum - 1) + measurementWidth) / weightedSum;
-  if(width < 2.f * Obstacle::getRobotDepth())
-    width = 2.f * Obstacle::getRobotDepth();
+  if(width < minWidth)
+    width = minWidth;
   setLeftRight(width * .5f); // Radius (that's why * .5f)
 }
 

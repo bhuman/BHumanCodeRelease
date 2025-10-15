@@ -15,7 +15,6 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/Perception/RefereePercept/RefereePercept.h"
 #include "Network/UdpComm.h"
 #include "Framework/Module.h"
 

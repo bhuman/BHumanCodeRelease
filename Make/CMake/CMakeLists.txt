@@ -3,12 +3,13 @@
 # build all targets using Xcode's build system, Visual Studio only builds for Windows and
 # uses CMake to cross-compile for the NAO robot. As a result, this file is used twice on
 # Windows and Linux, once to either generate the project or to build for that platform
-# and a second time with the symbol BUILD_NAO set to cross-compile for the NAO. As the
-# Windows Subsystem for Linux is used for cross-compilation on Windows, cross-compilation
-# only takes place with either Linux or macOS build tools. As Xcode is used directly for
-# cross-compilation, a section of this build file basically duplicates most of the
-# project generation and includes several subprojects a second time, but appends "Nao" to
-# the names of the build targets. The symbol TARGET_SUFFIX is used for this.
+# and a second time with the symbol BUILD_NAO or BUILD_BOOSTER set to cross-compile for
+# the NAO or the Booster robot. As the Windows Subsystem for Linux is used for
+# cross-compilation on Windows, cross-compilation only takes place with either Linux or
+# macOS build tools. As Xcode is used directly for cross-compilation, a section of this
+# build file basically duplicates most of the project generation and includes several
+# subprojects a second time, but appends "Nao" or "Booster to the names of the build
+# targets. The symbol TARGET_SUFFIX is used for this.
 #
 # This file defines the following custom symbols to distinguish between the different
 # operating systems and target architectures:
@@ -23,8 +24,13 @@
 
 cmake_minimum_required(VERSION 3.17)
 
+# Export CMAKE_EXPORT_COMPILE_COMMANDS to build the compile_commands.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(BUILD_NAO)
   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../CMake/NaoToolchain.cmake")
+elseif(BUILD_BOOSTER)
+  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../CMake/BoosterToolchain.cmake")
 endif()
 
 if(NOT BUILD_NAO AND CMAKE_HOST_UNIX)
@@ -65,7 +71,7 @@ else()
   add_definitions(-DLINUX)
 endif()
 
-if(NOT BUILD_NAO)
+if(NOT BUILD_NAO AND NOT BUILD_BOOSTER)
   set(BUILD_DESKTOP ON)
 endif()
 
@@ -88,6 +94,11 @@ set(SIMROBOT_PREFIX "${PROJECT_SOURCE_DIR}/../../Util/SimRobot")
 set(OUTPUT_PREFIX "${PROJECT_SOURCE_DIR}/../..")
 
 if(MACOS)
+  set(CMAKE_XCODE_ATTRIBUTE_DRIVERKIT_DEPLOYMENT_TARGET "")
+  set(CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "")
+  set(CMAKE_XCODE_ATTRIBUTE_TVOS_DEPLOYMENT_TARGET "")
+  set(CMAKE_XCODE_ATTRIBUTE_WATCHOS_DEPLOYMENT_TARGET "")
+  set(CMAKE_XCODE_ATTRIBUTE_XROS_DEPLOYMENT_TARGET "")
   set(CMAKE_SUPPRESS_REGENERATION ON)
   add_definitions(
       -DFIX_MACOS_EDIT_MENU
@@ -98,6 +109,7 @@ if(MACOS)
   set(CMAKE_XCODE_ATTRIBUTE_USE_HEADERMAP "NO")
   set(CMAKE_SKIP_RPATH TRUE)
   set(BUILD_NAO ON)
+  set(BUILD_BOOSTER ON)
   set(CMAKE_XCODE_ATTRIBUTE_CC "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/compile")
 elseif(LINUX)
   set(CMAKE_CXX_COMPILER_LAUNCHER env CCACHE_CPP2=yes CCACHE_SLOPPINESS=pch_defines,time_macros "ccache")
@@ -136,8 +148,12 @@ if(MSVC)
   string(FIND "${_cpuinfo}" "avx" _has_avx)
   if(NOT ${_has_avx2} EQUAL -1)
     add_compile_options(/arch:AVX2)
+    set(AVX true)
   elseif(NOT ${_has_avx} EQUAL -1)
     add_compile_options(/arch:AVX)
+    set(AVX true)
+  else()
+    set(AVX false)
   endif()
 else()
   add_compile_options(-pipe
@@ -216,11 +232,12 @@ if(BUILD_DESKTOP)
   endif()
   if(NOT MINIMAL_PROJECT)
     include("../CMake/DeployDialog.cmake")
+    include("../CMake/DeployDialogRunner.cmake")
     if(MACOS)
       include("../CMake/Config.cmake")
     endif()
     include("${SIMROBOT_PREFIX}/Make/CMake/Box2D.cmake")
-    include("${SIMROBOT_PREFIX}/Make/CMake/ODE.cmake")
+    include("${SIMROBOT_PREFIX}/Make/CMake/MuJoCo.cmake")
     include("${SIMROBOT_PREFIX}/Make/CMake/Qt6.cmake")
 
     add_library(GTest::GTest STATIC IMPORTED)
@@ -254,10 +271,32 @@ set_target_properties(GameController::GameController PROPERTIES
 if(BUILD_NAO)
   add_library(Nao::ALSA::ALSA SHARED IMPORTED)
   set_target_properties(Nao::ALSA::ALSA PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/Buildchain/V6/lib/libasound.so.2.0.0")
-elseif(LINUX)
-  if(NOT MINIMAL_PROJECT)
-    find_package(ALSA REQUIRED)
-  endif()
+endif()
+
+if(BUILD_BOOSTER)
+  add_library(Booster::ALSA::ALSA SHARED IMPORTED)
+  set_target_properties(Booster::ALSA::ALSA PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/Buildchain/T1/lib/libasound.so.2.0.0")
+
+  add_library(Booster::realsense2::realsense2 SHARED IMPORTED)
+  set_target_properties(Booster::realsense2::realsense2 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/librealsense2/include")
+  set_target_properties(Booster::realsense2::realsense2 PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/librealsense2/lib/LinuxArm64/librealsense2.so.2.55.1")
+
+  add_library(Booster::Booster::SDK STATIC IMPORTED)
+  add_library(Booster::FastCDR::FastCDR SHARED IMPORTED)
+  add_library(Booster::FastRTPS::FastRTPS SHARED IMPORTED)
+  add_library(Booster::FooNathan::Memory STATIC IMPORTED)
+  set_target_properties(Booster::Booster::SDK PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/include")
+  set_target_properties(Booster::FastCDR::FastCDR PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/include")
+  set_target_properties(Booster::FastRTPS::FastRTPS PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/include")
+  set_target_properties(Booster::FooNathan::Memory PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/include")
+  set_target_properties(Booster::Booster::SDK PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/lib/LinuxArm64/libbooster_robotics_sdk.a")
+  set_target_properties(Booster::FastCDR::FastCDR PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/lib/LinuxArm64/libfastcdr.so")
+  set_target_properties(Booster::FastRTPS::FastRTPS PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/lib/LinuxArm64/libfastrtps.so")
+  set_target_properties(Booster::FooNathan::Memory PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/BoosterRoboticsSDK/lib/LinuxArm64/libfoonathan_memory-0.7.3.a")
+endif()
+
+if(BUILD_DESKTOP AND LINUX AND NOT MINIMAL_PROJECT)
+  find_package(ALSA REQUIRED)
 endif()
 
 if(BUILD_DESKTOP)
@@ -279,6 +318,12 @@ if(BUILD_NAO)
   set_target_properties(Nao::libjpeg::libjpeg PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/libjpeg/lib/V6/libjpeg.a")
 endif()
 
+if(BUILD_BOOSTER)
+  add_library(Booster::libjpeg::libjpeg STATIC IMPORTED)
+  set_target_properties(Booster::libjpeg::libjpeg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/libjpeg/include")
+  set_target_properties(Booster::libjpeg::libjpeg PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/libjpeg/lib/LinuxArm64/libjpeg.a")
+endif()
+
 if(BUILD_DESKTOP)
   add_library(libjpeg::libjpeg STATIC IMPORTED)
   set_target_properties(libjpeg::libjpeg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/libjpeg/include")
@@ -298,6 +343,15 @@ if(BUILD_NAO)
   set_target_properties(Nao::FFTW::FFTWF PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/fftw-3.3")
   set_target_properties(Nao::FFTW::FFTW PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/fftw-3.3/V6/libfftw3.a")
   set_target_properties(Nao::FFTW::FFTWF PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/fftw-3.3/V6/libfftw3f.a")
+endif()
+
+if(BUILD_BOOSTER)
+  add_library(Booster::FFTW::FFTW STATIC IMPORTED)
+  add_library(Booster::FFTW::FFTWF STATIC IMPORTED)
+  set_target_properties(Booster::FFTW::FFTW PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/fftw-3.3")
+  set_target_properties(Booster::FFTW::FFTWF PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/fftw-3.3")
+  set_target_properties(Booster::FFTW::FFTW PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/fftw-3.3/LinuxArm64/libfftw3.a")
+  set_target_properties(Booster::FFTW::FFTWF PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/fftw-3.3/LinuxArm64/libfftw3f.a")
 endif()
 
 if(BUILD_DESKTOP)
@@ -351,6 +405,18 @@ if(BUILD_NAO)
   set_target_properties(Nao::flite::flite PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/V6/libflite.a")
 endif()
 
+if(BUILD_BOOSTER)
+  add_library(Booster::flite::flite_cmu_us_slt STATIC IMPORTED)
+  add_library(Booster::flite::flite_usenglish STATIC IMPORTED)
+  add_library(Booster::flite::flite_cmulex STATIC IMPORTED)
+  add_library(Booster::flite::flite STATIC IMPORTED)
+  set_target_properties(Booster::flite::flite PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/flite/include")
+  set_target_properties(Booster::flite::flite_cmu_us_slt PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/LinuxArm64/libflite_cmu_us_slt.a")
+  set_target_properties(Booster::flite::flite_usenglish PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/LinuxArm64/libflite_usenglish.a")
+  set_target_properties(Booster::flite::flite_cmulex PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/LinuxArm64/libflite_cmulex.a")
+  set_target_properties(Booster::flite::flite PROPERTIES IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/flite/lib/LinuxArm64/libflite.a")
+endif()
+
 if(BUILD_DESKTOP AND LINUX AND NOT MINIMAL_PROJECT)
   add_library(flite::flite_cmu_us_slt STATIC IMPORTED)
   add_library(flite::flite_usenglish STATIC IMPORTED)
@@ -371,6 +437,14 @@ if(BUILD_NAO)
   target_link_options(Nao::ONNXRuntime::ONNXRuntime INTERFACE -rpath /home/nao/Config)
 endif()
 
+if(BUILD_BOOSTER)
+  add_library(Booster::ONNXRuntime::ONNXRuntime SHARED IMPORTED)
+  set_target_properties(Booster::ONNXRuntime::ONNXRuntime PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/onnxruntime/include"
+      IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/onnxruntime/lib/LinuxArm64/libonnxruntime.so.1.10.0")
+  target_link_options(Booster::ONNXRuntime::ONNXRuntime INTERFACE -rpath /home/booster/Config)
+endif()
+
 if(BUILD_DESKTOP)
   add_library(ONNXRuntime::ONNXRuntime SHARED IMPORTED)
   set_target_properties(ONNXRuntime::ONNXRuntime PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/onnxruntime/include")
@@ -388,15 +462,23 @@ if(BUILD_DESKTOP)
 endif()
 
 if(BUILD_NAO)
-  add_library(CompiledNN::ONNXNao INTERFACE IMPORTED)
-  target_include_directories(CompiledNN::ONNXNao SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/include")
-  target_link_libraries(CompiledNN::ONNXNao INTERFACE Nao::ONNXRuntime::ONNXRuntime)
+  add_library(Nao::CompiledNN::ONNX INTERFACE IMPORTED)
+  target_include_directories(Nao::CompiledNN::ONNX SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/include")
+  target_link_libraries(Nao::CompiledNN::ONNX INTERFACE Nao::ONNXRuntime::ONNXRuntime)
 endif()
 
-if(BUILD_DESKTOP)
+if(BUILD_BOOSTER)
+  add_library(Booster::CompiledNN::ONNX INTERFACE IMPORTED)
+  target_include_directories(Booster::CompiledNN::ONNX SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/include")
+  target_link_libraries(Booster::CompiledNN::ONNX INTERFACE Booster::ONNXRuntime::ONNXRuntime)
+  target_include_directories(Booster::CompiledNN::ONNX SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/arm64/include")
+endif()
+
+if(BUILD_DESKTOP OR BUILD_BOOSTER)
   add_library(CompiledNN::ONNX INTERFACE IMPORTED)
   target_include_directories(CompiledNN::ONNX SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/include")
   target_link_libraries(CompiledNN::ONNX INTERFACE ONNXRuntime::ONNXRuntime)
+
   if(ARM)
     target_include_directories(CompiledNN::ONNX SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/CompiledNN2ONNX/arm64/include")
 
@@ -407,6 +489,23 @@ endif()
 
 add_library(voronoi::voronoi INTERFACE IMPORTED)
 target_include_directories(voronoi::voronoi SYSTEM INTERFACE "${BHUMAN_PREFIX}/Util/voronoi/include")
+
+if(BUILD_DESKTOP)
+  find_package(OpenSSL QUIET)
+endif()
+
+if(BUILD_NAO)
+  add_library(Nao::OpenSSL::Crypto SHARED IMPORTED)
+  set_target_properties(Nao::OpenSSL::Crypto PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/openssl/include"
+      IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/openssl/lib/libcrypto.so.3")
+
+  add_library(Nao::OpenSSL::SSL SHARED IMPORTED)
+  set_target_properties(Nao::OpenSSL::SSL PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${BHUMAN_PREFIX}/Util/openssl/include"
+      IMPORTED_LOCATION "${BHUMAN_PREFIX}/Util/openssl/lib/libssl.so.3"
+      INTERFACE_LINK_LIBRARIES Nao::OpenSSL::Crypto)
+endif()
 
 if(X86)
   include("../CMake/asmjit.cmake")
@@ -431,7 +530,7 @@ endif()
 if(MINIMAL_PROJECT)
   set(BUILD_DESKTOP FALSE)
   set(BUILD_NAO FALSE)
-  set(DISABLE_NAO TRUE)
+  set(BUILD_BOOSTER FALSE)
 endif()
 
 if(BUILD_DESKTOP)
@@ -465,52 +564,37 @@ if(BUILD_DESKTOP)
     include("../CMake/AppleHelper.cmake")
   endif()
 
+  include("../CMake/LogPlayback.cmake")
   include("../CMake/SimulatedNao.cmake")
   include("../CMake/Tests.cmake")
 
   set_property(TARGET SimRobot PROPERTY FOLDER Apps)
   if(MACOS)
-    set_property(TARGET SimRobot SimRobotCore2 SimRobotCore2D SimRobotEditor ${SIMROBOT_CONTROLLERS} PROPERTY XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "B-Human Code Release")
+    set_property(TARGET SimRobot SimRobotCore2 SimRobotCore2D SimRobotEditor ${SIMROBOT_CONTROLLERS} DeployDialogRunner PROPERTY XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "B-Human Code Release")
   endif()
 endif()
 
 if(NOT MINIMAL_PROJECT)
   if(MACOS)
-    set(CMAKE_OSX_ARCHITECTURES "x86_64")
-    set(OS "Linux")
-    set(PLATFORM "Linux")
-    set(TARGET_SUFFIX "Nao")
-    set(BUILD_DESKTOP FALSE)
-    set(ARM_BACKUP "${ARM}")
-    set(X86_BACKUP "${X86}")
-    set(ARCH_BACKUP "${ARCH}")
-    set(ARM false)
-    set(X86 true)
-    set(ARCH "")
+    set_property(TARGET
+        B-Human
+        B-Human-Optimized
+        Debugging
+        Framework
+        ImageProcessing
+        LogPlayback
+        MathBase
+        Math
+        Network
+        Platform
+        RobotParts
+        OptionsAndSkills
+        Streaming
+        PROPERTY XCODE_ATTRIBUTE_LIBTOOL "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/ignoretool")
 
-    include("../CMake/asmjit.cmake")
-    target_compile_options(asmjitNao PRIVATE
-        -Wno-macro-redefined
-        -Wno-implicit-int-conversion
-        -Wno-enum-enum-conversion)
-
-    include("../CMake/CompiledNN.cmake")
-    include("../CMake/Platform.cmake")
-    include("../CMake/MathBase.cmake")
-    include("../CMake/Streaming.cmake")
-    include("../CMake/Math.cmake")
-    include("../CMake/ImageProcessing.cmake")
-    include("../CMake/Network.cmake")
-    include("../CMake/RobotParts.cmake")
-    include("../CMake/Debugging.cmake")
-    include("../CMake/Framework.cmake")
-    include("../CMake/OptionsAndSkills.cmake")
-    include("../CMake/B-Human.cmake")
-    set_property(TARGET B-HumanNao PROPERTY XCODE_ATTRIBUTE_ASM_OPTIONS "-target x86_64-linux-gnu -UMACOS")
-
-    add_library(CrossCompile INTERFACE)
-    target_compile_definitions(CrossCompile INTERFACE LINUX)
-    target_compile_options(CrossCompile INTERFACE
+    add_library(CrossCompileNao INTERFACE)
+    target_compile_definitions(CrossCompileNao INTERFACE LINUX)
+    target_compile_options(CrossCompileNao INTERFACE
         -UMACOS
         -Qunused-arguments
         -nostdinc
@@ -519,74 +603,133 @@ if(NOT MINIMAL_PROJECT)
         -mtune=silvermont
         -mrdrnd
         -target x86_64-linux-gnu)
-    target_include_directories(CrossCompile SYSTEM INTERFACE
+    target_include_directories(CrossCompileNao SYSTEM INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/include/c++/12"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/include/x86_64-linux-gnu/c++/12"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/include/c++/12/backward"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/include/x86_64-linux-gnu"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/include")
-    target_link_directories(CrossCompile INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/lib")
+    target_link_directories(CrossCompileNao INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/V6/lib")
 
-    target_link_libraries(asmjitNao PUBLIC CrossCompile)
-    target_link_libraries(CompiledNNNao PUBLIC CrossCompile)
-    target_link_libraries(PlatformNao PUBLIC CrossCompile)
-    target_link_libraries(MathBaseNao PUBLIC CrossCompile)
-    target_link_libraries(StreamingNao PUBLIC CrossCompile)
-    target_link_libraries(MathNao PUBLIC CrossCompile)
-    target_link_libraries(ImageProcessingNao PUBLIC CrossCompile)
-    target_link_libraries(NetworkNao PUBLIC CrossCompile)
-    target_link_libraries(RobotPartsNao PUBLIC CrossCompile)
-    target_link_libraries(DebuggingNao PUBLIC CrossCompile)
-    target_link_libraries(FrameworkNao PUBLIC CrossCompile)
-    target_link_libraries(OptionsAndSkillsNao PUBLIC CrossCompile)
-    target_link_libraries(B-HumanNao PUBLIC CrossCompile)
+    add_library(CrossCompileBooster INTERFACE)
+    target_compile_definitions(CrossCompileBooster INTERFACE LINUX)
+    target_compile_options(CrossCompileBooster INTERFACE
+        -UMACOS
+        -Qunused-arguments
+        -nostdinc
+        -nostdinc++
+        -mcpu=cortex-a78ae
+        -mtune=cortex-a78ae
+        -target aarch64-linux-gnu)
+    target_include_directories(CrossCompileBooster SYSTEM INTERFACE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T1/include/c++/11"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T1/include/aarch64-linux-gnu/c++/11"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T1/include/c++/11/backward"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T1/include/aarch64-linux-gnu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T1/include")
+    target_link_directories(CrossCompileBooster INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/T6/lib")
 
+    set(OS "Linux")
+    set(PLATFORM "Linux")
+    set(BUILD_DESKTOP FALSE)
+    set(ARM_BACKUP "${ARM}")
+    set(X86_BACKUP "${X86}")
+    set(ARCH_BACKUP "${ARCH}")
+
+    foreach(TARGET_SUFFIX Nao Booster)
+      if("${TARGET_SUFFIX}" STREQUAL Nao)
+        set(CMAKE_OSX_ARCHITECTURES "x86_64")
+        set(ARM false)
+        set(X86 true)
+        set(ARCH "")
+        set(BUILD_NAO ON)
+        set(BUILD_BOOSTER OFF)
+        include("../CMake/asmjit.cmake")
+        include("../CMake/CompiledNN.cmake")
+      else()
+        set(CMAKE_OSX_ARCHITECTURES "arm64")
+        set(ARM true)
+        set(X86 false)
+        set(ARCH "Arm64")
+        set(BUILD_NAO OFF)
+        set(BUILD_BOOSTER ON)
+      endif()
+
+      include("../CMake/Platform.cmake")
+      include("../CMake/MathBase.cmake")
+      include("../CMake/Streaming.cmake")
+      include("../CMake/Math.cmake")
+      include("../CMake/ImageProcessing.cmake")
+      include("../CMake/Network.cmake")
+      include("../CMake/RobotParts.cmake")
+      include("../CMake/Debugging.cmake")
+      include("../CMake/Framework.cmake")
+      include("../CMake/OptionsAndSkills.cmake")
+      include("../CMake/B-Human.cmake")
+      include("../CMake/${TARGET_SUFFIX}.cmake")
+
+      target_link_libraries(Platform${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(MathBase${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(Streaming${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(Math${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(ImageProcessing${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(Network${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(RobotParts${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(Debugging${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(Framework${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(OptionsAndSkills${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+      target_link_libraries(B-Human${TARGET_SUFFIX} PUBLIC CrossCompile${TARGET_SUFFIX})
+
+      set_property(TARGET
+          B-Human${TARGET_SUFFIX}
+          Debugging${TARGET_SUFFIX}
+          Framework${TARGET_SUFFIX}
+          ImageProcessing${TARGET_SUFFIX}
+          MathBase${TARGET_SUFFIX}
+          Math${TARGET_SUFFIX}
+          Network${TARGET_SUFFIX}
+          Platform${TARGET_SUFFIX}
+          RobotParts${TARGET_SUFFIX}
+          OptionsAndSkills${TARGET_SUFFIX}
+          Streaming${TARGET_SUFFIX}
+          PROPERTY XCODE_ATTRIBUTE_LIBTOOL "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/ignoretool")
+
+      set_property(TARGET ${TARGET_SUFFIX} PROPERTY XCODE_GENERATE_SCHEME ON)
+      set_property(TARGET ${TARGET_SUFFIX} PROPERTY XCODE_SCHEME_EXECUTABLE "/usr/bin/arch")
+      set_property(TARGET ${TARGET_SUFFIX} PROPERTY XCODE_SCHEME_ARGUMENTS "-${CMAKE_HOST_SYSTEM_PROCESSOR}" "${CMAKE_CURRENT_SOURCE_DIR}/../Common/deployDialog" "Debug")
+      set_property(TARGET ${TARGET_SUFFIX} PROPERTY XCODE_SCHEME_ENVIRONMENT "IDEPreferLogStreaming=YES")
+    endforeach()
+
+    set(CMAKE_OSX_ARCHITECTURES "")
+    set(BUILD_DESKTOP ON)
+    set(BUILD_NAO ON)
+    set(BUILD_BOOSTER ON)
+    set(ARM "${ARM_BACKUP}")
+    set(X86 "${X86_BACKUP}")
+    set(ARCH "${ARCH_BACKUP}")
+
+    target_compile_options(asmjitNao PRIVATE
+        -Wno-macro-redefined
+        -Wno-implicit-int-conversion
+        -Wno-enum-enum-conversion)
     set_property(TARGET
         asmjitNao
         CompiledNNNao
         PROPERTY XCODE_ATTRIBUTE_LIBTOOL "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/libtool")
-    set_property(TARGET
-        B-Human
-        B-Human-Optimized
-        Debugging
-        Framework
-        ImageProcessing
-        MathBase
-        Math
-        Network
-        Platform
-        RobotParts
-        OptionsAndSkills
-        Streaming
 
-        B-HumanNao
-        DebuggingNao
-        FrameworkNao
-        ImageProcessingNao
-        MathBaseNao
-        MathNao
-        NetworkNao
-        PlatformNao
-        RobotPartsNao
-        OptionsAndSkillsNao
-        StreamingNao
-        PROPERTY XCODE_ATTRIBUTE_LIBTOOL "${CMAKE_CURRENT_SOURCE_DIR}/../../Util/Buildchain/macOS/bin/ignoretool")
-  endif()
-
-  include("../CMake/Nao.cmake")
-  if(MACOS)
-    set(CMAKE_OSX_ARCHITECTURES "")
-    set(TARGET_SUFFIX "")
-    set(BUILD_DESKTOP TRUE)
-    set(ARM "${ARM_BACKUP}")
-    set(X86 "${X86_BACKUP}")
-    set(ARCH "${ARCH_BACKUP}")
-    add_dependencies(DeployDialog Nao)
+    target_link_libraries(asmjitNao PUBLIC CrossCompileNao)
+    target_link_libraries(CompiledNNNao PUBLIC CrossCompileNao)
+  else()
+    include("../CMake/Nao.cmake")
+    include("../CMake/Booster.cmake")
   endif()
 endif()
 
 if(BUILD_DESKTOP AND NOT MINIMAL_PROJECT)
+  add_dependencies(DeployDialogRunner Nao)
+  add_dependencies(DeployDialogRunner DeployDialog)
   include("../CMake/deploy.cmake")
 endif()
 

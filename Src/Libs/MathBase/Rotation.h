@@ -41,7 +41,7 @@ namespace Rotation
 
   namespace AngleAxis
   {
-    // Do not missinterpret the vectors as Euler angles!
+    // Do not miss-interpret the vectors as Euler angles!
     Vector3f pack(const AngleAxisf& angleAxis);
     AngleAxisf unpack(const Vector3f& angleAxisVec);
   }

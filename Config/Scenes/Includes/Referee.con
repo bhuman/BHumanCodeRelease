@@ -1,4 +1,6 @@
 # Place referee
 
-jc press 11 mvo RoboCup.referee 0 -3350 25 0 0 -90 # hide, Shift+Ctrl+K
-jc press 12 mvo RoboCup.referee 0 -3350 25 0 0 90 # initialToReady, Shift+Ctrl+L
+jc press 8 mvo RoboCup.referee 0 -3700 25 0 0 -90 # hide, Shift+Ctrl+H
+jc press 10 mvo RoboCup.referee 0 -3350 25 0 0 90 # ready, Shift+Ctrl+J
+jc press 11 mvo RoboCup.referee 0 -3350 25 180 0 90 # kickInLeft, Shift+Ctrl+K
+jc press 12 mvo RoboCup.referee 0 -3350 25 180 0 -90 # kickInRight, Shift+Ctrl+L

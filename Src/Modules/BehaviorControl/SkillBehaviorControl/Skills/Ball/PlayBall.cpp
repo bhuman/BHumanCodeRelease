@@ -12,8 +12,7 @@ option((SkillBehaviorControl) PlayBall,
        load((float)(500.f) goalPostHandlingAreaRadius,
             (float)(1.2f) goalPostHandlingAreaHysteresisMultiplier,
             (float)(1000.f) duelMinDistanceToClosest,
-            (Angle)(100_deg) duelMinAngleToClosest,
-            (float) oneAndOnlyTeammateDistance))
+            (Angle)(100_deg) duelMinAngleToClosest))
 {
   const auto activateDuel = [&]
   {
@@ -22,18 +21,11 @@ option((SkillBehaviorControl) PlayBall,
 
     const auto [distanceToClosestObstacle, angleToClosestObstacle, smallestAngleToCloseObstacle] = [&]() -> std::tuple<float, Angle, Angle>
     {
-      std::optional<Vector2f> theOneAndOnlyTeammate;
-      if(Global::getSettings().scenario.starts_with("SharedAutonomyAttacker") && !theTeamData.teammates.empty())
-      {
-        theOneAndOnlyTeammate = theRobotPose.inverse() * theTeamData.teammates[0].getEstimatedPosition(theFrameInfo.getTimeSince(theTeamData.teammates[0].theFrameInfo.time));
-      }
       float x = std::numeric_limits<float>::max();
       Angle y = 0_deg;
       Angle z = 180_deg;
       for(const auto& o : theObstacleModel.obstacles)
       {
-        if(theOneAndOnlyTeammate.has_value() && (o.center - theOneAndOnlyTeammate.value()).squaredNorm() < sqr(oneAndOnlyTeammateDistance))
-          continue;
         const float d = (o.center - theFieldBall.positionRelative).squaredNorm();
         if(d < x)
         {

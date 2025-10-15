@@ -15,18 +15,14 @@
 
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Sensing/FootSupport.h"
-#include "Representations/Sensing/FsrData.h"
-#include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/TorsoMatrix.h"
+#include "Representations/Sensing/SolePressureState.h"
 #include "Framework/Module.h"
-#include "Math/RingBuffer.h"
 #include "RobotParts/Legs.h"
-#include "Streaming/EnumIndexedArray.h"
 
 MODULE(FootSupportProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(FsrData),
+  REQUIRES(SolePressureState),
   PROVIDES(FootSupport),
   LOADS_PARAMETERS(
   {,
@@ -34,6 +30,8 @@ MODULE(FootSupportProvider,
     (float) innerWeight, /**< Weights for inner FSRs. */
     (float) currentSupportMaxPressure, /**< Max support % weight to allow a support switch prediction. */
     (float) currentSwingMinPressure, /**< Min swing % weight to allow a support switch prediction. */
+    (float) predictionFactor, /**< How many frames into the future we want to predict. */
+    (float) minSingleFSRPressureForPredictedSwitchFactor, /**< The forward and backward FSRs must measure the value "minPressure times this factor", to allow a foot support switch prediction. */
   }),
 });
 

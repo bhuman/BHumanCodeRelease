@@ -14,9 +14,9 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/KickGenerator.h"
 #include "Representations/Sensing/FootSupport.h"
-#include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotStableState.h"
+#include "Representations/Sensing/SolePressureState.h"
 #include "Framework/Module.h"
 #include "Tools/Motion/MotionUtilities.h"
 #include "Streaming/InStreams.h"
@@ -26,7 +26,7 @@ MODULE(KickEngine,
   USES(JointRequest),
   REQUIRES(DamageConfigurationBody),
   REQUIRES(FootSupport),
-  REQUIRES(FsrData),
+  REQUIRES(SolePressureState),
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),

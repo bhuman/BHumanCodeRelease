@@ -6,14 +6,20 @@
  */
 
 #include "Debugging/Annotation.h"
+#include "Framework/Settings.h"
 #include "MotionRobotHealthProvider.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(MotionRobotHealthProvider);
 
 void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
 {
+  // We have never received any data -> robot is still booting up
+  if(!theFrameInfo.time)
+    return;
+
   // Compute frame rate of motion thread:
   unsigned now = Time::getCurrentSystemTime();
   if(lastExecutionTime != 0)
@@ -30,19 +36,19 @@ void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
   if(lastFrameTime != 0)
   {
     const unsigned deltaT = theFrameInfo.getTimeSince(lastFrameTime);
-    const bool frameDroppedDueToTime = deltaT > droppedFactorThreshold * Constants::motionCycleTime * 1000;
+    const bool frameDroppedDueToTime = deltaT > droppedFactorThreshold * Global::getSettings().motionCycleTime * 1000;
 
     // if both the acc and gyro data changed outside simulation we must have missed a frame
-    const bool frameDroppedDueToSensorData = theRawInertialSensorData.acc != lastInertialSensorData.acc &&
+    const bool frameDroppedDueToSensorData = Global::getSettings().robotType == Settings::nao && theRawInertialSensorData.acc != lastInertialSensorData.acc &&
                                              theRawInertialSensorData.gyro != lastInertialSensorData.gyro &&
                                              SystemCall::getMode() != SystemCall::Mode::simulatedRobot;
     lastInertialSensorData = theRawInertialSensorData;
     if(frameDroppedDueToSensorData != frameDroppedDueToTime)
-      ANNOTATION("MotionRobotHealthProvider", "Missing motionframe detected by only one measure"); //Don't want to assert because it depends on parametrization
+      ANNOTATION("MotionRobotHealthProvider", "Missing motion frame detected by only one measure"); //Don't want to assert because it depends on parametrization
 
     // minus one because the normal frame time is included
     // max to prevent overflow and to get 1 even if the time was right but a dropped frame was detected by the sensor data
-    const unsigned numOfDroppedFrames = std::max(static_cast<unsigned>(std::round(deltaT / (Constants::motionCycleTime * 1000.f))), 2u) - 1u;
+    const unsigned numOfDroppedFrames = std::max(static_cast<unsigned>(std::round(deltaT / (Global::getSettings().motionCycleTime * 1000.f))), 2u) - 1u;
     motionRobotHealth.motionFramesDropped = numOfDroppedFrames *
                                             (frameDroppedDueToSensorData || frameDroppedDueToTime); // Multiplication to get zero in case no frame was dropped
 
@@ -53,7 +59,7 @@ void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
       motionRobotHealth.frameLostStatus = MotionRobotHealth::oneFrameLost;
       if(motionRobotHealth.motionFramesDropped >= multipleFramesDroppedThreshold)
         motionRobotHealth.frameLostStatus = MotionRobotHealth::multipleFramesLost;
-      if(motionRobotHealth.motionFramesDropped * Constants::motionCycleTime > bodyDisconnectThreshold)
+      if(motionRobotHealth.motionFramesDropped * Global::getSettings().motionCycleTime > bodyDisconnectThreshold)
       {
         motionRobotHealth.frameLostStatus = MotionRobotHealth::bodyDisconnect;
         if(SystemCall::getMode() == SystemCall::physicalRobot && theFrameInfo.getTimeSince(bodyDisconnectTimestamp) > bodyDisconnectWarningTime &&
@@ -61,7 +67,7 @@ void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
         {
           bodyDisconnectTimestamp = theFrameInfo.time;
           ANNOTATION("MotionRobotHealthProvider", "No body connection for " << theFrameInfo.getTimeSince(lastFrameTime) << "ms");
-          SystemCall::playSound("sirene.wav", true);
+          SystemCall::playSound("siren", true);
           SystemCall::say(
             (std::string("Body disconnect ") + TypeRegistry::getEnumName(theGameState.color()) + " " + std::to_string(theGameState.playerNumber)).c_str(),
             true);

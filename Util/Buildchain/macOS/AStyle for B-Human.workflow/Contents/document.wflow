@@ -59,7 +59,7 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>PWD/../Common/bstyle &lt;&amp;0 | LC_CTYPE=UTF-8 pbcopy; osascript &lt;&lt;&lt;'tell application "System Events" to tell process "Xcode" to click menu item "Paste and Preserve Formatting" of menu 1 of menu item "Paste" of menu 1 of menu bar item "Edit" of menu bar 1' >/dev/null</string>
+					<string>PWD/../../Util/Buildchain/macOS/bin/bstyle &lt;&amp;0</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>

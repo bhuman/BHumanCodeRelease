@@ -13,7 +13,7 @@
  * The module declared in this file is based on the implementation that has been used by
  * B-Human for multiple years: estimating the ball position and velocity by maintaining
  * a set of normal Kalman filters.
- * It is a reimplementation of the module used during RoboCup 2018.
+ * It is a re-implementation of the module used during RoboCup 2018.
  *
  * @author Tim Laue
  */
@@ -58,6 +58,7 @@ void BallStateEstimator::reset()
 
 void BallStateEstimator::update(BallModel& ballModel)
 {
+  DECLARE_DEBUG_DRAWING("module:BallStateEstimator:drawHypotheses", "drawingOnField");
   // *** initial check: if a log file is played and the user steps back: reset the state estimation process
   if(SystemCall::getMode() == SystemCall::logFileReplay &&
      theFrameInfo.time <= lastFrameTime)
@@ -290,7 +291,7 @@ void BallStateEstimator::findBestState()
     }
 }
 
-template <typename T> void BallStateEstimator::pruneBallBuffer(std::vector<T, Eigen::aligned_allocator<T>>& balls)
+template <typename T> void BallStateEstimator::pruneBallBuffer(std::vector<T>& balls)
 {
   if(balls.size() <= maxNumberOfHypotheses - 1)
     return;
@@ -499,4 +500,17 @@ void BallStateEstimator::plotAndDraw()
 {
   PLOT("module:BallStateEstimator:stationaryHypotheses", stationaryBalls.size());
   PLOT("module:BallStateEstimator:movingHypotheses", rollingBalls.size());
+
+  for(const auto& b : stationaryBalls)
+  {
+    COVARIANCE_ELLIPSES_2D("module:BallStateEstimator:drawHypotheses", b.P, b.x);
+    CIRCLE("module:BallStateEstimator:drawHypotheses", b.x.x(), b.x.y(), 80, 0, // pen width
+           Drawings::solidPen, ColorRGBA::black, Drawings::solidBrush, ColorRGBA::black);
+  }
+  for(const auto& b : rollingBalls)
+  {
+    COVARIANCE_ELLIPSES_2D("module:BallStateEstimator:drawHypotheses", b.P.topLeftCorner(2, 2), b.x);
+    CIRCLE("module:BallStateEstimator:drawHypotheses", b.x.x(), b.x.y(), 80, 0, // pen width
+           Drawings::solidPen, ColorRGBA::red, Drawings::solidBrush, ColorRGBA::red);
+  }
 }

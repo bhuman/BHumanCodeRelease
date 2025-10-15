@@ -30,6 +30,9 @@ void InertialData::draw()
   DEBUG_DRAWING3D("representation:InertialData:down", "robot")
   {
     const Vector3f zRotated = orientation3D.inverse() * Vector3f(0.f, 0.f, -1000.f);
-    CYLINDERARROW3D("representation:InertialData:down", Vector3f::Zero(), zRotated, 5.f, 35.f, 35.f, ColorRGBA::blue);
+    CYLINDER_ARROW3D("representation:InertialData:down", Vector3f::Zero(), zRotated, 5.f, 35.f, 35.f, ColorRGBA::blue);
   }
+
+  DEBUG_RESPONSE("representation:InertialData:asRaw")
+    OUTPUT(idRawInertialSensorData, bin, static_cast<RawInertialSensorData>(*this));
 }

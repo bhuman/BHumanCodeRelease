@@ -1,0 +1,2 @@
+mvo RoboCup.ramp -750 900 0 0 0 -90
+jc press 2 mvb 750 -1400 130

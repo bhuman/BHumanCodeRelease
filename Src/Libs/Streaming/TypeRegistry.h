@@ -94,7 +94,7 @@ public:
   static void print();
 
   /**
-   * Copies demangled type data to a streamable object.
+   * Copies de-mangled type data to a streamable object.
    * @param typeInfo The object that receives the data. It must initially be empty.
    */
   static void fill(TypeInfo& typeInfo);

@@ -26,7 +26,7 @@
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesPerceptorData.h"
-#include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
+#include "Representations/Perception/RefereeGestures/RefereeDetectionRequest.h"
 #include "Framework/Module.h"
 #include "ImageProcessing/LabelImage.h"
 #include "Math/Eigen.h"
@@ -78,7 +78,7 @@ MODULE(RobotDetector,
   REQUIRES(MotionInfo),
   REQUIRES(ObstaclesFieldPercept),
   REQUIRES(OdometryData),
-  REQUIRES(OptionalImageRequest),
+  REQUIRES(RefereeDetectionRequest),
   REQUIRES(OtherObstaclesPerceptorData),
   REQUIRES(OtherOdometryData),
   PROVIDES(ObstaclesFieldPercept),
@@ -87,8 +87,8 @@ MODULE(RobotDetector,
   PROVIDES(ObstaclesPerceptorData),
   DEFINES_PARAMETERS(
   {,
-    (float)(0.6f) objectThres, /**< Limit from which a robot is accepted. */
-    (float)(0.55f) fallenThres, /**< Confidence threshold for a robot to be predicted as lying on the ground */
+    (float)(0.6f) objectThreshold, /**< Limit from which a robot is accepted. */
+    (float)(0.55f) fallenThreshold, /**< Confidence threshold for a robot to be predicted as lying on the ground */
     (float)(0.3f) nonMaximumSuppressionIoUThreshold, /**< Suppress non-maximal robot predictions with intersection over union above this threshold */
     (unsigned int)(2) xyStep, /**< Step size in x/y direction for scanning the image. */
     (unsigned int)(16) xyRegions, /**< Number of regions in x/y direction. */
@@ -199,24 +199,24 @@ private:
   void extractImageObstaclesFromNetwork(std::vector<ObstaclesImagePercept::Obstacle>& obstacles);
 
   /**
-   * Fill the Y-Thumbnail image with a downscaled grayscale image.
+   * Fill the Y-Thumbnail image with a down-scaled grayscale image.
    */
    void fillGrayscaleThumbnail();
 
    /**
     * Fill the redChroma- and V-Thumbnail images with downscale images of the same size as the grayscale thumbnail.
-    * First subsamples from the CameraImage to obtain the same resolution vertically and horizontally.
+    * First sub-samples from the CameraImage to obtain the same resolution vertically and horizontally.
     * Then downscales to the expected input size.
     */
    void fillChromaThumbnails();
 
   /**
-   * Applies the cnnConvModel on the downscaled grayscale image.
+   * Applies the cnnConvModel on the down-scaled grayscale image.
    */
   void applyGrayscaleNetwork();
 
   /**
-   * Applies the cnnConvModel on a downscaled YUV image.
+   * Applies the cnnConvModel on a down-scaled YUV image.
    */
   void applyColorNetwork();
 

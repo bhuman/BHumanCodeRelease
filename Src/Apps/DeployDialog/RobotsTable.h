@@ -81,7 +81,7 @@ protected:
 public:
   /**
    * Creates a new table for robot information.
-   * @param rows The initual number of rows for the table.
+   * @param rows The initial number of rows for the table.
    */
   RobotsTable(int rows);
 

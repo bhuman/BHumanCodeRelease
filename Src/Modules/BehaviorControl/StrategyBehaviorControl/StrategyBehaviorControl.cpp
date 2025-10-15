@@ -14,9 +14,9 @@
 MAKE_MODULE(StrategyBehaviorControl, StrategyBehaviorControl::getExtModuleInfo);
 
 StrategyBehaviorControl::StrategyBehaviorControl() :
-  theBehavior(theBallDropInModel, theBallSpecification, theExtendedGameState,
+  theBehavior(theBallDropInModel, theBallSearchParticles, theBallSpecification, theExtendedGameState,
               theFieldBall, theFieldDimensions, theFieldInterceptBall,
-              theFrameInfo, theGameState, theIndirectKick, theOpposingKickoff, theTeammatesBallModel)
+              theFrameInfo, theGameState, theTeamBallModel, theLibDemo)
 {}
 
 std::vector<ModuleBase::Info> StrategyBehaviorControl::getExtModuleInfo()
@@ -28,11 +28,15 @@ std::vector<ModuleBase::Info> StrategyBehaviorControl::getExtModuleInfo()
 
 void StrategyBehaviorControl::update(SkillRequest& skillRequest)
 {
+  wasPenalized = theExtendedGameState.wasPenalized() && theExtendedGameState.returnFromGameControllerPenalty && (theGameState.isPlaying() || theGameState.isReady() || theGameState.isSet());
+  if(wasPenalized)
+    wasPenalized = theFrameInfo.getTimeSince(theGameState.timeWhenPlayerStateStarted) < theBehaviorParameters.noSkillRequestAfterUnpenalizedTime;
+
   auto* self = updateAgents();
 
   theBehavior.preProcess();
 
-  if(theGameState.playerState != GameState::active ||
+  if(theGameState.playerState != GameState::active || wasPenalized ||
      theGameState.isPenaltyShootout() || theGameState.isInitial() || theGameState.isFinished())
   {
     // Reset provided representations.
@@ -45,7 +49,7 @@ void StrategyBehaviorControl::update(SkillRequest& skillRequest)
     theStrategyStatus.setPlayStep = -1;
     theStrategyStatus.position = Tactic::Position::none;
     theStrategyStatus.role = Role::none;
-    skillRequest = SkillRequest::Builder::empty();
+    skillRequest = SkillRequest::Builder::stand();
   }
   else
   {
@@ -75,13 +79,17 @@ Agent* StrategyBehaviorControl::updateAgents()
     const int number = Settings::lowestValidPlayerNumber + i;
     if((number == theGameState.playerNumber ? theGameState.playerState : theGameState.ownTeam.playerStates[i]) != GameState::active)
       continue;
-    if(std::any_of(agents.begin(), agents.end(), [&](const Agent& agent){return agent.number == number;}))
-      continue;
-    agents.emplace_back();
-    Agent& agent = agents.back();
-    agent.number = number;
-    agent.lastKnownTimestamp = theFrameInfo.time; // This is to avoid that "self" will write things into lastKnown* that were already sent a long time ago.
-    agent.lastKnownPose = Vector2f(theFieldDimensions.xPosReturnFromPenalty, number % 2 ? theFieldDimensions.yPosLeftReturnFromPenalty : theFieldDimensions.yPosRightReturnFromPenalty);
+    if(std::any_of(agents.begin(), agents.end(), [&](const Agent& agent) {return agent.number == number;}))
+    continue;
+    // Fail safe. We assume the teammate send a package which never reached us. Initialize with dummy data
+    if(theFrameInfo.getTimeSince(theGameState.ownTeam.timeWhenPlayerStatesStarted[i]) > 5000 || number == theGameState.playerNumber)
+    {
+      agents.emplace_back();
+      Agent& agent = agents.back();
+      agent.number = number;
+      agent.lastKnownTimestamp = theFrameInfo.time; // This is to avoid that "self" will write things into lastKnown* that were already sent a long time ago.
+      agent.lastKnownPose = Vector2f(theFieldDimensions.xPosReturnFromPenalty, number % 2 ? theFieldDimensions.yPosLeftReturnFromPenalty : theFieldDimensions.yPosRightReturnFromPenalty);
+    }
   }
 
   // Remove agents that are not active anymore.
@@ -94,6 +102,22 @@ Agent* StrategyBehaviorControl::updateAgents()
     {
       agent.isGoalkeeper = theGameState.ownTeam.isGoalkeeper(agent.number);
       ++it;
+    }
+  }
+
+  for(const ReceivedTeamMessage& teamMessage : theReceivedTeamMessages.messages)
+  {
+    auto it = std::find_if(agents.begin(), agents.end(), [&](const Agent& agent) {return agent.number == teamMessage.number; });
+    if(it != agents.end())
+      updateAgentByTeamMessage(*it, teamMessage);
+    else
+    {
+      // Add agent that is active now but wasn't before.
+      agents.emplace_back();
+      Agent& agent = agents.back();
+      agent.number = teamMessage.number;
+      agent.isGoalkeeper = theGameState.ownTeam.isGoalkeeper(agent.number);
+      updateAgentByTeamMessage(agent, teamMessage);
     }
   }
 
@@ -139,15 +163,6 @@ Agent* StrategyBehaviorControl::updateAgents()
           agent.proposedMirror = self->proposedMirror;
         }
       }
-    }
-  }
-  else
-  {
-    for(const ReceivedTeamMessage& teamMessage : theReceivedTeamMessages.messages)
-    {
-      auto it = std::find_if(agents.begin(), agents.end(), [&](const Agent& agent){return agent.number == teamMessage.number;});
-      if(it != agents.end())
-        updateAgentByTeamMessage(*it, teamMessage);
     }
   }
 
@@ -208,7 +223,7 @@ void StrategyBehaviorControl::updateAgentByTeamMessage(Agent& agent, const Recei
     // Agents who disagree on the ball with me will not be considered in my decision to play the ball.
     // Therefore, it is worse if both players wrongly assume no disagreement (while in fact they would go to two different balls).
 
-    // Also, it could be nice if this decision was made somewhere in the modeling stage because similar calculations could happen in the TeammatesBallModel.
+    // Also, it could be nice if this decision was made somewhere in the modeling stage because similar calculations could happen in the TeamBallModel.
     if(teamMessage.theFrameInfo.getTimeSince(teamMessage.theBallModel.timeWhenLastSeen) > 1000 ||
        theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > 1000)
     {
@@ -220,9 +235,14 @@ void StrategyBehaviorControl::updateAgentByTeamMessage(Agent& agent, const Recei
     else
     {
       // Compare "now", i.e. propagate the teammate's ball to the current time.
-      const Vector2f itsBallOnField = teamMessage.theRobotPose * BallPhysics::propagateBallPosition(teamMessage.theBallModel.estimate.position, teamMessage.theBallModel.estimate.velocity, static_cast<float>(theFrameInfo.getTimeSince(teamMessage.theFrameInfo.time)) / 1000.f, theBallSpecification.friction);
+      const Vector2f itsBallInRobot = BallPhysics::propagateBallPosition(teamMessage.theBallModel.estimate.position, teamMessage.theBallModel.estimate.velocity, static_cast<float>(theFrameInfo.getTimeSince(teamMessage.theFrameInfo.time)) / 1000.f, theBallSpecification.friction);
+      const Vector2f itsBallOnField = teamMessage.theRobotPose * itsBallInRobot;
       const Vector2f myBallOnField = theRobotPose * theBallModel.estimate.position;
-      agent.disagreeOnBall = (itsBallOnField - myBallOnField).squaredNorm() > sqr(777.f + (agent.disagreeOnBall ? 0.f : 222.f));
+
+      const float maxDistanceToBall = std::max(itsBallInRobot.norm(), theBallModel.estimate.position.norm());
+      const float baseThreshold = mapToRange(maxDistanceToBall, 2500.f, 7500.f, 777.f, 1554.f);
+
+      agent.disagreeOnBall = (itsBallOnField - myBallOnField).squaredNorm() > sqr(baseThreshold + (agent.disagreeOnBall ? 0.f : 222.f));
     }
   }
   agent.isUpright = teamMessage.theRobotStatus.isUpright;

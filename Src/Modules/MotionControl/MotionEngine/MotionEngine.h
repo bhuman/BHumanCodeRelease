@@ -24,6 +24,7 @@
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/StiffnessData.h"
@@ -33,6 +34,7 @@
 #include "Representations/MotionControl/DiveGenerator.h"
 #include "Representations/MotionControl/DribbleGenerator.h"
 #include "Representations/MotionControl/FallGenerator.h"
+#include "Representations/MotionControl/FreeBallHoldingGenerator.h"
 #include "Representations/MotionControl/FreezeGenerator.h"
 #include "Representations/MotionControl/GetUpGenerator.h"
 #include "Representations/MotionControl/HeadMotionGenerator.h"
@@ -78,7 +80,9 @@ MODULE(MotionEngine,
   REQUIRES(FallDownState),
   REQUIRES(FallGenerator),
   REQUIRES(FrameInfo),
+  REQUIRES(FreeBallHoldingGenerator),
   REQUIRES(FreezeGenerator),
+  REQUIRES(GameState),
   REQUIRES(GetUpGenerator),
   REQUIRES(GyroOffset),
   REQUIRES(HeadMotionGenerator),
@@ -109,13 +113,14 @@ MODULE(MotionEngine,
   PROVIDES(HeadMotionInfo),
   PROVIDES(MotionInfo),
   PROVIDES(OdometryData),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (int)(3000) emergencySitDownDelay, /**< If no new data from Cognition arrived for this duration, the robot sits down. */
-    (int)(100) brokenJointAutomaticStiffness, /**< If a broken joint is detected, reduce its stiffness. TODO set it to a lower value after tests on real NAO! */
-    (std::vector<Joints::Joint>)({Joints::lAnkleRoll, Joints::rAnkleRoll}) brokenJointsReducesStiffnessList, /**< Only automatically reduce stiffness of those joints. */
-    (Vector2a)(20_deg, 30_deg) uprightAngle,
-    (int)(10000) uprightWarningTime,
+    (int) emergencySitDownDelay, /**< If no new data from Cognition arrived for this duration, the robot sits down. */
+    (int) brokenJointAutomaticStiffness, /**< If a broken joint is detected, reduce its stiffness. TODO set it to a lower value after tests on real NAO! */
+    (std::vector<Joints::Joint>) brokenJointsReducesStiffnessList, /**< Only automatically reduce stiffness of those joints. */
+    (Vector2a) uprightAngle,
+    (int) uprightWarningTime,
+    (bool) forcePlayDead, /**< If true, the old motion phase is deleted instantly and replaced with play dead when requested. */
   }),
 });
 

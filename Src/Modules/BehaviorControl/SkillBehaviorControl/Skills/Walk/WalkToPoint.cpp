@@ -7,71 +7,50 @@
  */
 
 #include "SkillBehaviorControl.h"
+#include "Tools/BehaviorControl/WalkSpeedConversion.h"
 #include <cmath>
 
 // TODO: Move the numbers from the code to meaningful parameters.
 option((SkillBehaviorControl) WalkToPoint,
        args((const Pose2f&) target,
             (const Pose2f&) speed,
-            (ReduceWalkSpeedType) reduceWalkingSpeed,
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType,
+            (bool) disableEnergySavingWalk,
             (bool) rough,
             (bool) disableObstacleAvoidance,
             (bool) disableAligning,
             (bool) disableStanding,
             (bool) disableAvoidFieldBorder,
             (const std::optional<Vector2f>&) targetOfInterest,
-            (bool) forceSideWalking),
+            (SideWalkingRequest::SideWalkingRequest) sideWalkingRequest),
        defs((float)(1000.f) switchToPathPlannerDistance, /**< If the target is further away than this distance, the path planner is used. */
             (float)(900.f) switchToLibWalkDistance, /**< If the target is closer than this distance, LibWalk is used. */
-            (float)(175.f) targetForwardWalkingSpeedSlow, /**< Reduce walking speed to reach this forward speed (in mm/s). */
-            (float)(250.f) targetForwardWalkingSpeedNormal, /**< Normal walking speed forward (in mm/s). */
             (float)(100.f) translationStopThreshold, /**< Threshold for the distance to the target regarding both axis (x, y) to stop walking. */
             (float)(150.f) translationStartThreshold, /**< Threshold for the distance to the target regarding any axis (x, y) to start walking. */
             (float)(10_deg) rotationStopThreshold, /**< Threshold for the angle to the target pose to stop walking. */
-            (float)(20_deg) rotationStartThreshold, /**< Threshold for the angle to the target pose to start walking. */
-            (Rangef)({500.f, 1000.f}) ballDistanceSpeedReductionRange)) /**< Reduce walking speed based on distance to ball. */
+            (float)(20_deg) rotationStartThreshold)) /**< Threshold for the angle to the target pose to start walking. */
 {
   const auto startWalking = [&](const Pose2f& targetPoseRelative) -> bool
   {
     return std::abs(targetPoseRelative.rotation) > rotationStartThreshold ||
-           std::abs(targetPoseRelative.translation.x()) > translationStartThreshold ||
-           std::abs(targetPoseRelative.translation.y()) > translationStartThreshold;
+    std::abs(targetPoseRelative.translation.x()) > translationStartThreshold ||
+    std::abs(targetPoseRelative.translation.y()) > translationStartThreshold;
   };
 
   const auto stopWalking = [&](const Pose2f& targetPoseRelative) -> bool
   {
     return std::abs(targetPoseRelative.rotation) < rotationStopThreshold &&
-           std::abs(targetPoseRelative.translation.x()) < translationStopThreshold &&
-           std::abs(targetPoseRelative.translation.y()) < translationStopThreshold;
+    std::abs(targetPoseRelative.translation.x()) < translationStopThreshold &&
+    std::abs(targetPoseRelative.translation.y()) < translationStopThreshold;
   };
 
   ASSERT(theWalkingEngineOutput.maxSpeed.translation.x() > 0.f);
 
-  Pose2f walkingSpeedRatio = speed;
-  switch(reduceWalkingSpeed)
-  {
-    case ReduceWalkSpeedType::slow:
-    {
-      const float ballDistance = theFieldBall.recentBallEndPositionRelative().norm();
-      const float maxWalkSpeed = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, targetForwardWalkingSpeedSlow / theWalkingEngineOutput.maxSpeed.translation.x());
-      const float minimalSpeed = std::min(speed.translation.x(), Rangef::ZeroOneRange().limit(maxWalkSpeed));
-      walkingSpeedRatio = Pose2f(std::min(speed.rotation, Angle(minimalSpeed)), minimalSpeed, std::min(speed.translation.y(), minimalSpeed));
-      break;
-    }
-    case ReduceWalkSpeedType::normal:
-    {
-      const float minimalSpeed = std::min(speed.translation.x(), Rangef::ZeroOneRange().limit(targetForwardWalkingSpeedNormal / theWalkingEngineOutput.maxSpeed.translation.x()));
-      walkingSpeedRatio = Pose2f(std::min(speed.rotation, Angle(minimalSpeed)), minimalSpeed, std::min(speed.translation.y(), minimalSpeed));
-      break;
-    }
-    case ReduceWalkSpeedType::noChange:
-    default:
-      break;
-  }
-
   const float targetDistance = target.translation.norm();
-
   disableObstacleAvoidance |= theGameState.isPenaltyShootout();
+
+  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, target, theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
+  const bool energySavingWalk = !disableEnergySavingWalk && reduceWalkSpeedType == ReduceWalkSpeedType::slow;
 
   common_transition
   {
@@ -108,7 +87,8 @@ option((SkillBehaviorControl) WalkToPoint,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .forceSideWalking = forceSideWalking });
+                  .sideWalkingRequest = sideWalkingRequest,
+                  .energySavingWalk = energySavingWalk});
     }
   }
 
@@ -129,7 +109,8 @@ option((SkillBehaviorControl) WalkToPoint,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .forceSideWalking = forceSideWalking});
+                  .sideWalkingRequest = sideWalkingRequest,
+                  .energySavingWalk = energySavingWalk});
     }
   }
 
@@ -157,7 +138,8 @@ option((SkillBehaviorControl) WalkToPoint,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .forceSideWalking = forceSideWalking});
+                  .sideWalkingRequest = sideWalkingRequest,
+                  .energySavingWalk = energySavingWalk});
     }
   }
 
@@ -177,7 +159,7 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, 0.f}});
-      Stand();
+      Stand({.energySavingWalk = energySavingWalk});
     }
   }
 
@@ -197,7 +179,8 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, 0.f}});
-      WalkAtRelativeSpeed({.speed = {0.f, -walkingSpeedRatio.translation.x(), 0.f}});
+      WalkAtRelativeSpeed({.speed = {0.f, -walkingSpeedRatio.translation.x(), 0.f},
+                           .energySavingWalk = energySavingWalk});
     }
   }
 
@@ -217,7 +200,8 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
-      WalkAtRelativeSpeed({.speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
+      WalkAtRelativeSpeed({.speed = {0.f, 0.f, walkingSpeedRatio.translation.y()},
+                           .energySavingWalk = energySavingWalk});
     }
   }
 
@@ -237,7 +221,8 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, 0.f}});
-      WalkAtRelativeSpeed({.speed = {0.f, 0.f, -walkingSpeedRatio.translation.y()}});
+      WalkAtRelativeSpeed({.speed = {0.f, 0.f, -walkingSpeedRatio.translation.y()},
+                           .energySavingWalk = energySavingWalk});
     }
   }
 }

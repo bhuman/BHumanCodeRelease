@@ -15,7 +15,7 @@
  */
 option(Block, args((const Vector2f&) target,
                    (bool)(false) useAlternativeBall,
-                   (Vector2f)(Vector2f::Zero()) alternativeBall));
+                   (const Vector2f&)({0.f, 0.f}) alternativeBall));
 
 /**
  * This skill marks another robot (i.e. positioning between it and the ball to make it unattractive as pass target).

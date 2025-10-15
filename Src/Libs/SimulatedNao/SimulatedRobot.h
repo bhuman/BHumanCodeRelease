@@ -24,6 +24,7 @@ struct OdometryData;
 struct Pose2f;
 struct Pose3f;
 struct RawInertialSensorData;
+struct TorsoMatrix;
 
 /**
  * An interface to a simulated robot (and its ball).
@@ -64,6 +65,12 @@ public:
    * @param robotPose The determined pose of the robot.
    */
   virtual void getRobotPose(Pose2f& robotPose) const = 0;
+
+  /**
+   * Determines the torso matrix of the simulated robot.
+   * @param torsoMatrix The determined torso matrix of the robot.
+   */
+  virtual void getTorsoMatrix(TorsoMatrix& torsoMatrix) = 0;
 
   /**
    * Determines all robot states as well as the ball state.
@@ -108,7 +115,7 @@ public:
    * Sets the values of all joint actuators.
    * @param jointRequest The joint request to set.
    */
-  virtual void setJointRequest(const JointRequest& jointRequest) const = 0;
+  virtual void setJointRequest(const JointRequest& jointRequest, const bool isPuppet) const = 0;
 
   /**
    * Toggles between the two cameras.
@@ -151,21 +158,21 @@ public:
   virtual void enableGravity(bool enable) = 0;
 
   /**
- * Enables or disables the simulation white noise
- * @param enable Whether to enable or disable white noise
- */
+   * Enables or disables the simulation white noise
+   * @param enable Whether to enable or disable white noise
+   */
   virtual void enableSensorWhiteNoise(const bool enable) = 0;
 
   /**
- * Enables or disables the simulation sensor delay
- * @param enable Whether to enable or disable sensor delay
- */
+   * Enables or disables the simulation sensor delay
+   * @param enable Whether to enable or disable sensor delay
+   */
   virtual void enableSensorDelay(const bool enable) = 0;
 
   /**
- * Enables or disables the simulation discretization af sensor values
- * @param enable Whether to enable or disable discretization
- */
+   * Enables or disables the simulation discretization af sensor values
+   * @param enable Whether to enable or disable discretization
+   */
   virtual void enableSensorDiscretization(const bool enable) = 0;
 
   /**

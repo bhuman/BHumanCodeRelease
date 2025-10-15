@@ -8,6 +8,8 @@
 #pragma once
 
 #include "KickEngineParameters.h"
+#include "Framework/Settings.h"
+#include "Math/RingBufferWithSum.h"
 #include "Platform/BHAssert.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/MassCalibration.h"
@@ -20,7 +22,7 @@
 #include "Representations/Sensing/RobotStableState.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Math/RingBufferWithSum.h"
+#include "Streaming/Global.h"
 
 #include <vector>
 
@@ -33,10 +35,11 @@ public:
   Pose2f odometryOutput;
   int phaseNumber = 0;
   KickEngineParameters currentParameters;
-  ENUM_INDEXED_ARRAY(Angle, Joints::Joint) currentTrajetoryOffset,
-                     lastTrajetoryOffset;
+  ENUM_INDEXED_ARRAY(Angle, Joints::Joint) currentTrajectoryOffset,
+                     lastTrajectoryOffset;
   unsigned int timestamp = 0;
   float phase = 0.f;
+  bool hasSeparateHipYawJoints = false;
 
 private:
   bool toLeftSupport = false;
@@ -45,7 +48,7 @@ private:
 
   int motionID = -1;
 
-  float cycleTime = Constants::motionCycleTime;
+  float cycleTime = Global::getSettings().motionCycleTime;
 
   int timeSinceTimestamp = 0;
 
@@ -80,7 +83,7 @@ private:
   RobotModel comRobotModel;
 
   JointRequest lastBalancedJointRequest;
-  JointRequest compenJoints;
+  JointRequest compensatedJoints;
 
   Pose2f lastOdometry;
 
@@ -109,7 +112,7 @@ public:
   void initData(const FrameInfo& frame, const KickRequest& kr, const std::vector<KickEngineParameters>& params, const JointAngles& ja, JointRequest& jointRequest, const RobotDimensions& rd, const MassCalibration& mc, const DamageConfigurationBody& theDamageConfigurationBody);
   bool activateNewMotion(const KickRequest& br);
   bool sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, JointRequest& jointRequest, const JointRequest& theJointRequest, const FrameInfo& frame);
-  void applyTrajetoryAdjustment(JointRequest& jointRequest, const JointLimits& limits);
+  void applyTrajectoryAdjustment(JointRequest& jointRequest, const JointLimits& limits);
   Angle interpolate(Angle from, Angle to, float currentTime, KickEngineParameters::BoostAngle::InterpolationMode mode);
 
   KickEngineData()

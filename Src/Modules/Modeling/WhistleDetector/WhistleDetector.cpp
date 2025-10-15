@@ -157,7 +157,7 @@ void WhistleDetector::detect(Whistle& theWhistle)
   float currentMaxAmp = 0.f;
   float currentMeanAmp;
 
-  STOPWATCH("module:WhistleDetector:amplitutes")
+  STOPWATCH("module:WhistleDetector:amplitudes")
   {
     float ampSum = 0;
     float limitCount = 0;

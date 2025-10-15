@@ -2,8 +2,6 @@ set(ROBOTPARTS_ROOT_DIR "${BHUMAN_PREFIX}/Src/Libs/RobotParts")
 
 set(ROBOTPARTS_SOURCES
     "${ROBOTPARTS_ROOT_DIR}/Arms.h"
-    "${ROBOTPARTS_ROOT_DIR}/FootShape.cpp"
-    "${ROBOTPARTS_ROOT_DIR}/FootShape.h"
     "${ROBOTPARTS_ROOT_DIR}/FsrSensors.h"
     "${ROBOTPARTS_ROOT_DIR}/Joints.h"
     "${ROBOTPARTS_ROOT_DIR}/Legs.h"

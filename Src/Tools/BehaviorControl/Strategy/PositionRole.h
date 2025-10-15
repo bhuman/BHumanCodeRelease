@@ -23,7 +23,6 @@ public:
     defender,
     midfielder,
     forward,
-    sacPasser,
   });
 
   ENUM(Side,

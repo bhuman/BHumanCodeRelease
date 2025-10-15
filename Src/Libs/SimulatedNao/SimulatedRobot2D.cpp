@@ -82,25 +82,7 @@ SimulatedRobot2D::SimulatedRobot2D(SimRobot::Object* robot) :
   FOREACH_ENUM(CameraInfo::Camera, camera)
   {
     cameraInfos[camera].camera = camera;
-
-    switch(cameraResolutionRequest.resolutions[camera])
-    {
-      case CameraResolutionRequest::w320h240:
-        cameraInfos[camera].width = 320;
-        cameraInfos[camera].height = 240;
-        break;
-      case CameraResolutionRequest::w640h480:
-        cameraInfos[camera].width = 640;
-        cameraInfos[camera].height = 480;
-        break;
-      case CameraResolutionRequest::w1280h960:
-        cameraInfos[camera].width = 1280;
-        cameraInfos[camera].height = 960;
-        break;
-      default:
-        ASSERT(false);
-        break;
-    }
+    cameraResolutionRequest.apply(camera, cameraInfos[camera]);
 
     // set opening angle
     cameraInfos[camera].openingAngleWidth = cameraIntrinsics.cameras[camera].openingAngleWidth;
@@ -129,6 +111,12 @@ void SimulatedRobot2D::getRobotPose(Pose2f& robotPose) const
     robotPose = Pose2f(pi) + robotPose;
 }
 
+void SimulatedRobot2D::getTorsoMatrix(TorsoMatrix& torsoMatrix)
+{
+  torsoMatrix = TorsoMatrix();
+  torsoMatrix.isValid = true;
+}
+
 void SimulatedRobot2D::getImage(CameraImage& cameraImage, CameraInfo& cameraInfo)
 {
   cameraInfo = cameraInfos[currentCamera];
@@ -149,7 +137,7 @@ void SimulatedRobot2D::getAndSetJointData(const JointRequest&, JointSensorData& 
   jointSensorData.timestamp = Time::getCurrentSystemTime();
 }
 
-void SimulatedRobot2D::setJointRequest(const JointRequest&) const
+void SimulatedRobot2D::setJointRequest(const JointRequest&, const bool) const
 {}
 
 void SimulatedRobot2D::toggleCamera()
@@ -508,38 +496,47 @@ void SimulatedRobot2D::requestWalkToBallAndKick(const BallState& ballEstimate, A
     case KickInfo::forwardFastLeftPass:
     case KickInfo::forwardFastLeftLong:
     case KickInfo::walkForwardsLeft:
+    case KickInfo::walkForwardsLeftAlternative:
     case KickInfo::walkForwardsLeftLong:
       isInPositionForKick = ballPosition.y() > 30.f && ballPosition.y() < 60.f && ballPosition.x() < (kickType == KickInfo::walkForwardsLeftLong ? 270.f : (kickType == KickInfo::forwardFastLeftLong ? 270.f : 200.f)) && ballPosition.x() > 100.f;
-      isInPositionForKick &= std::abs(targetDirection) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
       break;
     case KickInfo::forwardFastRight:
     case KickInfo::forwardFastRightPass:
     case KickInfo::forwardFastRightLong:
     case KickInfo::walkForwardsRight:
+    case KickInfo::walkForwardsRightAlternative:
     case KickInfo::walkForwardsRightLong:
       isInPositionForKick = -ballPosition.y() > 30.f && -ballPosition.y() < 60.f && ballPosition.x() < (kickType == KickInfo::walkForwardsRightLong ? 270.f : (kickType == KickInfo::forwardFastRightLong ? 270.f : 200.f)) && ballPosition.x() > 100.f;
-      isInPositionForKick &= std::abs(targetDirection) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
       break;
     case KickInfo::walkSidewardsLeftFootToLeft:
       isInPositionForKick = ballPosition.y() > 30.f && ballPosition.y() < 180.f && ballPosition.x() > 0.f && ballPosition.x() < 100.f;
-      isInPositionForKick &= std::abs(targetDirection - 90_deg) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
       break;
     case KickInfo::walkSidewardsRightFootToRight:
       isInPositionForKick = -ballPosition.y() > 30.f && -ballPosition.y() < 180.f && ballPosition.x() > 0.f && ballPosition.x() < 100.f;
-      isInPositionForKick &= std::abs(targetDirection + 90_deg) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
       break;
     case KickInfo::walkTurnRightFootToLeft:
     {
       const Vector2f ballPositionAfterPreStep = Pose2f(45_deg, 30.f, 20.f).inverse() * ballPosition;
       isInPositionForKick = -ballPositionAfterPreStep.y() > 30.f && -ballPositionAfterPreStep.y() < 70.f && ballPositionAfterPreStep.x() > 50.f && ballPositionAfterPreStep.x() < 170.f;
-      isInPositionForKick &= std::abs(targetDirection - 45_deg) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
       break;
     }
     case KickInfo::walkTurnLeftFootToRight:
     {
       const Vector2f ballPositionAfterPreStep = Pose2f(-45_deg, 30.f, -20.f).inverse() * ballPosition;
       isInPositionForKick = ballPositionAfterPreStep.y() > 30.f && ballPositionAfterPreStep.y() < 70.f && ballPositionAfterPreStep.x() > 50.f && ballPositionAfterPreStep.x() < 170.f;
-      isInPositionForKick &= std::abs(targetDirection + 45_deg) < directionThreshold;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < directionThreshold;
+      break;
+    }
+    case KickInfo::walkForwardStealBallLeft:
+    case KickInfo::walkForwardStealBallRight:
+    {
+      isInPositionForKick = std::abs(ballPosition.y()) < 30.f && ballPosition.x() < 210.f && ballPosition.x() > 100.f;
+      isInPositionForKick &= std::abs(targetDirection - kicks[kickType].direction) < 10_deg;
       break;
     }
     default:

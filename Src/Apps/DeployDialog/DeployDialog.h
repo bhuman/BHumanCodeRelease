@@ -28,7 +28,7 @@ class DeployDialog : public QDialog
   static constexpr int pingCriticalThreshold = 500; /**< Starting at this value, the ping time is critically long (in ms). */
   static constexpr int batteryWarnThreshold = 70; /**< Below this value, it is warned about the battery level. */
   static constexpr int temperatureWarnThreshold = 57; /**< Starting at this value, it is warned about the temperature (in degrees celsius). */
-  static constexpr int temperatureCriticalThreshold = 76; /**< Starting at this value, the temperature is critial (in degrees celsius). */
+  static constexpr int temperatureCriticalThreshold = 76; /**< Starting at this value, the temperature is critical (in degrees celsius). */
 
   /**
    * Sets B-Human's "Config" directory as the current one.

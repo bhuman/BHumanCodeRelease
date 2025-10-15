@@ -127,7 +127,7 @@ float FieldRatingProvider::functionCone(const float distance, const Angle dribbl
 {
   if(distance > radius || dribbleAngle > maxAngle)
     return 0.f;
-  return std::max(0.5f * (1.f - dribbleAngle / maxAngle) * value + 0.5f * (1.f - distance / radius) * value, 0.f); // distance / radius muss 1- x sein
+  return std::max(0.5f * (1.f - dribbleAngle / maxAngle) * value + 0.5f * (1.f - distance / radius) * value, 0.f); // distance / radius must be 1 - x
 }
 
 Vector2f FieldRatingProvider::functionConeDer(const Vector2f& distanceVector, const Angle dribbleAngle, const Angle maxAngle, const float radius, const float value)
@@ -216,8 +216,8 @@ void FieldRatingProvider::draw()
         Vector4f ob;
         ob.x() = x - xShift / 2.f * (pv.direction.x() == 0.f ? 0.f : (pv.direction.x() / std::abs(pv.direction.x())));
         ob.y() = y - yShift / 2.f * (pv.direction.y() == 0.f ? 0.f : (pv.direction.y() / std::abs(pv.direction.y())));
-        ob.z() = x + pv.direction.x() * xShiftArrow * arrowlenght;
-        ob.w() = y + pv.direction.y() * yShiftArrow * arrowlenght;
+        ob.z() = x + pv.direction.x() * xShiftArrow * arrowLength;
+        ob.w() = y + pv.direction.y() * yShiftArrow * arrowLength;
         list.push_back(ob);
       }
       if(pv.value == 0.f)
@@ -228,7 +228,7 @@ void FieldRatingProvider::draw()
   {
     ARROW("module:FieldRatingProvider:potentialField",
           ob.x(), ob.y(), ob.z(), ob.w(),
-          arrowwidth, Drawings::arrow, ColorRGBA::black);
+          arrowWidth, Drawings::arrow, ColorRGBA::black);
   }
   drawMinMax = newMinMax;
   lastRequestedPassTarget = -1;
@@ -331,24 +331,24 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
     teammateInField.clear();
   lastTeammateInFieldUpdate = theFrameInfo.time;
   std::size_t index = 0;
-  float squardedDistance = (theRobotPose.translation - fieldPoint).squaredNorm();
+  float squaredDistance = (theRobotPose.translation - fieldPoint).squaredNorm();
   for(const auto& teammate : theGlobalTeammatesModel.teammates)
   {
     if(updateFieldPosition)
       teammateInField.push_back(teammate.getFuturePosition(estimateTeammateIntoFuture));
     const Vector2f& teammatePosition = teammateInField[index];
     const float newSquaredDistance = (teammatePosition - fieldPoint).squaredNorm();
-    if(newSquaredDistance < squardedDistance)
-      squardedDistance = newSquaredDistance;
+    if(newSquaredDistance < squaredDistance)
+      squaredDistance = newSquaredDistance;
     index++;
   }
 
   const Vector2f fieldPointToGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f) - fieldPoint;
   const float distanceToGoalFactor = std::min(1.f, fieldPointToGoal.norm() / opponentDistanceToGoal);
-  // useMaxRepelRange describes the range between the min and the max value. the max radius is determined by the distance overlap of vectorToOb and squardedDistance.
+  // useMaxRepelRange describes the range between the min and the max value. the max radius is determined by the distance overlap of vectorToOb and squaredDistance.
   // the radius around the obstacle, that contains the max value is determined by the distance overlap minus useMaxRepelRange
   const float useMaxRepelRange = distanceToGoalFactor * minRepelDifferenceRange + (1.f - distanceToGoalFactor) * maxRepelDifferenceRange;
-  const float teammateDistance = std::sqrt(squardedDistance);
+  const float teammateDistance = std::sqrt(squaredDistance);
   const float radiusTimesValue = 1.f / useMaxRepelRange * repelValue;
   for(const auto& ob : obstaclesOnField)
   {
@@ -356,7 +356,7 @@ PotentialValue FieldRatingProvider::getObstaclePotential(const float x, const fl
     if(vectorToOb == Vector2f(0.f, 0.f))
       vectorToOb.x() += 0.00001f;
     float vectorToObNorm = vectorToOb.squaredNorm();
-    if(vectorToObNorm > squardedDistance)
+    if(vectorToObNorm > squaredDistance)
       continue;
 
     vectorToObNorm = std::sqrt(vectorToObNorm);
@@ -525,14 +525,14 @@ PotentialValue FieldRatingProvider::getTeammatesPotential(const float x, const f
     };
 
     const float ratioAttractRange = scaleAttractRangeWithAngle(fieldPointAngle, index);
-    const float useTeamateAttractRange = teammateAttractRange * (1.f - ratioAttractRange) + teammateAttractRangeMin * ratioAttractRange;
+    const float useTeammateAttractRange = teammateAttractRange * (1.f - ratioAttractRange) + teammateAttractRangeMin * ratioAttractRange;
     float rating;
     // Different ratings based on if teammate is pass target
     if(!isPassTarget)
-      rating = -functionLinear(poseDistance, useTeamateAttractRange, teammateRTV);
+      rating = -functionLinear(poseDistance, useTeammateAttractRange, teammateRTV);
     else
     {
-      const float usePassRange = useTeamateAttractRange * ratioAttractRange + passAttractRange * (1.f - ratioAttractRange);
+      const float usePassRange = useTeammateAttractRange * ratioAttractRange + passAttractRange * (1.f - ratioAttractRange);
       rating = -functionLinear(poseDistance, usePassRange, passRTV);
     }
     rating *= ownHalfInterpolation;

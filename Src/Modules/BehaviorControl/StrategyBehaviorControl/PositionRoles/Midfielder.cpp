@@ -35,7 +35,7 @@ float Midfielder::rating(const Vector2f& pos) const
   {
     shiftedBase.x() = shiftedBase.x() + ball.x() * p.baseShiftX;
     //shift the y coordinate depending on how far the ball is in the opponent half to avoid a jump at the border that would need hysteresis
-    const float yFactor = std::min(p.maxBaseShilftY, ball.x() / p.smoothBaseShiftYDistence);
+    const float yFactor = std::min(p.maxBaseShiftY, ball.x() / p.smoothBaseShiftYDistance);
     shiftedBase.y() = shiftedBase.y() + (ball.y() - shiftedBase.y()) * yFactor;
 
     //if position is outside the Voronoi region clip it
@@ -67,25 +67,17 @@ float Midfielder::rating(const Vector2f& pos) const
   }
 
   //get the rating based on the nearest teammate
-  float rating = 1;
+  float teammateRating = 1.f;
   if(!theGlobalTeammatesModel.teammates.empty())
   {
-    float minTeammateDistanceSquared = (pos - theGlobalTeammatesModel.teammates.cbegin()->pose.translation).squaredNorm();
-    for(auto t = ++theGlobalTeammatesModel.teammates.cbegin(); t != theGlobalTeammatesModel.teammates.cend(); t++)
-    {
-      const float d = (pos - t->pose.translation).squaredNorm();
-      if(d < minTeammateDistanceSquared)
-        minTeammateDistanceSquared = d;
-    }
-
     //better rating far away from teammates
-    rating = 1.f - std::exp(-0.5f * minTeammateDistanceSquared / sqr(p.sigmaTeam));
+    teammateRating = 1.f - std::exp(-0.5f * getClosestTeammateSquaredDistance(pos) / sqr(p.sigmaTeam));
   }
 
   //in case of a free kick we know that we are the attacking team so we can play offensively
   //search for free spaces to receive a pass
   if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
-    return baseRating * thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true) * (p.minGoalRating + (1.f - p.minGoalRating) * theExpectedGoals.getRating(pos, true));
+    return cellBorderRating * baseRating * thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true) * (p.minGoalRating + (1.f - p.minGoalRating) * theExpectedGoals.getRating(pos, true));
 
   // Positions near the last communicated target pose are better
   const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
@@ -94,5 +86,5 @@ float Midfielder::rating(const Vector2f& pos) const
   CROSS("behavior:Midfielder:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
   //combine the ratings
-  return ballRating * rating * baseRating * fieldBorderRating * cellBorderRating * communicationRating;
+  return ballRating * teammateRating * baseRating * fieldBorderRating * cellBorderRating * communicationRating;
 }

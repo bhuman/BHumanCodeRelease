@@ -508,15 +508,23 @@ void PaintMethods3DOpenGL::beforeFrame(const DebugDrawing3D& drawing, const Matr
     f->glGenTextures(1, &texture);
     f->glBindTexture(GL_TEXTURE_2D, texture);
 
-    char* imageData = copyImage(*i.cameraImage);
-    f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, i.cameraImage->width, i.cameraImage->height,
-                    0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+    if(i.cameraImage->width > 0 && i.cameraImage->height > 0)
+    {
+      char* imageData = copyImage(*i.cameraImage);
+      f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, i.cameraImage->width, i.cameraImage->height,
+                      0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+      delete[] imageData;
+    }
+    else
+    {
+      static unsigned char imageData[] = {0, 0, 0};
+      f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+    }
 
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    delete[] imageData;
     textures.push_back(texture);
   }
 }

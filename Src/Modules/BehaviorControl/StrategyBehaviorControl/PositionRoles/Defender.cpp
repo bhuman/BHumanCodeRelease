@@ -3,7 +3,9 @@
  *
  * This file implements the Defender role.
  * Tries to cover as much space as possible by staying far away from the teammates and the field border while not deviate to much from the base pose.
- * It tries to maximize a rating function that is manly based on the distance to the closest teammate.
+ * It also tries to mark opponents favoring those that are in a good position to score.
+ * Additionally positions between the ball and the goal are preferred to block direct shots.
+ * It tries to maximize a rating function that is based on the criteria above.
  *
  * @author Yannik Meinken
  */
@@ -36,7 +38,7 @@ float Defender::rating(const Vector2f& pos) const
   const float borderRating = 1.f - std::exp(-0.5f * sqr(borderDistance) / sqr(p.sigmaBorder));
 
   //get the rating based on the nearest teammate
-  float rating = 1;
+  float teammatesRating = 1;
   if(!theGlobalTeammatesModel.teammates.empty())
   {
     auto firstTeammate = theGlobalTeammatesModel.teammates.cbegin();
@@ -50,7 +52,7 @@ float Defender::rating(const Vector2f& pos) const
     }
 
     //better rating far away from teammates
-    rating = 1.f - std::exp(-0.5f * minTeammateDistanceSquared / sqr(p.sigmaTeam));
+    teammatesRating = 1.f - std::exp(-0.5f * minTeammateDistanceSquared / sqr(p.sigmaTeam));
   }
 
   // rating based on the distance to the base pose. Closer to base pose is better
@@ -95,5 +97,5 @@ float Defender::rating(const Vector2f& pos) const
   CROSS("behavior:Defender:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
   //combine the ratings
-  return rating * baseRating * borderRating * markRating * goalLineRating * communicationRating;
+  return teammatesRating * baseRating * borderRating * markRating * goalLineRating * communicationRating;
 }

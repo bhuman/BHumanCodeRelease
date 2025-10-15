@@ -7,14 +7,19 @@
 
 /**
  * @struct LinesPercept
- * This struct contains all the linespots
+ * This struct contains all the line spots
  */
 STREAMABLE(LinesPercept,
 {
   STREAMABLE(Line,
   {
     Line() = default;
-    Line(const Vector2f& base, const Vector2f& direction) : line(base, direction) {},
+    Line(const Vector2f& base, const Vector2f& direction) : line(base, direction) {}
+
+    bool isEmpty() const
+    {
+      return line.base.isZero() && line.direction.isZero();
+    },
 
     (Geometry::Line) line, /**<The fitted line in field coordinates */
     (std::vector<Vector2f>) spotsInField, /**< Spots that are on this line  (in relative field coordinates). NOT FITTED TO LINE*/

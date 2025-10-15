@@ -100,7 +100,7 @@ private:
 
   /**
    * Calculates weather the goalkeeper is near a post or not.
-   * @param position The realtaive position of the robot
+   * @param position The relative position of the robot
    * @return A tuple of two booleans. The first one indicates if the robot is near the left post, the second one if the robot is near the right post.
    */
   std::tuple<bool, bool> isNearPost(const Pose2f& position) const;

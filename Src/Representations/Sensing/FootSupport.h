@@ -16,7 +16,9 @@
 #include "RobotParts/Legs.h"
 
 STREAMABLE(FootSupport,
-{,
+{
+  void draw() const,
+
   (float)(0.f) support, /**< Unitless distribution of the support over both feet (left - right). Positive -> left foot is support. */
   (bool)(false) trustedSupport, /**< Support foot has enough pressure. */
   (bool)(false) switched, /**< The support foot switched. */

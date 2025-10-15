@@ -16,7 +16,9 @@ else
 fi
 
 source setupSSH
-ssh ${SSHOPTIONS} nao@$*
+source setupTarget "$1"
+
+ssh ${SSHOPTIONS} $TARGET_USER@$*
 
 if [ $? = 255 ]; then
   echo "Error: Cannot connect to $1" >&2

@@ -7,10 +7,10 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/IMUValueState.h"
+#include "Representations/Sensing/InertialSensorData.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
 
@@ -18,15 +18,17 @@ MODULE(IMUValueStateProvider,
 {,
   USES(FrameInfo),
   REQUIRES(GroundContactState),
-  REQUIRES(RawInertialSensorData),
+  REQUIRES(InertialSensorData),
   USES(MotionInfo),
   PROVIDES(IMUValueState),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (Angle)(3_deg) thresholdGyroDeviation, // if the NAO is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
-    (Angle)(3_deg) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
-    (float)(0.2f) thresholdAccDeviation,
-    (float)(0.1f) maxMeanAccDeviation, /**< Max measured variance of multiple acc measurements, to calibrate the gravity vector. */
+    (Angle) thresholdGyroDeviation, // if the NAO is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
+    (Angle) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
+    (float) thresholdAccDeviation,
+    (float) maxMeanAccDeviation, /**< Max measured variance of multiple acc measurements, to calibrate the gravity vector. */
+    (unsigned) bufferSize, /**< Size of the buffers for the imu values. Should be equal to about 324 ms. */
+    (unsigned) accLengthBufferSize, /**< Sizeof the buffer for the acc length values. */
   }),
 });
 
@@ -35,18 +37,18 @@ class IMUValueStateProvider : public IMUValueStateProviderBase
 public:
   IMUValueStateProvider();
 private:
-  //RingBuffer for the last 27 gyro and acc values. So many values can be sampled in 333ms with the current motion time of 0.012ms.
-  RingBufferWithSum<float, 27> gyroValuesX;
-  RingBufferWithSum<float, 27> gyroValuesY;
-  RingBufferWithSum<float, 27> gyroValuesZ;
+  //RingBuffer of the imu values
+  RingBufferWithSum<float> gyroValuesX;
+  RingBufferWithSum<float> gyroValuesY;
+  RingBufferWithSum<float> gyroValuesZ;
 
-  RingBufferWithSum<float, 27> accValuesX;
-  RingBufferWithSum<float, 27> accValuesY;
-  RingBufferWithSum<float, 27> accValuesZ;
+  RingBufferWithSum<float> accValuesX;
+  RingBufferWithSum<float> accValuesY;
+  RingBufferWithSum<float> accValuesZ;
 
-  RingBufferWithSum<float, 50> accelerometerLengths;
+  RingBufferWithSum<float> accelerometerLengths;
 
   void update(IMUValueState& imuValueState) override;
 
-  float calcDeviation(const float mean, const RingBufferWithSum<float, 27>& buffer);
+  float calcDeviation(const float mean, const RingBufferWithSum<float>& buffer);
 };

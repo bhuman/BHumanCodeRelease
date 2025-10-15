@@ -13,7 +13,7 @@ STREAMABLE(DynPoint,
 {
   DynPoint() = default;
   DynPoint(int limb, int phaseNumber, int duration, const Vector3f& translation, const Vector3f& angle, const Vector3f& odometryOffset);
-  DynPoint(int limb, int phaseNumber, const Vector3f& translationl, const int duration = -1);
+  DynPoint(int limb, int phaseNumber, const Vector3f& translation, const int duration = -1);
 
   bool operator==(const DynPoint& other) const,
 

@@ -10,12 +10,15 @@
 
 option((SkillBehaviorControl) DemoTalk)
 {
-  action
+  initial_state(execute)
   {
-    LookAtAngles({.pan = 0.f,
-                  .tilt = 25_deg});
-    Stand({.high = true});
-    DemoTalkWaitForKey();
+    action
+    {
+      LookAtAngles({.pan = 0.f,
+                    .tilt = 25_deg});
+      Stand({.high = true});
+      DemoTalkWaitForKey();
+    }
   }
 }
 

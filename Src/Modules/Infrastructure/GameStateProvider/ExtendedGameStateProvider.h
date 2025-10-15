@@ -11,17 +11,20 @@
 
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
 
 MODULE(ExtendedGameStateProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
+  REQUIRES(GroundContactState),
   PROVIDES(ExtendedGameState),
   DEFINES_PARAMETERS(
   {,
-    (int)(23000) minPenaltyTime, /**< The minimum time a robot must be penalized to actually believe it [ms]. */
-    (int)(8000) minPenaltyTimeIPS, /**< The minimum time a robot must be penalized for Illegal Position in Set to actually believe it [ms]. */
+    (int)(23000) minPenaltyTime,                /**< The minimum time a robot must be penalized to actually believe it [ms]. */
+    (int)(12000) minPenaltyTimeAbortedPenalty,  /**< When a penalty becomes aborted, we still assume this minimum period of time [ms] of having been penalized. */
+    (int)(8000) minPenaltyTimeIPS,              /**< The minimum time a robot must be penalized for Illegal Position in Set to actually believe it [ms]. */
   }),
 });
 
@@ -29,12 +32,13 @@ class ExtendedGameStateProvider : public ExtendedGameStateProviderBase
 {
   /**
    * This method updates the extended game state.
-   * @param extendedGameState The updated representation.
+   * @param extendedGameState The updated representation
    */
   void update(ExtendedGameState& extendedGameState) override;
 
-  GameState::State stateLastFrame = GameState::beforeHalf; /**< The state of the game in the last frame. */
-  GameState::PlayerState playerStateLastFrame = GameState::unstiff; /**< The state of this player in the last frame. */
-  unsigned messageBudgetLastFrame = 1200u; /**< Message budget of the own team in the last frame. */
-  unsigned timeWhenPenalized = 0; /**< Time when the current penalty started. */
+  GameState::State stateLastFrame = GameState::beforeHalf; /**< The state of the game in the last frame */
+  GameState::PlayerState playerStateLastFrame = GameState::unstiff; /**< The state of this player in the last frame */
+  unsigned messageBudgetLastFrame = 1200u; /**< Message budget of the own team in the last frame */
+  unsigned timeWhenPenalized = 0; /**< Time when the current penalty started */
+  unsigned lastTimeWithoutGroundContact = 0; /**< Last point of time when the robot did not have ground contact */
 };

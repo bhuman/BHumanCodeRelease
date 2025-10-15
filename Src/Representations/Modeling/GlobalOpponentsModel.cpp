@@ -52,8 +52,10 @@ void GlobalOpponentsModel::draw() const
     if(SystemCall::getMode() != SystemCall::remoteRobot)
       CYLINDER3D("representation:GlobalOpponentsModel", center.x(), center.y(), -210, 0, 0, 0, (left - right).norm(), 10, fillColor);
 
-    float obstacleRadius = (left - right).norm() * .5f;
-    Vector2f frontRight(-Obstacle::getRobotDepth(), -obstacleRadius);
+    const float obstacleRadius = (left - right).norm() * .5f;
+    const float robotDepth = Blackboard::getInstance().exists("RobotDimensions")
+                             ? static_cast<const RobotDimensions&>(Blackboard::getInstance()["RobotDimensions"]).robotDepth : 80.f;
+    Vector2f frontRight(-robotDepth, -obstacleRadius);
     frontRight = center + frontRight;
     RECTANGLE2("representation:GlobalOpponentsModel", frontRight, obstacleRadius * 2, obstacleRadius * 2, 0.f, 16, Drawings::PenStyle::solidPen, ColorRGBA::black, Drawings::solidBrush, fillColor);
     if(opponent.unidentified)

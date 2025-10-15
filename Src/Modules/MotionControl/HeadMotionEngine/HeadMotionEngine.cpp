@@ -9,11 +9,13 @@
 
 #include "HeadMotionEngine.h"
 #include "Debugging/Plot.h"
+#include "Framework/Settings.h"
 #include "Math/Geometry.h"
 #include "Math/Range.h"
 #include "Math/BHMath.h"
-#include "Tools/Motion/InverseKinematic.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Streaming/Global.h"
+#include "Tools/Motion/InverseKinematic.h"
 #include <algorithm>
 #include <cmath>
 
@@ -67,7 +69,7 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
     const float pan = requestedPan == JointAngles::off ? static_cast<float>(JointAngles::off) : Rangef(theHeadLimits.minPan(), theHeadLimits.maxPan()).limit(requestedPan);
     const float tilt = requestedTilt == JointAngles::off ? JointAngles::off : theHeadLimits.getTiltBound(pan).limit(requestedTilt);
 
-    constexpr float deltaTime = Constants::motionCycleTime;
+    const float deltaTime = Global::getSettings().motionCycleTime;
     const Vector2f position(theJointRequest.stiffnessData.stiffnesses[Joints::headYaw] == 0 ? theJointAngles.angles[Joints::headYaw] : theJointRequest.angles[Joints::headYaw],
                             theJointRequest.stiffnessData.stiffnesses[Joints::headPitch] == 0 ? theJointAngles.angles[Joints::headPitch] : theJointRequest.angles[Joints::headPitch]);
     const Vector2f target(pan == JointAngles::off ? 0.f : pan, tilt == JointAngles::off ? 0.f : tilt);
@@ -194,7 +196,7 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
   bool lowerCam = false;
   headAngleRequest.pan = panTiltUpperCam.x(); // Pan is the same for both cams
 
-  if(theHeadMotionRequest.cameraControlMode == HeadMotionRequest::upperCamera)
+  if(theHeadMotionRequest.cameraControlMode == HeadMotionRequest::upperCamera || Global::getSettings().robotType != Settings::nao)
   {
     headAngleRequest.tilt = panTiltUpperCam.y();
     lowerCam = false;

@@ -12,6 +12,7 @@ option((SkillBehaviorControl) ReplayWalk)
 {
   theMotionRequest.motion = MotionRequest::replayWalk;
   theMotionRequest.standHigh = false;
+  theMotionRequest.energySavingWalk = false;
   theMotionRequest.ballEstimate.position.x() = 1000.f; // To make sure the walk step adjustment ignores the ball position
   theLibCheck.inc(LibCheck::motionRequest);
 

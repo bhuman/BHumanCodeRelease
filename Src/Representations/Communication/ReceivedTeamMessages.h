@@ -4,15 +4,15 @@
  * This file declares a representation that contains the team messages
  * that have been received in a single frame.
  *
- * @author Arne Hasselbrng
+ * @author Arne Hasselbring
  */
 
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
-#include "Representations/BehaviorControl/InitialToReady.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Modeling/RefereeSignal.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Tools/Communication/RobotStatus.h"
@@ -30,7 +30,7 @@ STREAMABLE(ReceivedTeamMessage,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,
   (IndirectKick) theIndirectKick,
-  (InitialToReady) theInitialToReady,
+  (RefereeSignal) theRefereeSignal,
 });
 
 STREAMABLE(ReceivedTeamMessages,

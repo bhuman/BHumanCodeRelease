@@ -202,7 +202,7 @@ public:
   void allocateLut(const Eigen::AlignedBox3d& viewpointRange, double spacing);
 
   //! Computes several quantities needed in \c rasterize to call \c projectUsingSSE (see \c rasterize for last two parameters)
-  /*! It computes the index of the precomputed vertexlist applying to the given \c object2World and camera.
+  /*! It computes the index of the precomputed vertex list applying to the given \c object2World and camera.
       Also a reference point which is the projection of \c centerWith1 around which the 8bit signed coordinates
       in \c CodedContour are defined. And it computes a projection matrix in the form taken by \c projectUsingSSE
       which maps homogeneous object vectors (e.g. \c vertexWith1) to homogeneous image coordinates relative to

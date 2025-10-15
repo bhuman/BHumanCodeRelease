@@ -42,17 +42,29 @@ public:
                 TEAM_PURPLE == purple && TEAM_BROWN == brown && TEAM_GRAY == gray,
                 "These macros and enums have to match!");
 
+  /** The different robot types. */
+  ENUM(RobotType,
+  {,
+    nao,
+    t1,
+    k1,
+  });
+
   /**
    * Loads all settings except for the robot name from settings.cfg.
    * @param headName The name of the robot's head.
    * @param bodyName The name of the robot's body.
+   * @param motionCycleTime The cycle time of the Motion thread in s.
+   * @param robotType The robot type.
    */
-  Settings(const std::string& headName, const std::string& bodyName);
+  Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType);
 
   /**
    * Explicitly sets all settings.
    * @param headName The name of the robot's head.
    * @param bodyName The name of the robot's body.
+   * @param motionCycleTime The cycle time of the Motion thread in s.
+   * @param robotType The robot type.
    * @param teamNumber The team number.
    * @param fieldPlayerColor The field player color.
    * @param goalkeeperColor The goalkeeper color.
@@ -61,15 +73,20 @@ public:
    * @param scenario The scenario.
    * @param magicNumber The magic number.
    */
-  Settings(const std::string& headName, const std::string& bodyName, int teamNumber, TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber, const std::string& location, const std::string& scenario, unsigned char magicNumber);
+  Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType, int teamNumber,
+           TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber, const std::string& location,
+           const std::string& scenario, unsigned char magicNumber);
 
   /**
    * Reads parts of the settings from a log file (or parses them from the name) and loads the rest from settings.cfg.
    * @param logFileName The name of the log file.
+   * @param motionCycleTime The cycle time of the Motion thread in s.
+   * @param robotType The robot type.
    * @param location If not \c nullptr, use this location.
    * @param scenario If not \c nullptr, use this scenario.
    */
-  explicit Settings(const std::string& logFileName, const std::string* location = nullptr, const std::string* scenario = nullptr);
+  explicit Settings(const std::string& logFileName, float motionCycleTime, RobotType robotType, const std::string* location = nullptr,
+                    const std::string* scenario = nullptr);
 
   /** Creates a search path for files, in the order in which they will be tried. */
   void updateSearchPath();
@@ -90,7 +107,9 @@ public:
   std::vector<std::string> searchPath; /**< The file search path that results from these settings. */
 
   std::string headName; /**< The name of this robot's head. */
-  std::string bodyName, /**< The name of this robot's body. */
+  std::string bodyName; /**< The name of this robot's body. */
+  float motionCycleTime; /**< The average time between two motion cycles in seconds. */
+  RobotType robotType, /**< The robot type. */
 
   (int)(-1) teamNumber, /**< The number of our team in the game controller. Use theGameState.ownTeam.number instead. */
   (TeamColor)(numOfTeamColors) fieldPlayerColor, /**< The color of our field players. Use theGameState.ownTeam.fieldPlayerColor instead. */

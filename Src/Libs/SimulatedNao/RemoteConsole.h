@@ -32,8 +32,9 @@ public:
    * @param robotName The name of the robot.
    * @param ip The ip address of the robot.
    * @param ctrl A pointer to the controller object.
+   * @param settings The settings of the robot.
    */
-  RemoteConsole(const std::string& robotName, const std::string& ip, ConsoleRoboCupCtrl* ctrl);
+  RemoteConsole(const std::string& robotName, const std::string& ip, ConsoleRoboCupCtrl* ctrl, const Settings& settings);
 
   /**
    * The function is called to announce the termination of the thread.

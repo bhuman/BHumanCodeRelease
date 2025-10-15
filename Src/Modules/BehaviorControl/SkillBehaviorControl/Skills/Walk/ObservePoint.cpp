@@ -93,8 +93,9 @@ option((SkillBehaviorControl) ObservePoint,
     {
       WalkToPoint({.target = clippedTarget,
                    .speed = allowedSpeed,
-                   .reduceWalkingSpeed = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow});
-      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished()});
+                   .reduceWalkSpeedType = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow});
+      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished(),
+                   .speed = 60_deg });
     }
   }
 
@@ -130,11 +131,12 @@ option((SkillBehaviorControl) ObservePoint,
     {
       WalkToPoint({.target = {clippedTarget.angle()},
                    .speed = allowedSpeed,
-                   .reduceWalkingSpeed = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
+                   .reduceWalkSpeedType = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
                    .rough = true});
       LookLeftAndRight({.startLeft = clippedTarget.y() > 0.f,
                         .maxPan = 40_deg,
-                        .speed = 60_deg});
+                        .tilt = theBehaviorParameters.defaultLookDownAngle,
+                        .speed = 40_deg});
     }
   }
 
@@ -168,9 +170,10 @@ option((SkillBehaviorControl) ObservePoint,
     {
       WalkToPoint({.target = {left ? 90_deg : -90_deg},
                    .speed = allowedSpeed,
-                   .reduceWalkingSpeed = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
+                   .reduceWalkSpeedType = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
                    .rough = true});
-      LookForward();
+      LookAtAngles({.pan = 0_deg,
+                    .tilt = theHeadLimits.getTiltBound(0_deg).max});
     }
   }
 
@@ -199,9 +202,10 @@ option((SkillBehaviorControl) ObservePoint,
     {
       WalkToPoint({.target = {vectorToRightObstacle.rotate(vectorToRightObstacle.squaredNorm() < sqr(1500.f) ? -30_deg : -10_deg)},
                    .speed = allowedSpeed,
-                   .reduceWalkingSpeed = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
+                   .reduceWalkSpeedType = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
                    .rough = true});
-      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished()});
+      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished(),
+                   .speed = 60_deg });
     }
   }
 
@@ -230,9 +234,10 @@ option((SkillBehaviorControl) ObservePoint,
     {
       WalkToPoint({.target = {vectorToLeftObstacle.rotate(vectorToLeftObstacle.squaredNorm() < sqr(1500.f) ? 30_deg : 10_deg)},
                    .speed = allowedSpeed,
-                   .reduceWalkingSpeed = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
+                   .reduceWalkSpeedType = theGameState.isCornerKick() ? ReduceWalkSpeedType::noChange : ReduceWalkSpeedType::slow,
                    .rough = true});
-      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished()});
+      LookAtPoint({.target = (Vector3f() << clippedTarget, 0.f).finished(),
+                   .speed = 60_deg});
     }
   }
 }

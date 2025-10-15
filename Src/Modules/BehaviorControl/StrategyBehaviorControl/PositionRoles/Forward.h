@@ -20,6 +20,7 @@ class Forward : public RatingRole
     (float)(50.f) sigmaCellBorder, /**< standard deviation for rating dependent on distance to cell border */
     (float)(500.f) sigmaBall, /**< standard deviation for rating dependent on ball position. Do not stand directly near the ball as position role. */
     (float)(2000.f) sigmaBase, /**< standard deviation for rating dependent on base position */
+    (float)(1000.f) sigmaTeam, /**< standard deviation for rating dependent on distance to teammates */
     (float)(1000.f) sigmaCommunication, /**< standard deviation for rating dependent on the last target position */
     (float)(0.5f) minCommunicationRating, /**< minimal value of the rating depending on the last target position */
     (float)(0.75f) startThreshold, /**< the rating has to be at least this much better at the destination (normalized for the target pose) to start moving */

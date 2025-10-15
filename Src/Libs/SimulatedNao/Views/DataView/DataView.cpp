@@ -26,7 +26,7 @@ SimRobot::Widget* DataView::createWidget()
 {
   ignoreUpdates = 0;
   pTheWidget = new DataWidget(*this, theVariantManager);
-  theConsole.requestDebugData(theThread, theName);
+  repoll();
   return pTheWidget;
 }
 
@@ -58,6 +58,7 @@ QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyTyp
 void DataView::removeWidget()
 {
   pTheWidget = nullptr;
+  repoll();
   pathsToProperties.clear();
   propertiesToPaths.clear();
   forceUpdate = true;
@@ -94,8 +95,7 @@ void DataView::updateTree()
 void DataView::updateIgnoreUpdates(int change)
 {
   ignoreUpdates += change;
-  if(!shouldIgnoreUpdates())
-    theConsole.requestDebugData(theThread, theName);
+  repoll();
 }
 
 bool DataView::shouldIgnoreUpdates() const
@@ -105,8 +105,12 @@ bool DataView::shouldIgnoreUpdates() const
 
 void DataView::repoll()
 {
-  if(!shouldIgnoreUpdates())
-    theConsole.requestDebugData(theThread, theName);
+  const bool shouldPollData = !shouldIgnoreUpdates();
+  if(shouldPollData != pollingData)
+  {
+    theConsole.requestDebugData(theThread, theName, shouldPollData);
+    pollingData = shouldPollData;
+  }
 }
 
 void DataView::setUnchanged()

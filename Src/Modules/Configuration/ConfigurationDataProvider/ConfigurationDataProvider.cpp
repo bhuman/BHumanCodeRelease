@@ -22,7 +22,6 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theCameraIntrinsics);
   read(theDamageConfigurationBody);
   read(theDamageConfigurationHead);
-  read(theFootOffset);
   read(theHeadLimits);
   read(theIMUCalibration);
   read(theJointCalibration);
@@ -34,7 +33,13 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theRobotDimensions);
   read(theStiffnessSettings);
   read(theStaticJointPoses);
-  read(theWalkModifier);
+}
+
+void ConfigurationDataProvider::update(BehaviorParameters& behaviorParameters)
+{
+  update(behaviorParameters, theBehaviorParameters);
+  ASSERT(behaviorParameters.noCommunicationAfterUnpenalizedTime < behaviorParameters.noSkillRequestAfterUnpenalizedTime);
+  ASSERT(behaviorParameters.noSkillRequestAfterUnpenalizedTime < behaviorParameters.lookAroundAfterUnpenalizedTime);
 }
 
 void ConfigurationDataProvider::update(CameraCalibration& cameraCalibration)

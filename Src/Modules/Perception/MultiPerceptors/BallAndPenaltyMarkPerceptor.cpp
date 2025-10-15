@@ -30,14 +30,16 @@ BallAndPenaltyMarkPerceptor::BallAndPenaltyMarkPerceptor() :
 
 void BallAndPenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPercept)
 {
+  //TODO: PENALTY SHOOTOUT from penaltyMarkPercept
   thePenaltyMarkPercept.wasSeen = false;
-  updateBallAndPenaltyMarkPerceptor();
+  ballAndPenaltyMarkUpdate();
   if(theGameState.isPenaltyShootout())
   {
     if(theBallPercept.status == BallPercept::Status::seen)
     {
       thePenaltyMarkPercept.positionInImage = theBallPercept.positionInImage.cast<int>();
 
+      // Todo use covariance of ball percept
       if(theMeasurementCovariance.transformPointWithCov(theBallPercept.positionInImage, theBallSpecification.radius, thePenaltyMarkPercept.positionOnField,
                                                         thePenaltyMarkPercept.covarianceOnField))
         thePenaltyMarkPercept.wasSeen = true;
@@ -47,6 +49,7 @@ void BallAndPenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPerce
   if(bestProbPenalty >= penaltyThreshold && theBodyContour.isValidPoint(bestPenaltyPosition.cast<int>()))
   {
     thePenaltyMarkPercept.positionInImage = bestPenaltyPosition.cast<int>();
+    // TL: Function is called with hardcoded numbers here, as this parameter is only for backward compatibility to previous approach and should vanish hopefully soon.
     if(theMeasurementCovariance.transformWithCovLegacy(bestPenaltyPosition, 0.f, Vector2f(0.04f, 0.06f),
                                                        thePenaltyMarkPercept.positionOnField, thePenaltyMarkPercept.covarianceOnField))
     {
@@ -58,13 +61,15 @@ void BallAndPenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPerce
 
 void BallAndPenaltyMarkPerceptor::update(BallPercept& theBallPercept)
 {
+  theBallPercept.radiusOnField = theBallSpecification.radius;
   theBallPercept.status = BallPercept::notSeen;
-  updateBallAndPenaltyMarkPerceptor();
+  ballAndPenaltyMarkUpdate();
   if(bestProbBall >= guessedThreshold)
   {
     theBallPercept.positionInImage = bestBallPosition;
     theBallPercept.radiusInImage = bestRadius;
 
+    // TL: Function is called with hardcoded numbers here, as this parameter is only for backward compatibility to previous approach and should vanish hopefully soon.
     if(theMeasurementCovariance.transformWithCovLegacy(theBallPercept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
                                                        theBallPercept.positionOnField, theBallPercept.covarianceOnField))
     {
@@ -92,6 +97,7 @@ void BallAndPenaltyMarkPerceptor::update(BallPercept& theBallPercept)
         if(spot.y() < lowerY && spot.y() > upperY)
         {
           theBallPercept.positionInImage = spot.cast<float>();
+          // TL: Function is called with hardcoded numbers here, as this parameter is only for backward compatibility to previous approach and should vanish hopefully soon.
           if(theMeasurementCovariance.transformWithCovLegacy(theBallPercept.positionInImage, theBallSpecification.radius, Vector2f(0.04f, 0.06f),
                                                              theBallPercept.positionOnField, theBallPercept.covarianceOnField))
           {
@@ -104,7 +110,7 @@ void BallAndPenaltyMarkPerceptor::update(BallPercept& theBallPercept)
   }
 }
 
-void BallAndPenaltyMarkPerceptor::updateBallAndPenaltyMarkPerceptor()
+void BallAndPenaltyMarkPerceptor::ballAndPenaltyMarkUpdate()
 {
   DECLARE_DEBUG_DRAWING("module:BallAndPenaltyMarkPerceptor:spots", "drawingOnImage");
 
@@ -123,6 +129,7 @@ void BallAndPenaltyMarkPerceptor::updateBallAndPenaltyMarkPerceptor()
   {
     const Vector2f center(region.x.getCenter(), region.y.getCenter());
     Vector2i centerI = center.cast<int>();
+    //OUTPUT_TEXT("PenaltyMarkRegion: " << centerI);
     ballSpots.push_back(centerI);
   }
   if(ballSpots.empty())
@@ -133,8 +140,6 @@ void BallAndPenaltyMarkPerceptor::updateBallAndPenaltyMarkPerceptor()
 
   float radius;
   std::pair<float, float> prob;
-
-  // iterates over all ball spots in a frame and calculates the probability for ball, penalty or none
   for(std::size_t i = 0; i < ballSpots.size(); ++i)
   {
     prob = apply(ballSpots[i], ballPosition, penaltyPosition, radius);
@@ -177,37 +182,71 @@ std::pair<float, float> BallAndPenaltyMarkPerceptor::apply(const Vector2i& ballS
   ballArea += 4 - (ballArea % 4);
 
   RECTANGLE("module:BallAndPenaltyMarkPerceptor:spots", static_cast<int>(ballSpot.x() - ballArea / 2), static_cast<int>(ballSpot.y() - ballArea / 2), static_cast<int>(ballSpot.x() + ballArea / 2), static_cast<int>(ballSpot.y() + ballArea / 2), 2, Drawings::PenStyle::solidPen, ColorRGBA::black);
-  std::vector<float> patchWithoutNormalization;
-  STOPWATCH("module:BallAndPenaltyMarkPerceptor:getImageSection")
-  if(useFloat)
+
+  Image<PixelTypes::GrayscaledPixel> grayscaledPatch, blueChromaPatch, redChromaPatch;
+  PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, grayscaledPatch, extractionMode);
+
+
+  Vector2i chromaCenter = (ballSpot.array() / 2).matrix();
+
+  Vector2i chromaInsize = (Vector2i(ballArea, ballArea).array() / 2).matrix();
+
+
+  PatchUtilities::extractPatch(chromaCenter, chromaInsize, Vector2i(patchSize, patchSize), theECImage.blueChromaticity, blueChromaPatch, extractionMode);
+  PatchUtilities::extractPatch(chromaCenter, chromaInsize, Vector2i(patchSize, patchSize), theECImage.redChromaticity, redChromaPatch, extractionMode);
+
+  if(savePatches)
   {
-    PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, multihead.input(0).data(), extractionMode);
-    switch(normalizationMode)
+    std::vector<float> grayVectorPatch, blueVectorPatch, redVectorPatch;
+    for (unsigned int y = 0; y < patchSize; ++y)
     {
-      case normalizeContrast:
-        PatchUtilities::normalizeContrast(multihead.input(0).data(), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
-        break;
-      case normalizeBrightness:
-        PatchUtilities::normalizeBrightness(multihead.input(0).data(), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+      for (unsigned int x = 0; x < patchSize; ++x)
+      {
+        grayVectorPatch.push_back(static_cast<float>(grayscaledPatch(x, y)));
+        blueVectorPatch.push_back(static_cast<float>(blueChromaPatch(x, y)));
+        redVectorPatch.push_back(static_cast<float>(redChromaPatch(x, y)));
+      }
     }
+    ASSERT(grayVectorPatch.size() == patchSize * patchSize);
+    ASSERT(blueVectorPatch.size() == patchSize * patchSize);
+    ASSERT(redVectorPatch.size() == patchSize * patchSize);
+    savePatch(grayVectorPatch, blueVectorPatch, redVectorPatch, "", ballSpot);
+  }
+  if(emergencyLabelMode)
+  {
+    return std::make_pair(0.f, 0.f);
+  }
+
+
+  const float stepSize = static_cast<float>(ballArea) / static_cast<float>(patchSize);
+
+
+
+  if(useGrayScaledImage)
+  {
+    //PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(32, 32), theECImage.grayscaled, multihead.input(0).data(), extractionMode);
+    std::memcpy(multihead.input(0).data(), grayscaledPatch[0], grayscaledPatch.width * grayscaledPatch.height * sizeof(PixelTypes::GrayscaledPixel));
+    PatchUtilities::normalizeBrightness(reinterpret_cast<unsigned char*>(multihead.input(0).data()), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
   }
   else
   {
-    PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, reinterpret_cast<unsigned char*>(multihead.input(0).data()), extractionMode);
-    switch(normalizationMode)
+    PixelTypes::GrayscaledPixel* yPos = grayscaledPatch[0];
+    PixelTypes::GrayscaledPixel* uPos = blueChromaPatch[0];
+    PixelTypes::GrayscaledPixel* vPos = redChromaPatch[0];
+    PixelTypes::GrayscaledPixel* inputPos = reinterpret_cast<PixelTypes::GrayscaledPixel*>(multihead.input(0).data());
+
+    for (unsigned int pos = 0; pos < patchSize * patchSize; ++pos, ++yPos, ++uPos, ++vPos, inputPos += 3)
     {
-      case normalizeContrast:
-        PatchUtilities::normalizeContrast(reinterpret_cast<unsigned char*>(multihead.input(0).data()), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
-        break;
-      case normalizeBrightness:
-        PatchUtilities::normalizeBrightness(reinterpret_cast<unsigned char*>(multihead.input(0).data()), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+      inputPos[0] = yPos[0];
+      inputPos[1] = uPos[0];
+      inputPos[2] = vPos[0];
     }
   }
-  const float stepSize = static_cast<float>(ballArea) / static_cast<float>(patchSize);
 
-  std::vector<float> patchWithNormalization;
 
+  STOPWATCH("module:BallAndPenaltyMarkPerceptor:apply")
   multihead.apply();
+
   const float predNegatives = multihead.output(0)[0];
   const float predPenalty = multihead.output(0)[1];
   const float predBall = multihead.output(0)[2];
@@ -218,34 +257,53 @@ std::pair<float, float> BallAndPenaltyMarkPerceptor::apply(const Vector2i& ballS
     ballPosition.x() = (multihead.output(0)[3] - patchSize / 2) * stepSize + ballSpot.x();
     ballPosition.y() = (multihead.output(0)[4] - patchSize / 2) * stepSize + ballSpot.y();
     predRadius = (multihead.output(0)[5] * stepSize);
+    //OUTPUT_TEXT("RADIUS: " << (multihead.output(0)[5] * stepSize));
     ASSERT(predRadius > 0.f);
   }
-  // ballspot position is penalty position if poss for penalty is high enough
   else if(predPenalty >= penaltyThreshold)
   {
     penaltyPosition.x() = static_cast<float>(ballSpot.x());
     penaltyPosition.y() = static_cast<float>(ballSpot.y());
     ASSERT(penaltyPosition.x() >= 0.f || penaltyPosition.y() >= 0.f);
   }
+  //OUTPUT_TEXT("BallAndPenaltyMarkPerceptor: Prediction: " << predBall << "|" << predPenalty << "|" << predNegatives);
+
   return std::make_pair(predBall, predPenalty);
 }
 
-void BallAndPenaltyMarkPerceptor::savePatch(std::vector<float> data, const std::string filename)
+void BallAndPenaltyMarkPerceptor::savePatch(std::vector<float>& grayData, std::vector<float>& blueData, std::vector<float>& redData, const std::string& suffix, const Vector2i& spot)
 {
-  const std::string frameTime = std::to_string(theFrameInfo.time);
-  const std::string camera = theCameraInfo.camera == CameraInfo::lower ? "lower" : "upper";
-  const std::string saveDir = std::string(File::getBHDir()) + "/blub";
+  const std::string saveDir = std::string(File::getBHDir()) + "/../MachineLearning/BallTrainerPenaltyMarkClassifier/data/raw";
   std::filesystem::create_directories(saveDir);
+  std::filesystem::create_directories(saveDir + "/labels");
+  const std::string frameTime = std::to_string(theFrameInfo.time);
 
-  const std::string savePath = saveDir + "/" + frameTime + "_" + camera  + "_" + filename + ".txt";
 
-  OutBinaryFile stream(savePath);
+  OutTextFile file(std::string(saveDir + suffix + ".txt"), false, true);
+  file << frameTime + suffix << endl;
+  file << spot << endl;
+  file << theCameraMatrix << endl;
+  file << theCameraInfo << endl;
+  file << "###" << endl;
 
-  std::string patchString;
-  for(unsigned int i = 0; i < data.size(); i++)
+  const std::string savePatchPath = saveDir + "/" + frameTime + " " + std::to_string(spot.x()) + " " + std::to_string(spot.y()) + suffix + ".txt";
+
+  OutBinaryFile stream(savePatchPath);
+
+  for(float i : grayData)
   {
-    stream << std::to_string(data[i]) << "\n";
+    stream << i;
   }
+  for (float i : blueData)
+  {
+    stream << i;
+  }
+  for (float i : redData)
+  {
+    stream << i;
+  }
+
+
 }
 
 void BallAndPenaltyMarkPerceptor::compile()
@@ -260,7 +318,12 @@ void BallAndPenaltyMarkPerceptor::compile()
 
   multihead.compile(*multiheadModel);
 
-  ASSERT(multihead.numOfInputs() == 1);
+  ASSERT(multihead.numOfInputs() == 1); //TODO
 
-  patchSize = 32;
+  //  ASSERT(encoder.input(0).rank() == 3);
+  //  ASSERT(encoder.input(0).dims(0) == encoder.input(0).dims(1));
+  //  ASSERT(encoder.input(0).dims(2) == 1);
+
+  //  ASSERT(multihead.output(0).rank() == 1);
+  //  ASSERT(multihead.output(0).dims(0) == 1 && corrector.output(0).dims(0) == 3);
 }

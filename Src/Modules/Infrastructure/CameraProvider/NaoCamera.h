@@ -52,16 +52,6 @@ public:
   bool captureNew(int timeout);
 
   /**
-   * The method blocks till one of the given cameras returns an image.
-   * @param cam1 The first camera
-   * @param cam2 The second camera
-   * @param timeout The maximum waiting time
-   * @param errorCam1 Whether an error occurred on cam1
-   * @param errorCam2 Whether an error occurred on cam2
-   */
-  static bool captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout);
-
-  /**
    * Releases an image that has been captured. That way the buffer can be used to capture another image
    */
   void releaseImage();
@@ -111,7 +101,6 @@ public:
 
   void toggleAutoWhiteBalance();
 
-
   /**
    * Set a camera register.
    * @param address The address of the register.
@@ -135,6 +124,8 @@ public:
   static bool i2cReadWriteAccess(int fileDescriptor, unsigned char readWrite, unsigned char command, unsigned char size, i2c_smbus_data& data);
   static bool i2cWriteBlockData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, std::vector<unsigned char> data);
   static bool i2cReadByteData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, unsigned char& res);
+
+  bool simpleCameraReset();
 
 private:
   class V4L2Setting

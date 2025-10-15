@@ -12,8 +12,8 @@
 
 #include "KeyframeMotionLibs/KeyframePhaseBase.h"
 
-#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/JointLimits.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/StaticJointPoses.h"
 
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -45,7 +45,6 @@ MODULE(KeyframeMotionEngine,
   REQUIRES(EnergySaving),
   REQUIRES(FilteredCurrent),
   REQUIRES(FrameInfo),
-  REQUIRES(FootOffset),
   REQUIRES(FootSupport),
   REQUIRES(GroundContactState),
   REQUIRES(GyroOffset),
@@ -55,14 +54,15 @@ MODULE(KeyframeMotionEngine,
   USES(JointRequest),
   REQUIRES(KeyframeMotionParameters),
   REQUIRES(KeyStates),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(StaticJointPoses),
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
   PROVIDES(KeyframeMotionGenerator),
   REQUIRES(KeyframeMotionGenerator),
-  PROVIDES(GetUpGenerator),
   PROVIDES(DiveGenerator),
+  PROVIDES(GetUpGenerator),
   PROVIDES(SpecialGenerator),
   LOADS_PARAMETERS(
   {,
@@ -70,12 +70,15 @@ MODULE(KeyframeMotionEngine,
     (bool) motorMalfunctionBreakUp, // Go to helpMeState if a motorMalfunction was detected once
     (int) maxStiffnessDebugMode, // Max allowed stiffness when stepKeyframes is true
     (ENUM_INDEXED_ARRAY(KeyframeMotionList, KeyframeMotionListID::KeyframeMotionListID)) motions, // The different keyframe motions
-    (ENUM_INDEXED_ARRAY(KeyframeBlock, KeyframeMotionBlockID::KeyframeMotionBlockID)) keyframeBlock, // Basic keyframed motions
-    (Angle) minJointCompensationReduceAngleDiff, // Threshold for joint compensation. Joint must change its position by this value between 2 frames to trigger a reduction in the joint compensation
+    (ENUM_INDEXED_ARRAY(KeyframeBlock, KeyframeMotionBlockID::KeyframeMotionBlockID)) keyframeBlock, // Basic keyframe motions
     (BalanceOutParams) balanceOutParams, // The parameters for the balanceOutMethod
     (Vector3f) supportPolygonOffsets, // Offsets for the support polygon. x Forward, y Backward, z Sideways
     (SafeFallParameters) safeFallParameters, // Parameters for waitForFallen()
     (DirectionValue) safeUprightParameters, // Robot is upright enough to go directly into (sit->)stand
+    (Rangef) jointDiffFilterParameters, // Filter the joint differences with this low pass values
+    (unsigned) oscillationPeriod, // Duration of one oscillation
+    (Angle) oscillationAmplitude, // Peak of the oscillation
+    (Rangea) hypErrorOscillationScaling, // Scale the oscillation based on the hip yaw pitch error
   }),
 });
 
@@ -88,15 +91,14 @@ public:
   void update(KeyframeMotionGenerator& output) override;
   void update(SpecialGenerator& output) override;
 
-  bool calculateDrawing = false;  // Do drawning?
+  bool calculateDrawing = false;  // Do drawing?
   bool stepKeyframes = false; // Execute every keyframe slow and wait for request
 private:
 
   /**
    * All debugging related stuff
-   * @param output The KeyframeMotionGenerator
    */
-  void setUpDebugCommands(KeyframeMotionGenerator& output);
+  void setUpDebugCommands();
 };
 
 struct KeyframePhase : KeyframePhaseBase

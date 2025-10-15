@@ -64,7 +64,7 @@ public:
 
   QWidget* getWidget() override;
   void update() override;
-  void handleAnnotation(const AnnotationInfo::AnnotationData& data) override;
+  void handleAnnotation(const Annotation& data) override;
 
 private:
   AnnotationView& view;

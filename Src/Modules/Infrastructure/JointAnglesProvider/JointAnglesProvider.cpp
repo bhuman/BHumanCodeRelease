@@ -11,8 +11,11 @@ void JointAnglesProvider::update(JointAngles& jointAngles)
 
   FOREACH_ENUM(Joints::Joint, joint)
   {
-    jointAngles.angles[joint] -= theJointCalibration.offsets[joint];
+    if(jointAngles.angles[joint] != JointAngles::off && jointAngles.angles[joint] != JointAngles::ignore)
+      jointAngles.angles[joint] -= theJointCalibration.offsets[joint];
   }
+
+  jointAngles.velocity = theJointSensorData.velocity;
 
   DEBUG_RESPONSE_ONCE("module:JointAnglesProvider")
   {

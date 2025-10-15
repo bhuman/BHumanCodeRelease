@@ -71,7 +71,7 @@ void CameraMatrix::draw() const
     LINE("representation:CameraMatrix:field", boundary.x.max, boundary.y.max, boundary.x.min, boundary.y.max, 30, Drawings::solidPen, ColorRGBA::blue);
     LINE("representation:CameraMatrix:field", boundary.x.min, boundary.y.max, boundary.x.min, boundary.y.min, 30, Drawings::solidPen, ColorRGBA::white);
 
-    // fill the bounding rectangle with coordinate system lines (and reproject it to the image)
+    // fill the bounding rectangle with coordinate system lines (and re-project it to the image)
     const int spacing = 100;
     for(int xx = boundary.x.min - boundary.x.min % spacing + spacing; xx <= boundary.x.max; xx += spacing)
     {
@@ -128,7 +128,7 @@ void CameraMatrix::draw() const
         if(isValid[i])
           boundary.add(pointOnField[i]);
 
-      // fill the bounding rectangle with coordinate system lines (and reproject it to the image)
+      // fill the bounding rectangle with coordinate system lines (and re-project it to the image)
       int spacing = 100;
       for(int xx = boundary.x.min - boundary.x.min % spacing + spacing; xx <= boundary.x.max; xx += spacing)
         if(Transformation::robotToImage(Vector2f(static_cast<float>(xx), static_cast<float>(boundary.y.min)), *this, cameraInfo, beginPoint) &&
@@ -198,7 +198,7 @@ void RobotCameraMatrix::draw() const
     LINE("representation:RobotCameraMatrix:field", boundary.x.max, boundary.y.max, boundary.x.min, boundary.y.max, 30, Drawings::solidPen, ColorRGBA::blue);
     LINE("representation:RobotCameraMatrix:field", boundary.x.min, boundary.y.max, boundary.x.min, boundary.y.min, 30, Drawings::solidPen, ColorRGBA::white);
 
-    // fill the bounding rectangle with coordinate system lines (and reproject it to the image)
+    // fill the bounding rectangle with coordinate system lines (and re-project it to the image)
     const int spacing = 100;
     for(int xx = boundary.x.min - boundary.x.min % spacing + spacing; xx <= boundary.x.max; xx += spacing)
     {
@@ -256,7 +256,7 @@ void RobotCameraMatrix::draw() const
         if(isValid[i])
           boundary.add(pointOnField[i]);
 
-      // fill the bounding rectangle with coordinate system lines (and reproject it to the image)
+      // fill the bounding rectangle with coordinate system lines (and re-project it to the image)
       const int spacing = 100;
       for(int xx = boundary.x.min - boundary.x.min % spacing + spacing; xx <= boundary.x.max; xx += spacing)
         if(Transformation::robotToImage(Vector2f(static_cast<float>(xx), static_cast<float>(boundary.y.min)), *this, CameraInfo(), beginPoint) &&
@@ -284,7 +284,7 @@ RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, flo
                                      CameraInfo::Camera camera)
 {
   Pose3f head {};
-  head.translate(0., 0., robotDimensions.hipToNeckLength);
+  head.translate(robotDimensions.hipToNeckOffset);
   head.rotateZ(headYaw);
   head.rotateY(headPitch);
 
@@ -300,12 +300,12 @@ RobotCameraMatrix::computeRobotCameraMatrix(const RobotDimensions& robotDimensio
 
   if(camera == CameraInfo::upper)
   {
-    translate(robotDimensions.xOffsetNeckToUpperCamera, 0.f, robotDimensions.zOffsetNeckToUpperCamera);
+    translate(robotDimensions.offsetNeckToUpperCamera);
     rotateY(robotDimensions.tiltNeckToUpperCamera + cameraCalibration.cameraRotationCorrections[camera].y());
   }
   else
   {
-    translate(robotDimensions.xOffsetNeckToLowerCamera, 0.f, robotDimensions.zOffsetNeckToLowerCamera);
+    translate(robotDimensions.offsetNeckToLowerCamera);
     rotateY(robotDimensions.tiltNeckToLowerCamera + cameraCalibration.cameraRotationCorrections[camera].y());
   }
   rotateX(cameraCalibration.cameraRotationCorrections[camera].x());

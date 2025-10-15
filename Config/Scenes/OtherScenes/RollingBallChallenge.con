@@ -1,0 +1,36 @@
+call ../Includes/Normal
+
+# all views are defined in another script
+call ../Includes/Views
+
+# Allow goals
+ar directGoals on
+
+vfd worldState motion:RobotPose
+dr module:InterceptBallProvider
+vfd worldState module:InterceptBallProvider:hitPos
+vfd worldState module:InterceptBallProvider:line
+vfd worldState module:InterceptBallProvider:rect
+
+# press any key to activate the joystick
+jc press 1 call Includes/Joystick
+jc press 2 call Includes/Joystick
+jc press 3 call Includes/Joystick
+jc press 4 call Includes/Joystick
+
+call ../Includes/Ramp/Ramp.con
+
+dr debugDrawing3d:module:WalkDelayPhase:hitPoint
+set module:WalkKickEngine:enableDrawings true
+dr debugDrawing3d:module:WalkKickEngine:nextSupport
+
+ar ballOut off
+ar directGoals off
+ar placeBall off
+gc playing
+
+set module:WalkingEngine configuredParameters = { maxSpeed = { rotation = 120deg; translation = { x = 270; y = 230; }; }; minSpeed = { rotation = 120deg; translation = { x = 270; y = 230; }; }; maxSpeedBackwards = 150; minSpeedBackwards = 125; maxSideWithMaxForwardSpeed = 1000; emergencyNotMovingTime = 100; supportSwitchPhaseRange = { min = 0.5; max = 6; }; thresholdStopStandTransition = { rotation = 2deg; translation = { x = 10; y = 0.175; }; }; thresholdDiveStandTransition = { rotation = 10deg; translation = { x = 20; y = 40; }; }; walkSpeedParams = { maxSpeed = { rotation = 120deg; translation = { x = 270; y = 270; }; }; maxSpeedBackwards = 250; }; jointPlayOffsetParameters = { applyOffsetFactorHipPitch = 0.1; applyOffsetFactorAnkle = 0.1; maxFactorBase = 1; applyOffsetFactorGeneral = 0.9; }; dynamicStepUpdate = false; transitionWalkToKick = false; dynamicKickPoseUpdate = true; dynamicKickDelayUpdate = true; dynamicKickStepUpdate = false; energySavingWalk = false; };
+
+echo
+echo mv 600 0 320 0 0 0 # Rotate left
+echo mv 600 0 320 0 0 0 # Rotate right

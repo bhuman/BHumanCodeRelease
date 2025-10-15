@@ -12,15 +12,11 @@
 #include "Debugging/DebugDataStreamer.h"
 #include "Framework/LoggingTools.h"
 #include "Framework/Settings.h"
-#include "ImageExport.h"
+#include "LogPlayback/ImageExport.h"
 #include "Platform/File.h"
 #include "Platform/Time.h"
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/JPEGImage.h"
-#include "Representations/Perception/BallPercepts/BallPercept.h"
-#include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
-#include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Views/AnnotationView.h"
 #include "Views/CABSLBehaviorView.h"
 #include "Views/ColorSpaceView.h"
@@ -30,7 +26,6 @@
 #include "Views/LogPlayerControlView.h"
 #include "Views/ModuleGraphView.h"
 #include "Views/PlotView.h"
-#include "Views/SACControlView.h"
 #include "Views/TimeView.h"
 
 #include <algorithm>
@@ -84,7 +79,7 @@ void RobotConsole::update()
 {
   setGlobals(); // this is called in GUI thread -> set globals for this thread
   handleJoystick();
-  handleSharedAutonomyMessages();
+  handleRemoteControlMessages();
 
   if(!perThreadViewsAdded && !moduleInfo.config().empty())
   {
@@ -374,13 +369,13 @@ bool RobotConsole::handleConsoleLine(const std::string& line)
   {
     result = penalizeRobot(stream);
   }
+  else if(command == "rc")
+  {
+    result = remoteControl(stream);
+  }
   else if(command == "sn")
   {
     result = sensorNoise(stream);
-  }
-  else if(command == "sac")
-  {
-    result = sharedAutonomyChallenge(stream);
   }
   else if(command == "vfd")
   {
@@ -502,7 +497,12 @@ void RobotConsole::initJoystick()
 void RobotConsole::handleJoystick()
 {
   if(!joystick || !joystick->update())
+  {
+    joystickState.valid = false;
     return; //return if no joystick was found
+  }
+  else
+    joystickState.valid = true;
 
   // Update joystick state
   for(int axis = 0; axis < Joystick::numOfAxes; ++axis)
@@ -596,29 +596,27 @@ bool RobotConsole::handleJoystickCommand(const std::string& cmd)
   return true;
 }
 
-void RobotConsole::handleSharedAutonomyMessages()
+void RobotConsole::handleRemoteControlMessages()
 {
-  if(!sharedAutonomyChannel)
+  if(!remoteControlChannel)
     return;
 
   char buffer[25001];
 
   // sending commands to the robot
-  if(Time::getRealTimeSince(timeSharedAutonomyRequestSent) >= 100)
+  if(Time::getRealTimeSince(timeRemoteControlMessageSent) >= 100)
   {
-    timeSharedAutonomyRequestSent = Time::getRealSystemTime();
+    timeRemoteControlMessageSent = Time::getRealSystemTime();
     MessageQueue queue;
     queue.setBuffer(buffer, 0, sizeof(buffer) - 1);
-    queue.bin(idSharedAutonomyRequest) << sharedAutonomyRequest;
-    if(joystick)
-      queue.bin(idJoystickState) << joystickState;
-    sharedAutonomyChannel->send(buffer, static_cast<int>(queue.end() - queue.begin()));
+    queue.bin(idJoystickState) << joystickState;
+    remoteControlChannel->send(buffer, static_cast<int>(queue.end() - queue.begin()));
   }
 
   // receiving data from the robot
   for(;;)
   {
-    const int size = sharedAutonomyChannel->receive(buffer, sizeof(buffer));
+    const int size = remoteControlChannel->receive(buffer, sizeof(buffer));
     if(size <= 0) // no packet available -> stop
       break;
     else if(static_cast<unsigned>(size) < sizeof(buffer))
@@ -634,12 +632,11 @@ void RobotConsole::handleSharedAutonomyMessages()
   }
 }
 
-void RobotConsole::requestDebugData(const std::string& threadName, const std::string& name)
+void RobotConsole::requestDebugData(const std::string& threadName, const std::string& name, bool active)
 {
   SYNC;
-  DebugRequest d("debug data:" + name, true);
   debugSender->bin(idThread) << threadName;
-  debugSender->bin(idDebugRequest) << d;
+  debugSender->bin(idDebugRequest) << DebugRequest("debug data:" + name, active);
 }
 
 void RobotConsole::sendDebugData(const std::string& threadName, const std::string& name, OutBinaryMemory* data)
@@ -798,7 +795,6 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
     case idJointRequest:
     {
       stream >> jointRequest;
-      jointRequest.angles[Joints::rHipYawPitch] = jointRequest.angles[Joints::lHipYawPitch];
       return true;
     }
     case idJointSensorData:
@@ -852,6 +848,11 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
       {
         --waitingFor[idDebugDataResponse];
         threadData[threadName].getOrSetWaitsFor = "";
+        if(view == threadData[threadName].dataViews.end() || !view->second->isPolling())
+        {
+          debugSender->bin(idThread) << threadName;
+          debugSender->bin(idDebugRequest) << DebugRequest("debug data:" + name, false);
+        }
       }
       return true;
     }
@@ -967,6 +968,12 @@ bool RobotConsole::handleMessage(MessageQueue::Message message)
       Global::getSettings().updateSearchPath();
       File::setSearchPath(Global::getSettings().searchPath);
       --waitingFor[idRobotName];
+      return true;
+    }
+    case idSkillRequest:
+    {
+      stream >> skillRequest;
+      ctrl->gameController.setTestSkill(skillRequest.skill);
       return true;
     }
     case idText:
@@ -1525,8 +1532,6 @@ bool RobotConsole::log(In& stream)
       SYNC;
       return logPlayer.save(option, typeInfo);
     }
-    else if(command == "analyzeRobotStatus")
-      return logExtractor.analyzeRobotStatus();
     else if(command == "saveImages")
     {
       SYNC;
@@ -1581,6 +1586,23 @@ bool RobotConsole::log(In& stream)
     }
     else if(command == "keep" || command == "remove")
     {
+      if(command == "keep" && option == "circlePercept")
+      {
+        logPlayer.filterFrames([&](MessageQueue::const_iterator i) -> bool
+        {
+          if(logPlayer.id(*i) == idCirclePercept)
+          {
+            CirclePercept circlePercept;
+            (*i).bin() >> circlePercept;
+            return circlePercept.wasSeen;
+          }
+          else
+            return false;
+        });
+        updateAnnotationsFromLog();
+        return true;
+      }
+
       std::vector<MessageID> messageIDs;
       while(!option.empty())
       {
@@ -1701,6 +1723,12 @@ bool RobotConsole::log(In& stream)
       std::string param;
       stream >> param;
 
+      // We need special handling for perception providers if more than one perception thread exists
+      int numOfPerceptionThreads = 0;
+      for(const auto& config : moduleInfo.config())
+        if(config.executionUnit == "Perception")
+          ++numOfPerceptionThreads;
+
       std::list<std::string> commands;
       const auto log = std::find(moduleInfo.modules.begin(), moduleInfo.modules.end(), "LogDataProvider");
       if(log != moduleInfo.modules.end())
@@ -1726,7 +1754,8 @@ bool RobotConsole::log(In& stream)
                     auto j = std::find(moduleInfo.modules.begin(), moduleInfo.modules.end(), "Perception" + representation + "Provider");
                     if(j != moduleInfo.modules.end())
                     {
-                      commands.push_back("for Cognition mr " + representation + " Perception" + representation + "Provider");
+                      if(numOfPerceptionThreads > 1)
+                        commands.push_back("for Cognition mr " + representation + " Perception" + representation + "Provider");
                       continue;
                     }
                   }
@@ -2328,19 +2357,13 @@ bool RobotConsole::set(In& stream, const std::string& threadName)
   return false;
 }
 
-bool RobotConsole::sharedAutonomyChallenge(In& stream)
+bool RobotConsole::remoteControl(In& stream)
 {
-  if(sharedAutonomyChannel)
+  if(remoteControlChannel)
     return false; // already started
   initJoystick();
   std::string mode;
-  bool view = false;
   stream >> mode;
-  if(mode == "view")
-  {
-    view = true;
-    stream >> mode;
-  }
   int team;
   std::string bcastAddr;
   stream >> team >> bcastAddr;
@@ -2348,19 +2371,16 @@ bool RobotConsole::sharedAutonomyChallenge(In& stream)
     return false;
   else if(mode == "local" && bcastAddr.empty())
   {
-    sharedAutonomyChannel = std::make_unique<SharedAutonomyChannel>();
-    sharedAutonomyChannel->startLocal(10100 + team, 13);
+    remoteControlChannel = std::make_unique<RemoteControlChannel>();
+    remoteControlChannel->startLocal(10100 + team, 13);
   }
   else if(mode == "remote" && !bcastAddr.empty())
   {
-    sharedAutonomyChannel = std::make_unique<SharedAutonomyChannel>();
-    sharedAutonomyChannel->start(10100 + team, bcastAddr);
+    remoteControlChannel = std::make_unique<RemoteControlChannel>();
+    remoteControlChannel->start(10100 + team, bcastAddr);
   }
   else
     return false;
-  if(view)
-    ctrl->addView(new SACControlView(QString::fromStdString(robotName) + ".sac.ChallengeControl", *this),
-                  QString::fromStdString(robotName) + ".sac", 0);
   return true;
 }
 
@@ -2457,15 +2477,8 @@ bool RobotConsole::viewDrawing(In& stream, RobotConsole::Views& views, const cha
 bool RobotConsole::viewField(In& stream, const std::string& threadName)
 {
   std::string name;
-  bool force = false;
   stream >> name;
-  if(name == "force")
-  {
-    force = true;
-    stream >> name;
-  }
-
-  if(!force && fieldViews.find(name) != fieldViews.end())
+  if(fieldViews.find(name) != fieldViews.end())
     ctrl->printLn("View already exists. Specify a different name.");
   else
   {

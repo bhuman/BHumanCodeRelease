@@ -11,7 +11,6 @@
 
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/KickInfo.h"
-#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/DribbleGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
@@ -19,6 +18,7 @@
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/WalkKickGenerator.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkToBallGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -31,17 +31,17 @@ MODULE(DribbleEngine,
   REQUIRES(KickInfo),
   USES(MotionInfo),
   REQUIRES(OdometryDataPreview),
-  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
   REQUIRES(WalkingEngineOutput),
   REQUIRES(WalkKickGenerator),
+  REQUIRES(WalkStepData),
   REQUIRES(WalkToBallGenerator),
   PROVIDES(DribbleGenerator),
   DEFINES_PARAMETERS(
   {,
-    (Angle)(3_deg) redecideSignThreshold, /**< The dribble foot is only redecided if the decision angle is larger than this. */
+    (Angle)(3_deg) redecideSignThreshold, /**< The dribble foot is only re-decided if the decision angle is larger than this. */
     (float)(100.f) minBallPositionFuture, /**< Ball must land this far away from us if it is rolling towards us. */
     (float)(500.f) minBallPositionFrontSide, /**< Ball must be this far away relative to the closest point it will have to us. */
     (float)(300.f) minBallVelocityCloseRange, /**< Clip ball velocity to this value when close to the ball. */
@@ -59,7 +59,7 @@ class DribbleEngine : public DribbleEngineBase
    * @param ballInSCS The ball position relative to the new support foot frame.
    * @param directionInSCS The direction relative to the new support foot frame to which the ball should be dribbled.
    * @param sign The foot sign with which to dribble.
-   * @param turnKickAllowed Is the turnkick interpolation allowed?
+   * @param turnKickAllowed Is the turn kick interpolation allowed?
    * @return The pose from which the ball can be dribbled with one step.
    */
   Pose2f calcBasePose(const Vector2f& ballInSCS, Angle directionInSCS, float& sign, const bool turnKickAllowed) const;
@@ -69,7 +69,7 @@ class DribbleEngine : public DribbleEngineBase
   /**
    * Calculate a temp kick pose in case the ball is rolling towards us.
    * We can not trust the perceived ball velocity and direction. Therefore clip the ball position, to avoid turning away from the ball.
-   * @param motionRequest Motionrequest to access original ball velocity
+   * @param motionRequest Motion request to access original ball velocity
    * @param ballSCS ball position used to determine the kick pose
    * @param ballInSCSNow current used relative ball position
    * @param scsCognition transformation pose to get a relative field position into a zero-step relative position (only rotation is used)

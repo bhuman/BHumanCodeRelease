@@ -26,6 +26,7 @@ STREAMABLE(IllegalAreas,
     centerCircle, /**< The center circle (including its perimeter). */
     ballArea, /**< The 0.75m area around the ball. */
     notOwnGoalLine, /**< Everything except for the own goal line (for goalkeeper during penalty kick). */
+    fieldBorder, /**< The field border, the robots are not allowed to walk over under no circumstances. */
   });
 
   /**

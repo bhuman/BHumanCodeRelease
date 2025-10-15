@@ -375,7 +375,7 @@ void PlotWidget::exportAsGnuplot()
   QSettings& settings = RoboCupCtrl::application->getSettings();
   QString fileName = QFileDialog::getSaveFileName(this,
                                                   tr("Export as Gnuplot"), settings.value("ExportDirectory", "").toString(), tr("Gnuplot (*.plt)")
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                                                   , nullptr, QFileDialog::DontUseNativeDialog
 #endif
                                                   );

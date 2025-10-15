@@ -57,7 +57,7 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
     {
       //is line most likely in/of center circle
       if((theCirclePercept.wasSeen || lastCirclePercept.wasSeen)
-         && theFrameInfo.getTimeSince(lastFrameTime) <= maxTimeOffset) // because of log backjumps
+         && theFrameInfo.getTimeSince(lastFrameTime) <= maxTimeOffset) // because of log back jumps
       {
         const Vector2f centerCirclePosition = theCirclePercept.wasSeen ? theCirclePercept.pos : theOdometryData.inverse() * lastOdometryData * lastCirclePercept.pos;
 
@@ -127,17 +127,17 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
     pLine.cov = theMeasurementCovariance.computeForRelativePosition(linePerceptCenter*centerWeighting + linePerceptClosestPoint*closestWeighting);
   }
   // Sort final list of lines from long to short:
-  std::vector<size_t> sortedLineIndizes;
+  std::vector<size_t> sortedLineIndices;
   for(size_t i = 0; i < internalListOfLines.size(); i++)
-    sortedLineIndizes.emplace_back(i);
-  std::sort(sortedLineIndizes.begin(), sortedLineIndizes.end(), [&](const size_t a, const size_t b)
+    sortedLineIndices.emplace_back(i);
+  std::sort(sortedLineIndices.begin(), sortedLineIndices.end(), [&](const size_t a, const size_t b)
   {
     return internalListOfLines[a].length > internalListOfLines[b].length;
   });
   // Copy sorted list to representation:
   fieldLines.lines.clear();
-  for(size_t i = 0; i < sortedLineIndizes.size(); i++)
-    fieldLines.lines.emplace_back(internalListOfLines[sortedLineIndizes[i]]);
+  for(size_t i = 0; i < sortedLineIndices.size(); i++)
+    fieldLines.lines.emplace_back(internalListOfLines[sortedLineIndices[i]]);
   lastCirclePercept = theCirclePercept;
   lastOdometryData = theOdometryData;
   lastFrameTime = theFrameInfo.time;

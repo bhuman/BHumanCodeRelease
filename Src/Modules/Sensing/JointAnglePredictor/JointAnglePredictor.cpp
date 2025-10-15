@@ -23,7 +23,7 @@ void JointAnglePredictor::update(JointAnglePred& theJointAnglePred)
   // At least in 2019 theJointRequest.timestamp was accidentally  == 0.
   // The JointRequest must be from the previous frame. This is not ensured by USES currently.
   ASSERT(theJointRequest.timestamp == 0
-         || theJointRequest.timestamp < theJointSensorData.timestamp
+         || theJointRequest.timestamp < theJointAngles.timestamp
          || SystemCall::getMode() == SystemCall::logFileReplay
          || SystemCall::getMode() == SystemCall::remoteRobot);
 
@@ -34,7 +34,7 @@ void JointAnglePredictor::update(JointAnglePred& theJointAnglePred)
   }
 
   // Add the data from this frame.
-  jointSensorAngles.push_front(theJointSensorData.angles);
+  jointSensorAngles.push_front(theJointAngles.angles);
   // Add Request from last frame. == USES(JointRequest)
   jointRequestAngles.push_front(theJointRequest.angles);
 

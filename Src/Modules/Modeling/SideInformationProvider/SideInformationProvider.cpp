@@ -28,7 +28,8 @@ void SideInformationProvider::update(SideInformation& sideInformation)
 {
   if(!theGameState.isPenaltyShootout())
   {
-    if(theExtendedGameState.wasInitial() && theGameState.isReady())
+    // Robots start to enter the pitch:
+    if(theExtendedGameState.wasInitial() && (theGameState.isReady() || theGameState.isSet()))
     {
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
       // HACK: In the simulator, robots can be anywhere in their own half when switching to READY.

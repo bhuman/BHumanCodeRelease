@@ -90,7 +90,7 @@ void SelfLocator::update(RobotPose& robotPose)
   PLOT("module:SelfLocator:averageWeighting", averageWeighting);
 
   /* Add hacks and workarounds here. ***************
-   * However, always remember: "Ich sage Ihnen, gleich richtig machen – das bringt's immer und überall, und das bringt einen auch überall hin." (c) Katz & Goldt
+   * However, always remember: "Ich sage Ihnen, gleich richtig machen – das bringt's immer und überall, und das bringt einen auch überall hin." (c) Katz & Goldt | cspell:disable-line
    */
 
   /* Particle filter resampling step
@@ -123,9 +123,7 @@ void SelfLocator::update(RobotPose& robotPose)
 
   /** In Initial, the setup pose is directly set to avoid jumping.
    */
-  if(theGameState.gameControllerActive &&
-     ((theGameState.isInitial() && !theGameState.isPenaltyShootout()) ||
-     (theGameState.isSet() && !theGameState.isPenaltyKick() && Global::getSettings().scenario.starts_with("SharedAutonomy"))))
+  if(theGameState.gameControllerActive && theGameState.isInitial() && !theGameState.isPenaltyShootout())
     robotPose = getNewPoseAtWalkInPosition();
 
   /* Finally, update internal variables, debug and draw stuff.
@@ -593,8 +591,9 @@ void SelfLocator::handleGameStateChanges()
   // Normal game is about to start: We start on the touchlines looking at our goal: (this is for checking in TeamCom)
   else if((theGameState.isInitial() && !theExtendedGameState.wasInitial()) ||
           // Normal game really starts: We start on the touchlines looking at our goal: (this is for actual setup)
-          (theGameState.isReady() && theExtendedGameState.wasInitial()) ||
-          (theGameState.isPlaying() && theExtendedGameState.wasSet() && !theGameState.isPenaltyKick() && Global::getSettings().scenario.starts_with("SharedAutonomy")))
+          // Standard case should be the transition from initial/standby to ready. However, when the referee
+          // gesture was not detected, we directly go to set.
+          ((theGameState.isReady() || theGameState.isSet()) && theExtendedGameState.wasInitial()))
   {
     for(int i = 0; i < samples->size(); ++i)
       samples->at(i).init(getNewPoseAtWalkInPosition(), walkInPoseDeviation, nextSampleNumber++, 0.5f);
@@ -784,9 +783,15 @@ Pose2f SelfLocator::getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal)
       return demoCustomReturnFromPenaltyPoseFieldPlayer;
   }
   // Testing purposes: Static start position
-  if(theStaticInitialPose.isActive && (theExtendedGameState.playerStateLastFrame == GameState::penalizedPlayerPushing || theExtendedGameState.playerStateLastFrame == GameState::penalizedManual))
+  if(theStaticInitialPose.isActive)
   {
     return theStaticInitialPose.staticPoseOnField;
+  }
+  // If the penalty was "Illegal Motion in Standby", the robots are placed at their normal
+  // walk-in positions (or are still standing there anyway) and not at the normal spots for returning from a penalty:
+  if(theExtendedGameState.playerStateLastFrame == GameState::penalizedIllegalMotionInStandby)
+  {
+    return getNewPoseAtWalkInPosition();
   }
   // Normal stuff:
   float xPosition = Random::triangular(theFieldDimensions.xPosReturnFromPenalty - returnFromPenaltyMaxXOffset,

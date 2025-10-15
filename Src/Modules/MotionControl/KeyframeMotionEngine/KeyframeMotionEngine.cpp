@@ -6,6 +6,7 @@
 #include "KeyframeMotionEngine.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Framework/Settings.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Debugging/Plot.h"
 
@@ -40,6 +41,7 @@ KeyframePhase::KeyframePhase(KeyframeMotionEngine& engine, const KeyframeMotionR
     currentKeyframe = lastKeyframePhase.currentKeyframe;
     lastKeyframe = lastKeyframePhase.lastKeyframe;
     lastMotion = lastKeyframePhase.currentMotion;
+    preHeatAdjustment = lastKeyframePhase.preHeatAdjustment;
     if(currentKeyframeMotionRequest.keyframeMotion < KeyframeMotionID::firstNonGetUpAction)
     {
       forceBalancerInit = true;
@@ -69,6 +71,7 @@ KeyframePhase::KeyframePhase(KeyframeMotionEngine& engine, const KeyframeMotionR
   if(initStartJoints)
   {
     lastJointRequest = engine.theJointRequest;
+    preHeatAdjustment = lastJointRequest;
     jointRequestOutput = engine.theJointRequest;
     lastUnbalanced = engine.theJointRequest;
   }
@@ -82,7 +85,7 @@ KeyframePhase::KeyframePhase(KeyframeMotionEngine& engine, const KeyframeMotionR
   if(lastPhase.type != MotionPhase::keyframeMotion)
     engine.theEnergySaving.shutDown();
 
-  // init ringbuffer
+  // init ring buffer
   for(std::size_t i = 0; i < lastTorsoAngle.capacity(); i++)
     lastTorsoAngle.push_front(Vector2a::Zero());
 
@@ -93,11 +96,17 @@ KeyframePhase::KeyframePhase(KeyframeMotionEngine& engine, const KeyframeMotionR
     lastRequest.angles = engine.theJointAngles.angles;
     pastJointAnglesAngles.push_front(lastRequest);
   }
+
+  for(std::size_t i = 0; i < filteredJointDiffAngles.size(); i++)
+  {
+    filteredJointDiffAngles[i].lowPassFactor = engine.jointDiffFilterParameters.min;
+    filteredJointDiffAngles[i].fastFactor = engine.jointDiffFilterParameters.max;
+  }
 }
 
 void KeyframeMotionEngine::update(KeyframeMotionGenerator& output)
 {
-  setUpDebugCommands(output);
+  setUpDebugCommands();
 
   output.createPhase = [this](const KeyframeMotionRequest& keyframeMotionRequest, const MotionPhase& lastPhase)
   {
@@ -152,7 +161,7 @@ void KeyframeMotionEngine::update(SpecialGenerator& output)
 
 bool KeyframePhase::isDone(const MotionRequest& motionRequest) const
 {
-  const bool sitDownWaitForRequest = (currentKeyframeMotionRequest.keyframeMotion != KeyframeMotionID::sitDown || !engine.theGroundContactState.contact || motionRequest.motion != MotionRequest::playDead) && state == EngineState::waitForRequest;
+  const bool sitDownWaitForRequest = (currentKeyframeMotionRequest.keyframeMotion != KeyframeMotionID::sitDown || !engine.theGroundContactState.contact || (Global::getSettings().robotType == Settings::RobotType::t1 || motionRequest.motion != MotionRequest::playDead)) && state == EngineState::waitForRequest;
   const bool isSitDownBreakUp = currentKeyframeMotionRequest.keyframeMotion == KeyframeMotionID::sitDown && state == EngineState::breakUp;
   const auto isMotionCompatibleWithRequest = [this, &motionRequest]
   {
@@ -183,7 +192,7 @@ void KeyframePhase::calcJoints(const MotionRequest&, JointRequest& jointRequest,
   ASSERT(jointRequestOutput.isValid());
   jointRequest = jointRequestOutput;
   odometryOffset = odometry;
-  //motionInfo.isMotionStable = engine.mofs[motionID].isMotionStable;
+  motionInfo.isMotionStable = currentMotion.isMotionStable;
   motionInfo.executedKeyframeMotion.keyframeMotion = currentKeyframeMotionRequest.keyframeMotion;
   motionInfo.executedKeyframeMotion.mirror = isMirror;
   if(type == MotionPhase::getUp)
@@ -232,6 +241,11 @@ void KeyframePhase::update()
   // check for special events
   doManipulateOwnState();
 
+  // Turn off recovery flag, once we assume the motors work again as expected.
+  // Should only occur for false negative detections
+  if(!engine.theFilteredCurrent.legMotorMalfunction)
+    motorMalfunctionRecovery = false;
+
   // is this the first frame the KeyframeMotionEngine is on?
   if(state == EngineState::off)
   {
@@ -243,7 +257,8 @@ void KeyframePhase::update()
       return;
     }
     // Init jointDiff. This is done to prevent wrong calculated joint differences in calculateJointDifference
-    jointDiff1Angles.angles.fill(0);
+    for(auto& filter : filteredJointDiffAngles)
+      filter.clear();
     jointDiffPredictedAngles.angles.fill(0);
     lastNotActiveTimestamp = engine.theFrameInfo.time;
     state = EngineState::decideAction;
@@ -293,7 +308,7 @@ void KeyframePhase::update()
     // Need to break the motion?
     isInBreakUpRange(); // if in break up, state is set to break up and the robot needs to wait a moment
     // continue motion
-    if(state == EngineState::working)
+    if(state == EngineState::working || state == EngineState::waiting)
       setNextJoints();
   }
   if(state == EngineState::finished)
@@ -320,7 +335,7 @@ void KeyframePhase::update()
   engine.theKeyframeMotionGenerator.setPhaseInformation(ratio, currentKeyframeMotionRequest.keyframeMotion);
 }
 
-void KeyframeMotionEngine::setUpDebugCommands(KeyframeMotionGenerator&)
+void KeyframeMotionEngine::setUpDebugCommands()
 {
 #ifndef NDEBUG
   DECLARE_PLOT("module:KeyframeMotionEngine:jointDiff1:lAnklePitch");
@@ -353,6 +368,7 @@ void KeyframeMotionEngine::setUpDebugCommands(KeyframeMotionGenerator&)
   DECLARE_PLOT("module:KeyframeMotionEngine:pid:com");
   DECLARE_PLOT("module:KeyframeMotionEngine:ratio");
   DECLARE_DEBUG_RESPONSE("module:KeyframeMotionEngine:toggleBalancer");
+  DECLARE_DEBUG_DRAWING3D("module:KeyframeMotionEngine:supportPolygon", "robot");
 
   MODIFY_ONCE("module:KeyframeMotionEngine:setSteppingKeyframes", stepKeyframes);
   MODIFY("module:KeyframeMotionEngine:calculateDrawing", calculateDrawing);

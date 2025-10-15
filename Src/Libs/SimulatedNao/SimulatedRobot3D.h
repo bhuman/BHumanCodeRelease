@@ -13,6 +13,7 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Sensing/TorsoMatrix.h"
 #include "Streaming/EnumIndexedArray.h"
 #include "RobotParts/Joints.h"
 #include <SimRobotCore2.h>
@@ -26,11 +27,12 @@ public:
 
 protected:
   void getRobotPose(Pose2f& robotPose) const override;
+  void getTorsoMatrix(TorsoMatrix& torsoMatrix) override;
   void getImage(CameraImage& cameraImage, CameraInfo& cameraInfo) override;
   void getCameraInfo(CameraInfo& cameraInfo) override;
   void setJointCalibration(const JointCalibration& jointCalibration) override;
   void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const override;
-  void setJointRequest(const JointRequest& jointRequest) const override;
+  void setJointRequest(const JointRequest& jointRequest, const bool isPuppet) const override;
   void toggleCamera() override;
   void getSensorData(FsrSensorData& fsrSensorData, RawInertialSensorData& rawInertialSensorData) override;
   void getAndSetMotionData(const MotionRequest& motionRequest, MotionInfo& motionInfo) override;
@@ -52,6 +54,7 @@ private:
   unsigned activeCameraIndex; /**< Index of this robot in the \c activeCameras array */
 
   SimRobot::Object* jointSensors[Joints::numOfJoints] = {nullptr}; /**< The handles to the sensor ports of the joints. */
+  SimRobot::Object* jointVelocitySensors[Joints::numOfJoints] = {nullptr}; /**< The handles to the velocity sensor ports of the joints. */
   SimRobot::Object* jointActuators[Joints::numOfJoints] = {nullptr}; /**< The handles to the actuator ports of the joints. */
   SimRobot::Object* cameraSensor = nullptr; /**< The handle to the sensor port of the selected camera. */
   SimRobot::Object* upperCameraSensor = nullptr; /**< The handle to the sensor port of the upper camera. */

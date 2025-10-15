@@ -21,13 +21,7 @@ On macOS, the Python that comes with Xcode can be used.
 This instruction assumes that the directory in which this `README.md` is
 located is selected as the current directory.
 
-Make sure that these two directories do not exist:
-
-```shell
-rm -rf ../../Make/Python/build ../../Make/Python/pybh.egg-info
-```
-
-Then install the requirements (append `--use-feature=in-tree-build` if
+Install the requirements (append `--use-feature=in-tree-build` if
 `pip` is older than version 21.3):
 
 ```shell

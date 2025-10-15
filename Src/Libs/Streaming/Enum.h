@@ -228,6 +228,18 @@
   }
 
 /**
+ * [static] ENUM_NUM_OF_ALIAS(Enum, alias)
+ * Defines an alias for the number of elements of an enumeration type
+ * defined by ENUM. It should be used if the constant numOf...s that
+ * is generated automatically is not a valid English name.
+ * If used inside a class body, this macro must be prefixed by "static".
+ * @param Enum The name of the enumeration type.
+ * @param alias The name that is defined as an alias for the number
+ *              of elements in the enumeration type.
+ */
+#define ENUM_NUM_OF_ALIAS(Enum, alias) const Enum alias = numOf##Enum##s
+
+/**
  * FOREACH_ENUM(enum, var [ , limit ])
  * @param enum The enum type.
  * @param var The variable which holds the current enum value inside the loop.

@@ -177,10 +177,10 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
       const DebugImage* image = i->second.image;
       if(pos.rx() >= 0 && pos.ry() >= 0 && pos.rx() < image->getImageWidth() && pos.ry() < image->height)
       {
-        char tooltipstr[128];
-        sprintf(tooltipstr, "x=%d, y=%d\n", static_cast<int>(pos.rx()), static_cast<int>(pos.ry()));
+        char toolTipStr[128];
+        sprintf(toolTipStr, "x=%d, y=%d\n", static_cast<int>(pos.rx()), static_cast<int>(pos.ry()));
 
-        char* tooltip = tooltipstr + strlen(tooltipstr);
+        char* tooltip = toolTipStr + strlen(toolTipStr);
 
         switch(image->type)
         {
@@ -221,7 +221,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
             break;
           }
         }
-        setToolTip(QString(tooltipstr));
+        setToolTip(QString(toolTipStr));
       }
     }
   }
@@ -319,7 +319,7 @@ void ImageWidget::saveImg()
 {
   QSettings& settings = RoboCupCtrl::application->getSettings();
   QString fileName = QFileDialog::getSaveFileName(this, tr("Save as PNG"), settings.value("ExportDirectory", "").toString(), tr("(*.png)")
-#ifdef LINUX
+#if defined LINUX && defined QT_VERSION && QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
                                                   , nullptr, QFileDialog::DontUseNativeDialog
 #endif
                                                   );

@@ -7,6 +7,7 @@
 
 #include <Windows.h>
 #include <mmsystem.h>
+#include <algorithm>
 
 #include "SimulatedNao/Platform/Joystick.h"
 #include "Platform/BHAssert.h"
@@ -156,7 +157,7 @@ float Joystick::getAxisState(unsigned int axisId) const
 {
   ASSERT(p->joystickId != -1);
   ASSERT(axisId < numOfAxes);
-  return (32767 - int(p->axisState[axisId])) / 32767.f;
+  return std::min(1.f, std::max(-1.f, (32767 - int(p->axisState[axisId])) / 32767.f));
 }
 
 bool Joystick::isButtonPressed(unsigned int buttonId) const

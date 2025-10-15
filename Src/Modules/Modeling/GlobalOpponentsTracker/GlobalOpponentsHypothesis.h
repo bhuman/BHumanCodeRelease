@@ -70,13 +70,14 @@ class GlobalOpponentsHypothesis : public Obstacle
   /**
    * EKF measurement step.
    * @param modelWidthWeighting Factor how much the measured width affects the actual width.
+   * @param minWidth The minimum width of an obstacle.
    */
-  void measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting);
+  void measurement(const GlobalOpponentsHypothesis& measurement, const float modelWidthWeighting, const float minWidth);
 
   /** Trying to identify the type of the hypothesis. Sets the team. upright, and type attributes.
    * @param measurement A new measurement of an opponent (or something else)
-   * @param teamThreshold Frickle parameter configured in module
-   * @param uprightThreshold Frickle parameter configured in module
+   * @param teamThreshold Fiddle parameter configured in module
+   * @param uprightThreshold Fiddle parameter configured in module
    */
   void determineAndSetType(const GlobalOpponentsHypothesis& measurement, const int teamThreshold, const int uprightThreshold);
 

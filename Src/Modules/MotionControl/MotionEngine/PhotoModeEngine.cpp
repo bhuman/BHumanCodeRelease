@@ -21,7 +21,8 @@ void PhotoModeEngine::update(PhotoModeGenerator& photoModeGenerator)
 {
   photoModeGenerator.createPhase = [this](const MotionRequest&, const MotionPhase&)
   {
-    lastPose = theJointRequest;
+    if(!wasMotionPhaseSet)
+      lastPose = theJointRequest;
     return std::make_unique<PhotoModePhase>(*this);
   };
   photoModeGenerator.ledGroup = LEDGroup(selectedLEDGroupIndex);

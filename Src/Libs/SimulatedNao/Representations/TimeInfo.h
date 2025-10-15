@@ -13,7 +13,7 @@
 #include <string>
 #include <unordered_map>
 
-// Extended Ringbuffer with timestamp containing the last update of the timing info
+// Extended ring buffer with timestamp containing the last update of the timing info
 class InfoWithTimestamp : public RingBufferWithSum<float, 100>
 {
 public:

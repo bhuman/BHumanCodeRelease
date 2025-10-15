@@ -1,0 +1,3 @@
+call ramp1500
+mvo RoboCup.ramp.Hinge.Body.Hinge.Body -750 1915 82 60 0 -90
+mvo RoboCup.ramp.Hinge.Body.Hinge.Body -750 1915 82 45 0 -90

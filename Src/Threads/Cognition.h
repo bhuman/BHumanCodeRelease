@@ -18,9 +18,10 @@
 class Cognition : public BHExecutionUnit
 {
 private:
-  unsigned lastUpperFrameTime = 0; /**< The last timestamp received from the upper camera thread. */
-  unsigned lastLowerFrameTime = 0; /**< The last timestamp received from the lower camera thread. */
-  unsigned lastAcceptedTime = 0; /**< The timestamp of the last image accepted. */
+  static const unsigned minTime = 100000; /**< The earliest time used. */
+  unsigned lastUpperFrameTime = minTime; /**< The last timestamp received from the upper camera thread. */
+  unsigned lastLowerFrameTime = minTime; /**< The last timestamp received from the lower camera thread. */
+  unsigned lastAcceptedTime = minTime; /**< The timestamp of the last image accepted. */
   bool upperIsNew = false; /**< The is unused data from the upper camera thread. */
   bool lowerIsNew = false; /**< The is unused data from the lower camera thread. */
   bool acceptNext = false; /**< Immediately process the frame still waiting. */

@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "Framework/Robot.h"
+#include "Framework/Robots.h"
 #include "Framework/Settings.h"
 #include "Math/Angle.h"
 #include "Math/Constants.h"
@@ -76,18 +77,6 @@ static void sighandlerRedirect(int)
   run = false;
 }
 
-STREAMABLE(Robots,
-{
-  STREAMABLE(RobotId,
-  {,
-    (std::string) name,
-    (std::string) headId,
-    (std::string) bodyId,
-  }),
-
-  (std::vector<RobotId>) robotsIds,
-});
-
 static std::string getBodyId()
 {
   int socket = ::socket(AF_UNIX, SOCK_STREAM, 0);
@@ -126,7 +115,8 @@ static std::string getBodyId()
 
 static void sitDown(bool ok)
 {
-  static const Angle targetAngles[Joints::numOfJoints - 1] =
+  static constexpr Joints::Joint numOfJoints = static_cast<Joints::Joint>(Joints::numOfJoints - 2);
+  static const Angle targetAngles[numOfJoints] =
   {
     0_deg, 0_deg, // Head
 
@@ -150,7 +140,7 @@ static void sitDown(bool ok)
 
     // Determine current angles and whether sitting down is required, i.e. has the hip stiffness?
     bool sitDownRequired = false;
-    Angle startAngles[Joints::numOfJoints - 1];
+    Angle startAngles[numOfJoints];
     std::array<float, 3> torsoAngles; /**< The addresses of torso angle data inside receivedPacket. */
 
     MsgPack::parse(packet, bytesReceived,
@@ -201,19 +191,19 @@ static void sitDown(bool ok)
         {
           MsgPack::writeMapHeader(2, p);
           MsgPack::write("Stiffness", p);
-          MsgPack::writeArrayHeader(Joints::numOfJoints - 1, p);
+          MsgPack::writeArrayHeader(numOfJoints, p);
 
-          for(int i = 0; i < Joints::numOfJoints - 1; ++i)
+          for(int i = 0; i < numOfJoints; ++i)
             MsgPack::write(0.2f, p);
         }
         else
           MsgPack::writeMapHeader(1, p);
 
         MsgPack::write("Position", p);
-        MsgPack::writeArrayHeader(Joints::numOfJoints - 1, p);
+        MsgPack::writeArrayHeader(numOfJoints, p);
         // The shoulder pitch joints interpolate faster to avoid collisions of the arms with the legs.
         const float shoulderPitchPhase = std::sqrt(std::min(1.f, ratio / 0.6f));
-        for(int i = 0; i < Joints::numOfJoints - 1; ++i)
+        for(int i = 0; i < numOfJoints; ++i)
         {
           if(i == 2 || i == 18)
             MsgPack::write(targetAngles[i] * shoulderPitchPhase + startAngles[i] * (1.f - shoulderPitchPhase), p);
@@ -227,7 +217,7 @@ static void sitDown(bool ok)
         // Receive next packet (required for sending again)
         bytesReceived = recv(socket, reinterpret_cast<char*>(packet), static_cast<int>(sizeof(packet)), 0);
 
-        ratio += Constants::motionCycleTime / 2.f; // 2 seconds
+        ratio += Constants::naoMotionCycleTime / 2.f; // 2 seconds
       }
     }
 
@@ -235,8 +225,8 @@ static void sitDown(bool ok)
     unsigned char* p = packet;
     MsgPack::writeMapHeader(9, p);
     MsgPack::write("Stiffness", p);
-    MsgPack::writeArrayHeader(Joints::numOfJoints - 1, p);
-    for(int i = 0; i < Joints::numOfJoints - 1; ++i)
+    MsgPack::writeArrayHeader(numOfJoints, p);
+    for(int i = 0; i < numOfJoints; ++i)
       MsgPack::write(0.f, p);
 
     // Switch off all leds, except for the eyes (ok: blue, crashed: red)
@@ -272,7 +262,7 @@ static std::string getBodyName(const std::string& bodyId)
     Robots robots;
     robotsStream >> robots;
     for(const Robots::RobotId& robot : robots.robotsIds)
-      if(robot.bodyId == bodyId)
+      if(robot.robotType == Settings::nao && robot.bodyId == bodyId)
       {
         bodyName = robot.name;
         return bodyName;
@@ -352,7 +342,7 @@ int main(int argc, char* argv[])
         // dump trace and assert trace
         if(!normalExit)
         {
-          // Wait 100 ms before attempting to sitdown. Otherwise, LoLA might send an invalid packet.
+          // Wait 100 ms before attempting to sit down. Otherwise, LoLA might send an invalid packet.
           usleep(100000);
 
           sitDown(false);
@@ -372,7 +362,7 @@ int main(int argc, char* argv[])
     // Acquire static data, e.g. about types
     FunctionList::execute();
 
-    Settings settings(SystemCall::getHostName(), getBodyName(getBodyId()));
+    Settings settings(SystemCall::getHostName(), getBodyName(getBodyId()), Constants::naoMotionCycleTime, Settings::nao);
     if(settings.playerNumber < 0 || settings.bodyName.empty())
       return EXIT_FAILURE;
 

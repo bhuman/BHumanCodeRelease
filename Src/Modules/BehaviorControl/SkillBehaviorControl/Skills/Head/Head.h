@@ -14,7 +14,7 @@
  */
 option(GoToBallHeadControl, args((float) distanceToTarget,
                                  (bool)(false) lookAtKickTarget,
-                                 (Vector2f)(Vector2f::Zero()) kickTargetRelative));
+                                 (const Vector2f&)({0.f, 0.f}) kickTargetRelative));
 
 /**
  * This skill moves the head in steps between the maximum pan and tilt, relative to the current orientation.

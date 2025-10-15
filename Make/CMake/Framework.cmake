@@ -28,6 +28,7 @@ set(FRAMEWORK_SOURCES
     "${FRAMEWORK_ROOT_DIR}/Next.h"
     "${FRAMEWORK_ROOT_DIR}/Robot.cpp"
     "${FRAMEWORK_ROOT_DIR}/Robot.h"
+    "${FRAMEWORK_ROOT_DIR}/Robots.h"
     "${FRAMEWORK_ROOT_DIR}/Settings.cpp"
     "${FRAMEWORK_ROOT_DIR}/Settings.h"
     "${FRAMEWORK_ROOT_DIR}/ThreadFrame.cpp"
@@ -44,7 +45,11 @@ else()
   target_compile_options(Framework${TARGET_SUFFIX} PRIVATE $<$<CONFIG:Develop>:-UNDEBUG>)
   target_link_libraries(Framework${TARGET_SUFFIX} PRIVATE Flags::Default)
 endif()
-target_link_libraries(Framework${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
+if(BUILD_DESKTOP OR BUILD_BOOSTER)
+  target_link_libraries(Framework${TARGET_SUFFIX} PRIVATE asmjit)
+else()
+  target_link_libraries(Framework${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
+endif()
 target_link_libraries(Framework${TARGET_SUFFIX} PUBLIC Debugging${TARGET_SUFFIX})
 target_link_libraries(Framework${TARGET_SUFFIX} PUBLIC Network${TARGET_SUFFIX})
 target_link_libraries(Framework${TARGET_SUFFIX} PUBLIC Platform${TARGET_SUFFIX})

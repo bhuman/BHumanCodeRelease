@@ -60,5 +60,5 @@ STREAMABLE(FilteredBallPercepts,
   /** Verifies that the filtered ball percepts contain valid values. */
   void verify() const;
   ,
-  (std::vector<FilteredBallPercept, Eigen::aligned_allocator<FilteredBallPercept>>) percepts, /**< List of ball perceptions. Empty, if no new ball was seen. Newest ball is at position 0, older balls follow */
+  (std::vector<FilteredBallPercept>) percepts, /**< List of ball perceptions. Empty, if no new ball was seen. Newest ball is at position 0, older balls follow */
 });

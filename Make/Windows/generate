@@ -2,5 +2,6 @@
 cmake.exe -G "Visual Studio 17 2022" -A x64 -S ../CMake -B ../../Build/Windows/CMake
 
 for c in Debug Develop Release; do
-    cmake -DCMAKE_BUILD_TYPE=$c -DBUILD_NAO=ON -G Ninja -S ../CMake -B ../../Build/Linux/CMake/$c
+    cmake -DCMAKE_BUILD_TYPE=$c -DBUILD_NAO=ON -G Ninja -S ../CMake -B ../../Build/Linux/CMake/$c/Nao-prefix
+    cmake -DCMAKE_BUILD_TYPE=$c -DBUILD_BOOSTER=ON -G Ninja -S ../CMake -B ../../Build/Linux/CMake/$c/Booster-prefix
 done

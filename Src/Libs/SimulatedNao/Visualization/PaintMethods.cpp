@@ -80,11 +80,11 @@ void PaintMethods::paintPolygon(const DebugDrawing::Polygon& element, QPainter& 
 
   // copy vector2 to QPoints
   const int* points = reinterpret_cast<const int*>(&element + 1);
-  std::vector<QPoint> qpoints;
+  std::vector<QPoint> qPoints;
   for(int n = element.nCount - 1; n >= 0; --n)
-    qpoints.push_back(QPoint(points[2 * n], points[2 * n + 1]));
+    qPoints.push_back(QPoint(points[2 * n], points[2 * n + 1]));
 
-  painter.drawPolygon(qpoints.data(), element.nCount);
+  painter.drawPolygon(qPoints.data(), element.nCount);
 }
 
 void PaintMethods::paintEllipse(const DebugDrawing::Ellipse& element, QPainter& painter)

@@ -33,7 +33,7 @@ NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, i
 {
   resetRequired = (fd = open(device, O_RDWR | O_NONBLOCK)) == -1;
   usleep(30000); // Experimental: Add delay between opening and using camera device
-  resetRequired = resetRequired || !setImageFormat() || !setFrameRate(1, 30)  || !mapBuffers() || !queueBuffers() || !checkSettingsAvailability();
+  resetRequired = resetRequired || !setImageFormat() || !setFrameRate(1, 30) || !mapBuffers() || !queueBuffers() || !checkSettingsAvailability();
   if(!resetRequired)
   {
     specialSettings.horizontalFlip.value = flip ? 1 : 0;
@@ -56,72 +56,6 @@ NaoCamera::~NaoCamera()
   unmapBuffers();
 
   close(fd);
-}
-
-bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout)
-{
-  NaoCamera* cams[2] = {&cam1, &cam2};
-
-  ASSERT(cam1.currentBuf == nullptr);
-  ASSERT(cam2.currentBuf == nullptr);
-
-  pollfd pollfds[2] =
-  {
-    {cams[0]->fd, POLLIN | POLLPRI, 0},
-    {cams[1]->fd, POLLIN | POLLPRI, 0},
-  };
-  int polled = poll(pollfds, 2, timeout);
-  if(polled < 0)
-  {
-    OUTPUT_ERROR("Cannot poll for camera images. Reason: " << strerror(errno));
-    FAIL("Cannot poll for camera images. Reason: " << strerror(errno) << ".");
-    return false;
-  }
-  else if(polled == 0)
-  {
-    OUTPUT_ERROR("Reading images from the cameras timed out after " << timeout << " ms. Terminating.");
-    return false;
-  }
-
-  for(int i = 0; i < 2; ++i)
-  {
-    if(pollfds[i].revents & POLLIN)
-    {
-      v4l2_buffer lastBuf;
-      bool first = true;
-      while(ioctl(cams[i]->fd, VIDIOC_DQBUF, cams[i]->buf) == 0)
-      {
-        if(first)
-          first = false;
-        else if(ioctl(cams[i]->fd, VIDIOC_QBUF, &lastBuf) != 0)
-          return false;
-        lastBuf = *cams[i]->buf;
-      }
-      if(errno != EAGAIN)
-      {
-        OUTPUT_ERROR("VIDIOC_DQBUF failed: " << strerror(errno));
-        return false;
-      }
-      else
-      {
-        cams[i]->currentBuf = cams[i]->buf;
-        cams[i]->timestamp = static_cast<unsigned long long>(cams[i]->currentBuf->timestamp.tv_sec) * 1000000ll + cams[i]->currentBuf->timestamp.tv_usec;
-
-        if(cams[i]->first)
-        {
-          cams[i]->first = false;
-          printf("%s camera is working\n", TypeRegistry::getEnumName(cams[i]->camera));
-        }
-      }
-    }
-    else if(pollfds[i].revents)
-    {
-      OUTPUT_ERROR("strange poll results: " << pollfds[i].revents);
-      return false;
-    }
-  }
-
-  return true;
 }
 
 bool NaoCamera::captureNew(int timeout)
@@ -160,7 +94,6 @@ bool NaoCamera::captureNew(int timeout)
 
   pollTimedOut = false;
 
-  // dequeue a frame buffer (this call blocks when there is no new image available) */
   v4l2_buffer lastBuf;
   bool firstAttempt = true;
   while(ioctl(fd, VIDIOC_DQBUF, buf) == 0)
@@ -168,7 +101,11 @@ bool NaoCamera::captureNew(int timeout)
     if(firstAttempt)
       firstAttempt = false;
     else if(ioctl(fd, VIDIOC_QBUF, &lastBuf) != 0)
+    {
+      OUTPUT_ERROR("Releasing image failed!");
+      resetRequired = true;
       return false;
+    }
     lastBuf = *buf;
   }
 
@@ -285,7 +222,7 @@ bool NaoCamera::i2cWriteBlockData(int fileDescriptor, unsigned char deviceAddres
   i2c_smbus_data writeData;
   writeData.block[0] = static_cast<unsigned char>(std::min(32, static_cast<int>(data.size())));
   for(int i = 1; i <= writeData.block[0]; ++i)
-    writeData.block[i] = data[i-1];
+    writeData.block[i] = data[i - 1];
   return i2cReadWriteAccess(fileDescriptor, I2C_SMBUS_WRITE, dataAddress, I2C_SMBUS_I2C_BLOCK_DATA, writeData);;
 }
 
@@ -559,7 +496,7 @@ bool NaoCamera::assertCameraSetting(CameraSettings::Collection::CameraSetting se
     else
     {
       OUTPUT_WARNING("Value for command " << appliedSettings.settings[setting].command << " (" << TypeRegistry::getEnumName(setting) << ") is "
-                   << appliedSettings.settings[setting].value << " but should be " << oldValue << ".");
+                     << appliedSettings.settings[setting].value << " but should be " << oldValue << ".");
     }
   }
   return false;
@@ -662,6 +599,19 @@ bool NaoCamera::stopCapturing()
 {
   int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   return ioctl(fd, VIDIOC_STREAMOFF, &type) != -1;
+}
+
+bool NaoCamera::simpleCameraReset()
+{
+  BH_TRACE_MSG("Simple Camera Reset");
+
+  resetRequired = resetRequired || !stopCapturing();
+  unmapBuffers();
+
+  resetRequired = resetRequired || !mapBuffers() || !queueBuffers() || !startCapturing();
+  if(resetRequired)
+    OUTPUT_ERROR("Simple Camera Reset Failed");
+  return !resetRequired;
 }
 
 bool NaoCamera::queryXU(bool set, unsigned char control, void* value, unsigned short size) const

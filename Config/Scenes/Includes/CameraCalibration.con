@@ -1,0 +1,48 @@
+# Include everything from Normal without causing problems
+st on
+dr debugDrawing3d:representation:GameState
+robot all
+for Lower Upper mr CameraImage LogDataProvider
+for Lower Upper mr CameraInfo LogDataProvider
+for Lower Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr FsrSensorData LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
+call GameStates2D
+call DebugResponses
+mr JPEGImage off
+
+# Include everything from Views without causing problems
+for Upper Lower vi CameraImage
+vid all representation:FieldLines:image
+vid all representation:BodyContour
+vic all shift for Cognition mr HeadMotionRequest ManualHeadMotionProvider \n set module:ManualHeadMotionProvider xImg = $1; yImg = $2; camera = $3;
+vf worldState
+vfd worldState fieldPolygons
+vfd worldState fieldLines
+vfd worldState goalFrame
+vfd worldState representation:RobotPose
+vfd worldState representation:RobotPose:fieldOfView
+vfd worldState representation:TeamBallModel
+vfd worldState representation:FieldBall:global
+vfd worldState representation:GlobalOpponentsModel
+vfd worldState representation:GlobalTeammatesModel
+vfd worldState cognition:RobotPose
+vfd worldState representation:MotionRequest
+vfd worldState representation:FieldBall:relative
+vfd worldState cognition:Reset
+vfd worldState perception:RobotPose
+vfd worldState representation:FieldLines:field
+vfd worldState representation:PenaltyMarkWithPenaltyAreaLine:field
+vfd worldState representation:FieldBoundary:field
+vfd worldState perception:Reset
+# ground truth view layers
+vfd worldState representation:GroundTruthRobotPose
+# from now, relative to ground truth robot pose
+vfd worldState cognition:GroundTruthRobotPose
+vfd worldState representation:GroundTruthBallModel

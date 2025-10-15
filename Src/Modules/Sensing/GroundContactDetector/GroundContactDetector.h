@@ -8,13 +8,13 @@
 
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/Sensing/FsrData.h"
+#include "Representations/Sensing/SolePressureState.h"
 #include "Framework/Module.h"
 
 MODULE(GroundContactDetector,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(FsrData),
+  USES(SolePressureState),
   PROVIDES(GroundContactState),
   LOADS_PARAMETERS(
   {,

@@ -7,7 +7,6 @@
 
 #include "ImageProcessing/ColorModelConversions.h"
 #include "Streaming/Enum.h"
-#include <vector>
 
 namespace PixelTypes
 {
@@ -61,9 +60,9 @@ namespace PixelTypes
     BGRAPixel(unsigned int color) : color(color) {}
     BGRAPixel(unsigned char b, unsigned char g, unsigned char r, unsigned char a = 255) : b(b), g(g), r(r), a(a) {}
     static unsigned numPixel() {return 1;}
-    std::vector<unsigned char> raw() const {return std::vector<unsigned char>{b, g, r};}
-    std::vector<unsigned char> rgb() const {return std::vector<unsigned char>{r, g, b};}
-    std::vector<unsigned char> grayscale() const {return std::vector<unsigned char>{static_cast<unsigned char>((r + g + b) / 3)};}
+    void raw(unsigned char*& p) const {*p++ = b; *p++ = g; *p++ = r;}
+    void rgb(unsigned char*& p) const {*p++ = r; *p++ = g; *p++ = b;}
+    void grayscale(unsigned char*& p) const {*p++ = static_cast<unsigned char>((r + g + b) / 3);}
   };
 
   struct YUYVPixel
@@ -85,15 +84,14 @@ namespace PixelTypes
     YUYVPixel(unsigned char y0, unsigned char u, unsigned char y1, unsigned char v) : y0(y0), u(u), y1(y1), v(v) {}
 
     static unsigned numPixel() {return 2;}
-    std::vector<unsigned char> raw() const {return std::vector<unsigned char>{y0, u, v, y1, u, v};}
-    std::vector<unsigned char> rgb() const
+    void raw(unsigned char*& p) const {*p++ = y0; *p++ = u; *p++ = v; *p++ = y1; *p++ = u; *p++ = v;}
+    void rgb(unsigned char*& p) const
     {
-      std::vector<unsigned char> ret(6);
-      ColorModelConversions::fromYUVToRGB(y0, u, v, ret[0], ret[1], ret[2]);
-      ColorModelConversions::fromYUVToRGB(y1, u, v, ret[3], ret[4], ret[5]);
-      return ret;
+      ColorModelConversions::fromYUVToRGB(y0, u, v, p[0], p[1], p[2]);
+      ColorModelConversions::fromYUVToRGB(y1, u, v, p[3], p[4], p[5]);
+      p += 6;
     }
-    std::vector<unsigned char> grayscale() const {return std::vector<unsigned char>{y0, y1};}
+    void grayscale(unsigned char*& p) const {*p++ = y0; *p++ = y1;}
     unsigned char& y(const size_t x) {return (reinterpret_cast<unsigned char*>(&color)[(x & 1) << 1]);}
     unsigned char y(const size_t x) const {return (reinterpret_cast<const unsigned char*>(&color)[(x & 1) << 1]);}
   };
@@ -115,6 +113,15 @@ namespace PixelTypes
     YUVPixel() = default;
     YUVPixel(unsigned int color) : color(color) {}
     YUVPixel(unsigned char y, unsigned char u, unsigned char v, unsigned char padding = 0) : padding(padding), u(u), y(y), v(v) {}
+
+    static unsigned numPixel() {return 1;}
+    void raw(unsigned char*& p) const {*p++ = y; *p++ = u; *p++ = v;}
+    void rgb(unsigned char*& p) const
+    {
+      ColorModelConversions::fromYUVToRGB(y, u, v, p[0], p[1], p[2]);
+      p += 3;
+    }
+    void grayscale(unsigned char*& p) const {*p++ = y;}
   };
 
   struct HSIPixel

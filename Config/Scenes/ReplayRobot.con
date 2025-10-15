@@ -2,6 +2,9 @@
 # you have to adjust the name of the log file.
 call Includes/replayDialog Includes/replay
 
+# Select all robots in case Includes/replay starts multiple replays
+robot all
+
 # simulation time on, otherwise log data may be skipped
 st on
 dt 219
@@ -33,7 +36,7 @@ dr representation:JointSensorData
 
 # send more data
 dr representation:JointRequest
-dr representation:RawInertialSensorData
+dr representation:InertialData:asRaw
 dr representation:FsrSensorData
 dr representation:SystemSensorData
 dr representation:KeyStates

@@ -4,6 +4,7 @@
  * @author Bernd Poppinga
  */
 
+#include "Debugging/Stopwatch.h"
 #include "PatchUtilities.h"
 #include "ImageProcessing/ImageTransform.h"
 #include <iostream>
@@ -26,7 +27,6 @@ Matrix3f PatchUtilities::calcInverseTransformation(const Vector2i& center, const
   inverseTransformation(1, 2) = static_cast<float>(upperLeft.y());// +outSize.y() * (1 - sin - cos) / 2 * transformationFactor.y();
   return inverseTransformation;
 }
-
 
 template<typename OutType>
 void PatchUtilities::getInterpolatedImageSection(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* output)
@@ -201,6 +201,11 @@ void PatchUtilities::normalizeContrast(OutType* output, const Vector2i& size, co
 template void PatchUtilities::normalizeContrast<float>(float* output, const Vector2i& size, const float percent);
 template void PatchUtilities::normalizeContrast<unsigned char>(unsigned char* output, const Vector2i& size, const float percent);
 
+void PatchUtilities::normalizeBrightness(GrayscaledImage& output, const float percent)
+{
+  normalizeBrightness(output[0], Vector2i(output.width, output.height), percent);
+}
+
 template<typename OutType>
 void PatchUtilities::normalizeBrightness(OutType* output, const Vector2i& size, const float percent)
 {
@@ -231,10 +236,10 @@ void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize
 template<typename OutType>
 void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* dest, const ExtractionMode mode)
 {
-  switch (mode)
+  switch(mode)
   {
     case fast:
-      getImageSection<OutType,false>(center, inSize, outSize, src, dest);
+      getImageSection<OutType, false>(center, inSize, outSize, src, dest);
       break;
     case fastInterpolated:
       getImageSection<OutType, true>(center, inSize, outSize, src, dest);
@@ -247,6 +252,66 @@ void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize
 
 template void PatchUtilities::extractPatch<float>(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, float* dest, const ExtractionMode mode);
 template void PatchUtilities::extractPatch<unsigned char>(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, unsigned char* dest, const ExtractionMode mode);
+
+void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const YUYVImage& src, YUVImage& dest)
+{
+  dest.setResolution(static_cast<unsigned int>(outSize(0)), static_cast<unsigned int>(outSize(1)));
+  const Vector2f correctedCenter(static_cast<float>(center.x()) / 2.f, center.y());
+  const Vector2f correctedInSize(static_cast<float>(inSize.x()) / 2.f, inSize.y());
+
+  const Vector2f halfInSize = correctedInSize / 2.f;
+  const Vector2f upperLeft = correctedCenter - halfInSize;
+  const Vector2f stepSize = correctedInSize.array() / outSize.array().cast<float>();
+
+  float inputPosX;
+  float inputPosY = upperLeft.y();
+  PixelTypes::YUVPixel* destPos = dest[0];
+  for(unsigned int yPos = 0; yPos < dest.height; ++yPos, inputPosY += stepSize.y())
+  {
+    inputPosX = upperLeft.x();
+    for(unsigned int xPos = 0; xPos < dest.width; ++xPos, inputPosX += stepSize.x())
+      *destPos++ = interpolateYUV(src, Vector2f(inputPosX, inputPosY), stepSize);
+  }
+}
+
+PixelTypes::YUVPixel PatchUtilities::interpolateYUV(const YUYVImage& src, const Vector2f& pos, const Vector2f& stepSize)
+{
+  float counterYPosY = 0.f;
+  float counterYPosU = 0.f;
+  float counterYPosV = 0.f;
+  ASSERT(pos.y() < static_cast<float>(2 * src.height));
+  ASSERT(pos.x() < static_cast<float>(2 * src.width));
+
+  for(unsigned int y = static_cast<unsigned int>(std::max(0.f, pos.y())); static_cast<float>(y) < pos.y() + stepSize.y() && y < src.height; y++)
+  {
+    float counterXPosY = 0.f;
+    float counterXPosU = 0.f;
+    float counterXPosV = 0.f;
+    for(unsigned int x = static_cast<unsigned int>(std::max(0.f, pos.x())); static_cast<float>(x) < pos.x() + stepSize.x() && x < src.width; x++)
+    {
+      float weightY0 = std::min(static_cast<float>(x) + 0.5f, pos.x() + stepSize.x()) - std::min(std::max(static_cast<float>(x), pos.x()), static_cast<float>(x) + 0.5f);
+      float weightY1 = std::max(std::min(static_cast<float>(x) + 1.f, pos.x() + stepSize.x()), static_cast<float>(x) + 0.5f) - std::max(static_cast<float>(x) + 0.5f, pos.x());
+      float weightUV = std::min(static_cast<float>(x) + 1.f, pos.x() + stepSize.x()) - std::max(static_cast<float>(x), pos.x());
+
+      ASSERT(weightUV >= 0 && weightUV <= 1);
+      counterXPosY += static_cast<float>(src[y][x].y0) * weightY0;
+      counterXPosY += static_cast<float>(src[y][x].y1) * weightY1;
+      counterXPosU += static_cast<float>(src[y][x].u) * weightUV;
+      counterXPosV += static_cast<float>(src[y][x].v) * weightUV;
+    }
+
+    float weight = std::min(static_cast<float>(y) + 1.f, pos.y() + stepSize.y()) - std::max(static_cast<float>(y), pos.y());
+    counterYPosY += counterXPosY * weight / stepSize.x();
+    counterYPosU += counterXPosU * weight / stepSize.x();
+    counterYPosV += counterXPosV * weight / stepSize.x();
+  }
+  return
+  {
+    static_cast<unsigned char>(counterYPosY / stepSize.y()),
+    static_cast<unsigned char>(counterYPosU / stepSize.y()),
+    static_cast<unsigned char>(counterYPosV / stepSize.y())
+  };
+}
 
 template<typename OutType, bool grayscale>
 void PatchUtilities::extractInput(const YUYVImage& cameraImage, const Vector2i& patchSize, OutType* input)

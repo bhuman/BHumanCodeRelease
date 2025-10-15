@@ -11,7 +11,7 @@
 
 option((SkillBehaviorControl) Annotation,
        args((const std::string&) annotation),
-       vars((std::string)("") lastAnnotationSent))
+       vars((std::string) lastAnnotationSent))
 {
   initial_state(execute)
   {

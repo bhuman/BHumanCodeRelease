@@ -341,6 +341,6 @@ public:
   /*! The set of possible Z-axes is rastered with vectors \c eps (angle) apart. Rotation around Z is not rasterized,
       so this is a 2-D raster.
    */
-  static void rasteredConeOfOrientations(std::vector<Eigen::Isometry3d>& a2bList,
+  static void rasterizedConeOfOrientations(std::vector<Eigen::Isometry3d>& a2bList,
                                          const Eigen::Vector3d& az2b0, double delta, double eps);
 };

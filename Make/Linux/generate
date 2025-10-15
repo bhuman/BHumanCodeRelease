@@ -16,12 +16,14 @@ fi
 
 if [ -f .idea/workspace.xml -o ! -z "$USE_CLION" ]; then
   CMAKE_RUN_CONFIGURATION_MANAGER="    <generated>
+      <config projectName=\"B-Human\" targetName=\"Booster\" />
       <config projectName=\"B-Human\" targetName=\"Nao\" />
       <config projectName=\"B-Human\" targetName=\"SimRobot\" />
       <config projectName=\"B-Human\" targetName=\"Tests\" />
     </generated>"
 
   RUN_MANAGER="    <list>
+      <item itemvalue=\"CMake Application.Booster\" />
       <item itemvalue=\"CMake Application.Nao\" />
       <item itemvalue=\"CMake Application.SimRobot\" />
       <item itemvalue=\"Google Test.Tests\" />

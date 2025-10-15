@@ -52,25 +52,21 @@ MODULE(BallAndPenaltyMarkPerceptor,
   REQUIRES(PenaltyMarkRegions),
   PROVIDES(PenaltyMarkPercept),
   LOADS_PARAMETERS(
-  {
-    ENUM(NormalizationMode,
-    {,
-      none,
-      normalizeContrast,
-      normalizeBrightness,
-    }),
-
+  {,
     /**< The file name (relative to "NeuralNetworks/BallAndPenaltyMarkPerceptor") from which to load the model.  */
     (std::string) multiheadName,
     (float) guessedThreshold, /**< Limit from which a ball is guessed. */
     (float) acceptThreshold, /**< Limit from which a ball is accepted. */
     (float) ensureThreshold, /**< Limit from which a ball is detected for sure. */
-    (NormalizationMode) normalizationMode, /**< The kind of normalization used for patches. */
     (float) normalizationOutlierRatio, /**< The ratio of pixels ignored when determining the value range that is scaled to 0..255. */
     (float) ballAreaFactor,
     (bool) useFloat,
     (PatchUtilities::ExtractionMode) extractionMode,
-    (float) penaltyThreshold, /**< Limit from which a penalty mark is accepted. */
+    (float) penaltyThreshold,
+    (bool) savePatches,
+    (bool) useGrayScaledImage,
+    (unsigned int) patchSize,
+    (bool) emergencyLabelMode,
   }),
 });
 
@@ -84,7 +80,6 @@ private:
 
   std::unique_ptr<NeuralNetwork::Model> multiheadModel;
 
-  std::size_t patchSize = 0;
 
   float bestRadius, bestProbPenalty, bestProbBall;
   Vector2f bestBallPosition;
@@ -93,8 +88,8 @@ private:
 
   void update(BallPercept& theBallPercept) override;
   void update(PenaltyMarkPercept& thePenaltyMarkPercept) override;
-  void updateBallAndPenaltyMarkPerceptor();
+  void ballAndPenaltyMarkUpdate();
   std::pair<float, float> apply(const Vector2i& ballSpot, Vector2f& ballPosition, Vector2f& penaltyPosition, float& predRadius);
   void compile();
-  void savePatch(std::vector<float> data, const std::string filename);
+  void savePatch(std::vector<float>& grayData, std::vector<float>& blueData, std::vector<float>& redData, const std::string& suffix, const Vector2i& spot);
 };

@@ -55,7 +55,7 @@ struct BallPhysics
    * (this might appear freaky but fits the structure of the current BallLocator;
    *  the purpose of this function is to have all code that makes an assumption about
    *  the current model for rolling friction in one file)
-   * @paarm p The ball position (in mm), set by this method
+   * @param p The ball position (in mm), set by this method
    * @param v The ball velocity (in mm/s), set by this method
    * @t Time in seconds
    * @ballFriction The ball friction (negative force)  (in m/s^2)

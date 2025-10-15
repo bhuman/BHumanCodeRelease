@@ -94,7 +94,7 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
   theObstaclesFieldPercept.obstacles.clear();
   const_cast<ObstaclesPerceptorData&>(theObstaclesPerceptorData).incompleteObstacles.clear();
 
-  if(!theFieldBoundary.isValid || !theECImage.grayscaled.width || !theECImage.grayscaled.height || theOptionalImageRequest.sendImage)
+  if(!theFieldBoundary.isValid || !theECImage.grayscaled.width || !theECImage.grayscaled.height || theRefereeDetectionRequest.detectReferee)
     return;
 
   if(theCameraInfo.camera == CameraInfo::upper)
@@ -108,7 +108,7 @@ void RobotDetector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
     std::vector<std::vector<Region>> regions(xyRegions, std::vector<Region>(xyRegions, Region()));
     STOPWATCH("module:RobotDetector:scanImage") scanImage(regions);
     STOPWATCH("module:RobotDetector:classifyRegions") classifyRegions(regions);
-    STOPWATCH("module:RobotDetector:discardHomogenAreas") discardHomogeneousAreas(regions);
+    STOPWATCH("module:RobotDetector:discardHomogeneousAreas") discardHomogeneousAreas(regions);
     STOPWATCH("module:RobotDetector:clusterRegions") dbScan(regions, obstacles);
   }
 
@@ -248,7 +248,7 @@ void RobotDetector::applyColorNetwork()
 template<typename ConvModel>
 void RobotDetector::boundingBoxes(LabelImage& labelImage, ConvModel& convModel)
 {
-  const float objectThreshold = logit(objectThres);
+  const float objectThreshold = logit(this->objectThreshold);
   for(unsigned y = 0; y < networkParameters.outputHeight; ++y)
     for(unsigned x = 0; x < networkParameters.outputWidth; ++x)
       for(unsigned b = 0; b < networkParameters.outputAnchors; ++b)
@@ -303,7 +303,7 @@ LabelImage::Annotation RobotDetector::predictionToBoundingBox(Eigen::Map<Eigen::
   box.confidence = pred(networkParameters.confidenceIndex);
 
   if(networkParameters.predictFallen)
-    box.fallen = pred(networkParameters.fallenClassIndex) > fallenThres;
+    box.fallen = pred(networkParameters.fallenClassIndex) > fallenThreshold;
   else
     box.fallen = false;
 

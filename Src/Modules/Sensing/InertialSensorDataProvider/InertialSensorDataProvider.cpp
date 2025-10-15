@@ -7,6 +7,7 @@
  */
 
 #include "Debugging/Annotation.h"
+#include "Framework/Settings.h"
 #include "InertialSensorDataProvider.h"
 #include "Platform/SystemCall.h"
 
@@ -16,36 +17,44 @@ void InertialSensorDataProvider::update(InertialSensorData& inertialSensorData)
 {
   inertialSensorData.angle = theRawInertialSensorData.angle;
 
-  if(theMotionRobotHealth.motionFramesDropped)
-  {
-    inertialSensorData.newAccData = false;
-    inertialSensorData.newGyroData = false;
-
-    lastNewRawAccData = Vector3f::Zero();
-    lastNewRawGyroData = Vector3a::Zero();
-
-    accChange = Vector3f::Ones() * initialAccChange;
-    gyroChange = Vector3a::Ones() * initialGyroChange;
-  }
-
   bool orderKnown = true;
-  //We don't now the order yet
-  if(!inertialSensorData.newAccData && !inertialSensorData.newGyroData)
+  if(Global::getSettings().robotType == Settings::nao)
   {
-    const bool notFirstFrame = !(lastNewRawAccData == Vector3f::Zero() && lastNewRawGyroData == Vector3a::Zero());
-    //True if not the first frame and the data changed
-    inertialSensorData.newAccData = notFirstFrame && lastNewRawAccData != theRawInertialSensorData.acc;
-    inertialSensorData.newGyroData = notFirstFrame && lastNewRawGyroData != theRawInertialSensorData.gyro;
-    if(notFirstFrame && (inertialSensorData.newAccData || inertialSensorData.newGyroData) && SystemCall::getMode() != SystemCall::Mode::simulatedRobot)
-      ASSERT(inertialSensorData.newAccData != inertialSensorData.newGyroData);
+    if(theMotionRobotHealth.motionFramesDropped)
+    {
+      inertialSensorData.newAccData = false;
+      inertialSensorData.newGyroData = false;
 
-    orderKnown = inertialSensorData.newAccData || inertialSensorData.newGyroData;
+      lastNewRawAccData = Vector3f::Zero();
+      lastNewRawGyroData = Vector3a::Zero();
+
+      accChange = Vector3f::Ones() * initialAccChange;
+      gyroChange = Vector3a::Ones() * initialGyroChange;
+    }
+
+    //We don't now the order yet
+    if(!inertialSensorData.newAccData && !inertialSensorData.newGyroData)
+    {
+      const bool notFirstFrame = !(lastNewRawAccData == Vector3f::Zero() && lastNewRawGyroData == Vector3a::Zero());
+      //True if not the first frame and the data changed
+      inertialSensorData.newAccData = notFirstFrame && lastNewRawAccData != theRawInertialSensorData.acc;
+      inertialSensorData.newGyroData = notFirstFrame && lastNewRawGyroData != theRawInertialSensorData.gyro;
+      if(notFirstFrame && (inertialSensorData.newAccData || inertialSensorData.newGyroData) && SystemCall::getMode() != SystemCall::Mode::simulatedRobot)
+        ASSERT(inertialSensorData.newAccData != inertialSensorData.newGyroData);
+
+      orderKnown = inertialSensorData.newAccData || inertialSensorData.newGyroData;
+    }
+    else
+    {
+      // if we already know which data was new last frame -> this frame it is the other one
+      inertialSensorData.newAccData = !inertialSensorData.newAccData;
+      inertialSensorData.newGyroData = !inertialSensorData.newGyroData;
+    }
   }
   else
   {
-    // if we already know which data was new last frame -> this frame it is the other one
-    inertialSensorData.newAccData = !inertialSensorData.newAccData;
-    inertialSensorData.newGyroData = !inertialSensorData.newGyroData;
+    inertialSensorData.newAccData = true;
+    inertialSensorData.newGyroData = true;
   }
 
   if(orderKnown)
@@ -82,8 +91,15 @@ void InertialSensorDataProvider::update(InertialSensorData& inertialSensorData)
   lastNewRawGyroData = theRawInertialSensorData.gyro;
 
   // Calibration
-  Matrix3f rotation(theIMUCalibration.isCalibrated ? Matrix3f(theIMUCalibration.rotation) : Matrix3f::Identity()); //Rotation matrix
-  inertialSensorData.acc = rotation * theRawInertialSensorData.acc;
+  const Matrix3f rotation(theIMUCalibration.isCalibrated ? Matrix3f(theIMUCalibration.rotation) : Matrix3f::Identity()); //Rotation matrix
+  inertialSensorData.acc = theRawInertialSensorData.acc;
+  inertialSensorData.acc -= theIMUCalibration.accOffset;
+
+  inertialSensorData.acc.x() *= theIMUCalibration.accFactor.x();
+  inertialSensorData.acc.y() *= theIMUCalibration.accFactor.y();
+  inertialSensorData.acc.z() *= theIMUCalibration.accFactor.z();
+
+  inertialSensorData.acc = rotation * inertialSensorData.acc;
   inertialSensorData.gyro = theRawInertialSensorData.gyro.cast<float>().cwiseProduct(theIMUCalibration.gyroFactor).cast<Angle>();
   inertialSensorData.gyro = (rotation * inertialSensorData.gyro.cast<float>()).cast<Angle>();
 

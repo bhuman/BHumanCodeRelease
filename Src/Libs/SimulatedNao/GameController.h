@@ -43,6 +43,7 @@ public:
     penalizeIllegalPositionInSet,
     unpenalize,
     kickOffDelay,
+    directGoals,
   });
 
   unsigned automatic = ~0u; /**< Which automatic features are active? */
@@ -62,8 +63,10 @@ public:
     playerStance,
     substitute,
     manual,
+    foul,
+    penaltyKick,
   });
-  static const int numOfPenalties = numOfPenaltys; /**< Correct typo. */
+  static ENUM_NUM_OF_ALIAS(Penalty, numOfPenalties); /**< Correct typo. */
 
   struct TeamInfo
   {
@@ -96,7 +99,6 @@ private:
 
   static const int numOfRobots = 2 * MAX_NUM_PLAYERS;
   static const int halfTime = 600;
-  static const int sharedAutonomyChallengeHalfTime = 90;
   static const int readyTime = 45;
   static const int penaltyKickReadyTime = 30;
   static const int kickOffTime = 10;
@@ -104,11 +106,16 @@ private:
   static const int penaltyShotTime = 30;
   static const int delayedSwitchToPlaying = 15;
   static const int delayedSwitchAfterGoal = 15;
-  static const float footLength; /**< foot length for position check. */
-  static const float dropHeight; /**< height at which robots are placed so the fall a little bit and recognize it. */
+  static const int refereeStandbyDelay = 5; /**< How long before the referee appears in standby state (in s)? */
+  static const int refereeStandbyTime = 2; /**< How long is the referee visible in standby state (in s)? */
+  static const int refereeSetPlayTime = 5; /**< How long is the referee visible during a set play (in s)? */
+  float footLength = 120.f; /**< foot length for position check. */
+  float dropHeight = 350.f; /**< height at which robots are placed so the fall a little bit and recognize it. */
+  float penaltyPlacementDistance = 400.f; /**< The distance between robots when multiple are penalized. */
   Pose2f lastBallContactPose; /**< Position where the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degrees). */
   unsigned lastBallContactTime = 0;
   SimRobot::Object* lastBallContactRobots[2] = {nullptr, nullptr}; /**< Last robot touching the ball per team. */
+  SimRobot::Object* refereeObject = nullptr; /**< The visual representation of the referee. */
   FieldDimensions fieldDimensions;
   BallSpecification ballSpecification;
   GameControllerData gameControllerData;
@@ -122,6 +129,8 @@ private:
   unsigned timeWhenSetPlayBegan = 0;
   Robot robots[numOfRobots];
   int ballContacts[2];
+  int testRuns = 0;
+  int testRunCounter = 0;
 
   TeamMessageContainer inTeamMessage;
   TeamMessageContainer outTeamMessage;
@@ -141,6 +150,15 @@ private:
     goalKickFirstTeam
   };
 
+  /** The different types of referee signals. */
+  enum RefereeSignal
+  {
+    noSignal,
+    up,
+    left,
+    right
+  };
+
 public:
   GameController();
   ~GameController();
@@ -151,6 +169,9 @@ public:
    */
   void setTeamInfos(const std::array<TeamInfo, 2>& teamInfos);
 
+  /** Load ball specification after the search path has been filled. */
+  void loadBallSpecification();
+
   /**
    * Each simulated robot must be registered.
    * @param robot The number of the robot [0 ... numOfRobots-1].
@@ -158,30 +179,36 @@ public:
    */
   void registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot);
 
+  /**
+   * The visual representation of the referee must be registered.
+   * @param referee The SimRobot object for the referee. Can be
+   *                nullptr if there is none.
+   */
+  void registerReferee(SimRobot::Object* referee) {refereeObject = referee;}
+
   bool initial();
   bool standby();
-  bool ready();
+  virtual bool ready(); // overridden by TestGameController
   bool set();
-  bool playing();
-  bool finished();
+  virtual bool playing(); // overridden by TestGameController
+  virtual bool finished(); // overridden by TestGameController
   bool competitionPhasePlayoff();
   bool competitionPhaseRoundrobin();
   bool competitionTypeChampionsCup();
   bool competitionTypeChallengeShield();
-  bool competitionTypeSharedAutonomyChallenge();
-  bool globalGameStuck(int side);
-  bool goal(int side);
+  bool globalGameStuck();
+  virtual bool goal(int side);
   bool goalKick(int side);
   bool pushingFreeKick(int side);
   bool cornerKick(int side);
   bool kickIn(int side);
-  bool penaltyKick(int side);
+  bool teamPenaltyKick(int side);
   bool kickOff(int side);
+  bool dropBall();
   bool setHalf(int half); // 1, 2
   bool gamePhasePenaltyshoot();
   bool gamePhaseNormal();
-
-  bool penalty(int robot, Penalty penalty);
+  virtual bool penalty(int robot, Penalty penalty); // overridden by TestGameController
 
   /** Executes the automatic referee. */
   void update();
@@ -205,7 +232,6 @@ public:
   void getWhistle(Whistle& whistle);
 
 private:
-
   /**
    * Finds a free place for a (un)penalized robot.
    * @param robot The number of the robot to place [0 ... numOfRobots-1].
@@ -240,4 +266,12 @@ private:
    * @param goalkeepers The player numbers of the goalkeepers of both teams.
    */
   void initTeams(const uint8_t robotsPlaying, const uint16_t messageBudget, const std::array<uint8_t, 2>& goalkeepers = {1, 1});
+
+  /**
+   * Places or hides the referee next to the field showing a signal.
+   * @param signal The signal that will be shown.
+   */
+  void showReferee(const RefereeSignal signal) const;
+
+  friend class TestGameController;
 };

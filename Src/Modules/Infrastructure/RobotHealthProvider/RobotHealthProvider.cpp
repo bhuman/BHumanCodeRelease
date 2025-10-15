@@ -9,6 +9,7 @@
 #include "Platform/Time.h"
 #include "Debugging/Annotation.h"
 #include "Framework/Settings.h"
+#include "Streaming/Global.h"
 #include "Streaming/InStreams.h"
 
 #include <algorithm>
@@ -32,7 +33,7 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   std::string wavName = Global::getSettings().headName.c_str();
   wavName.append(".wav");
 
-  // read cpu and mainboard temperature
+  // read cpu and main board temperature
   robotHealth.cpuTemperature = theSystemSensorData.cpuTemperature == SensorData::off ? 0 : static_cast<unsigned char>(theSystemSensorData.cpuTemperature);
   if(robotHealth.cpuTemperature > cpuHeat && theFrameInfo.getTimeSince(highCPUTemperatureSince) / 1000 > 20)
   {
@@ -50,10 +51,10 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
 #endif
 
   // MotionRobotHealthProvider filters over 30 entries. If one motion frame was dropped then check 31 frames later again
-  if(theFrameInfo.getTimeSince(lastMotionFrameDropTimestamp) > 31.f * Constants::motionCycleTime * 1000.f && robotHealth.maxMotionTime > 1.5f * Constants::motionCycleTime * 1000.f)
+  if(theFrameInfo.getTimeSince(lastMotionFrameDropTimestamp) > 31.f * Global::getSettings().motionCycleTime * 1000.f && robotHealth.maxMotionTime > 1.5f * Global::getSettings().motionCycleTime * 1000.f)
   {
     lastMotionFrameDropTimestamp = theFrameInfo.time;
-    ANNOTATION("RobotHealthProvider", "Motionframe Missing: " << robotHealth.maxMotionTime);
+    ANNOTATION("RobotHealthProvider", "Motion frame missing: " << robotHealth.maxMotionTime);
   }
 
   if(theFrameInfo.getTimeSince(lastRelaxedHealthComputation) > 5000)

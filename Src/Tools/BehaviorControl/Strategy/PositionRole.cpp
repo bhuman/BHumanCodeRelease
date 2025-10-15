@@ -33,8 +33,6 @@ PositionRole::Type PositionRole::fromPosition(Tactic::Position::Type type)
     case Tactic::Position::forwardL:
     case Tactic::Position::forwardR:
       return forward;
-    case Tactic::Position::sacPasser:
-      return sacPasser;
   }
   FAIL("Unknown position.");
   return PositionRole::midfielder;
@@ -49,7 +47,6 @@ PositionRole::Side PositionRole::sideFromPosition(Tactic::Position::Type type)
     case Tactic::Position::defender:
     case Tactic::Position::midfielder:
     case Tactic::Position::forward:
-    case Tactic::Position::sacPasser:
       return unspecified;
     case Tactic::Position::midfielderM:
     case Tactic::Position::forwardM:

@@ -27,7 +27,7 @@
 #import <XCTest/XCTest.h>
 #import <gtest/gtest.h>
 #import <objc/runtime.h>
-#include "Platform/SystemCall.h"
+#include "Streaming/FunctionList.h"
 
 using testing::TestCase;
 using testing::TestInfo;
@@ -180,6 +180,7 @@ static void RunTest(id self, SEL _cmd)
  */
 + (void)load
 {
+  FunctionList::execute();
   NSBundle* bundle = [NSBundle bundleForClass:self];
   [[NSNotificationCenter defaultCenter] addObserverForName:NSBundleDidLoadNotification object:bundle queue:nil usingBlock:^(NSNotification*)
   {
@@ -273,8 +274,3 @@ static void RunTest(id self, SEL _cmd)
 }
 
 @end
-
-SystemCall::Mode SystemCall::getMode()
-{
-  return simulatedRobot;
-}

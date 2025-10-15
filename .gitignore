@@ -3,7 +3,10 @@
 !.gitattributes
 !.gitignore
 !.pre-commit-config.yaml
-!/Make/*/.vscode
+!/.vscode/c_cpp_properties.json
+!/.vscode/cspell.json
+!/.vscode/noArm.h
+!/.vscode/noX86.h
 *~
 \#*\#
 .\#

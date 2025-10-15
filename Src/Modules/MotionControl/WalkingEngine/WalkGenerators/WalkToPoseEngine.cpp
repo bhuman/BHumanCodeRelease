@@ -9,6 +9,7 @@
 
 #include "WalkToPoseEngine.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Framework/Settings.h"
 #include "Math/BHMath.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Tools/Motion/WalkUtilities.h"
@@ -44,15 +45,15 @@ void WalkToPoseEngine::update(WalkToPoseGenerator& walkToPoseGenerator)
 
   walkToPoseGenerator.createPhaseToTarget = [this](const Pose2f& targetInSCS, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                                    const Pose2f& walkSpeed, bool isLeftPhase, const MotionPhase& lastPhase, const Pose2f& scsCognition,
-                                                   const bool isFastWalkAllowed, const std::optional<Vector2f>& targetOfInterest, const bool isSideWalkAllowed)
+                                                   const bool isFastWalkAllowed, const std::optional<Vector2f>& targetOfInterest, const SideWalkingRequest::SideWalkingRequest sideWalkingRequest)
   {
-    return createPhase(targetInSCS, scsCognition, obstacleAvoidanceInSCS, walkSpeed, isLeftPhase, false, lastPhase, isFastWalkAllowed, targetOfInterest, false, isSideWalkAllowed, false);
+    return createPhase(targetInSCS, scsCognition, obstacleAvoidanceInSCS, walkSpeed, isLeftPhase, false, lastPhase, isFastWalkAllowed, targetOfInterest, sideWalkingRequest, false);
   };
 
   walkToPoseGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, motionRequest.walkTarget);
-    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
+    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theWalkStepData.yHipOffset, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
     const Pose2f targetInSCS = scsCognition * motionRequest.walkTarget;
 
     std::optional<Vector2f> targetOfInterest;
@@ -65,7 +66,7 @@ void WalkToPoseEngine::update(WalkToPoseGenerator& walkToPoseGenerator)
 
     // doNotForceDiagonalWalk = false, so the robots always orientate towards the targetOfInterest
     return createPhase(targetInSCS, scsCognition, obstacleAvoidanceInSCS, motionRequest.walkSpeed, isLeftPhase,
-                       motionRequest.keepTargetRotation, lastPhase, false, targetOfInterest, motionRequest.forceSideWalking, true, true);
+                       motionRequest.keepTargetRotation, lastPhase, false, targetOfInterest, motionRequest.sideWalkingRequest, true);
   };
 }
 
@@ -74,7 +75,7 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
                                                            const Pose2f& walkSpeed, bool isLeftPhase, bool keepTargetRotation,
                                                            const MotionPhase& lastPhase, const bool isFastWalkAllowed,
                                                            const std::optional<Vector2f>& targetOfInterest,
-                                                           const bool forceSideWalk, const bool isSideWalkAllowed, const bool useModTarget) const
+                                                           const SideWalkingRequest::SideWalkingRequest sideWalkingRequest, const bool useModTarget) const
 {
   Pose2f modTargetInSCS = targetInSCS;
   bool isObstacle = false;
@@ -101,8 +102,12 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
       modTargetInSCS.translation = toPoint;
 
     isObstacle = true;
-    // We are not running into the obstacle anyway. No need to do an avoidance
-    if(std::abs(targetInSCS.translation.angle()) > std::abs(modTargetInSCS.translation.angle()))
+    const Angle angleToObstacleCenter = segment.obstacle.center.angle();
+    const Angle obstaclePathToObstacleCenterAngle = angleToObstacleCenter - modTargetInSCS.translation.angle();
+    const Angle targetToObstacleCenterAngle = angleToObstacleCenter - targetInSCS.translation.angle();
+    // We plan to run further away from the obstacle anyway, so need for obstacle avoidance.
+    if(obstaclePathToObstacleCenterAngle * targetToObstacleCenterAngle > 0 && std::abs(targetToObstacleCenterAngle) > std::abs(obstaclePathToObstacleCenterAngle)) //||
+      //(obstaclePathToObstacleCenterAngle == 0_deg && angleToObstacleCenter * targetToObstacleCenterAngle)) we need to know where the obstacle center is. This is not the case for LibWalk ...
     {
       modTargetInSCS = targetInSCS;
       isObstacle = false;
@@ -118,22 +123,24 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
       // Determine, if we should side walk or walk straight
       if(!(!theLibDemo.isOneVsOneDemoActive && theLibDemo.isDemoActive))
       {
-        if(forceSideWalk)
+        if(sideWalkingRequest == SideWalkingRequest::forced)
           WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
                                       isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
-        else if(modTargetInSCS.translation.squaredNorm() > sqr(1000.f) || !isSideWalkAllowed)
+        else if(modTargetInSCS.translation.squaredNorm() > sqr(1000.f) || sideWalkingRequest == SideWalkingRequest::notAllowed)
           WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase);
+                                      isLeftPhase, isFastWalkAllowed, lastPhase, obstacleAvoidanceInSCS.path.empty() && obstacleAvoidanceInSCS.avoidance == Vector2f::Zero(), useModTarget);
         else
         {
           Pose2f modTargetInSCS2 = modTargetInSCS;
           WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
                                       isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
           WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS2, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase);
+                                      isLeftPhase, isFastWalkAllowed, lastPhase, obstacleAvoidanceInSCS.path.empty() && obstacleAvoidanceInSCS.avoidance == Vector2f::Zero(), useModTarget);
 
           // When near the target, use the walk type (diagonal vs side walk) that will put the robot closer to the target pose
-          const float factor = 1.f - Rangef::ZeroOneRange().limit((targetInSCS.translation.norm() - 200.f) / 100.f);
+          const float interpolationRange = theRobotDimensions.soleToFrontEdgeLength;
+          const float interpolationOffset = theRobotDimensions.soleToFrontEdgeLength + theBallSpecification.radius + 50.f;
+          const float factor = 1.f - Rangef::ZeroOneRange().limit((targetInSCS.translation.norm() - interpolationOffset) / interpolationRange);
           const Angle targetRotFactor = factor * targetInSCS.rotation;
           if(std::abs(targetRotFactor - modTargetInSCS2.rotation) < std::abs(targetRotFactor - modTargetInSCS.rotation))
             modTargetInSCS = modTargetInSCS2;
@@ -234,7 +241,7 @@ Pose2f WalkToPoseEngine::generateStep(const bool isLeftPhase, const MotionPhase&
         step.translation.x() = translationPolygonNoCenter.back().x();
     }
   }
-  if(isLeftPhase == (step.translation.y() < 0.f))
+  if(Global::getSettings().robotType == Settings::nao && isLeftPhase == (step.translation.y() < 0.f))
     step.translation.y() = 0.f;
 
   const float useReferenceMaxForwardStep = useReferenceMaxForwardSpeed * theWalkingEngineOutput.walkStepDuration;

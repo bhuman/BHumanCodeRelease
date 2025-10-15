@@ -6,25 +6,28 @@
 
 #pragma once
 #include "WalkStepAdjustment.h"
+#include "WalkStiffnessRegulator.h"
+
 #include "Platform/SystemCall.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/RobotStableState.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Tools/Motion/ForwardKinematic.h"
 #include "Tools/Motion/InverseKinematic.h"
-#include "Tools/Motion/JointSpeedRegulator.h"
-#include "Tools/Motion/JointPlayOffsetRegulator.h"
+#include "Tools/Motion/JointSpeedController.h"
+#include "Tools/Motion/JointPlayOffsetController.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Tools/Motion/MotionUtilities.h"
 #include "Tools/Motion/WalkKickStep.h"
 
 class WalkingEngine;
+struct WalkHipShiftPhase;
 
 struct WalkPhaseBase : MotionPhase
 {
-  WalkPhaseBase(WalkingEngine& engine, const WalkKickStep& walkKickStep);
+  WalkPhaseBase(WalkingEngine& engine, const WalkKickStep& walkKickStep, const bool isDelay);
 
-  std::vector<Vector2f> getTranslationPolygon(const float maxBack, const float maxFront, const float maxSide, const bool useSafeSpace);
+  std::vector<Vector2f> getTranslationPolygon(const float maxBack, const float maxFront, const float maxSide, const bool useSafeSpace, const std::optional<float>& maxForwardAtMaxSide);
 
   struct SupportSwitch
   {
@@ -44,6 +47,16 @@ protected:
   unsigned freeLimbs() const override
   {
     return bit(MotionPhase::head) | bit(MotionPhase::leftArm) | bit(MotionPhase::rightArm);
+  }
+
+  void setLastPhase(std::unique_ptr<MotionPhase>& lastPhase) override
+  {
+    this->lastPhase = std::move(lastPhase);
+    if(this->lastPhase->type == MotionPhase::walk)
+    {
+      auto& lastWalkPhaseDummy = static_cast<WalkPhaseBase&>(*this->lastPhase);
+      lastWalkPhaseDummy.lastPhase.reset(); // free its previous ptr to prevent memory leak
+    }
   }
 
   /**
@@ -66,6 +79,7 @@ protected:
    * @param sideSwing0 Start value for the side position of the swing foot.
    * @param sideSupport0 Start value for the side position of the support foot.
    * @param sideSwing Current side position of the swing foot.
+   * @param sideSwingStretch Current swing side adjustment for too long steps.
    * @param sideSupport Current side position of the support foot.
    * @param footHeightSwing0 Start height of the swing foot.
    * @param footHeightSupport0 Start height of the support foot.
@@ -77,10 +91,10 @@ protected:
    * @param useTurnSpeed Requested turn step size.
    */
   virtual void calcFootOffsets(const float swingSign, const float ratio, const float ratioSide, const float ratioBase,
-                               const float duration, const float heightDuration, const float stepDurationSide,
+                               const float duration, const float heightDuration,
                                const float forwardSwing0, const float forwardSupport0, float& forwardSwing,
                                float& forwardSupport, const float sideSwing0, const float sideSupport0,
-                               float& sideSwing, float& sideSupport, float& footHeightSwing0,
+                               float& sideSwing, float& sideSwingStretch, float& sideSupport, float& footHeightSwing0,
                                float& footHeightSupport0, float& footHeightSwing,
                                float& footHeightSupport, Angle& turnVal,
                                const float useForwardSpeed, const float useSideSpeed, const Angle useTurnSpeed) = 0;
@@ -96,6 +110,7 @@ protected:
    * @param sideSwing0 Start value for the side position of the swing foot.
    * @param sideSupport0 Start value for the side position of the support foot.
    * @param sideSwing Current side position of the swing foot.
+   * @param sideSwingStretch Current swing side adjustment for too long steps.
    * @param sideSupport Current side position of the support foot.
    * @param footHeightSwing0 Start height of the swing foot.
    * @param footHeightSupport0 Start height of the support foot.
@@ -108,7 +123,7 @@ protected:
   virtual void calcWalkKickFootOffsets(const float swingSign, const float ratio,
                                        float& forwardSwing0, float& forwardSupport0, float& forwardSwing,
                                        float& forwardSupport, float& sideSwing0, float& sideSupport0,
-                                       float& sideSwing, float& sideSupport, float& footHeightSwing0,
+                                       float& sideSwing, float& sideSwingStretch, float& sideSupport, float& footHeightSwing0,
                                        float& footHeightSupport0, float& footHeightSwing,
                                        float& footHeightSupport, Angle& turnVal, WalkKickStep& walkKickStep,
                                        Angle& turnRL0) = 0;
@@ -165,7 +180,7 @@ protected:
    * @param period The duration of a period.
    * @return The value on the cosine curve for "time".
    */
-  float cosinusZeroToMaxStep(float time, float period) const;
+  float cosineZeroToMaxStep(float time, float period) const;
 
   /**
    * Returns values with f(0) = 0, f(period) = 1.
@@ -203,14 +218,12 @@ protected:
   /**
    * Compensates for the changed position of the COM resulting from arm motion.
    * The torso is tilted to move the COM.
-   * @param leftFoot The pose of the left foot's sole relative to the torso.
-   * @param rightFoot The pose of the right foot's sole relative to the torso.
    * @param jointRequest The joint request as determined by the walk generator.
    *                     The joint request is changed to compensate for the
    *                     effect of external arm movements.
    * @param walkArms The joint request with arms set by the walking engine.
    */
-  virtual void compensateArms(Pose3f& leftFoot, Pose3f& rightFoot, JointRequest& jointRequest, const JointRequest& walkArms) = 0;
+  virtual void compensateArms(JointRequest& jointRequest, const JointRequest& walkArms) = 0;
 
   /**
    * Apply joint offsets of the current in walk kick
@@ -222,7 +235,7 @@ protected:
   /**
    * Calculate the ball position relative to the swing foot zero position
    */
-  void calculateBallPosition(const bool isLeftPhase);
+  void calculateBallPosition(const bool isLeftPhase, const Pose2f& step);
 
   /**
    * Copy values from last walk phase.
@@ -289,7 +302,7 @@ protected:
    */
   void constructorArmCompensation(const JointAngles& jointAngles, const Angle theArmCompensation);
 
-  void constructorJointSpeedRegulator();
+  void constructorJointSpeedController();
 
   /**
    * When the walkstate is standing, handle the interpolation into standing and high stand.
@@ -310,17 +323,17 @@ protected:
   /**
    * Apply offset for specific joint for InWalkKicks
    */
-  JointAngles applyJointSpeedRegulation(JointRequest& jointRequest, const Angle supportSoleRotErrorMeasured);
+  JointAngles applyJointSpeedControl(JointRequest& jointRequest, const Angle supportSoleRotErrorMeasured);
 
   /**
    * Convert positions and rotations to the corresponding joint angles and the 3D poses
    */
   bool generateJointRequest(JointRequest& jointRequest, const Pose2f& stepTarget,
                             const bool convertStepTarget, const bool useIsLeftPhase,
-                            const float ratio, float fL0, float fR0, float fL, float fR,
-                            float sL0, float sR0, float sL, float sR,
+                            const float time, const float duration, float fL0, float fR0, float fL, float fR,
+                            float sL0, float sR0, float sL, float swingStretch, float sR,
                             float& fLH0, float& fRH0, float fHL, float fHR,
-                            Angle& turn, Pose3f& leftFoot, Pose3f& rightFoot);
+                            Angle& turn, Angle& turn0, Pose3f& leftFoot, Pose3f& rightFoot);
 
   /**
    * Init the joint speed control with the current max allowed rotational speed
@@ -334,23 +347,23 @@ protected:
    */
   Pose2f convertStep(const Pose2f& step, const Angle turnOffset);
 
-  /**
-   * To reduce the time of overheating, shift the soles depending on the temperatures of the knee and ankle pitch.
-   */
-  float temperatureShiftHandling(const Pose2f& stepSizeRequest);
+  void updateSideHipShift(const bool initStep);
+
+  JointAngles calcMaxStableStepExecution(const JointAngles& lastRequest, const Pose2f stepRequest, const bool isLeftPhase, float& movementSwingXDirection);
 
   WalkingEngine& engine;
 
-  SpeedRegulatorParams speedRegulatorParams;
+  SpeedControlParams speedControlParams;
 
   WalkStepAdjustment walkStepAdjustment;
 
-  float tWalk = Constants::motionCycleTime; /**< Current time in the step (in s) but slowed down for forward translation and rotation. */
-  float tWalkSide = Constants::motionCycleTime; /**< Current time in the step (in s) but slowed down for side translation. */
-  float tBase = Constants::motionCycleTime; /**< Current time in the step (in s). */
+  float tWalk; /**< Current time in the step (in s) but slowed down for forward translation and rotation. */
+  float tWalkSide; /**< Current time in the step (in s) but slowed down for side translation. */
+  float tBase; /**< Current time in the step (in s). */
+  float lastTBase = 0.f; /**< Duration of the last walk phase. */
+  float lastStepDuration = 0.f; /** Planned duration of the last walk phase. */
   float stepDuration = 0.f; /**< Duration of the current step (in s). */
   float stepHeightDuration = 0.f; /**< Duration of the current step (in s). */
-  float stepDurationSide = 0.f; /**< Duration for the side interpolation. Needs to be lower for smaller speed, otherwise swing foot gets stuck. */
   bool isLeftPhase = false; /**< Is the left foot the swing foot? */
   Pose2f step; /**< The step made in this phase (could be reconstructed from forwardStep, sideStep and turnStep). */
   Pose2f originalStep; /**< The original values of step. */
@@ -368,9 +381,13 @@ protected:
   float sideR = 0.f; /**< The sideways offset of the right foot (in m). */
   float sideL0 = 0.f; /**< Recovery offset for side stepping of left foot (in m). */
   float sideR0 = 0.f; /**< Recovery offset for side stepping of right foot (in m). */
+  float sideSwingStretch = 0.f; /**< Stretch swing foot sideways if a step takes too long. */
 
   float measuredSideL0 = 0.f;
   float measuredSideR0 = 0.f;
+
+  float currentWalkHipHeight = 0.f; /**< The currently used walk hip height. Will be overwritten in the constructor. */
+  float targetWalkHipHeight = 0.f; /**< The current target to interpolate currentWalkHipHeight to. */
 
   float sideAcc = 0.f; /**< When dynamically changing the step for intercepting the ball, change the side direction with this acceleration. */
 
@@ -400,8 +417,7 @@ protected:
   Angle soleRotationXL = 0_deg; /**< Left ankle roll after motion phase change. */
   Angle soleRotationXR = 0_deg; /**< Right ankle roll after motion phase change. */
 
-  Angle currentWalkPhaseKneeHipBalance = 0_deg; /**< Knee and hip pitch balance value from the last motion frame. */
-  Angle lastWalkPhaseKneeHipBalance = 0_deg; /**< Knee and hip pitch balance value from the previous step. */
+  Angle maxTorsoXRotation = 0_deg; /**< Max torso x rotation in this step. Used to balance the hip roll. */
 
   int wrongSupportFootCounter = 0;
 
@@ -411,7 +427,7 @@ protected:
   unsigned int leftArmInterpolationStart = 0; /**< The timestamp the last time the left arms where not set by the WalkPhase. */
   unsigned int rightArmInterpolationStart = 0; /**< The timestamp the last time the right arms where not set by the WalkPhase. */
   unsigned int annotationTimestamp = 0; /**< The timestamp for the annotation and sound, when the balancer adjusted over a given threshold. */
-  unsigned int timeWhenLastKick = 0; /**< The timestamp when the last KickEngine kick or get up happen. */
+  unsigned int timeWhenLastKick = 0; /**< The timestamp when the last KickEngine kick or get up happend. */
 
   JointAngles startJointAngles; /**< The joint angles when the phase started (in order to interpolate to standing). */
   float standFactor = 0.f; /**< Value in [-1, 1]. -1 = start joint angles, 0 = stand, 1 = stand high. */
@@ -421,12 +437,14 @@ protected:
 
   bool afterKickWalkPhase = false; /**< Is the current step a motion phase after a get up or kick phase? */
   bool wasStandingStillOnce = false; /**< Needs to be true, so standHigh can start */
-  bool afterWalkKickPhase = false; /**< Is the current step a motion phase after an inWalkKick phase? */
+  bool afterWalkKickPhase = false; /**< Is the current step a motion phase after an InWalkKick phase? */
   bool useSlowSupportFootHeightAfterKickInterpolation = false; /**< Shall the support foot height get interpolated back to 0 with a slower speed? */
   float sideHipShift = 0.f; /**< How much the hip is shifted to the side in the current walking step. If the feet are moving together, shift the hip in the opposite direction. */
+  float lastSideHipShift = 0.f; /**< sideHipShift of the previous walk phase. */
   bool freezeSideMovement = true; /**< Freeze the sideL and sideR calculation, because of stability reasons? */
 
   bool increaseInverseKinematicClipThreshold = false; /**< After special movements like kicks we allow for some clipping. */
+  const bool isDelay = false; /**< Is the walk phase part of a delay phase? */
 
   int doBalanceSteps = 0; /**< Number of balance steps. Possible step range is replaced by how the COM moved in the last step. */
   int noFastTranslationPolygonSteps = 0; /**< Number of steps before big steps near the target are allowed. */
@@ -437,30 +455,24 @@ protected:
 
   Vector2f ball; /**< Relative ball position to the swing foot. */
 
-  std::unique_ptr<JointSpeedRegulator> jointSpeedRegulator;
-  std::unique_ptr<JointPlayOffsetRegulator> jointPlayOffsetRegulator;
+  std::unique_ptr<JointSpeedController> jointSpeedController;
+  std::unique_ptr<JointPlayOffsetController> jointPlayOffsetController;
 
   float armPitchShift[Legs::numOfLegs] = { 0.f, 0.f };
 
+  StiffnessState stiffnessState = StiffnessState::Stand;
+
   JointRequest lastJointRequest;
-
-  float torsoShift = 0.f;
-
-  // AnklePitch shall not go further positive with the gyro balancing
-  // Two entries needed because when standing both ankles need to be clipped
-  Angle currentMaxAnklePitch[Legs::numOfLegs] = {0_deg, 0_deg};
 
   std::vector<Vector2f> previousInterceptTranslationPolygon; /**< The polygon that defines the max allowed translation for the step size from the previous walk phase. */
 
-  enum WalkState
-  {
-    standing,
-    starting,
-    walking,
-    stopping
-  } walkState = standing;
+  WalkState walkState = WalkState::standing;
 
   enum { weightDidShift, weightDidNotShift, emergencyStand, emergencyStep } weightShiftStatus;
 
+  std::unique_ptr<MotionPhase> lastPhase;
+
   friend class WalkingEngine;
+
+  friend struct WalkHipShiftPhase;
 };

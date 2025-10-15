@@ -39,6 +39,7 @@ private:
   std::list<std::string> textMessages; /**< A list of all text messages received in the current frame. */
   bool newLine = true; /**< States whether the last line of text was finished by a new line. */
   int nesting = 0; /**< The number of recursion level during the execution of console files. */
+  std::string callPath; /**< The directory that is the base path for the command "call". */
   std::set<std::string> completion; /**< A list for command completion. */
   std::set<std::string>::const_iterator currentCompletionIndex; /**< Points to the last string that was used for auto completion */
   const DebugRequestTable* debugRequestTable = nullptr; /**< Points to the debug request table used for tab-completion. */
@@ -68,8 +69,8 @@ public:
 
   /**
    * Sets a representation.
-   * @param The name of the Representation to set.
-   * @param The repreentation.
+   * @param representationName The name of the Representation to set.
+   * @param representation The representation.
    */
   void setRepresentation(const std::string& representationName, const Streamable& representation);
 
@@ -288,8 +289,8 @@ private:
 
   /**
    * Show dialog and replace ${}-substrings with user input.
-   * ${Robot name:} for text field,
-   * ${Robot:,Rajesh Sheldon} for selection.
+   * ${IP address:} for text field,
+   * ${IP address:,192.168.5.11,192.168.5.12,192.168.5.13} for selection.
    */
   void showInputDialog(std::string& command);
 

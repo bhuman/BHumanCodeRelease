@@ -45,8 +45,10 @@ settingsReplacements()
 
 copy()
 {
-  REMOTE=`$RESOLVE <<<"$1"`
+  REMOTE=$1
   PLAYER=$2
+
+  source ../Common/setupTarget "$REMOTE"
 
   if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 20 )) ); then
     echo "error: player number is $PLAYER!" >&2
@@ -61,52 +63,56 @@ copy()
   fi
 
   echo "stopping bhuman"
-  ssh $SSHOPTIONS nao@$REMOTE "systemctl --user stop bhuman.service > /dev/null"
+  ssh $SSHOPTIONS $TARGET_USER@$REMOTE "systemctl --user stop bhuman.service > /dev/null"
 
   if [ ! -z $DELETELOGS ]; then
     echo "removing log files"
-    ssh $SSHOPTIONS nao@$REMOTE "rm -f /home/nao/logs/* > /dev/null"
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "rm -f /home/$TARGET_USER/logs/* > /dev/null"
   fi
 
   echo "updating wireless profiles"
-  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $SSHOPTIONS" ../../Install/Profiles/. nao@$REMOTE:/home/nao/Profiles
+  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $SSHOPTIONS" ../../Install/Profiles/. $TARGET_USER@$REMOTE:/home/$TARGET_USER/Profiles
+
   #check if PROFILE is existent
-  if [ -n "$PROFILE" ]; then
-    if [ ! -r "../../Install/Profiles/$PROFILE" ]; then
-      echo "wireless profile \"$PROFILE\" is not existent, that profile is not activated" >&2
-    else
-      RESULT=`ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setprofile $PROFILE"`
-      if [ -n "$RESULT" ]; then
-        if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
-          RESULT=""
-        fi
+  if [ ! -r "../../Install/Profiles/$PROFILE" ]; then
+    echo "wireless profile \"$PROFILE\" is not existent, that profile is not activated" >&2
+  else
+    RESULT=`ssh $SSHOPTIONS $TARGET_USER@$REMOTE "/home/$TARGET_USER/bin/setprofile $PROFILE"`
+    if [ -n "$RESULT" ]; then
+      if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
+        RESULT=""
       fi
-      if [ ! -z "$RESULT" ]; then
-        echo "$RESULT" | grep -v usage >&2
-        exit 1
-      fi
+    fi
+    if [ ! -z "$RESULT" ]; then
+      echo "$RESULT" | grep -v usage >&2
+      exit 1
     fi
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0 ../../Config/. nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/$TARGET_NAME/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux$TARGET_ARCH/libonnxruntime.so.1.10.0 ../../Config/. $TARGET_USER@$REMOTE:/home/$TARGET_USER/Config
 
   # set playback volume
   echo "setting volume to $VOLUME%"
-  ssh $SSHOPTIONS nao@$REMOTE "/home/nao/bin/setvolume $VOLUME"
+  ssh $SSHOPTIONS $TARGET_USER@$REMOTE "/home/$TARGET_USER/bin/setvolume $VOLUME"
+
+  # Modify timestamp of all configuration files
+  if [ "$TARGET_NAME" == "Booster" ]; then
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "touch /home/$TARGET_USER/Config/Robots/*/*/cameraCalibration.cfg /home/$TARGET_USER/Config/Robots/*/Body/imuCalibration.cfg"
+  fi
 
   # set settings on robot
   SEDFLAGS="$(settingsReplacements)"
   if [ ! -z "$SEDFLAGS" ]; then
     echo "updating settings"
-    ssh $SSHOPTIONS nao@$REMOTE "sed $SEDFLAGS -i /home/nao/Config/settings.cfg"
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "sed $SEDFLAGS -i /home/$TARGET_USER/Config/settings.cfg"
   else
-    ssh $SSHOPTIONS nao@$REMOTE "touch /home/nao/Config/settings.cfg"
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "touch /home/$TARGET_USER/Config/settings.cfg"
   fi
 
   if [ ! -z $RESTART ]; then
     echo "starting bhuman"
-    ssh $SSHOPTIONS nao@$REMOTE "systemctl --user start bhuman.service > /dev/null"
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "systemctl --user start bhuman.service > /dev/null"
   fi
 
   true
@@ -145,6 +151,8 @@ PROFILE=
 MAGICNUMBER=
 REQUIREUSB=
 IMAGE=
+TARGET_Nao=
+TARGET_Booster=
 if [ -z "$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)" ]; then
   RESOLVE=cat
 else
@@ -205,7 +213,9 @@ while true; do
       shift
       MULTIPLEDATA[$NUMMULTIPLE]=$1
       shift
-      MULTIPLEDATA[$NUMMULTIPLE + 1]=$1
+      MULTIPLEDATA[$NUMMULTIPLE + 1]=`$RESOLVE <<<"$1"`
+      source ../Common/setupTarget "$MULTIPLEDATA[$NUMMULTIPLE + 1]"
+      declare TARGET_$TARGET_NAME=$TARGET_NAME
       let "NUMMULTIPLE+=2"
       ;;
     "-u" | "/u")
@@ -240,7 +250,9 @@ while true; do
       usage
       ;;
     *)
-      REMOTE=$1
+      REMOTE=`$RESOLVE <<<"$1"`
+      source ../Common/setupTarget "$REMOTE"
+      declare TARGET_$TARGET_NAME=$TARGET_NAME
       ;;
   esac
   shift
@@ -316,17 +328,19 @@ fi
 chmod 600 $keyFile
 
 if [ ! -z $COMPILE ]; then
-  if [ "`uname`" = "Darwin" ]; then
-    # macOS
-    ../macOS/compile Nao $CONFIG
-    [ $? -ne 0 ] && exit 1
-  else
-    # Linux (either native or WSL)
-    echo "------ Compiling Nao ($CONFIG) ------"
-    ( cd ../Linux; cmake --build ../../Build/Linux/CMake/$CONFIG --target Nao --config $CONFIG )
-    [ $? -ne 0 ] && exit 1
-    echo "------ Successfully compiled ------"
-  fi
+  for TARGET in $TARGET_Nao $TARGET_Booster; do
+    if [ "`uname`" = "Darwin" ]; then
+      # macOS
+      ../macOS/compile $TARGET $CONFIG
+      [ $? -ne 0 ] && exit 1
+    else
+      # Linux (either native or WSL)
+      echo "------ Compiling $TARGET ($CONFIG) ------"
+      ( cd ../Linux; cmake --build ../../Build/Linux/CMake/$CONFIG --target $TARGET --config $CONFIG )
+      [ $? -ne 0 ] && exit 1
+      echo "------ Successfully compiled ------"
+    fi
+  done
 fi
 
 if [ ! -z $IMAGE ]; then # write an opn image

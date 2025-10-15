@@ -1,8 +1,6 @@
 set(STREAMING_ROOT_DIR "${BHUMAN_PREFIX}/Src/Libs/Streaming")
 
 set(STREAMING_SOURCES
-    "${STREAMING_ROOT_DIR}/AlignedMemory.cpp"
-    "${STREAMING_ROOT_DIR}/AlignedMemory.h"
     "${STREAMING_ROOT_DIR}/AutoStreamable.h"
     "${STREAMING_ROOT_DIR}/Enum.h"
     "${STREAMING_ROOT_DIR}/EnumIndexedArray.h"

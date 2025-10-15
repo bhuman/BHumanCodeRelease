@@ -22,7 +22,7 @@
 #include "Math/RingBufferWithSum.h"
 
 /** Number of contacts to buffer. 83 complies to 1 second */
-#define BUFFER_SIZE static_cast<int>(1.f / Constants::motionCycleTime)
+#define BUFFER_SIZE static_cast<int>(1.f / Constants::naoMotionCycleTime)
 
 MODULE(FootBumperStateProvider,
 {,

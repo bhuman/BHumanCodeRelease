@@ -40,5 +40,5 @@ STREAMABLE(HeadMotionRequest,
   (Angle)(0) tilt,          /**< Head tilt target angle in radians. */
   (Angle)(1) speed,         /**< Maximum joint speed to reach target angles in radians/s. */
   (Vector3f)(Vector3f::Zero()) target,        /**< Look at target relative to the robot. */
-  (bool)(false) stopAndGoMode, /**< The Head will slow down and stop every HeadMotionEngine.stopAndGoModeFrequenzy milliseconds */
+  (bool)(false) stopAndGoMode, /**< The Head will slow down and stop every HeadMotionEngine.stopAndGoModeFrequency milliseconds */
 });

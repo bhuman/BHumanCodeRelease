@@ -8,7 +8,7 @@
  * this is important to construct the se3 element from the vector as well as for the construction of the adjoint matrix
  *
  * Sources:
- * [1] J.-L. Blanco, “A tutorial on SE(3) transformation parameterizations and on-manifold optimization,” MAPIR: Grupo de Percepci ́ on y Rob ́ otica Dpto. de Ingenier ́ıa de Sistemas y Autom ́atica, Málaga, Technical #012010, Oct. 2014. Accessed: May 09, 2023. [Online]. Available: http://jinyongjeong.github.io/Download/SE3/jlblanco2010geometry3d_techrep.pdf
+ * [1] J.-L. Blanco, “A tutorial on SE(3) transformation parameterizations and on-manifold optimization,” MAPIR: Grupo de Percepción y Robótica Dpto. de Ingeniería de Sistemas y Automática, Málaga, Technical report #012010, Oct. 2014. Accessed: May 09, 2023. [Online]. Available: http://jinyongjeong.github.io/Download/SE3/jlblanco2010geometry3d_techrep.pdf
  * [2] L. Meyer, K. H. Strobl, and R. Triebel, “The Probabilistic Robot Kinematics Model and its Application to Sensor Fusion,” in 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Oct. 2022, pp. 3263–3270. doi: 10.1109/IROS47612.2022.9981399.
  *
  * @author Yannik Meinken

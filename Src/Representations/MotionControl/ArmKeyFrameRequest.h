@@ -28,7 +28,7 @@ STREAMABLE(ArmKeyFrameRequest,
     arm45degreeUpSideways, /**< Move the Arm in a position 45 Degrees up sideways to the body of the robot*/
     arm45degreeDownSideways, /**< Move the Arm in a position 45 Degrees down sideways to the body of the robot*/
     armHorizontalSideways, /**< Move the Arm in a position horizontal sideways to the body of the robot*/
-    armHandToChest, /**< Bent the arm at the ellbow, so the hand of the robot is in front of the chest while the shoulder doesn't move*/
+    armHandToChest, /**< Bent the arm at the elbow, so the hand of the robot is in front of the chest while the shoulder doesn't move*/
     arm45degreeUpFront, /**< Move the arm in a position 45 Degree down in front of the body of the robot*/
     dynamicRefereePosition, /**< both arms in a horizontal sideways position, to a hands in front of the chest position two times*/
     reverse,     /**< Reverse current arm keyframe motion */

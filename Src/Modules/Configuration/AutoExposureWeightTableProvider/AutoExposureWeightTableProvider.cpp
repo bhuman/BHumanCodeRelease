@@ -35,7 +35,10 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
   }
 
   // Use static table or reset all weights to 0.
-  if(useStaticTables[theCameraInfo.camera])
+  if(useStaticTables[theCameraInfo.camera]
+     || (theCameraInfo.camera == CameraInfo::upper
+         && staticTableForRefereeDetection
+         && theRefereeDetectionRequest.detectReferee))
     table = staticTables[theCameraInfo.camera];
   else
   {

@@ -67,7 +67,7 @@ private:
 
   // Drawing methods for debugging
   void draw();
-  void drawRasteredContour(const Contour& contour, const ColorRGBA& color) const;
+  void drawRasterizedContour(const Contour& contour, const ColorRGBA& color) const;
   void drawCylinderRing(const CylinderRing& cylinderRing, const CameraModelOpenCV& camera) const;
 
 public:

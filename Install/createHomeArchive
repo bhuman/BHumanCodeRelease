@@ -23,7 +23,7 @@ homeArchive="${baseDir}/home.tar.gz"
 
 tarOptions=
 if [ "$(uname)" == "Darwin" ]; then
-  tarOptions=--no-fflags
+  tarOptions=--no-mac-metadata
 fi
 
 usage() {
@@ -77,7 +77,7 @@ parseOptions() {
     esac
   done
 
-  if ! [ -r "${installDir}/Profiles/${wirelessProfile}" ]; then
+  if ! [ -r "${baseDir}/Profiles/${wirelessProfile}" ]; then
     echo "wireless profile \"${wirelessProfile}\" does not exist." >&2
     exit 1
   fi
@@ -104,13 +104,13 @@ mkdir -p "${homeDir}/nao"
 
 # /home/nao/.ssh/authorized_keys
 mkdir -p "${homeDir}/nao/.ssh"
-cp "${installDir}/Keys/id_rsa_nao.pub" "${homeDir}/nao/.ssh/authorized_keys"
+cp "${baseDir}/Keys/id_rsa_nao.pub" "${homeDir}/nao/.ssh/authorized_keys"
 
 # /home/nao/.config/systemd/user/{alsa-kludge,bhuman,hal,lola}.service
 # /home/nao/.config/systemd/user/default.target.wants/{alsa-kludge,bhuman,hal,lola}.service
 mkdir -p "${homeDir}/nao/.config/systemd/user/default.target.wants"
 for service in alsa-kludge bhuman hal lola; do
-  cp "${installDir}/Files/${service}.service" "${homeDir}/nao/.config/systemd/user"
+  cp "${baseDir}/Files/${service}.service" "${homeDir}/nao/.config/systemd/user"
   ln -s ../${service}.service "${homeDir}/nao/.config/systemd/user/default.target.wants/${service}.service"
 done
 
@@ -120,13 +120,13 @@ echo "${playbackVolume}" >"${homeDir}/nao/.config/volume"
 touch "${homeDir}/nao/robocup.conf" "${homeDir}/nao/touchfiles"
 
 # /home/nao/bin
-cp -r "${installDir}/Files/bin" "${homeDir}/nao"
+cp -r "${baseDir}/Files/bin" "${homeDir}/nao"
 
 # /home/nao/Profiles
-cp -r "${installDir}/Profiles" "${homeDir}/nao"
+cp -r "${baseDir}/Profiles" "${homeDir}/nao"
 
 # /home/nao/Profiles/default (used by install.sh)
-sed -e "s/^/        /" "${installDir}/Profiles/${wirelessProfile}" >"${homeDir}/nao/Profiles/default"
+sed -e "s/^/        /" "${baseDir}/Profiles/${wirelessProfile}" >"${homeDir}/nao/Profiles/default"
 
 # /home/nao/logs
 mkdir -p "${homeDir}/nao/logs"

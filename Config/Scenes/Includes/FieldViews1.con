@@ -5,7 +5,7 @@ vfd worldState fieldLines
 vfd worldState goalFrame
 vfd worldState representation:RobotPose
 vfd worldState representation:RobotPose:fieldOfView
-vfd worldState representation:TeammatesBallModel
+vfd worldState representation:TeamBallModel
 vfd worldState representation:FieldBall:global
 vfd worldState representation:GlobalOpponentsModel
 vfd worldState representation:GlobalTeammatesModel

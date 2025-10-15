@@ -1,5 +1,6 @@
 call Includes/Normal
 call Includes/7vs7
+ar trueGameState off
 
 dr debugDrawing3d:representation:RobotPose
 dr representation:SetupPoses:place

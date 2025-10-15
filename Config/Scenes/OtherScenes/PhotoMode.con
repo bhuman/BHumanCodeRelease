@@ -17,7 +17,7 @@ mr JPEGImage off
 
 dr module:GameStateProvider:active
 
-call Includes/DebugResponses
+call ../Includes/DebugResponses
 
 # Press head front button (Shift+Ctrl+F)
 jc press 6 set representation:KeyStates pressed = { headFront = true; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };

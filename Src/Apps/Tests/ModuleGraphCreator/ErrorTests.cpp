@@ -7,7 +7,6 @@
  */
 
 #include "ModuleGraphCreator/ModuleGraphCreatorTest.h"
-#include "Streaming/FunctionList.h"
 
 #include <gtest/gtest.h>
 #include <ostream>
@@ -47,7 +46,6 @@ class ModuleGraphCreatorDeathTest : public testing::TestWithParam<Errors> {};
 
 TEST_P(ModuleGraphCreatorDeathTest,)
 {
-  FunctionList::execute();
   ModuleGraphCreator graphCreator(GetParam().config);
   OutBinaryMemory out(100);
   out << GetParam().config;
@@ -71,7 +69,7 @@ INSTANTIATE_TEST_CASE_P(UnknownModule, ModuleGraphCreatorDeathTest, testing::Val
     "a: Module XYZ is unknown!\n$"}
 ));
 
-// OUTPUT_ERROR("Default representation " << rrepresentation << " is not required anywhere!");
+// OUTPUT_ERROR("Default representation " << representation << " is not required anywhere!");
 INSTANTIATE_TEST_CASE_P(UnknownRepresentation, ModuleGraphCreatorDeathTest, testing::Values(
   // No existing representation.
   Errors { createConfig({}, {"a"}),
@@ -146,7 +144,7 @@ INSTANTIATE_TEST_CASE_P(UnknownModule, ExpModuleGraphCreatorDeathTest, testing::
     createConfig({{{"A", "Ac"}, {"", "XYZ"}}}), {{{"a: Module XYZ is unknown!\n$"}}}, {}}
 ));
 
-// The number of threads musst be even.
+// The number of threads must be even.
 GTEST_TEST(ModuleGraphCreator, unevenDeathTest)
 {
   ModuleGraphCreator moduleGraphCreator(createConfig({{{"A", "Ac"}}}));
@@ -176,7 +174,7 @@ INSTANTIATE_TEST_CASE_P(Default, ModuleGraphCreatorDeathTest, testing::Values(
     "b: D is also provided by default!\n$"}
 ));
 
-// Same representation requestet from multiple threads.
+// Same representation requested from multiple threads.
 INSTANTIATE_TEST_CASE_P(ReprFromMultiThreads, ModuleGraphCreatorDeathTest, testing::Values(
   // OUTPUT_ERROR(config()[index].name << ": Representation " << rp.representation << " is provided by multiple threads!");
   Errors {createConfig({{{"A", "Ac"}}, {{"B", "Bc"}, {"A", "Bm"}}, {{"B", "Cc"}}}),

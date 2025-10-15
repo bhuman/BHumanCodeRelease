@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "Tools/Communication/BHumanMessageParticle.h"
 #include "Math/Pose2f.h"
 #include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
+#include "Tools/Communication/BHumanMessageParticle.h"
 
 /**
  * @struct RobotPose
@@ -52,6 +53,7 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle
 
   /** Verifies that the robot pose contains valid values. */
   void verify() const;
+
   /** Draws the robot pose in the color of the team to the field view. */
   void draw() const;
 
@@ -90,6 +92,7 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle
 
 private:
   Pose2f inversePose;                             /**< The inverted robot pose. Precomputed as it is needed often. */
+
 public:,
   (LocalizationQuality)(superb) quality,          /**< Indicates how good the pose estimate seems to be (must not be true). */
   (Matrix3f)(Matrix3f::Identity()) covariance,    /**< The covariance matrix of the estimated robot pose. */

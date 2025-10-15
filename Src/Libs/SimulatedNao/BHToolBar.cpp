@@ -107,13 +107,13 @@ void BHToolBar::headAngle(bool active)
 {
   if(active)
   {
-    HeadMotionRequest hmreq;
-    hmreq.mode = HeadMotionRequest::panTiltMode;
-    hmreq.cameraControlMode = HeadMotionRequest::autoCamera;
-    hmreq.pan = JointAngles::off;
-    hmreq.tilt = JointAngles::off;
-    hmreq.speed = 150_deg;
-    console.setRepresentation("HeadMotionRequest", hmreq);
+    HeadMotionRequest hMReq;
+    hMReq.mode = HeadMotionRequest::panTiltMode;
+    hMReq.cameraControlMode = HeadMotionRequest::autoCamera;
+    hMReq.pan = JointAngles::off;
+    hMReq.tilt = JointAngles::off;
+    hMReq.speed = 150_deg;
+    console.setRepresentation("HeadMotionRequest", hMReq);
   }
   else
     console.executeConsoleCommand("set representation:HeadMotionRequest unchanged");

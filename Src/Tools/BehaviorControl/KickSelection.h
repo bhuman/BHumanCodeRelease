@@ -39,7 +39,7 @@ namespace KickSelection
   /**
    * Calculates an approximation of the time needed to reach a target pose.
    * @param poseRelative The target pose in robot-relative coordinates.
-   * @param maxSpeed The maximum speed of the walking engine.
+   * @param maxSpeed The maximum allowed walking speed.
    * @return An approximation of the time to reach the target pose (in milliseconds).
    *
    * @author Andreas Stolpmann

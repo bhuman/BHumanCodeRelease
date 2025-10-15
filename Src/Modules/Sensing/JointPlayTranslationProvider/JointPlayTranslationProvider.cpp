@@ -5,6 +5,7 @@
  */
 
 #include "JointPlayTranslationProvider.h"
+#include "Framework/Settings.h"
 #include "Platform/SystemCall.h"
 
 MAKE_MODULE(JointPlayTranslationProvider);
@@ -20,6 +21,8 @@ JointPlayTranslationProvider::JointPlayTranslationProvider()
 
 void JointPlayTranslationProvider::update(JointPlayTranslation& theJointPlayTranslation)
 {
+  const float motionCycleTime = Global::getSettings().motionCycleTime;
+
   FOREACH_ENUM(Joints::Joint, joint)
   {
     // 1. Calculate the offset
@@ -38,7 +41,7 @@ void JointPlayTranslationProvider::update(JointPlayTranslation& theJointPlayTran
     }
 
     // 2. limit the offset based on the measured joint velocity
-    const Rangea movementOffset(std::min(-theJointPlay.jointState[joint].velocity, 0_deg), std::max(-theJointPlay.jointState[joint].velocity, 0_deg));
+    const Rangea movementOffset(std::min(-theJointPlay.jointState[joint].velocity * motionCycleTime, 0.f), std::max(-theJointPlay.jointState[joint].velocity * motionCycleTime, 0.f));
     currentOffset -= movementOffset.limit(currentOffset);
     offsetFilter[joint].update(currentOffset);
 

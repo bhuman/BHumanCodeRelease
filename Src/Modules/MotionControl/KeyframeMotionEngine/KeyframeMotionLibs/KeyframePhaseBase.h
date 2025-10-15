@@ -20,6 +20,7 @@
 #include "Representations/MotionControl/KeyframeMotionParameters.h"
 #include "Representations/MotionControl/KeyframeMotionRequest.h"
 #include "Tools/Motion/EngineState.h"
+#include "Tools/Motion/LowPassFilterPR.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Tools/Motion/MotionUtilities.h"
 
@@ -77,6 +78,7 @@ ENUM(ConditionVar,
   ComOutOfSupportPolygonX, // Negative values -> inside, Positive values -> outside. Distance in mm to the nearest edge
   LyingOnArmsFront,
   TryCounter,
+  AnotherFrontHack,
 });
 
 STREAMABLE(Condition,
@@ -100,6 +102,79 @@ STREAMABLE_WITH_BASE(WaitCondition, Condition,
   (int)(1000) maxWaitTime, // Max wait time
 });
 
+STREAMABLE(JointBalancePair,
+{
+  ENUM(JointBalanceType,
+  {,
+    Default,
+    OnlyPositive,
+    OnlyNegative,
+    AbsolutePositive,
+    AbsoluteNegative,
+  });
+
+  static JointBalanceType mirror(const Joints::Joint joint, const JointBalanceType jointBalanceType, const bool forwardTiltCase)
+  {
+    if((forwardTiltCase && (joint == Joints::lAnkleRoll     // forward / backward balancing. Roll needs to switch sign, because feet are rotated around the z-axis
+                            || joint == Joints::rAnkleRoll
+                            || joint == Joints::lHipRoll
+                            || joint == Joints::rHipRoll))
+       ||
+       (!forwardTiltCase && (joint == Joints::lAnklePitch // sideways balancing. Pitch needs to switch sign, because feet are rotated around the z-axis
+                             || joint == Joints::rAnklePitch
+                             || joint == Joints::lKneePitch
+                             || joint == Joints::rKneePitch
+                             || joint == Joints::lHipPitch
+                             || joint == Joints::rHipPitch)))
+    {
+      switch(jointBalanceType)
+      {
+        case JointBalanceType::Default:
+          return JointBalanceType::Default;
+        case JointBalanceType::OnlyPositive:
+          return JointBalanceType::OnlyNegative;
+        case JointBalanceType::OnlyNegative:
+          return JointBalanceType::OnlyPositive;
+        case JointBalanceType::AbsolutePositive:
+          return JointBalanceType::AbsoluteNegative;
+        case JointBalanceType::AbsoluteNegative:
+          return JointBalanceType::AbsolutePositive;
+      }
+    }
+    return JointBalanceType::Default;
+  };
+
+  static float applyJointBalanceType(const JointBalanceType jointBalanceType, const float balanceVal, const bool forwardTiltCase, const Joints::Joint joint)
+  {
+    if(!forwardTiltCase && (joint == Joints::lAnkleRoll      // forward / backward balancing. Roll needs to switch sign, because feet are rotated around the z-axis
+                            || joint == Joints::rAnkleRoll
+                            || joint == Joints::lHipRoll
+                            || joint == Joints::rHipRoll))
+    {
+      switch(jointBalanceType)
+      {
+        case JointBalanceType::Default:
+          return balanceVal;
+        case JointBalanceType::OnlyPositive:
+          return std::max(balanceVal, 0.f);
+        case JointBalanceType::OnlyNegative:
+          return std::min(balanceVal, 0.f);
+        case JointBalanceType::AbsolutePositive:
+          return std::abs(balanceVal);
+        case JointBalanceType::AbsoluteNegative:
+          return -std::abs(balanceVal);
+        default:
+          return balanceVal;
+      }
+    }
+    return balanceVal;
+  },
+
+  (Joints::Joint)(Joints::headYaw)joint,  // The joint
+  (float)(0.f) scaling, // The scaling factor
+  (JointBalanceType)(JointBalanceType::Default) jointBalanceType,
+});
+
 STREAMABLE(JointPair,
 {,
   (Joints::Joint)(Joints::headYaw) joint,  // The joint
@@ -109,8 +184,8 @@ STREAMABLE(JointPair,
 // List of joints used to balance
 STREAMABLE(BalanceOptionJoints,
 {,
-  (std::vector<JointPair>) jointY,
-  (std::vector<JointPair>) jointX,
+  (std::vector<JointBalancePair>) jointY,
+  (std::vector<JointBalancePair>) jointX,
 });
 
 STREAMABLE(JointCompensationParams,
@@ -121,12 +196,6 @@ STREAMABLE(JointCompensationParams,
   // scale from 0 to minVal and from 0 to maxVal and take the higher percent value
   (std::vector<JointPair>) jointPairs, // The joints used for compensation
   (bool)(false) predictJointDiff, // Predict the angle of jointDelta
-});
-
-STREAMABLE(JointCompensation,
-{,
-  (std::vector<JointCompensationParams>) jointCompensationParams, // List of joints that shall be compensated
-  (float)(0.2f) reduceFactorJointCompensation, // reduceFactor to reduce over compensating. Only used if predictJointDiff = true
 });
 
 namespace KeyframeMotionListID
@@ -251,7 +320,7 @@ STREAMABLE(Keyframe,
   (bool)(false) setLastCom, // shall last com be overwritten with the current com at the start of the keyframe?
   (bool)(false) forbidWaitBreak, // Wait time is not allowed to break up early if goal angle is not reachable
   (InterpolationType)(InterpolationType::Default) interpolationType, // How shall the interpolation be done
-  (std::optional<JointCompensation>) jointCompensation, // list of joints that shall be compensated. Only first entry is used. A list is used because: no compensation -> empty list -> no useless lines in the config file
+  (std::vector<JointCompensationParams>) jointCompensation, // list of joints that shall be compensated. Only first entry is used. A list is used because: no compensation -> empty list -> no useless lines in the config file
   (std::vector<WaitCondition>) waitConditions, // conditions, if a wait time shall be executed at the end of a keyframe
   (std::vector<KeyframeBlockBranch>) keyframeBranches,
   (BalanceOptionJoints) balanceWithJoints, // add the balance factor of the pid-controller on top of these joints
@@ -330,6 +399,8 @@ STREAMABLE(SafeFallParameters,
   (Angle)(0) head, // Head position
   (int)(0) headStiffness, // Head stiffness at start of fall
   (int)(0) bodyStiffness, // Body stiffness while falling
+  (int)(0) hipPitchStiffness,
+  (int)(0) elbowRollStiffness,
   (int)(0) lowHeadStiffnessWaitTime, // High head stiffness for this duration
   (int)(0) unstiffWaitTime, // Set Stiffness 0 after this much time has passed
 });
@@ -459,7 +530,7 @@ protected:
    * The method applies the joint compensation of the previous keyframe
    */
 
-  void applyJointCompensation();
+  std::vector<std::pair<JointCompensationParams, JointAngles>> applyJointCompensation(const std::vector<JointCompensationParams>& jointCompensation, JointRequest& request);
 
   /**
    * The method removes the joint compensation of the previous keyframe
@@ -515,11 +586,12 @@ protected:
 
   JointAngles startJoints; // measured joint data when the last key frame was passed
 
-  JointAngles jointDiff1Angles, // saved the difference of the request and reached angles with a delay
-              jointDiffPredictedAngles, // diff of set and reached joint angles
+  std::array<LowPassFilterPR, Joints::numOfJoints> filteredJointDiffAngles; // saved the difference of the request and reached angles with a delay
+
+  JointAngles jointDiffPredictedAngles, // diff of set and reached joint angles
               lineJointRequestAngles, // current goal angles of the current keyframe
               lastKeyframeLineJointRequest, // lineJointRequest from previous keyframe
-              lineJointRequest2Angles, // saves lineJointRequest2
+              targetJointRequestWithoutCompensation, // saves joint angles from the config for the current keyframe without the compensation
               lastOutputLineJointRequestAngles, // saves the lineJointRequest of the keyframe before
 
               // for forcing stuck joints
@@ -530,10 +602,13 @@ protected:
 
   JointRequest lastUnbalanced, // calculated last target joint angles without balance added
                targetJoints, // calculated next target joint angles without balance added
-               lineJointRequest, // joint angles from the config for the current keyframe
+               targetJointRequestWithCompensation, // joint angles from the config for the current keyframe with the compensation
                jointRequestOutput; // the generated joint request for the current frame
 
-  RingBuffer<JointAngles, 4> pastJointAnglesAngles; // TODO reduce to 3 or even 2? Last JointRequest is added in the current frame. The current JointRequest in the next motion frame.
+  RingBuffer<JointAngles, 3> pastJointAnglesAngles; // TODO reduce to 3 or even 2? Last JointRequest is added in the current frame. The current JointRequest in the next motion frame.
+
+  std::vector<std::pair<JointCompensationParams, JointAngles>> lastKeyframeCompensation;
+  std::vector<std::pair<JointCompensationParams, JointAngles>> lastCompensation;
 
   // Which joints were used for balancing from the previous keyframe
   std::vector<Joints::Joint> jointsBalanceY,
@@ -541,8 +616,6 @@ protected:
 
   // Last 2 Gyro values
   RingBuffer<Vector2a, 3> lastTorsoAngle;
-
-  std::array<float, Joints::numOfJoints> jointCompensationReducer; // how much is the last jointCompensation of the keyframe before already reduced? (Value between 0 and 1)
 
   Vector2f lastGoal = Vector2f::Zero(), // last com goal
            goalGrowth = Vector2f::Zero(), // how much shall com_foot_last - com_foot_current be in an ideal world?
@@ -562,7 +635,9 @@ protected:
     float rollValue = 0.f;
   };
 
-  BalancerValue balanceValue; // output of PID-Controller
+  //BalancerValue balanceValue; // output of PID-Controller
+  LowPassFilterPR balancerPitchValue = LowPassFilterPR(0.2f, 0.5f);
+  LowPassFilterPR balancerRollValue = LowPassFilterPR(0.2f, 0.5f);
 
   DirectionValue lastComDiffBaseForBalancing, // max com diff, before the balancer value is increased by 100%
                  currentComDiffBaseForBalancing, // Max com to increase balancer values
@@ -597,8 +672,10 @@ protected:
        didFirstGetUp = false, // For the first get up decide if the motion shall be mirrored or not
        finishGettingUp = false, // If the motion request changes from decideAutomatic to another motion and the robot is still doing a recover, he will abort the get up without this flag
        doSlowKeyframeAfterFall = false, // When a non get up motion went into the breakUp state and is upright again, execute the first keyframe slow. We assume the robot is hold by a human
+       doSlowFrontRecovery = false, // After a break up the next front motion shall start slower
        waitForFallenCheck = true, // Do stuff when breaking up get up motion only once
-       forceStandMotionAfterPlaydead = false;
+       forceStandMotionAfterPlaydead = false,
+       motorMalfunctionRecovery = false; // A motor turned off. We reached a state in which we assume a human holds us upright, therefore ignore break up just from motor malfunction
 
   std::array<int, KeyframeMotionListID::numOfKeyframeMotionListIDs> motionListIDLoops;
   std::array<int, KeyframeMotionBlockID::numOfKeyframeMotionBlockIDs> blockIDLoops;

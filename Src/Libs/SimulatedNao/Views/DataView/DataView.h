@@ -73,6 +73,9 @@ public:
   /** Request the data again if necessary. */
   void repoll();
 
+  /** Is currently polling data? */
+  bool isPolling() {return pollingData;}
+
   /**
    * Sends the current values to the robot.
    */
@@ -116,6 +119,7 @@ private:
   int ignoreUpdates = 0; /**< If greater than 0, handleMessage returns without doing anything */
   QtProperty* pTheCurrentRootNode; /**< Pointer to the current root property */
   bool setWasCalled = false; /**< Data was sent to the robot. */
+  bool pollingData = false; /**< Is this view currently polling data from the robot? */
 
   /**
    * This map is used to store all properties that have been created so far.

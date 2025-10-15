@@ -1,0 +1,77 @@
+# Configuration for simulation scenes with simulated percepts
+
+# Activate simulation time
+st on
+
+# Only a single robot displays game state
+dr debugDrawing3d:representation:GameState
+
+# In case we have more than a single robot
+robot all
+
+# Fast, because we do not compute images
+ci 30
+ci off
+
+# Ground truth modules
+for Cognition mr GroundTruthWorldState LogDataProvider
+for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
+for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
+
+# Activate, so they can provide drawings
+for Upper mr ObstaclesFieldPercept OracledPerceptsProvider
+for Upper mr ObstaclesImagePercept OracledPerceptsProvider
+
+# Field views need ground truth and some later deactivated modules
+call FieldViews
+
+# Select modules for simulator
+for Upper mr CameraInfo LogDataProvider
+for Upper mr FrameInfo LogDataProvider
+for Motion mr FrameInfo LogDataProvider
+for Motion mr JointSensorData LogDataProvider
+for Motion mr KeyStates LogDataProvider
+for Motion mr RawInertialSensorData LogDataProvider
+
+# Switch to percept oracle
+for Upper mr BallPercept OracledPerceptsProvider
+for Upper mr CirclePercept OracledPerceptsProvider
+for Upper mr FieldBoundary OracledPerceptsProvider
+for Upper mr LinesPercept OracledPerceptsProvider
+for Upper mr PenaltyMarkPercept OracledPerceptsProvider
+
+# Representations not required anymore
+mr AutoExposureWeightTable off
+mr BallSpots off
+mr CameraImage off
+mr CameraIntrinsics off
+mr ColorScanLineRegionsHorizontal off
+mr ColorScanLineRegionsVerticalClipped off
+mr ECImage default
+mr JerseyClassifier off
+mr JPEGImage off
+mr ObstacleScan off
+mr OtherFieldBoundary off
+mr OtherOdometryData off
+mr PenaltyMarkRegions off
+mr RelativeFieldColors off
+mr ScanGrid off
+mr SegmentedObstacleImage off
+
+# Representations that are still required
+mr CameraStatus default
+mr RobotHealth default
+mr RefereeGesture default
+mr RefereeSignal default
+mr OptionalCameraImage default
+mr OptionalECImage default
+for Motion mr CameraIntrinsics ConfigurationDataProvider
+
+call GameStates
+call DebugResponses
+
+dr debugDrawing3d:representation:RobotPose
+# dr debugDrawing3d:representation:GameState:playerNumber
+
+# clear ball is not working correctly
+ar clearBall off

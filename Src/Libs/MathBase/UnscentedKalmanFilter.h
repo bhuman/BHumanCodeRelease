@@ -18,7 +18,7 @@
 
 /**
  * A Manifold construct to handle state spaces with singularities and encapsulate
- * the topological stucure with [+] and [-] operations.
+ * the topological structure with [+] and [-] operations.
  */
 template<unsigned N>
 struct Manifold
@@ -64,6 +64,7 @@ namespace impl
 
   private:
     SigmaArray<State> sigmaPoints; // The array for the sigma points
+    static constexpr float covOffset = 1e-7f;
 
   public:
     /**
@@ -217,32 +218,32 @@ namespace impl
       z += Zi;
     z /= static_cast<float>(sigmaPoints.size());
 
-    MeasurementCovarianceType sigmaz = MeasurementCovarianceType::Zero();
+    MeasurementCovarianceType sigmaZ = MeasurementCovarianceType::Zero();
     for(MeasurementType& Zi : Z)
     {
       const MeasurementType dist = Zi - z;
-      sigmaz += dist * dist.transpose();
+      sigmaZ += dist * dist.transpose();
     }
-    sigmaz *= 0.5f;
-    sigmaz += measurementNoise;
+    sigmaZ *= 0.5f;
+    sigmaZ += measurementNoise;
 
-    MixedCovarianceType sigmaxz = MixedCovarianceType::Zero();
+    MixedCovarianceType sigmaXZ = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)
     {
       const State& Xi = sigmaPoints[i];
       const MeasurementType& Zi = Z[i];
-      sigmaxz += (Xi - mean) * (Zi - z).transpose();
+      sigmaXZ += (Xi - mean) * (Zi - z).transpose();
     }
-    sigmaxz *= 0.5f;
+    sigmaXZ *= 0.5f;
     //The kalman gain
     MixedCovarianceType K = MixedCovarianceType::Zero();
-    if(sigmaz.determinant() != 0)
-      K = sigmaxz * sigmaz.inverse();
+    if(sigmaZ.determinant() != 0)
+      K = sigmaXZ * sigmaZ.inverse();
     ASSERT(K.allFinite());
 
     //Derive the mean and the covariance using the kalman gain
     mean += K * (measurement - z);
-    cov -= K * sigmaz * K.transpose();
+    cov -= K * sigmaZ * K.transpose();
 
     fixCovarianceMatrix(cov);
     covarianceMatrixValidation(cov);
@@ -273,25 +274,25 @@ namespace impl
       z += Zi;
     z /= static_cast<float>(sigmaPoints.size());
 
-    float sigmaz = 0.f;
+    float sigmaZ = 0.f;
     for(float& Zi : Z)
-      sigmaz += sqr(Zi - z);
-    sigmaz *= 0.5f;
-    sigmaz += measurementNoise;
+      sigmaZ += sqr(Zi - z);
+    sigmaZ *= 0.5f;
+    sigmaZ += measurementNoise;
 
-    MixedCovarianceType sigmaxz = MixedCovarianceType::Zero();
+    MixedCovarianceType sigmaXZ = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)
     {
       const State& Xi = sigmaPoints[i];
       const float& Zi = Z[i];
-      sigmaxz += (Xi - mean) * (Zi - z);
+      sigmaXZ += (Xi - mean) * (Zi - z);
     }
-    sigmaxz *= 0.5f;
+    sigmaXZ *= 0.5f;
 
-    const MixedCovarianceType K = sigmaxz * (1.f / sigmaz);
+    const MixedCovarianceType K = sigmaXZ * (1.f / sigmaZ);
 
     mean += K * (measurement - z);
-    cov -= K * sigmaz * K.transpose();
+    cov -= K * sigmaZ * K.transpose();
 
     fixCovarianceMatrix(cov);
     covarianceMatrixValidation(cov);
@@ -361,6 +362,13 @@ namespace impl
   template<typename State, unsigned DOF, bool IsManifold>
   inline void UnscentedKalmanFilter<State, DOF, IsManifold>::fixCovarianceMatrix(CovarianceType& cov)
   {
+    float smallestCov = cov(0, 0);
+    for(unsigned i = 1; i < DOF; ++i)
+      smallestCov = std::min(smallestCov, cov(i, i));
+    if(smallestCov <= 0.f)
+      for(unsigned i = 0; i < DOF; ++i)
+        cov(i, i) += -smallestCov + covOffset;
+
     for(unsigned i = 0; i < DOF; ++i)
     {
       for(unsigned j = i + 1; j < DOF; ++j)

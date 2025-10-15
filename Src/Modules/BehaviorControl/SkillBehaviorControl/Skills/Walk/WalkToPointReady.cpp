@@ -13,7 +13,7 @@
 option((SkillBehaviorControl) WalkToPointReady,
        args((const Pose2f&) target,
             (const Pose2f&) speed,
-            (ReduceWalkSpeedType) reduceWalkingSpeed),
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType),
        defs((int)(2000) timeToEmergencyMode, /**< If only this time is left in the ready state, the robot will just turn to its final rotation. */
             (int)(5000) timeToTOI)) /**< If only this time is left in the ready state, the robot will be forced to keep the opponent goal (set as the targetOfInterest, TOI) in front of it. */
 {
@@ -57,13 +57,13 @@ option((SkillBehaviorControl) WalkToPointReady,
       if(theGameState.isKickOff())
         WalkToPoint({.target = targetRelative,
                      .speed = theGameState.kickOffSetupFromTouchlines ? speed : Pose2f(1.f, 1.f, 1.f),
-                     .reduceWalkingSpeed = reduceWalkingSpeed,
+                     .reduceWalkSpeedType = reduceWalkSpeedType,
                      .rough = targetRelative.translation.norm() < 500.f,
                      .targetOfInterest = useTargetOfInterest ? targetOfInterest : std::optional<Vector2f>()});
       else
         WalkToPointObstacle({.target = targetRelative,
                              .speed = theGameState.kickOffSetupFromTouchlines ? speed : Pose2f(1.f, 1.f, 1.f),
-                             .reduceWalkingSpeed = reduceWalkingSpeed,
+                             .reduceWalkSpeedType = reduceWalkSpeedType,
                              .rough = targetRelative.translation.norm() < 500.f,
                              .targetOfInterest = useTargetOfInterest ? targetOfInterest : std::optional<Vector2f>() });
     }
@@ -85,13 +85,13 @@ option((SkillBehaviorControl) WalkToPointReady,
       if(theGameState.isKickOff())
         WalkToPoint({.target = targetRelative,
                      .speed = speed,
-                     .reduceWalkingSpeed = reduceWalkingSpeed,
+                     .reduceWalkSpeedType = reduceWalkSpeedType,
                      .rough = true,
                      .disableObstacleAvoidance = theStrategyStatus.role == PositionRole::toRole(PositionRole::goalkeeper)});
       else
         WalkToPointObstacle({.target = targetRelative,
                              .speed = speed,
-                             .reduceWalkingSpeed = reduceWalkingSpeed,
+                             .reduceWalkSpeedType = reduceWalkSpeedType,
                              .rough = true,
                              .disableObstacleAvoidance = theStrategyStatus.role == PositionRole::toRole(PositionRole::goalkeeper)});
     }
@@ -113,12 +113,12 @@ option((SkillBehaviorControl) WalkToPointReady,
       if(theGameState.isKickOff())
         WalkToPoint({.target = targetRelative,
                      .speed = speed,
-                     .reduceWalkingSpeed = reduceWalkingSpeed,
+                     .reduceWalkSpeedType = reduceWalkSpeedType,
                      .rough = true});
       else
         WalkToPointObstacle({.target = targetRelative,
                              .speed = speed,
-                             .reduceWalkingSpeed = reduceWalkingSpeed,
+                             .reduceWalkSpeedType = reduceWalkSpeedType,
                              .rough = true});
     }
   }
@@ -166,7 +166,7 @@ option((SkillBehaviorControl) WalkToPointReady,
                              (theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f)).angle() :
                              (theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f)).angle());
       WalkToPointObstacle({.target = {ballDirection},
-                           .reduceWalkingSpeed = reduceWalkingSpeed,
+                           .reduceWalkSpeedType = reduceWalkSpeedType,
                            .rough = true,
                            .disableObstacleAvoidance = true,
                            .disableAligning = true});
@@ -183,7 +183,8 @@ option((SkillBehaviorControl) WalkToPointReady,
     action
     {
       WalkPotentialField({.target = theRobotPose.translation,
-                          .straight = true});
+                          .straight = true,
+                          .sideWalkingRequest = SideWalkingRequest::notAllowed});
       LookActive({.withBall = false});
     }
   }

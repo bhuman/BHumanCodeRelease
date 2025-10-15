@@ -53,8 +53,8 @@ STREAMABLE(KickInfo,
   STREAMABLE(Kick,
   {,
     (KickInfo::KickType) kickType, /**< The name of the kick. */
-    (Angle) rotationOffset, /**< The offset of the kickpose, e.g. how much does the robot need to be rotated away additionally from the kick angle. */
-    (Vector2f) ballOffset, /**< The offset of the kickpose, e.g. the robot pose relative to the ball. */
+    (Angle) rotationOffset, /**< The offset of the kick pose, e.g. how much does the robot need to be rotated away additionally from the kick angle. */
+    (Vector2f) ballOffset, /**< The offset of the kick pose, e.g. the robot pose relative to the ball. */
     (Rangef) range, /**< The kick range (in mm). Note: all kicks deviate, this is just an approximation. */
     (Rangef) ballVelocity, /**< The velocity of the ball after the kick (in mm/s). Note with this value the range value is determined at the start of the software. */
     (unsigned) executionTime, /**< Time needed to perform the kick or extra penalty for deficient kicks (in ms) */

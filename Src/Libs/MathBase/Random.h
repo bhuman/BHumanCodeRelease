@@ -58,7 +58,7 @@ namespace Random
   template<typename T = float>
   T triangular(T low, T mean, T high);
 
-#ifndef TARGET_ROBOT
+#if !defined TARGET_ROBOT || !defined __x86_64__
   std::mt19937& getGenerator();
 #else
   class HardwareGenerator

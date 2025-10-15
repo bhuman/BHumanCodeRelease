@@ -11,7 +11,7 @@ vfd ratingRole behavior:RatingRole:heatmap
 vfd ratingRole fieldLines
 vfd ratingRole goalFrame
 vfd ratingRole behavior:Tactic:voronoiDiagram
-vfd ratingRole representation:TeammatesBallModel
+vfd ratingRole representation:TeamBallModel
 vfd ratingRole cognition:RobotPose
 vfd ratingRole representation:ObstacleModel:rectangle
 vfd ratingRole cognition:Reset

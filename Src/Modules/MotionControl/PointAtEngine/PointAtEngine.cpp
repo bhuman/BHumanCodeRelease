@@ -7,6 +7,8 @@
 #include "PointAtEngine.h"
 #include "RobotParts/Limbs.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Framework/Settings.h"
+#include "Streaming/Global.h"
 
 MAKE_MODULE(PointAtEngine);
 
@@ -23,8 +25,12 @@ void PointAtEngine::update(PointAtGenerator& pointAtGenerator)
 
 void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest& jointRequest)
 {
-  const Angle oldShoulderPitchValue = !theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderPitch)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderPitch)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)];
-  const Angle oldShoulderRollValue = !theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderRoll)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderRoll)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)];
+  const Angle shoulderPitchOffset = Global::getSettings().robotType != Settings::nao ? -90_deg : 0_deg;
+  const Angle shoulderRollOffset = Global::getSettings().robotType != Settings::nao ? (arm == Arms::left ? -90_deg : 90_deg) : 0_deg;
+  const Angle elbowYawOffset = Global::getSettings().robotType != Settings::nao ? 90_deg : 0_deg;
+
+  const Angle oldShoulderPitchValue = (!theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderPitch)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderPitch)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)]) - shoulderPitchOffset;
+  const Angle oldShoulderRollValue = (!theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderRoll)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderRoll)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)]) - shoulderRollOffset;
   const Vector3f point(theTorsoMatrix.inverse() * pointTo);
 
   if(!theTorsoMatrix.isValid
@@ -40,7 +46,7 @@ void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest&
     calcShoulderJoints(arm, point, theRobotDimensions, jointRequest);
 
   jointRequest.angles[Joints::combine(arm, Joints::elbowRoll)] = 0;
-  jointRequest.angles[Joints::combine(arm, Joints::elbowYaw)] = 0;
+  jointRequest.angles[Joints::combine(arm, Joints::elbowYaw)] = elbowYawOffset;
   jointRequest.angles[Joints::combine(arm, Joints::wristYaw)] = arm == Arms::left ? -90_deg : 90_deg;
   jointRequest.angles[Joints::combine(arm, Joints::hand)] = 0;
 
@@ -67,6 +73,9 @@ void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest&
 
   jointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)] = oldShoulderPitchValue + (jointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)] - oldShoulderPitchValue) / smoothnessValue;
   jointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)] = oldShoulderRollValue + (jointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)] - oldShoulderRollValue) / smoothnessValue;
+
+  jointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)] += shoulderPitchOffset;
+  jointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)] += shoulderRollOffset;
 
   for(size_t i = Joints::combine(arm, Joints::shoulderPitch); i <= Joints::combine(arm, Joints::hand); ++i)
     jointRequest.stiffnessData.stiffnesses[i] = stiffness;

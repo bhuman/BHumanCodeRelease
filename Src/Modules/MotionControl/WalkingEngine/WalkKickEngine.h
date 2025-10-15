@@ -10,7 +10,6 @@
 
 #include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Configuration/BallSpecification.h"
-#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -59,12 +58,14 @@ STREAMABLE(KickKeyframe,
   (float)(1.f) increaseSwingHeightFactor, /**< Increase max height of the swing foot for this step. */
   (float)(1000.f) maxSideStep, /**< Max allowed side step target. Values is based on the left foot (so only positive values make sense). */
   (bool)(false) useSlowSupportFootHeightAfterKickInterpolation, /**< Interpolate the support foot height slower back to 0 in the next walking step. */
+  (bool)(false) isAfterKick, /**< If true, walking should behave as if after the kick. */
   (bool)(false) clipMaxSpeed, /**< Clip forward step target based on last step target. */
   (float)(0.f) useSlowSwingFootHeightInterpolation, /**< Interpolate the swing foot height as if it was a large side step. */
   (WalkKickStep::OverrideFoot)(WalkKickStep::OverrideFoot::none) overrideOldSwingFoot, /**<  Override the previous swing foot position variables based on the last measured/requested angles? */
   (WalkKickStep::OverrideFoot)(WalkKickStep::OverrideFoot::none) overrideOldSupportFoot, /**<  Override the previous support foot position variables based on the last measured/requested angles? */
   (int) numOfBalanceSteps, /**< Number of balance steps that need to follow after the inWalkKick. */
   (bool)(false) useLastKeyframeForSupportFootXTranslation, /**< Use only the last keyframe to interpolate the support foot. */
+  (bool) ignoreClipAbortCheck, /**< If true, skip "canExecute". Note: ONLY USE FOR AFTER STEPS, e.g. after kicking the ball. */
   (std::vector<KickKeyframePart>) keyframes, /**< The list of swing foot poses relative to the ball, and their extra information. */
   (std::vector<WalkKickStep::LongKickParams>) jointOffsets, /**< Joint offsets. */
 });
@@ -99,7 +100,6 @@ STREAMABLE(DeviationValues,
 MODULE(WalkKickEngine,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(FootOffset),
   REQUIRES(FootSupport),
   REQUIRES(FrameInfo),
   REQUIRES(KickInfo),
@@ -117,6 +117,8 @@ MODULE(WalkKickEngine,
   {,
     (bool) playKickSounds, /**< Say which kick is currently executed. */
     (bool) allowDiagonalKicks, /**< Diagonal kicks are allowed. */
+    (bool) allowJustHitTheBall, /**< Is the precision type justHitTheBall allowed? */
+    (bool) allowDelay, /**< Is the WalkDelayPhase allowed to be used? */
     (Rangea) maxTurnLeftFoot, /**< Max allowed turn target. */
     (Rangef) maxForward, /**< Max allowed forward target. */
     (Rangef) maxSide, /**< Max allowed side target. */
@@ -172,7 +174,7 @@ private:
   // Array of size 2, for min and max range
   std::array<WalkKickLengthPair, 2> forwardReferenceKick;
   std::array<WalkKickLengthPair, 2> forwardLongReferenceKick;
-  std::array<WalkKickLengthPair, 2> forwardAlternativReferenceKick;
+  std::array<WalkKickLengthPair, 2> forwardAlternativeReferenceKick;
   std::array<WalkKickLengthPair, 2> sideReferenceKick;
 
   // The sole edges. Uses to calculate the diagonal kicks
@@ -276,7 +278,7 @@ private:
 
   /**
    * Checks if the kick can be executed, given the current ball position. Simple threshold checks
-   * @param canKick previous check, if kikc is possible
+   * @param canKick previous check, if kick is possible
    * @param precisionRange Precision of the kick direction
    * @param ballModel the ball relative to the kicking foot
    * @param walkKickVariant all information to the requested kick
@@ -330,7 +332,7 @@ private:
 
   /**
    * Clip rotation of step target. This method is used for the step target calculation, so the correct rotation is used, but the clipping still clips on the same value.
-   * Other words: The calculation knows beforhand that the rotation will be clipped and adjusts the calculation accordingly.
+   * Other words: The calculation knows beforehand that the rotation will be clipped and adjusts the calculation accordingly.
    * @param rotation The to be clipped rotation
    * @param isLeftPhase Is left foot the swing foot?
    */

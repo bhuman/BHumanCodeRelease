@@ -24,12 +24,14 @@ IMUCalibrationProvider::IMUCalibrationProvider()
 void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
 {
   bool update = false;
-  MODIFY_ONCE("module:IMUCalibrationProvider:forceUpdate", update);
-  if(update || (theCalibrationRequest.serialNumberIMUCalibration > imuCalibration.serialNumberIMUCalibration && isStandingStill()))
+  MODIFY("module:IMUCalibrationProvider:forceUpdate", update);
+  if((theCalibrationRequest.serialNumberIMUCalibration > imuCalibration.serialNumberIMUCalibration && isStandingStill()))
   {
-    imuCalibration.rotation = Quaternionf(imuCalibration.rotation) *
-                              (Rotation::Euler::fromAngles(-theRawInertialSensorData.angle.x() + theInertialData.angle.x(),
-                                                           -theRawInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
+    const Vector3f accValues = imuCalibration.rotation.inverse() * theIMUValueState.accValues.mean;
+    const Quaternionf imuAngles = Rotation::Euler::fromAngles(theRawInertialSensorData.angle.x(), theRawInertialSensorData.angle.y(), 0.f);
+    const Quaternionf accQuat = Rotation::removeZRotation(Quaternionf::FromTwoVectors(accValues.normalized(), Vector3f(0.f, 0.f, 1.f)));
+    imuCalibration.rotation = imuAngles.inverse() * accQuat;
+
     imuCalibration.serialNumberIMUCalibration = theCalibrationRequest.serialNumberIMUCalibration;
     imuCalibration.isCalibrated = true;
     //save the calibration
@@ -39,7 +41,7 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
     ASSERT(stream.exists());
     stream << imuCalibration;
   }
-  else if(isAutoCalibrationActive && isStandingStill() && theFrameInfo.getTimeSince(lastCalibration) > minTimeBetweenCalibration)
+  else if((isAutoCalibrationActive && (update || isStandingStill()) && theFrameInfo.getTimeSince(lastCalibration) > minTimeBetweenCalibration))
   {
     const auto timeSinceCalibrationStarted = theFrameInfo.getTimeSince(calibrationStarted);
     if(timeSinceCalibrationStarted > waitTimeTillNewCalibrationAccepted && timeSinceCalibrationStarted < minStandStillTime)
@@ -53,9 +55,10 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
     {
       calibrationStarted = theFrameInfo.time;
       tempIMUCalibration = imuCalibration;
-      const Vector3f accAngles = Rotation::AngleAxis::pack(AngleAxisf(Rotation::removeZRotation(Quaternionf::FromTwoVectors(theIMUValueState.accValues.mean.normalized(), Vector3f(0.f, 0.f, 1.f)))));
-      tempIMUCalibration.rotation = (Rotation::Euler::fromAngles(-theRawInertialSensorData.angle.x() + accAngles.x(),
-                                                                 -theRawInertialSensorData.angle.y() + accAngles.y(), 0));
+      const Vector3f accValues = imuCalibration.rotation.inverse() * theIMUValueState.accValues.mean;
+      const Quaternionf imuAngles = Rotation::Euler::fromAngles(theRawInertialSensorData.angle.x(), theRawInertialSensorData.angle.y(), 0.f);
+      const Quaternionf accQuat = Rotation::removeZRotation(Quaternionf::FromTwoVectors(accValues.normalized(), Vector3f(0.f, 0.f, 1.f)));
+      tempIMUCalibration.rotation = imuAngles.inverse() * accQuat;
     }
   }
   else
@@ -64,5 +67,7 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
 
 bool IMUCalibrationProvider::isStandingStill()
 {
-  return theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) > minStandStillTime && theGroundContactState.contact;
+  return theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) > minStandStillTime &&
+         theGroundContactState.contact &&
+         std::abs(theRawInertialSensorData.angle.x()) < maxtorsoAngles.x() && std::abs(theRawInertialSensorData.angle.y()) < maxtorsoAngles.y();
 }

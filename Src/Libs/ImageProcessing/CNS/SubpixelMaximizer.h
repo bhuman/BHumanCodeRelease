@@ -112,7 +112,7 @@ protected:
   //! Evaluates the quadratic function defined by \c coef on \c arg
   static float eval(const float coef[10], const float arg[3]);
 
-  //! Computes a cholesky decomposition \c A=LLt for a symmetric positive semidefinite A.
+  //! Computes a cholesky decomposition \c A=LLt for a symmetric positive semi-definite A.
   /*! If the computation fails, the matrix is not S.P.D. and 'false' is returned. */
   static bool cholesky(const float A[3][3], float L[3][3]);
 

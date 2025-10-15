@@ -9,9 +9,10 @@ namespace WalkUtilities
   /**
    * Allowed angle range that the targetOfInterest is allowed to have relative to the robot
    */
-  const Rangea maxTargetFocusAngle = Rangea(-50_deg, 50_deg);
-  const Vector2f shiftBallPosition = Vector2f(100.f, 0.f); // Foot Length from origin to the tip of the toe
+  const Rangea maxTargetFocusAngle = Rangea(-50_deg, 50_deg); // Keep the target of interest in a cone in front of the robot
+  const Angle maxDiagonalAngle = 30_deg;
   const Angle extraFocusShiftIfBallNotInVision = 0;
+  constexpr float maxSideStepDiagonalWalk = 35.f; // Max allowed side step size during diagonal walking
 
   /**
    *
@@ -27,7 +28,7 @@ namespace WalkUtilities
    * @param lastPhase The last motion phase
    * @param useModTarget Shall the modTargetInSCS be used to calculate the walk direction
    */
-  void calcSideWalk(const WalkGenerator& theWalkGenerator, const WalkingEngineOutput& walkOutput, const Pose2f walkSpeed,
+  void calcSideWalk(const WalkGenerator& theWalkGenerator, const WalkingEngineOutput& walkOutput, const Pose2f& walkSpeed,
                     const Pose2f& targetInSCS, Pose2f& modTargetInSCS,
                     const Vector2f& targetOfInterest, const bool isLeftPhase, const bool isFastWalk,
                     const MotionPhase& lastPhase, const bool useModTarget);
@@ -44,9 +45,11 @@ namespace WalkUtilities
    * @param isLeftPhase Is the next walking step a left phase?
    * @param isFastWalk Is fast walk allowed, e.g. more translation in rotation steps
    * @param lastPhase The last motion phase
+   * @param allowModifyingTarget Allow modifying modTargetInSCS to reach target faster
+   * @param useModTarget Shall the modTargetInSCS be used to calculate the walk direction
    */
-  void calcDiagonal(const WalkGenerator& theWalkGenerator, const WalkingEngineOutput& walkOutput, const Pose2f walkSpeed,
+  void calcDiagonal(const WalkGenerator& theWalkGenerator, const WalkingEngineOutput& walkOutput, const Pose2f& walkSpeed,
                     const Pose2f& targetInSCS, Pose2f& modTargetInSCS, const Vector2f& targetOfInterest,
                     const bool isLeftPhase, const bool isFastWalk,
-                    const MotionPhase& lastPhase);
+                    const MotionPhase& lastPhase, const bool allowModifyingTarget, const bool useModTarget);
 }

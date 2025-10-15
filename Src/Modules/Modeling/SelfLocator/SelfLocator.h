@@ -151,7 +151,7 @@ private:
   /** Special function for testing (currently only working in simulation).
    *  Whenever the ground truth robot pose has changed to a certain extent, the samples are
    *  reinitializes at the new pose. This allows easier testing by moving the robot around without waiting
-   *  for it to relocalize at the new pose.
+   *  for it to re-localize at the new pose.
    */
   void resetSamplesToGroundTruth();
 
@@ -206,7 +206,7 @@ private:
    */
   Pose2f getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal);
 
-  /** Returns the preconfigured pose for a robot to enter the field
+  /** Returns the pre-configured pose for a robot to enter the field
    * @return A robot pose
    */
   Pose2f getNewPoseAtWalkInPosition();

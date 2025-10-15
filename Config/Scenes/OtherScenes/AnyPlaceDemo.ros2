@@ -8,13 +8,13 @@
     <Body ref="Nao" name="robot5">
       <Translation x="0" z="320mm"/>
       <Rotation z="270degree"/>
-      <Set name="NaoColor" value="black"/>
+      <Set name="TeamColor" value="black"/>
     </Body>
   </Compound>
 
-   <Compound name="kickInBlue">
+   <Compound name="kickInLeft">
       <ComplexAppearance>
-        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInLeft.png"/>
         <Vertices>
           0 -0.96 0
           0 0.35 0
@@ -33,9 +33,9 @@
       </ComplexAppearance>
     </Compound>
 
-    <Compound name="kickInRed">
+    <Compound name="kickInRight">
       <ComplexAppearance>
-        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInBlue.png"/>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInLeft.png"/>
         <Vertices>
           0 -0.35 0
           0 0.96 0
@@ -54,9 +54,9 @@
       </ComplexAppearance>
     </Compound>
 
-    <Compound name="pushingFreeKickBlue">
+    <Compound name="pushingFreeKickLeft">
       <ComplexAppearance>
-        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRight.png"/>
         <Vertices>
           0 -0.96 0
           0 0.35 0
@@ -75,9 +75,9 @@
       </ComplexAppearance>
     </Compound>
 
-    <Compound name="pushingFreeKickRed">
+    <Compound name="pushingFreeKickRight">
       <ComplexAppearance>
-        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRed.png"/>
+        <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/pushingFreeKickRight.png"/>
         <Vertices>
           0 -0.35 0
           0 0.96 0
@@ -97,7 +97,7 @@
     </Compound>
 
 
-  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)">
     <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
 
     <Compound name="teams">

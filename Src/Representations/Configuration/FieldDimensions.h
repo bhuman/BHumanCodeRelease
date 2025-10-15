@@ -110,7 +110,7 @@ struct FieldDimensions : public SimpleFieldDimensions
     lCorner180,
     lCorner270,
   });
-  static const int numOfCornerClasses = numOfCornerClasss; // extra, because numOfCornerClasss isn't so nice
+  static ENUM_NUM_OF_ALIAS(CornerClass, numOfCornerClasses); // Fix wrong identifier.
 
 private:
   LinesTable straightFieldLines; /**< The field lines as read from the stream. */

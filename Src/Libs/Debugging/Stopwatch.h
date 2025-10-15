@@ -12,7 +12,7 @@
 #include "Debugging/Debugging.h"
 
 /** A stopwatch that measures the time an instance of it lives and plots it. */
-class Stopwatch
+class _Stopwatch
 {
   const char* const name; /**< The name of the plot. */
   bool running = true; /**< Should the stopwatch still be running? */
@@ -22,10 +22,10 @@ public:
    * Start the stopwatch.
    * @param name The name of the plot.
    */
-  Stopwatch(const char* name) : name(name) {Global::getTimingManager().startTiming(name + 15);}
+  _Stopwatch(const char* name) : name(name) {Global::getTimingManager().startTiming(name + 15);}
 
   /** Stop the stopwatch.*/
-  ~Stopwatch()
+  ~_Stopwatch()
   {
     [[maybe_unused]] const unsigned time = Global::getTimingManager().stopTiming(name + 15);
     DEBUG_RESPONSE(name)
@@ -41,4 +41,4 @@ public:
  * @param name The name of the stopwatch.
  */
 #define STOPWATCH(name) \
-  for(Stopwatch _stopwatch("plot:stopwatch:" name); _stopwatch.isRunning();)
+  for(_Stopwatch _stopwatch("plot:stopwatch:" name); _stopwatch.isRunning();)

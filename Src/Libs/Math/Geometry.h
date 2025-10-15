@@ -127,6 +127,14 @@ namespace Geometry
   bool checkIntersectionOfLines(const Vector2f& l1p1, const Vector2f& l1p2, const Vector2f& l2p1, const Vector2f& l2p2);
   [[nodiscard]] bool getIntersectionOfLines(const Line& line1, const Line& line2, Vector2f& intersection);
   [[nodiscard]] bool getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, float& intersection);
+  /**
+   * Computes the intersection point of a line and a convex polygon
+   * @param polygon The convex polygon
+   * @param direction The line. The start is not allowed to be exactly on the polygon edge.
+   * @param isCCW Is the polygon build clock wise or counter clock wise?
+   * @param intersectedLine The intersected edge of the polygon
+   * @param intersection The intersection
+   */
   [[nodiscard]] bool getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection, const bool isCCW, Line* intersectedLine = nullptr);
 
   /**
@@ -172,7 +180,7 @@ namespace Geometry
   bool clipPointInsideConvexPolygon(const std::vector<Vector2f>& polygon, Vector2f& point);
 
   /**
-   * Checks, if a circle intesects with a rectangle. The rectangle is assumed to be axis-aligned and defined by two points,
+   * Checks, if a circle intersects with a rectangle. The rectangle is assumed to be axis-aligned and defined by two points,
    * which have to be diagonally opposing corners.
    * @param cp The position of the circle
    * @param r The radius of the circle

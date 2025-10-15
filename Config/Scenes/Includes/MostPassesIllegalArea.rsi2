@@ -1,0 +1,31 @@
+<Simulation>
+
+  <Compound name="illegalField">
+    <ComplexAppearance ref="fieldBox"/>
+  </Compound>
+
+  <Surface name="fieldBox" diffuseColor="#000000" ambientColor="#129f12"/>
+
+  <Vertices name="fieldBox">
+-4.5 -0.77 0.001
+4.5 -0.77 0.001
+4.5 0.77 0.001
+-4.5 0.77 0.001
+  </Vertices>
+  <TexCoords name="fieldBox">
+0 0
+0 1
+1 1
+1 0
+  </TexCoords>
+
+  <ComplexAppearance name="fieldBox">
+    <Surface ref="fieldBox"/>
+    <Vertices ref="fieldBox"/>
+    <TexCoords ref="fieldBox"/>
+    <Quads>
+0 1 2 3
+    </Quads>
+  </ComplexAppearance>
+
+</Simulation>

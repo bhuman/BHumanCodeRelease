@@ -48,7 +48,7 @@ option((SkillBehaviorControl) HandleGameState)
         ArmObstacleAvoidance();
       if(theSkillRequest.skill == SkillRequest::walk)
         WalkToPointReady({.target = theSkillRequest.target,
-                          .reduceWalkingSpeed = ReduceWalkSpeedType::normal}); // TODO maybe more under specific conditions?
+                          .reduceWalkSpeedType = theGameState.kickOffSetupFromTouchlines ? ReduceWalkSpeedType::distanceBased : ReduceWalkSpeedType::timeBased}); // TODO maybe more under specific conditions?
       else
       {
         LookActive({.ignoreBall = true});

@@ -90,7 +90,7 @@ float ExpectedGoalsProvider::getRating(const Vector2f& pointOnField, const bool 
 float ExpectedGoalsProvider::getOpponentRating(const Vector2f& pointOnField) const
 {
   // Estimated probability that the goal shot would not be successful based on the opening angle on the own goal
-  return mapToRange(getOpponentOpeningAngle(-pointOnField), minOpeningAngle, maxOpeningAngleOpponenent, Angle(1.f), 0_deg);
+  return mapToRange(getOpponentOpeningAngle(-pointOnField), minOpeningAngle, maxOpeningAngleOpponent, Angle(1.f), 0_deg);
 }
 
 Angle ExpectedGoalsProvider::getOpeningAngle(const Vector2f& pointOnField, const bool isPositioning) const

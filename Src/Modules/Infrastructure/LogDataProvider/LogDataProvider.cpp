@@ -130,7 +130,7 @@ void LogDataProvider::readMessage(MessageQueue::Message message, Streamable& rep
     // HACK: This does not work if anything else than the sample format is changed in AudioData.
     if(message.id() == idAudioData)
     {
-      AudioData& audioData = dynamic_cast<AudioData&>(representation);
+      AudioData& audioData = static_cast<AudioData&>(representation);
       for(AudioData::Sample& sample : audioData.samples)
         sample /= std::numeric_limits<short>::max();
     }

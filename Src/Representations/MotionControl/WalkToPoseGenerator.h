@@ -19,5 +19,5 @@ STREAMABLE_WITH_BASE(WalkToPoseGenerator, MotionGenerator,
 
   FUNCTION(std::unique_ptr<MotionPhase>(const Pose2f& targetInSCS, const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS,
                                         const Pose2f& walkSpeed, bool isLeftPhase, const MotionPhase& lastPhase, const Pose2f& scsCognition,
-                                        const bool isFastWalkAllowed, const std::optional<Vector2f>& targetOfInterest, const bool sideWalkAllowed)) createPhaseToTarget,
+                                        const bool isFastWalkAllowed, const std::optional<Vector2f>& targetOfInterest, const SideWalkingRequest::SideWalkingRequest sideWalkingRequest)) createPhaseToTarget,
 });

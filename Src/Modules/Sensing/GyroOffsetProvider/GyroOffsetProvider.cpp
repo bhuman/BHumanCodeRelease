@@ -19,7 +19,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
 {
   if(SystemCall::getMode() != SystemCall::simulatedRobot)
     checkBodyDisconnection(gyroOffset);
-  if(SystemCall::getMode() != SystemCall::physicalRobot)
+  if(SystemCall::getMode() != SystemCall::physicalRobot || Global::getSettings().robotType != Settings::nao)
   {
     gyroOffset.offsetCheckFinished = true;
     return;
@@ -29,7 +29,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
   {
     const Angle maxOffset = gyroOffset.offset.maxCoeff();
     gyroOffsetSoundTimestamp = theFrameInfo.time;
-    SystemCall::playSound("sirene.wav", true);
+    SystemCall::playSound("siren", true);
     SystemCall::say((std::string("Please reboot me. My gyros have an offset of ") + std::to_string(static_cast<int>(maxOffset.toDegrees())) + " degrees!").c_str(), true);
   }
   if(gyroOffset.offsetCheckFinished)
@@ -50,7 +50,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
     {
       if(theGroundContactState.contact && theMotionInfo.executedPhase == MotionPhase::playDead)
       {
-        // is the robot long enough in standhigh?
+        // is the robot long enough in high stand?
         if(theFrameInfo.getTimeSince(samplingStart) > waitTimeBeforeSampling)
         {
           state = sampling;
@@ -105,7 +105,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
            || gyroOffset.offset.z() > thresholdZero)
         {
           const Angle maxOffset = gyroOffset.offset.maxCoeff();
-          SystemCall::playSound("sirene.wav", true);
+          SystemCall::playSound("siren", true);
           SystemCall::say((std::string("Gyro has Offset ") + TypeRegistry::getEnumName(theGameState.color()) + " " + std::to_string(theGameState.playerNumber) + " with an offset of " + std::to_string(static_cast<int>(maxOffset.toDegrees())) + " degrees").c_str(), true);
           ANNOTATION("GyroOffsetProvider", "Added Offset " << gyroOffset.offset);
           OUTPUT_ERROR("GyroOffsetProvider - Added an Offset for the Gyros."); // Error, so we write it into the bhumand.log
@@ -114,9 +114,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
         }
         gyroOffset.offsetCheckFinished = true;
         if(gyroNotCheckedTimestamp != 0) // Only say it, if robot needed to say the warning
-        {
-          SystemCall::say("Thank you. I am ready to be used.", true);
-        }
+          SystemCall::say("I am ready to be used.", true);
         state = off;
       }
       else
@@ -128,7 +126,7 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
         if(theFrameInfo.getTimeSince(gyroNotCheckedTimestamp) > gyroNotCheckedWarningTime)
         {
           gyroNotCheckedTimestamp = theFrameInfo.time;
-          SystemCall::say("Please place me on the ground and do not move me. I need to calibrate my gyro values!", true);
+          SystemCall::say("Please place me on the ground and do not move me!", true);
         }
       }
       break;
@@ -162,7 +160,7 @@ void GyroOffsetProvider::checkBodyDisconnection(GyroOffset& gyroOffset)
       if(theMotionRobotHealth.frameLostStatus != RobotHealth::bodyDisconnect)
       {
         ANNOTATION("GyroOffsetProvider", "Module detected a body disconnect that MotionRobotHealth did not detect!");
-        SystemCall::playSound("sirene.wav", true);
+        SystemCall::playSound("siren", true);
         SystemCall::say((std::string("GyroOffsetProvider Body disconnect ") + TypeRegistry::getEnumName(theGameState.color()) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
         OUTPUT_ERROR("GyroOffsetProvider Body Disconnect!");
       }

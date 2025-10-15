@@ -10,7 +10,7 @@
 #pragma once
 
 #define MAX_PACKAGE_SEND_SIZE 6000000
-#define MAX_PACKAGE_RECEIVE_SIZE 3000000
+#define MAX_PACKAGE_RECEIVE_SIZE 6000000
 
 #ifdef TARGET_ROBOT
 #include "Framework/DebugHandler.h"
@@ -97,4 +97,5 @@ protected:
 
   friend class ModuleContainer; // To add receivers and senders
   friend class LocalConsole; // To add receiver and sender in simulation
+  friend class PythonConsole; // To add receiver and sender in Python controller
 };

@@ -1,0 +1,12 @@
+# Drawings for normal views
+
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:CenterCircleWithLine:image
+vid all representation:BallPercept:image
+vid all representation:ObstaclesImagePercept:image
+vid all representation:ObstaclesFieldPercept:image
+vid all representation:BodyContour
+vid all representation:BallSpots:image
+
+call ManualHeadMotion

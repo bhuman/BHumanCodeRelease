@@ -112,7 +112,7 @@ private:
 
 protected slots:
   /**
-   * This slot is invoked whenever one of the managed spinboxes changes its value.
+   * This slot is invoked whenever one of the managed spin boxes changes its value.
    * It updates the value in the property belonging to the box.
    */
   void slotSpinBoxValueChanged(double newValue);

@@ -1,7 +1,7 @@
 <Simulation>
 
-  <ComplexAppearance name="initialToReady">
-    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/initialToReady.png"/>
+  <ComplexAppearance name="ready">
+    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/ready.png"/>
     <Vertices>
       0 -0.33 0
       0 0.33 0
@@ -19,16 +19,62 @@
     </TexCoords>
   </ComplexAppearance>
 
+  <ComplexAppearance name="kickInLeft">
+    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInLeft.png"/>
+    <Vertices>
+      0 -0.96 0
+      0 0.35 0
+      0 0.35 1.9
+      0 -0.96 1.9
+    </Vertices>
+    <Quads>
+      0 1 2 3
+    </Quads>
+    <TexCoords>
+      0 0
+      1 0
+      1 1
+      0 1
+    </TexCoords>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="kickInRight">
+    <Surface diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/kickInLeft.png"/>
+    <Vertices>
+      0 -0.35 0
+      0 0.96 0
+      0 0.96 1.9
+      0 -0.35 1.9
+    </Vertices>
+    <Quads>
+      0 1 2 3
+    </Quads>
+    <TexCoords>
+      1 0
+      0 0
+      0 1
+      1 1
+    </TexCoords>
+  </ComplexAppearance>
+
   <Body name="referee">
     <BoxGeometry depth="100mm" width="100mm" height="50mm"/>
     <BoxMass value="0.01kg" depth="100mm" width="100mm" height="50mm"/>
     <Appearance>
-      <ComplexAppearance ref="initialToReady">
+      <ComplexAppearance ref="ready">
         <Translation z="25mm"/>
         <Rotation z="180degree"/>
       </ComplexAppearance>
+      <ComplexAppearance ref="kickInLeft">
+        <Translation z="-25mm"/>
+        <Rotation x="180degree"/>
+      </ComplexAppearance>
+      <ComplexAppearance ref="kickInRight">
+        <Translation z="-25mm"/>
+        <Rotation x="180degree" z="180degree"/>
+      </ComplexAppearance>
     </Appearance>
-    <Translation y="-3m" z="25mm"/>
+    <Translation y="-3.7m" z="25mm"/>
     <Rotation z="90degree"/>
   </Body>
 

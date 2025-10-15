@@ -10,9 +10,9 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Tools/Math/Transformation.h"
 
 #include <cmath>
-
 
 void Projection::computeFieldOfViewInFieldCoordinates(const RobotPose& robotPose, const CameraMatrix& cameraMatrix,
                                                       const CameraInfo& cameraInfo, const FieldDimensions& fieldDimensions,
@@ -177,6 +177,19 @@ float Projection::getSizeByDistance(const CameraInfo& cameraInfo, float sizeInRe
 {
   const float xFactor = cameraInfo.focalLength;
   return sizeInReality / distance * xFactor;
+}
+
+bool Projection::pointIsInImage(const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo,
+                                const Vector2f& p, Vector2f& pImg)
+{
+  if(Transformation::robotToImage(p, cameraMatrix, cameraInfo, pImg))
+  {
+    if((pImg.x() >= 0) && (pImg.x() < cameraInfo.width) && (pImg.y() >= 0) && (pImg.y() < cameraInfo.height))
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool Projection::calculatePointByAngles(const Vector2f& angles, const CameraMatrix& cameraMatrix,

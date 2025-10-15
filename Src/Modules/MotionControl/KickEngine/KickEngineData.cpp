@@ -94,7 +94,7 @@ bool KickEngineData::checkPhaseTime(const FrameInfo& frame, const JointAngles& j
       phaseNumber++;
       timestamp = frame.time;
       timeSinceTimestamp = frame.getTimeSince(timestamp);
-      lastTrajetoryOffset = currentTrajetoryOffset;
+      lastTrajectoryOffset = currentTrajectoryOffset;
       //Do we have a valid Keyframe left?
       if(phaseNumber < currentParameters.numberOfPhases)
       {
@@ -315,12 +315,12 @@ void KickEngineData::mirrorIfNecessary(JointRequest& joints)
       if(i == Joints::headPitch)
         continue;
 
-      joints.angles[i] = old.mirror(static_cast<Joints::Joint>(i));
+      joints.angles[i] = old.mirror(static_cast<Joints::Joint>(i), hasSeparateHipYawJoints);
     }
   }
 }
 
-void KickEngineData::applyTrajetoryAdjustment(JointRequest& jointRequest, const JointLimits& limits)
+void KickEngineData::applyTrajectoryAdjustment(JointRequest& jointRequest, const JointLimits& limits)
 {
   std::vector<KickEngineParameters::BoostAngle> currentOffsetList;
   for(KickEngineParameters::JointOffset offset : currentParameters.offsetList)
@@ -332,7 +332,7 @@ void KickEngineData::applyTrajetoryAdjustment(JointRequest& jointRequest, const 
   // first reduce all joints, that have no longer an adjusted trajectory, by adding the missing BoostAngle
   FOREACH_ENUM(Joints::Joint, joint)
   {
-    if(lastTrajetoryOffset[joint] != 0_deg)
+    if(lastTrajectoryOffset[joint] != 0_deg)
     {
       bool reduce = true;
       for(KickEngineParameters::BoostAngle boost : currentOffsetList)
@@ -348,17 +348,17 @@ void KickEngineData::applyTrajetoryAdjustment(JointRequest& jointRequest, const 
     }
   }
   // calculate current offsets
-  currentTrajetoryOffset.fill(0_deg);
+  currentTrajectoryOffset.fill(0_deg);
   for(KickEngineParameters::BoostAngle boost : currentOffsetList)
-    currentTrajetoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)] = interpolate(lastTrajetoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)], boost.angle, phase, boost.mode);
+    currentTrajectoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)] = interpolate(lastTrajectoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)], boost.angle, phase, boost.mode);
 
   // apply offsets
   FOREACH_ENUM(Joints::Joint, joint)
   {
-    const Angle newOffset = limits.limits[joint].limit(jointRequest.angles[joint] + currentTrajetoryOffset[joint]) - jointRequest.angles[joint];
-    const Rangea clip(currentTrajetoryOffset[joint] > 0_deg ? 0_deg : currentTrajetoryOffset[joint], currentTrajetoryOffset[joint] < 0_deg ? 0_deg : currentTrajetoryOffset[joint]);
-    currentTrajetoryOffset[joint] = clip.limit(newOffset);
-    jointRequest.angles[joint] += currentTrajetoryOffset[joint];
+    const Angle newOffset = limits.limits[joint].limit(jointRequest.angles[joint] + currentTrajectoryOffset[joint]) - jointRequest.angles[joint];
+    const Rangea clip(currentTrajectoryOffset[joint] > 0_deg ? 0_deg : currentTrajectoryOffset[joint], currentTrajectoryOffset[joint] < 0_deg ? 0_deg : currentTrajectoryOffset[joint]);
+    currentTrajectoryOffset[joint] = clip.limit(newOffset);
+    jointRequest.angles[joint] += currentTrajectoryOffset[joint];
   }
 }
 
@@ -535,16 +535,16 @@ void KickEngineData::ModifyData(JointRequest& jointRequest)
   MODIFY("module:KickEngine:rHandRotOff", limbOff[Phase::rightHandRot]);
 
   //Plot com stabilizing
-  PLOT("module:KickEngine:comy", robotModel.centerOfMass.y());
-  PLOT("module:KickEngine:diffy", actualDiff.y());
-  PLOT("module:KickEngine:refy", ref.y());
+  PLOT("module:KickEngine:comY", robotModel.centerOfMass.y());
+  PLOT("module:KickEngine:diffY", actualDiff.y());
+  PLOT("module:KickEngine:refY", ref.y());
 
-  PLOT("module:KickEngine:comx", robotModel.centerOfMass.x());
-  PLOT("module:KickEngine:diffx", actualDiff.x());
-  PLOT("module:KickEngine:refx", ref.x());
+  PLOT("module:KickEngine:comX", robotModel.centerOfMass.x());
+  PLOT("module:KickEngine:diffX", actualDiff.x());
+  PLOT("module:KickEngine:refX", ref.x());
 
-  PLOT("module:KickEngine:lastdiffy", toDegrees(lastBody.y()));
-  PLOT("module:KickEngine:bodyErrory", toDegrees(bodyError.y()));
+  PLOT("module:KickEngine:lastDiffY", toDegrees(lastBody.y()));
+  PLOT("module:KickEngine:bodyErrorY", toDegrees(bodyError.y()));
 
   for(int i = 0; i < Phase::numOfLimbs; i++)
   {
@@ -716,7 +716,7 @@ bool KickEngineData::sitOutTransitionDisturbance(bool& compensate, bool& compens
       motionID = -1;
 
       lastBalancedJointRequest.angles = theJointRequest.angles;
-      compenJoints.angles = theJointRequest.angles;
+      compensatedJoints.angles = theJointRequest.angles;
     }
     jointRequest.stiffnessData = theJointRequest.stiffnessData;
 

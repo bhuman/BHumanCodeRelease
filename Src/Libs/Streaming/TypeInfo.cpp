@@ -3,7 +3,7 @@
  *
  * This file implements a class that stores type information about primitive data types,
  * enumerations, and classes/structures. In contrast to the class TypeRegistry, this
- * class contains all type information in demangled and unified form. It is also
+ * class contains all type information in de-mangled and unified form. It is also
  * streamable.
  *
  * @author Thomas Röfer

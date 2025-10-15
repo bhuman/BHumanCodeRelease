@@ -6,7 +6,6 @@
 
 #include "Debugging/DebugDrawings.h"
 #include "Math/Eigen.h"
-#include "RobotParts/FootShape.h"
 #include <vector>
 
 namespace Drawings3D
@@ -434,7 +433,7 @@ class DrawingManager3D : public DrawingManager {};
  * @param arrowRadius The radius of the arrowhead.
  * @param color The color of the arrow.
  */
-#define CYLINDERARROW3D(id, from, to, radius, arrowLen, arrowRadius, color) \
+#define CYLINDER_ARROW3D(id, from, to, radius, arrowLen, arrowRadius, color) \
   do \
     COMPLEX_DRAWING3D(id) \
     { \
@@ -461,7 +460,7 @@ class DrawingManager3D : public DrawingManager {};
  * @param radius The radius of the line.
  * @param color The color of the line.
  */
-#define CYLINDERLINE3D(id, from, to, radius, color) \
+#define CYLINDER_LINE3D(id, from, to, radius, color) \
   do \
     COMPLEX_DRAWING3D(id) \
     { \
@@ -492,7 +491,7 @@ class DrawingManager3D : public DrawingManager {};
     { \
       Vector3f from = (origin).translated(Vector3f(0, 0, -(wideness) / 2.f)).translation; \
       Vector3f to = (origin).translated(Vector3f(0, 0, (wideness) / 2.f)).translation; \
-      CYLINDERLINE3D(id, from, to, radius, color); \
+      CYLINDER_LINE3D(id, from, to, radius, color); \
     } \
   while(false)
 
@@ -529,16 +528,17 @@ class DrawingManager3D : public DrawingManager {};
  * @param id The drawing to which the image will be added.
  * @param pose pose3f of the foot.
  * @param left true for a drawing of a left foot.
+ * @param soleShape The shape of the foot sole.
  * @param color The color of the foot.
  */
-#define FOOT3D(id, pose, left, color) \
+#define FOOT3D(id, pose, left, soleShape, color) \
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      for(size_t i = 0; i < FootShape::polygon.size(); ++i) \
+      for(size_t i = 0; i < soleShape.size(); ++i) \
       { \
-        Vector3f p1 = (Vector3f() << FootShape::polygon[i], 0.f).finished(); \
-        Vector3f p2 = (Vector3f() << FootShape::polygon[(i + 1) % FootShape::polygon.size()], 0.f).finished(); \
+        Vector3f p1 = (Vector3f() << soleShape[i], 0.f).finished(); \
+        Vector3f p2 = (Vector3f() << soleShape[(i + 1) % soleShape.size()], 0.f).finished(); \
         if(!(left)) \
         { \
           p1.y() = -p1.y(); \
@@ -627,7 +627,7 @@ class DrawingManager3D : public DrawingManager {};
 #define COMPLEX_DRAWING3D(id) if(false)
 #define SPHERE3D(id, x, y, z, radius, color) static_cast<void>(0)
 #define CIRCLE3D(id, origin, radius, wideness, color) static_cast<void>(0)
-#define CYLINDERLINE3D(id, from, to, radius, color) static_cast<void>(0)
+#define CYLINDER_LINE3D(id, from, to, radius, color) static_cast<void>(0)
 #define POINT3D(id, x, y, z, size, color) static_cast<void>(0)
 #define LINE3D(id, fromX, fromY, fromZ, toX, toY, toZ, size, color) static_cast<void>(0)
 #define CROSS3D(id, x, y, z, length, size, penColor) static_cast<void>(0)
@@ -642,9 +642,9 @@ class DrawingManager3D : public DrawingManager {};
 #define ELLIPSOID3D(id, p, r, color) static_cast<void>(0)
 #define CYLINDER3D(id, x, y, z, a, b, c, radius, height, color) static_cast<void>(0)
 #define CYLINDER3D2(id, x, y, z, a, b, c, baseRadius, topRadius, height, color) static_cast<void>(0)
-#define CYLINDERARROW3D(id, from, to, radius, arrowLen, arrowRadius, color) static_cast<void>(0)
+#define CYLINDER_ARROW3D(id, from, to, radius, arrowLen, arrowRadius, color) static_cast<void>(0)
 #define IMAGE3D(id, x, y, z, a, b, c, width, height, i) static_cast<void>(0)
-#define FOOT3D(id, pose, left, color) static_cast<void>(0)
+#define FOOT3D(id, pose, left, soleShape, color) static_cast<void>(0)
 #define RING_SECTOR3D(id, center, minAngle, maxAngle, minRadius, maxRadius, color) static_cast<void>(0)
 #define RENDER_OPTIONS3D(id, options) static_cast<void>(0)
 #endif

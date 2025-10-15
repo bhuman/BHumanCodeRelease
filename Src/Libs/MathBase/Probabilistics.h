@@ -57,8 +57,8 @@ inline float probabilityOfInterval(float mu, float s, float a, float b)
  */
 inline bool twoDimSquareEquation(Vector2f& mean, Matrix2f& covariance, const Vector2f& mean2, const Matrix2f& covariance2)
 {
-  //multidimensional square equation (german: "Multidimensionale quadratische Ausgleichsrechnung" aus dem Skript
-  //"Theorie der Sensorfusion")
+  // multidimensional square equation (German:
+  // "Multidimensionale quadratische Ausgleichsrechnung" aus dem Skript "Theorie der Sensorfusion") // cspell:disable-line
   if(covariance.determinant() == 0.f || covariance2.determinant() == 0.f)
     return false;
 

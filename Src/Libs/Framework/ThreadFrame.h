@@ -21,9 +21,6 @@
 #include "Debugging/TimingManager.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
-#ifdef TARGET_ROBOT
-#include "Streaming/AlignedMemory.h"
-#endif
 
 #include <list>
 
@@ -42,9 +39,6 @@ namespace asmjit
  * The class is the toplevel processing unit for threads and implements base features such as the main routine.
  */
 class ThreadFrame : public Thread
-#ifdef TARGET_ROBOT
-  , public AlignedMemory
-#endif
 {
 protected:
   DebugReceiver<MessageQueue>* debugReceiver = nullptr; /**< The MessageQueue for incoming debug messages. */
@@ -162,7 +156,7 @@ protected:
 private:
   /**
    * The main function of this thread. Contains the main loop.
-   * It does the debug handling and calls the main function in the derivates.
+   * It does the debug handling and calls the main function in the derived class.
    */
   void threadMain();
 

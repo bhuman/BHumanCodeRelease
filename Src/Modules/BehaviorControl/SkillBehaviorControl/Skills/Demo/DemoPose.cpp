@@ -8,9 +8,10 @@
 
 #include "SkillBehaviorControl.h"
 
-option((SkillBehaviorControl) DemoPose)
+option((SkillBehaviorControl) DemoPose,
+       vars((unsigned)(theFrameInfo.time) timeWhenSignalDetected))
 {
-  using enum RefereePercept::Gesture;
+  using enum RefereeGesture::Gesture; // Some versions of clang++ do not accept RefereeSignal::Signal here.
   using enum ArmKeyFrameRequest::ArmKeyFrameId;
 
   // Look at referee, stand upright, and announce gesture if known.
@@ -26,7 +27,7 @@ option((SkillBehaviorControl) DemoPose)
 
   common_transition
   {
-    if(theEnhancedKeyStates.isPressedFor(KeyStates::Key::headFront, 1000))
+    if(theEnhancedKeyStates.isPressedFor(KeyStates::headFront, 1000))
       goto posing;
   }
 
@@ -44,43 +45,19 @@ option((SkillBehaviorControl) DemoPose)
   {
     transition
     {
-      if(state_time > 1000) // wait for a second until detections are accepted
-        switch(theRefereePercept.gesture)
+      if(theRefereeSignal.timeWhenDetected > timeWhenSignalDetected)
+      {
+        timeWhenSignalDetected = theRefereeSignal.timeWhenDetected;
+        switch(theRefereeSignal.signal)
         {
-          case RefereePercept::goalKickBlue:
-            SystemCall::say("Goal Kick");
-            goto goalKickBlue;
-          case RefereePercept::goalKickRed:
-            SystemCall::say("Goal Kick");
-            goto goalKickRed;
-          case RefereePercept::kickInBlue:
+          case kickInLeft:
             SystemCall::say("Kick In");
-            goto kickInBlue;
-          case RefereePercept::kickInRed:
+            goto kickInLeft;
+          case kickInRight:
             SystemCall::say("Kick In");
-            goto kickInRed;
-          case RefereePercept::cornerKickBlue:
-            SystemCall::say("Corner Kick");
-            goto cornerKickBlue;
-          case RefereePercept::cornerKickRed:
-            SystemCall::say("Corner Kick");
-            goto cornerKickRed;
-          case RefereePercept::goalBlue:
-            SystemCall::say("Goal");
-            goto goalBlue;
-          case RefereePercept::goalRed:
-            SystemCall::say("Goal");
-            goto goalRed;
-          case RefereePercept::pushingFreeKickBlue:
-            SystemCall::say("Free Kick");
-            goto pushingFreeKickBlue;
-          case RefereePercept::pushingFreeKickRed:
-            SystemCall::say("Free Kick");
-            goto pushingFreeKickRed;
-          case RefereePercept::fullTime:
-            SystemCall::say("Full time");
-            goto fullTime;
+            goto kickInRight;
         }
+      }
     }
     action
     {
@@ -88,24 +65,6 @@ option((SkillBehaviorControl) DemoPose)
     }
   }
 
-  state(kickInBlue) {action {gesture(armHorizontalSideways, useDefault);}}
-  state(kickInRed) {action {gesture(useDefault, armHorizontalSideways);}}
-  state(goalKickBlue) {action {gesture(arm45degreeUpSideways, useDefault);}}
-  state(goalKickRed) {action {gesture(useDefault, arm45degreeUpSideways);}}
-  state(cornerKickBlue) {action {gesture(arm45degreeDownSideways, useDefault);}}
-  state(cornerKickRed) {action {gesture(useDefault, arm45degreeDownSideways);}}
-  state(goalBlue) {action {gesture(armHorizontalSideways, arm45degreeUpFront);}}
-  state(goalRed) {action {gesture(arm45degreeUpFront, armHorizontalSideways);}}
-  state(pushingFreeKickBlue) {action {gesture(armHorizontalSideways, armHandToChest);}}
-  state(pushingFreeKickRed) {action {gesture(armHandToChest, armHorizontalSideways);}}
-  state(fullTime)
-  {
-    action
-    {
-      if(state_time / 1500 & 1)
-        gesture(armHandToChest, armHandToChest);
-      else
-        gesture(armHorizontalSideways, armHorizontalSideways);
-    }
-  }
+  state(kickInLeft) {action {gesture(armHorizontalSideways, useDefault);}}
+  state(kickInRight) {action {gesture(useDefault, armHorizontalSideways);}}
 }

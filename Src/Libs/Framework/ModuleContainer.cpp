@@ -94,8 +94,9 @@ bool ModuleContainer::main()
     if(!moduleGraphRunner.receiverEmpty(receiver.index))
       receiver.receivePacket();
 
-  if((executionUnit->beforeFrame() || moduleGraphRunner.hasChanged()) && moduleGraphRunner.isValid())
+  if((executionUnit->beforeFrame() || moduleGraphRunner.hasChanged() || debugRequestWaiting) && moduleGraphRunner.isValid())
   {
+    debugRequestWaiting = false;
     Global::getTimingManager().signalThreadStart();
 
     executionUnit->beforeModules();
@@ -199,6 +200,10 @@ bool ModuleContainer::handleMessage(MessageQueue::Message message)
       moduleGraphRunner.update(stream);
       return true;
     }
+    case idDebugRequest:
+      if(SystemCall::getMode() == SystemCall::logFileReplay || SystemCall::getMode() == SystemCall::remoteRobot)
+        debugRequestWaiting = true;
+      [[fallthrough]];
     default:
       for(const std::function<bool(MessageQueue::Message message)>& messageHandler : messageHandlers)
         if(messageHandler(message))

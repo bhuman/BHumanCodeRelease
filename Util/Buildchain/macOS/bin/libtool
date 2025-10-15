@@ -46,7 +46,7 @@ done
 if [ ! -z "$INFO" ]; then
   (
     echo ""
-    echo "cctools-973.0.1"
+    libtool -V | sed 's%.* %%'
     echo -n "$FILELIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
     echo -n $'\x40'
     echo "$OUTPUT"

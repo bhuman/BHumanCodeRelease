@@ -84,8 +84,10 @@ repos:
         exclude_types: [plist]
         exclude: |
           (?x)^(
+            Config/Scenes/K1/BoosterReplay.con|
+            Config/Scenes/T1/BoosterReplay.con|
             Config/Scenes/ReplayRobot.con|
-            Config/Scenes/OtherScenes/SharedAutonomyReplay.con|
+            Install/Files/bin/bhuman|
             Make/|
             Util/
           )
@@ -95,8 +97,10 @@ repos:
         exclude_types: [plist]
         exclude: |
           (?x)^(
+            Config/Scenes/K1/BoosterReplay.con|
+            Config/Scenes/T1/BoosterReplay.con|
             Config/Scenes/ReplayRobot.con|
-            Config/Scenes/OtherScenes/SharedAutonomyReplay.con|
+            Install/Files/bin/bhuman|
             Make/|
             Util/
           )

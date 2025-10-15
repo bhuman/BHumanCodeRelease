@@ -16,23 +16,23 @@
 option((SkillBehaviorControl) WalkToPointObstacle,
        args((const Pose2f&) target,
             (const Pose2f&) speed,
-            (ReduceWalkSpeedType) reduceWalkingSpeed,
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType,
             (bool) rough,
             (bool) disableObstacleAvoidance,
             (bool) disableAligning,
             (bool) disableStanding,
             (bool) disableAvoidFieldBorder,
             (const std::optional<Vector2f>&) targetOfInterest,
-            (bool) forceSideWalking),
+            (SideWalkingRequest::SideWalkingRequest) sideWalkingRequest),
        defs((float)(500.f) switchToRequestedPoseDistance, /**< Update the shifted target pose if the new one differs by more than this value to the old one. */
             (float)(1000.f) minDistanceToLeaveForAvoidance, /**< If the target is further away than this threshold, leave the obstacle avoidance state. */
             (float)(600.f) minDistanceToTargetForAvoidance, /**< Start obstacle avoidance at this distance to the target. */
             (float)(100.f) ignoreObstacleAvoidanceDistance, /**< Set obstacleAvoidance for walkToPointSkill to false at this distance to the target. */
             (float)(400.f) positionOffsetIfOccupied, /**< The radius around an obstacle that occupies my target position. */
             (Angle)(22.5_deg) deleteObstacleCircleRange), /**< A previous obstacle is only deleted if it is outside +- this angle. */
-       vars((Geometry::Circle)({}) lastCircle,
-            (std::optional<Pose2f>)({}) shiftedTarget,
-            (Pose2f)({}) targetWhenShifted))
+       vars((Geometry::Circle) lastCircle,
+            (std::optional<Pose2f>) shiftedTarget,
+            (Pose2f) targetWhenShifted))
 {
   const auto calcShiftedPose = [&](const Pose2f& target, const Geometry::Circle& circle)
   {
@@ -111,14 +111,14 @@ option((SkillBehaviorControl) WalkToPointObstacle,
     {
       WalkToPoint({.target = target,
                    .speed = speed,
-                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .reduceWalkSpeedType = reduceWalkSpeedType,
                    .rough = rough,
                    .disableObstacleAvoidance = disableObstacleAvoidance,
                    .disableAligning = disableAligning,
                    .disableStanding = disableStanding,
                    .disableAvoidFieldBorder = disableAvoidFieldBorder,
                    .targetOfInterest = targetOfInterest,
-                   .forceSideWalking = forceSideWalking});
+                   .sideWalkingRequest = sideWalkingRequest});
     }
   }
 
@@ -138,7 +138,7 @@ option((SkillBehaviorControl) WalkToPointObstacle,
       const Pose2f relativeTarget = theRobotPose.inverse() * *shiftedTarget;
       WalkToPoint({.target = relativeTarget,
                    .speed = speed,
-                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .reduceWalkSpeedType = reduceWalkSpeedType,
                    .rough = rough,
                    .disableObstacleAvoidance = disableObstacleAvoidance
                                                || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
@@ -146,7 +146,7 @@ option((SkillBehaviorControl) WalkToPointObstacle,
                    .disableStanding = disableStanding,
                    .disableAvoidFieldBorder = disableAvoidFieldBorder,
                    .targetOfInterest = targetOfInterest,
-                   .forceSideWalking = forceSideWalking});
+                   .sideWalkingRequest = sideWalkingRequest });
     }
   }
 
@@ -162,7 +162,7 @@ option((SkillBehaviorControl) WalkToPointObstacle,
       const Pose2f relativeTarget = shiftedTarget ? theRobotPose.inverse() * *shiftedTarget : target;
       WalkToPoint({.target = relativeTarget,
                    .speed = speed,
-                   .reduceWalkingSpeed = reduceWalkingSpeed,
+                   .reduceWalkSpeedType = reduceWalkSpeedType,
                    .rough = rough,
                    .disableObstacleAvoidance = disableObstacleAvoidance
                                                || relativeTarget.translation.squaredNorm() <= sqr(ignoreObstacleAvoidanceDistance),
@@ -170,7 +170,7 @@ option((SkillBehaviorControl) WalkToPointObstacle,
                    .disableStanding = disableStanding,
                    .disableAvoidFieldBorder = disableAvoidFieldBorder,
                    .targetOfInterest = targetOfInterest,
-                   .forceSideWalking = forceSideWalking});
+                   .sideWalkingRequest = sideWalkingRequest });
     }
   }
 }

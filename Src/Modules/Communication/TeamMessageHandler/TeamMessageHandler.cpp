@@ -35,7 +35,7 @@ MAKE_MODULE(TeamMessageHandler);
   _(BehaviorStatus); \
   _(StrategyStatus); \
   _(IndirectKick); \
-  _(InitialToReady);
+  _(RefereeSignal);
 
 struct TeamMessage
 {};
@@ -79,10 +79,8 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
 
   DEBUG_RESPONSE("module:TeamMessageHandler:budgetLimit")
   {
-    const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
-    const int timeInNextHalf = theGameState.phase == GameState::firstHalf ? durationOfHalf : 0;
-    const int remainingTime = std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
-    const float ratio = Rangef::ZeroOneRange().limit(remainingTime / (durationOfHalf * 2.f));
+    const int remainingTime = TeamMessageHandler::remainingTime(0);
+    const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfHalf + maxOvertime) * 2.f));
 
     PLOT("module:TeamMessageHandler:budgetLimit", overallMessageBudget * ratio + normalMessageReserve * (1.f - ratio));
   }
@@ -92,12 +90,26 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
   DEBUG_RESPONSE_ONCE("module:TeamMessageHandler:generateTCMPluginClass")
     teamCommunicationTypeRegistry.generateTCMPluginClass("BHumanMessage.java", static_cast<const CompressedTeamCommunication::RecordType*>(teamMessageType));
 
+  wasPenalized |= theExtendedGameState.wasPenalized() && theExtendedGameState.returnFromGameControllerPenalty && (theGameState.isPlaying() || theGameState.isReady() || theGameState.isSet());
+
+  // Set RobotPose to position, which other teammates are probably assuming
+  if(theGameState.isSet() && theExtendedGameState.wasReady())
+  {
+    auto it = std::find_if(theAgentStates.agents.begin(), theAgentStates.agents.end(), [&](const Agent& agent) {return agent.number == theGameState.playerNumber; });
+    if(it != theAgentStates.agents.end())
+    {
+      lastSent.theRobotPose.translation = it->basePose.translation;
+      lastSent.theBehaviorStatus.walkingTo = Vector2f::Zero();
+      lastSent.theBehaviorStatus.speed = 0.f;
+    }
+  }
+
   // Update ball constraint to send based on differences between the own ball and the team ball
   const Vector2f ballEndPosition = BallPhysics::getEndPosition(theBallModel.estimate.position,
                                    theBallModel.estimate.velocity,
                                    theBallSpecification.friction);
-  const Vector2f teamBallEndPosition = theRobotPose.inverse() * BallPhysics::getEndPosition(theTeammatesBallModel.position,
-                                       theTeammatesBallModel.velocity,
+  const Vector2f teamBallEndPosition = theRobotPose.inverse() * BallPhysics::getEndPosition(theTeamBallModel.position,
+                                       theTeamBallModel.velocity,
                                        theBallSpecification.friction);
 
   if(!globalBearingsChanged(theRobotPose, ballEndPosition, theRobotPose, teamBallEndPosition, mapToRange(ballEndPosition.norm(), teamBallDistanceInterpolationRange.min, teamBallDistanceInterpolationRange.max, positionThreshold, teamBallMaxPositionThreshold)))
@@ -108,15 +120,15 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
     bool alwaysSend = this->alwaysSend;
     DEBUG_RESPONSE("module:TeamMessageHandler:alwaysSend")
       alwaysSend = true;
-    const bool stateAllowsSending = notInPlayDead() && !theGameState.isPenaltyShootout()
-                                    && (!theGameState.isPenalized() || Global::getSettings().scenario.starts_with("SharedAutonomy"));
+    const bool stateAllowsSending = notInPlayDead() && !theGameState.isPenaltyShootout() && !theGameState.isPenalized() && allowCommunicationAfterPenalty();
     const bool alwaysSendAllowed = alwaysSend && enoughTimePassed();
     const bool alwaysSendPlaying = alwaysSendInPlaying && enoughTimePassed() && theGameState.isPlaying() && withinPriorityBudget();
-    const bool gestureDetectedSend = (theGameState.state == GameState::standby || theGameState.isReady()) && theInitialToReady.gestureDetected && withinPriorityBudget();
+    const bool signalDetectedSend = refereeSignalDetected() && withinPriorityBudget();
+    const bool returnFromPenalty = returnFromPenaltyRobotPoseCommunication();
     const bool whistleDetectedSend = (theGameState.isReady() || theGameState.isSet() || theGameState.isPlaying()) && withinPriorityBudget() && whistleDetected();
     const bool indirectKickChangedSend = theGameState.isPlaying() && withinPriorityBudget() && indirectKickChanged();
-    const bool canSendPriorityMessage = stateAllowsSending && (alwaysSendAllowed || alwaysSendPlaying || gestureDetectedSend || whistleDetectedSend || indirectKickChangedSend);
-    const bool normalChangeDetected = enoughTimePassed() && theGameState.isPlaying() && robotPoseValid() && withinNormalBudget() &&
+    const bool canSendPriorityMessage = stateAllowsSending && (alwaysSendAllowed || alwaysSendPlaying || signalDetectedSend || whistleDetectedSend || indirectKickChangedSend || returnFromPenalty);
+    const bool normalChangeDetected = stateAllowsSending && enoughTimePassed() && theGameState.isPlaying() && robotPoseValid() && withinOverallBudget() &&
     (behaviorStatusChanged() || robotStatusChanged() || strategyStatusChanged() || robotPoseChanged() || ballModelChanged() || teamBallOld());
 
     if(!canSendPriorityMessage && !normalChangeDetected)
@@ -124,6 +136,9 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
 
     return canSendPriorityMessage || (normalChangeDetected && checkTimeDelay());
   };
+
+  // Make sure we can not exceed 615 messages in first half and 30 messages in second half
+  ASSERT(!withinSlowedBudget() || ownModeledBudget > (theGameState.phase == GameState::firstHalf ? overallMessageBudget - (overallMessageBudget - normalMessageReserve) / 2.f : normalMessageReserve));
 
   theRobotStatus.isUpright = (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting) &&
                              (theGroundContactState.contact && theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall);
@@ -134,6 +149,7 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
   {
     if(!writeMessage(outputGenerator, &outTeamMessage))
       return;
+    wasPenalized = false;
     theTeamMessageChannel.send();
     setTimeDelay();
     ownModeledBudget -= std::min(ownModeledBudget, 1u);
@@ -252,6 +268,7 @@ void TeamMessageHandler::update(ReceivedTeamMessages& receivedTeamMessages)
 #ifndef NDEBUG
        || receivedMessageContainer.lastErrorCode == ReceivedBHumanMessage::magicNumberDidNotMatch
 #endif
+       || receivedMessageContainer.lastErrorCode == ReceivedBHumanMessage::duplicate
       ) continue;
 
     // the message had a parsing error
@@ -266,6 +283,9 @@ void TeamMessageHandler::update(ReceivedTeamMessages& receivedTeamMessages)
 
 void TeamMessageHandler::handleBudgetPreview(ReceivedTeamMessages& receivedTeamMessages)
 {
+  if(theGameState.ownTeam.messageBudget != lastReceivedBudget || !receivedTeamMessages.messages.empty())
+    timeWhenLastTeamSent = theFrameInfo.time;
+
   // Budget update from GameController
   if(theGameState.ownTeam.messageBudget != lastReceivedBudget)
   {
@@ -414,7 +434,31 @@ bool TeamMessageHandler::checkTimeDelay() const
   return theFrameInfo.getTimeSince(timeWhenLastSendTryStarted) >
          (Role::isActiveRole(theStrategyStatus.role) && !Role::isActiveRole(lastSent.theStrategyStatus.role) ?
           sendDelayPlayBall :
-          mapToRange(static_cast<int>(theBallModel.estimate.position.norm()), ballDistanceRangeForDelay.min, ballDistanceRangeForDelay.max, sendDelayRange.min, sendDelayRange.max));
+          mapToRange(static_cast<int>(theFieldBall.recentBallPositionRelative().norm()), ballDistanceRangeForDelay.min, ballDistanceRangeForDelay.max, sendDelayRange.min, sendDelayRange.max));
+}
+
+float TeamMessageHandler::calcTeamSendInterval() const
+{
+  const int trueMessageBudget = (overallMessageBudget - normalMessageReserve);
+  const unsigned messageBudgetLimitThisHalf = theGameState.phase == GameState::firstHalf ? overallMessageBudget - trueMessageBudget / 2 : normalMessageReserve;
+  const float messageFactor = (durationOfHalf + maxOvertime) * 2.f / trueMessageBudget;
+  const float minTeamSendInterval = minTeamSendIntervalFactor * messageFactor;
+  const float timeLeftInHalf = TeamMessageHandler::remainingTime(0) - (theGameState.phase == GameState::firstHalf ? durationOfHalf + maxOvertime : 0.f);
+  const float minMessageSendInterval = ownModeledBudget > messageBudgetLimitThisHalf ? timeLeftInHalf / (ownModeledBudget - messageBudgetLimitThisHalf) : std::numeric_limits<float>::max();
+  const float scalingWaittime = minTeamSendIntervalFactor * messageFactor * (calcCurrentBudgetLimit(theFrameInfo.getTimeSince(timeWhenLastTeamSent)) - ownModeledBudget) / reduceBudgetMalusTime;
+  // If within budget, just return minTeamSendInterval
+  // Otherwise return the max rate of
+  // - the configured one,
+  // - the rate to reach the limit within 30sec
+  // - the rate at which we can still communicate to not surpass normalMessageReserve
+  return withinNormalBudget() ? minTeamSendInterval : std::max({minTeamSendInterval, minMessageSendInterval, scalingWaittime});
+}
+
+float TeamMessageHandler::calcCurrentBudgetLimit(const int timeOffset) const
+{
+  const int remainingTime = TeamMessageHandler::remainingTime(timeOffset);
+  const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfHalf + maxOvertime) * 2.f));
+  return overallMessageBudget * ratio + normalMessageReserve * (1.f - ratio);
 }
 
 void TeamMessageHandler::setTimeDelay()
@@ -424,11 +468,24 @@ void TeamMessageHandler::setTimeDelay()
 
 bool TeamMessageHandler::withinNormalBudget() const
 {
-  const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
-  const int timeInNextHalf = theGameState.phase == GameState::firstHalf ? durationOfHalf : 0;
-  const int remainingTime = std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
-  return (static_cast<int>(ownModeledBudget - normalMessageReserve) * durationOfHalf * 2 >
-          static_cast<int>(overallMessageBudget - normalMessageReserve) * remainingTime);
+  return ownModeledBudget > calcCurrentBudgetLimit(0);
+}
+
+bool TeamMessageHandler::withinSlowedBudget() const
+{
+  return theFrameInfo.getTimeSince(timeWhenLastTeamSent) > calcTeamSendInterval();
+}
+
+bool TeamMessageHandler::withinOverallBudget() const
+{
+  return withinNormalBudget() || withinSlowedBudget();
+}
+
+int TeamMessageHandler::remainingTime(const int timeOffset) const
+{
+  const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds) + maxOvertime + timeOffset);
+  const int timeInNextHalf = (theGameState.phase == GameState::firstHalf ? durationOfHalf + maxOvertime : 0);
+  return std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
 }
 
 bool TeamMessageHandler::withinPriorityBudget() const
@@ -442,6 +499,40 @@ bool TeamMessageHandler::whistleDetected() const
   return theWhistle.lastTimeWhistleDetected > lastSent.theWhistle.lastTimeWhistleDetected + minSendInterval &&
          timeRemainingInCurrentHalf >= ignoreWhistleBeforeEndOfHalf &&
          theFrameInfo.getTimeSince(theWhistle.lastTimeWhistleDetected) <= maxWhistleSendDelay;
+}
+
+bool TeamMessageHandler::refereeSignalDetected() const
+{
+  return theFrameInfo.getTimeSince(theRefereeSignal.timeWhenDetected) < maxRefereeSendDelay &&
+         theRefereeSignal.timeWhenDetected > lastSent.theRefereeSignal.timeWhenDetected + minSendInterval &&
+         // If this robot detected the referee signal, we are already in ready state. We switched because of
+         // another robot, the previous state is not standby anymore, so we do not waste a packet.
+         ((theExtendedGameState.stateLastFrame == GameState::standby &&
+           theRefereeSignal.signal == RefereeSignal::ready &&
+           !teammatesDetectedRefereeSignal(RefereeSignal::ready)) ||
+          (theGameState.isKickIn() &&
+           (theRefereeSignal.signal == RefereeSignal::kickInLeft ||
+            theRefereeSignal.signal == RefereeSignal::kickInRight) &&
+           !teammatesDetectedRefereeSignal(RefereeSignal::kickInLeft) &&
+           !teammatesDetectedRefereeSignal(RefereeSignal::kickInRight)));
+}
+
+bool TeamMessageHandler::returnFromPenaltyRobotPoseCommunication() const
+{
+  return wasPenalized && (theRobotPose.quality != RobotPose::poor || theFrameInfo.getTimeSince(theGameState.timeWhenPlayerStateStarted) > theBehaviorParameters.noSkillRequestAfterUnpenalizedTime);
+}
+
+bool TeamMessageHandler::allowCommunicationAfterPenalty() const
+{
+  return theFrameInfo.getTimeSince(theGameState.timeWhenPlayerStateStarted) > theBehaviorParameters.noCommunicationAfterUnpenalizedTime;
+}
+
+bool TeamMessageHandler::teammatesDetectedRefereeSignal(const RefereeSignal::Signal signal) const
+{
+  for(const Teammate& teammate : theTeamData.teammates)
+    if(teammate.theRefereeSignal.signal == signal && teammate.theRefereeSignal.timeWhenDetected >= theGameState.timeWhenStateStarted)
+      return true;
+  return false;
 }
 
 bool TeamMessageHandler::behaviorStatusChanged() const
@@ -465,6 +556,12 @@ bool TeamMessageHandler::strategyStatusChanged() const
     return Tactic::Position::isGoalkeeper(position) && Tactic::Position::isGoalkeeper(lastPosition);
   };
 
+  auto activeStrikerSwitch = [this](const Role::Type role)
+  {
+    return role != ActiveRole::toRole(ActiveRole::playBall) ||
+           theBallModel.estimate.velocity == Vector2f::Zero();
+  };
+
   return (theStrategyStatus.proposedTactic != lastSent.theStrategyStatus.proposedTactic ||
           // theStrategyStatus.acceptedTactic != lastSent.theStrategyStatus.acceptedTactic ||
           theStrategyStatus.proposedMirror != lastSent.theStrategyStatus.proposedMirror ||
@@ -473,7 +570,7 @@ bool TeamMessageHandler::strategyStatusChanged() const
           // theStrategyStatus.acceptedSetPlay != lastSent.theStrategyStatus.acceptedSetPlay ||
           // theStrategyStatus.setPlayStep != lastSent.theStrategyStatus.setPlayStep ||
           (theStrategyStatus.position != lastSent.theStrategyStatus.position && !goalKeeperPositionSwitch(theStrategyStatus.position, lastSent.theStrategyStatus.position)) ||
-          theStrategyStatus.role != lastSent.theStrategyStatus.role);
+          (theStrategyStatus.role != lastSent.theStrategyStatus.role && activeStrikerSwitch(theStrategyStatus.role)));
 }
 
 bool TeamMessageHandler::robotPoseValid() const
@@ -509,7 +606,7 @@ bool TeamMessageHandler::ballModelChanged() const
 
     return globalBearingsChanged(theRobotPose, ballEndPosition, lastSent.theRobotPose, oldBallEndPosition) &&
            teammateBearingsChanged(theRobotPose * ballEndPosition, lastSent.theRobotPose * oldBallEndPosition) &&
-           (!theTeammatesBallModel.isValid ||
+           (!theTeamBallModel.isValid ||
             theFrameInfo.getTimeSince(timeWhenBallWasNearTeamBall) > minTimeBallIsNotNearTeamBall);
   }
 }

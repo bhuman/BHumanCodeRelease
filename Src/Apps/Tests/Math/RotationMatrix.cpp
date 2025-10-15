@@ -226,7 +226,7 @@ GTEST_TEST(RotationMatrix, getXAngle)
     angle = Random::uniform() * pi;
     r = RotationMatrix::aroundX(angle);
     xAngle = r.getXAngle();
-    EXPECT_NEAR(xAngle, angle, 1e-3f);
+    EXPECT_NEAR(0.f, Angle::normalize(xAngle - angle), 1e-3f);
   }
 }
 
@@ -262,7 +262,7 @@ GTEST_TEST(RotationMatrix, getYAngle)
     const float angle = Random::uniform() * pi;
     const RotationMatrix r = RotationMatrix::aroundY(angle);
     float yAngle = r.getYAngle();
-    EXPECT_NEAR(yAngle, angle, 1e-3f);
+    EXPECT_NEAR(0.f, Angle::normalize(yAngle - angle), 1e-3f);
   }
 }
 
@@ -298,6 +298,6 @@ GTEST_TEST(RotationMatrix, getZAngle)
     angle = Random::uniform() * pi;
     r = RotationMatrix::aroundZ(angle);
     zAngle = r.getZAngle();
-    EXPECT_NEAR(zAngle, angle, 1e-3f);
+    EXPECT_NEAR(0.f, Angle::normalize(zAngle - angle), 1e-3f);
   }
 }

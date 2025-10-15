@@ -159,7 +159,7 @@ public:
   public:
     /**
      * Constructor.
-     * @param The position of the message in the queue's buffer.
+     * @param buffer The position of the message in the queue's buffer.
      */
     Message(const char* buffer) : buffer(buffer) {}
 

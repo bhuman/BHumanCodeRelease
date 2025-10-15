@@ -11,9 +11,13 @@ MAKE_MODULE(GroundContactDetector);
 
 void GroundContactDetector::update(GroundContactState& groundContactState)
 {
+  // Ground contact can only be decide after sensor data was received.
+  if(!theFrameInfo.time)
+    return;
+
   if(groundContactState.contact)
   {
-    if(theFsrData.legInfo[Legs::left].hasPressure == theFsrData.lastUpdateTimestamp || theFsrData.legInfo[Legs::right].hasPressure == theFsrData.lastUpdateTimestamp)
+    if(theSolePressureState.legInfo[Legs::left].hasPressure || theSolePressureState.legInfo[Legs::right].hasPressure)
       lastTimeWithPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithPressure) < maxTimeWithoutPressure;
     if(!groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
@@ -22,8 +26,8 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
   }
   else
   {
-    if(theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::left].hasPressure) > maxTimeWithoutPressure ||
-       theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::right].hasPressure) > maxTimeWithoutPressure)
+    if((!theSolePressureState.legInfo[Legs::left].hasPressure && theFrameInfo.getTimeSince(theSolePressureState.legInfo[Legs::left].hasPressureSince) > maxTimeWithoutPressure) ||
+       (!theSolePressureState.legInfo[Legs::right].hasPressure && theFrameInfo.getTimeSince(theSolePressureState.legInfo[Legs::right].hasPressureSince) > maxTimeWithoutPressure))
       lastTimeWithoutPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithoutPressure) > minTimeWithPressure;
     if(groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)

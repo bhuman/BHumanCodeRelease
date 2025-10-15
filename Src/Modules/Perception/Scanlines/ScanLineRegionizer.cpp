@@ -25,7 +25,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:horizontalRegionSplit", "drawingOnImage");
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:horizontalRegionUnion", "drawingOnImage");
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:fieldColorRangeHorizontal", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:whiteRange", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:whiteRangeHorizontal", "drawingOnImage");
 
   colorScanLineRegionsHorizontal.scanLines.clear();
 
@@ -69,7 +69,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
   classifyFieldRegions(yPerScanLine, regionsPerScanLine, true);
 
   // 4. Classify white regions.
-  classifyWhiteRegionsWithThreshold(regionsPerScanLine);
+  classifyWhiteRegionsWithThreshold(regionsPerScanLine, true);
 
   // 5. Fill small gaps between field and white regions
   stitchUpHoles(regionsPerScanLine, true);
@@ -83,7 +83,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:verticalRegionSplit", "drawingOnImage");
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:verticalRegionUnion", "drawingOnImage");
   DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:fieldColorRangeVertical", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:whiteRange", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:ScanLineRegionizer:whiteRangeVertical", "drawingOnImage");
 
   colorScanLineRegionsVerticalClipped.scanLines.clear();
 
@@ -124,7 +124,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
   classifyFieldRegions(xPerScanLine, regionsPerScanLine, false);
 
   // 4. Classify white regions.
-  classifyWhiteRegionsWithThreshold(regionsPerScanLine);
+  classifyWhiteRegionsWithThreshold(regionsPerScanLine, false);
 
   // 5. Fill small gaps between field and white regions
   stitchUpHoles(regionsPerScanLine, false);
@@ -698,7 +698,7 @@ bool ScanLineRegionizer::areSimilar(InternalRegion& a, InternalRegion& b) const
 {
   const InternalRegion* const aParent = a.findSet();
   const InternalRegion* const bParent = b.findSet();
-  // test for white because of white prelabeling -> prelabeled regions should not be changed
+  // test for white because of white prelabeling -> pre-labeled regions should not be changed
   if(std::abs(static_cast<short>(aParent->y) - static_cast<short>(bParent->y)) < luminanceSimilarityThreshold &&
      std::abs(static_cast<short>(aParent->h) - static_cast<short>(bParent->h)) < hueSimilarityThreshold &&
      std::abs(static_cast<short>(aParent->s) - static_cast<short>(bParent->s)) < saturationSimilarityThreshold &&
@@ -860,7 +860,7 @@ bool ScanLineRegionizer::regionIsField(const InternalRegion* const region) const
   return false;
 }
 
-void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vector<InternalRegion>>& regions) const
+void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vector<InternalRegion>>& regions, bool horizontal) const
 {
   unsigned char minWhiteLuminance = static_cast<unsigned char>(
                                       std::min(std::min(static_cast<int>(estimatedFieldColor.maxLuminance), static_cast<int>(theRelativeFieldColorsParameters.maxFieldLuminance)),
@@ -868,18 +868,33 @@ void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vect
   unsigned char maxWhiteSaturation = static_cast<unsigned char>(
                                        std::min(static_cast<int>(theRelativeFieldColorsParameters.maxWhiteSaturation),
                                                 std::max(static_cast<int>(static_cast<float>(theRelativeFieldColorsParameters.minFieldSaturation) + (static_cast<float>(estimatedFieldColor.minSaturation) -
-                                                         static_cast<float>(theRelativeFieldColorsParameters.minFieldSaturation)) * 0.7f),
-                                                         static_cast<int>(static_cast<float>(baseSaturation) * 0.5f) - saturationSimilarityThreshold)));
-  COMPLEX_DRAWING("module:ScanLineRegionizer:whiteRange")
+                                                         static_cast<float>(theRelativeFieldColorsParameters.minFieldSaturation)) * saturationDiscountFactor),
+                                                         static_cast<int>(static_cast<float>(baseSaturation) * saturationDiscountFactor) - saturationSimilarityThreshold)));
+  if(horizontal)
   {
-    int fontSize = 9;
-    if(theCameraInfo.camera == CameraInfo::upper)
-      fontSize = 14;
-    const int xPos = 10 + theCameraInfo.width * 2 / 3;
-    int yPos = fontSize + 2;
-    DRAW_TEXT("module:ScanLineRegionizer:whiteRange", xPos, yPos, fontSize, ColorRGBA::orange, "MinLum: " << minWhiteLuminance);
-    yPos += fontSize + 2;
-    DRAW_TEXT("module:ScanLineRegionizer:whiteRange", xPos, yPos, fontSize, ColorRGBA::orange, "MaxSat: " << maxWhiteSaturation);
+    COMPLEX_DRAWING("module:ScanLineRegionizer:whiteRangeHorizontal")
+    {
+      int fontSize = 9;
+      if(theCameraInfo.camera == CameraInfo::upper)
+        fontSize = 14;
+      const int xPos = 10 + theCameraInfo.width * 2 / 3;
+      int yPos = fontSize + 2;
+      DRAW_TEXT("module:ScanLineRegionizer:whiteRangeHorizontal", xPos, yPos, fontSize, ColorRGBA::orange, "MinLum: " << minWhiteLuminance);
+      yPos += fontSize + 2;
+      DRAW_TEXT("module:ScanLineRegionizer:whiteRangeHorizontal", xPos, yPos, fontSize, ColorRGBA::orange, "MaxSat: " << maxWhiteSaturation);
+    }
+  }else{
+    COMPLEX_DRAWING("module:ScanLineRegionizer:whiteRangeVertical")
+    {
+      int fontSize = 9;
+      if(theCameraInfo.camera == CameraInfo::upper)
+        fontSize = 14;
+      const int xPos = 10 + theCameraInfo.width * 2 / 3;
+      int yPos = fontSize + 2;
+      DRAW_TEXT("module:ScanLineRegionizer:whiteRangeVertical", xPos, yPos, fontSize, ColorRGBA::orange, "MinLum: " << minWhiteLuminance);
+      yPos += fontSize + 2;
+      DRAW_TEXT("module:ScanLineRegionizer:whiteRangeVertical", xPos, yPos, fontSize, ColorRGBA::orange, "MaxSat: " << maxWhiteSaturation);
+    }
   }
   for(auto& line : regions)
   {

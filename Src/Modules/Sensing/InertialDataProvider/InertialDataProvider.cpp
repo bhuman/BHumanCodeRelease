@@ -1,12 +1,14 @@
 #include "InertialDataProvider.h"
 #include "Debugging/Modify.h"
 #include "Debugging/Plot.h"
+#include "Debugging/Annotation.h"
+#include "Framework/Settings.h"
 #include "Math/BHMath.h"
 #include "Math/Eigen.h"
 #include "Math/Rotation.h"
-#include "Platform/SystemCall.h"
-
 #include "Math/RotationMatrix.h"
+#include "Platform/SystemCall.h"
+#include "Streaming/Global.h"
 
 #include <cmath>
 #include <sstream>
@@ -40,41 +42,61 @@ void InertialDataProvider::update(InertialData& inertialData)
   bool ignoreAccUpdate = false;
   MODIFY("module:InertialDataProvider:ignoreAccUpdate", ignoreAccUpdate);
 
-  if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.bodyDisconnect || framesSinceStart < 2 || theMotionRobotHealth.frameLostStatus == MotionRobotHealth::bodyDisconnect)
+  if(copyRawData)
   {
-    // This reinitializes the filter after a sudden orientation change in the simulation, e.g. when rotating the robot via commands
-    if((lastRawAngle - theInertialSensorData.angle.head<2>()).norm() > pi / 3.f)
-    {
-      Quaternionf zRot;
-      Rotation::splitOffZRotation(ukf.mean.orientation, zRot);
-      ukf.init(State(zRot), Matrix3f::Zero());
-    }
-    //This reinitializes the filter after the real robot lost the connection to its sensory (V6 head flex problem)
-    if(theGyroOffset.bodyDisconnect || framesSinceStart < 2 || theMotionRobotHealth.frameLostStatus == MotionRobotHealth::bodyDisconnect)
-    {
-      Quaternionf rot = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
-      ukf.init(State(rot), Matrix3f::Zero());
-    }
-    lastRawAngle = theInertialSensorData.angle.head<2>();
+    Quaternionf rot = Rotation::Euler::fromAngles(theRawInertialSensorData.angle.x(), theRawInertialSensorData.angle.y(), theRawInertialSensorData.angle.z());
+    ukf.init(State(rot), Matrix3f::Zero());
+
+    inertialData.acc = theRawInertialSensorData.acc;
+    inertialData.gyro = theRawInertialSensorData.gyro;
   }
-
-  inertialData.acc = theInertialSensorData.acc;
-  inertialData.gyro = theInertialSensorData.gyro;
-
-  processGyroscope(inertialData.gyro);
-
-  if(!ignoreAccUpdate && theInertialSensorData.newAccData)
-    processAccelerometer(inertialData.acc);
-
-  ASSERT(ukf.mean.orientation.coeffs().allFinite());
-  ukf.mean.orientation.normalize();
-
-  DEBUG_RESPONSE_ONCE("module:InertialDataProvider:printCov")
+  else
   {
-    Eigen::IOFormat octaveFmt(Eigen::FullPrecision, 0, ", ", ";\n", "", "", "[", "]");
-    std::stringstream stream;
-    stream << ukf.cov.format(octaveFmt);
-    OUTPUT_TEXT(stream.str());
+    if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.bodyDisconnect || framesSinceStart < 2 || theMotionRobotHealth.frameLostStatus == MotionRobotHealth::bodyDisconnect)
+    {
+      // This reinitializes the filter after a sudden orientation change in the simulation, e.g. when rotating the robot via commands
+      if((lastRawAngle - theInertialSensorData.angle.head<2>()).norm() > pi / 3.f)
+      {
+        Quaternionf zRot;
+        Rotation::splitOffZRotation(ukf.mean.orientation, zRot);
+        ukf.init(State(zRot), Matrix3f::Zero());
+      }
+      //This reinitializes the filter after the real robot lost the connection to its sensory (V6 head flex problem)
+      if(theGyroOffset.bodyDisconnect || framesSinceStart < 2 || theMotionRobotHealth.frameLostStatus == MotionRobotHealth::bodyDisconnect)
+      {
+        Quaternionf rot = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
+        ukf.init(State(rot), Matrix3f::Zero());
+      }
+      lastRawAngle = theInertialSensorData.angle.head<2>();
+      ANNOTATION("InertialDataProvider", "Reinitialize filter");
+    }
+
+    inertialData.acc = theInertialSensorData.acc;
+    inertialData.gyro = theInertialSensorData.gyro;
+
+    processGyroscope(inertialData.gyro);
+
+    if(!ignoreAccUpdate && theInertialSensorData.newAccData)
+      processAccelerometer(inertialData.acc);
+
+    // Add a fake measurement, to reduce the covariance especially for the z-axis
+    auto measurementModel = [&](const State& state)
+    {
+      return Rotation::AngleAxis::pack(AngleAxisf(state.orientation));
+    };
+    const Vector3f measurementNoise = Vector3f::Ones() * fakeMeasurementVariance;
+    ukf.update<3>(Rotation::AngleAxis::pack(AngleAxisf(ukf.mean.orientation)), measurementModel, measurementNoise.cwiseAbs2().asDiagonal());
+
+    ASSERT(ukf.mean.orientation.coeffs().allFinite());
+    ukf.mean.orientation.normalize();
+
+    DEBUG_RESPONSE_ONCE("module:InertialDataProvider:printCov")
+    {
+      Eigen::IOFormat octaveFmt(Eigen::FullPrecision, 0, ", ", ";\n", "", "", "[", "]");
+      std::stringstream stream;
+      stream << ukf.cov.format(octaveFmt);
+      OUTPUT_TEXT(stream.str());
+    }
   }
 
   inertialData.orientation2D = Rotation::removeZRotation(ukf.mean.orientation);
@@ -123,9 +145,9 @@ void InertialDataProvider::processGyroscope(const Vector3a& gyro)
 {
   auto dynamicModel = [&](State& state)
   {
-    state.orientation = state.orientation * Rotation::AngleAxis::unpack(gyro.cast<float>() * Constants::motionCycleTime);
+    state.orientation = state.orientation * Rotation::AngleAxis::unpack(gyro.cast<float>() * Global::getSettings().motionCycleTime);
   };
 
-  const Vector3f dynamicNoise = gyroVariance.cast<float>() * std::sqrt(1.f / Constants::motionCycleTime);
+  const Vector3f dynamicNoise = gyroVariance.cast<float>() * std::sqrt(1.f / Global::getSettings().motionCycleTime);
   ukf.predict(dynamicModel, dynamicNoise.cwiseAbs2().asDiagonal());
 }

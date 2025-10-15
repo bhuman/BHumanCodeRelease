@@ -83,7 +83,7 @@ STREAMABLE(WalkGenerator,
    * @param backRight Min walk translation
    * @param frontLeft Max walk translation
    * @param useFastWalk Is fast walk allowed? Meaning, more rotation with translation is allowed
-   * @param useMaxPossibleStepSize generate polygon with theortical bigger step size?
+   * @param useMaxPossibleStepSize generate polygon with theoretical bigger step size?
    */
   FUNCTION(void(const bool isLeftPhase, const Angle rotation, const Pose2f& walkSpeedRatio, std::vector<Vector2f>& translationPolygon,
                 Vector2f backRight, Vector2f frontLeft, const bool useFastWalk, const bool useMaxPossibleStepSize)) generateTranslationPolygon;
@@ -122,6 +122,13 @@ STREAMABLE(WalkGenerator,
    * @return The executed step size
    */
   FUNCTION(Pose2f(const MotionPhase& lastPhase)) getLastStepChange;
+  /**
+   * Gets information about the actual previous executed step size (similar to the requested step size, but the motors are not perfect :) )
+   * Compared to getLastStepChange, it calculates the values based on the to be start values for the next walk phase.
+   * @param lastPhase The previous MotionPhase
+   * @return The executed step size
+   */
+  FUNCTION(std::tuple<Pose2f, Pose2f, Pose2f>(const MotionPhase& lastPhase)) getLastStepChangeWithOffsets;
   /**
    * @return Was the last WalkPhase a left phase (left foot was swing foot)?
    */

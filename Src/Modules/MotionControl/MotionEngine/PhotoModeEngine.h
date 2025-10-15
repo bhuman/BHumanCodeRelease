@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Framework/Module.h"
+#include "Framework/Settings.h"
 #include "Math/Range.h"
 #include "Platform/SystemCall.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -17,6 +18,7 @@
 #include "Representations/MotionControl/EnergySaving.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Streaming/Global.h"
 #include "Tools/BehaviorControl/Cabsl.h"
 #include "Tools/Motion/MotionUtilities.h"
 
@@ -77,7 +79,7 @@ struct PhotoModePhase : MotionPhase, public cabsl::Cabsl<PhotoModePhase>
 
     initial_state(start)
     {
-      // TODO: Wenn vom start aus interpolation, dann eine if-Abfrage ob state_time > 0
+      // TODO: If interpolating from start, then check whether state_time > 0
       transition
       {
         if(!engine.wasMotionPhaseSet)
@@ -92,7 +94,7 @@ struct PhotoModePhase : MotionPhase, public cabsl::Cabsl<PhotoModePhase>
         }
       }
 
-      // TODO: braucht action um Start- und Zielgelenkwinkel für ausgangposen speichern und Zeitstempel merken um Interpolation berechnen zu können
+      // TODO: Needs action to save start and target angles for initial poses. Remember timestamps for calculating interpolation.
     }
 
     state(interpolation)
@@ -132,7 +134,7 @@ struct PhotoModePhase : MotionPhase, public cabsl::Cabsl<PhotoModePhase>
         if(torsoTiltY.isInside(engine.theInertialData.angle.y()) ||
            torsoTiltX.isInside(engine.theInertialData.angle.x()))
         {
-          currentTimeStamp = engine.theFrameInfo.time + static_cast<unsigned>(Constants::motionCycleTime * 1000);
+          currentTimeStamp = engine.theFrameInfo.time + static_cast<unsigned>(Global::getSettings().motionCycleTime * 1000);
           startAngles.angles = engine.theJointAngles.angles;
           targetAngles.angles = jointRequestOutput.angles;
           targetAngles.stiffnessData.stiffnesses.fill(engine.stiffness);

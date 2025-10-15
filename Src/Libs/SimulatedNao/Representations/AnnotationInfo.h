@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "LogPlayback/Annotation.h"
 #include "Platform/Thread.h"
 #include "Streaming/MessageQueue.h"
 #include <string>
@@ -13,19 +14,9 @@
 class AnnotationInfo
 {
 public:
-  struct AnnotationData
-  {
-    unsigned annotationNumber;
-    unsigned frame;
-    std::string name;
-    std::string annotation;
-
-    void read(MessageQueue::Message message);
-  };
-
   struct Listener
   {
-    virtual void handleAnnotation(const AnnotationData& data) = 0;
+    virtual void handleAnnotation(const Annotation& data) = 0;
   };
 
   void clear();
@@ -34,7 +25,7 @@ public:
   void unregisterListener(Listener* listener);
 
   DECLARE_SYNC;
-  std::vector<AnnotationData> newAnnotations;
+  std::vector<Annotation> newAnnotations;
   unsigned timeOfLastMessage = 0;
 
 private:

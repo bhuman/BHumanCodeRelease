@@ -121,7 +121,11 @@ void Assert::logAdd(int trackId, const char* file, int lineNum, const std::strin
 void Assert::logDump(bool toStderr, int termSignal)
 {
   // This is not written to /home/nao/logging because bhuman might have crashed due to USB drive disconnection and we still want to have the crash dump.
+#ifdef __x86_64__
   FILE* fp = toStderr ? stderr : fopen("/home/nao/bhdump.log", "w");
+#else
+  FILE* fp = toStderr ? stderr : fopen("/home/booster/bhdump.log", "w");
+#endif
   if(!fp)
     return;
   setvbuf(fp, nullptr, _IONBF, 0);

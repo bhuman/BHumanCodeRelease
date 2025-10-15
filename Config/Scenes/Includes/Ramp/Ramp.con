@@ -1,0 +1,21 @@
+echo call Includes/Ramp/Ramp0 : Ctrl+Shift+F
+echo call Includes/Ramp/Ramp30 : Ctrl+Shift+G
+echo call Includes/Ramp/Ramp45 : Ctrl+Shift+H
+
+jc press 6 call Includes/Ramp/Ramp0
+jc press 7 call Includes/Ramp/Ramp30
+jc press 8 call Includes/Ramp/Ramp45
+
+echo call Includes/Ramp/Ramp1500 : Ctrl+Shift+J
+echo call Includes/Ramp/Ramp900 : Ctrl+Shift+K
+echo call Includes/Ramp/Ramp300 : Ctrl+Shift+L
+
+jc press 10 call Includes/Ramp/Ramp1500
+jc press 11 call Includes/Ramp/Ramp900
+jc press 12 call Includes/Ramp/Ramp300
+
+echo mvb 750 -2000 130 : Ctrl+Shift+B
+echo mvb 750 -1400 130 : Ctrl+Shift+B
+echo mvb 750 -800 130 : Ctrl+Shift+B
+
+call Ramp1500

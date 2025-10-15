@@ -13,6 +13,7 @@ EnergySavingProvider::EnergySavingProvider()
   std::fill(lastOffsets.begin(), lastOffsets.end(), 0_deg);
   std::fill(lastBaseOffset.begin(), lastBaseOffset.end(), 0_deg);
   std::fill(emergencyChangeCounter.begin(), emergencyChangeCounter.end(), stepsBeforeEmergencyStep);
+  maxJointBaseOffsetRange = Rangea(-maxBaseOffsetOneJoint, maxBaseOffsetOneJoint);
 }
 
 void EnergySavingProvider::update(EnergySaving& energySaving)
@@ -44,13 +45,14 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
     usedResetInterpolation = theMotionInfo.isMotion(MotionPhase::stand) ? resetTimeNormal : resetTimeSlow;
     adjustLeftArm &= theArmMotionInfo.isKeyframeMotion(Arms::left, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::left] == ArmMotionRequest::none;
     adjustRightArm &= theArmMotionInfo.isKeyframeMotion(Arms::right, ArmKeyFrameRequest::back) || theArmMotionInfo.armMotion[Arms::right] == ArmMotionRequest::none;
+
     auto setInitialOffset = [&]
     {
-      if(theMotionInfo.isMotion(MotionPhase::stand) && !standHigh)
+      if(theMotionInfo.isMotion(MotionPhase::stand) && !standHigh && allowBaseOffset)
       {
         adjustOnlyOneLegJoint = true;
         for(std::size_t joint = Joints::firstLeftLegJoint; joint < Joints::numOfJoints; joint++)
-          jointBaseOffset.angles[joint] = theJointAngles.angles[joint] - request.angles[joint];
+          jointBaseOffset.angles[joint] = maxJointBaseOffsetRange.limit(theJointAngles.angles[joint] - request.angles[joint]);
       }
       else
         jointBaseOffset.angles.fill(0_deg);
@@ -59,6 +61,16 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
 
     auto applyBaseJointOffset = [&]
     {
+      if(!allowBaseOffset)
+        return;
+
+      if(theFrameInfo.getTimeSince(motionChangeTimestamp) < motionChangeWaitTime && theMotionInfo.isMotion(MotionPhase::stand) && !standHigh)
+      {
+        adjustOnlyOneLegJoint = true;
+        for(std::size_t joint = Joints::firstLeftLegJoint; joint < Joints::numOfJoints; joint++)
+          jointBaseOffset.angles[joint] = jointBaseOffset.angles[joint] * 0.9f + maxJointBaseOffsetRange.limit(theJointAngles.angles[joint] - request.angles[joint]) * 0.1f;
+      }
+
       FOREACH_ENUM(Joints::Joint, joint)
         request.angles[joint] += jointBaseOffset.angles[joint] * Rangef::ZeroOneRange().limit(theFrameInfo.getTimeSince(interpolateBaseOffsetStartTimestamp) / baseOffsetInterpolationTime);
     };
@@ -73,7 +85,7 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
       }
     };
 
-    auto resetFunc = [this, &energySaving]
+    auto resetFunc = [&]
     {
       //reduce the offsets to 0 over the time of <resetTime>
       if(theFrameInfo.getTimeSince(lastInAdjustmentTimestamp) < usedResetInterpolation)
@@ -92,7 +104,7 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
         energySaving.offsets.fill(0_deg);
         std::fill(lastBaseOffset.begin(), lastBaseOffset.end(), 0_deg);
         std::fill(lastOffsets.begin(), lastOffsets.end(), 0_deg);
-        if(theFrameInfo.getTimeSince(motionChangeTimestamp) > motionChangeWaitTime)
+        if(theFrameInfo.getTimeSince(motionChangeTimestamp) > motionChangeWaitTime && !onlyBaseOffset)
         {
           hasGroundContact = theGroundContactState.contact;
           energySaving.state = EnergyState::working;
@@ -108,7 +120,7 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
       lastBaseOffset = jointBaseOffset.angles;
       lastInAdjustmentTimestamp = theFrameInfo.time;
       //The offsets shall reset, if we switch from high stand to stand. (Or from stand to other keyframeMotion)
-      if(theGroundContactState.contact != hasGroundContact)
+      if(useGroundContactChange && theGroundContactState.contact != hasGroundContact)
       {
         motionChangeTimestamp = theFrameInfo.time;
         energySaving.state = EnergyState::resetState;
@@ -173,7 +185,7 @@ void EnergySavingProvider::update(EnergySaving& energySaving)
         if(workingPreFunc())
           break;
         //Adjust once in a while
-        if(theFrameInfo.getTimeSince(adjustTimestamp) > adjustWaitTime)
+        if(theFrameInfo.getTimeSince(adjustTimestamp) > adjustWaitTime && !onlyBaseOffset)
         {
           adjustTimestamp = theFrameInfo.time;
           std::vector<Angle> jointDiffs(Joints::numOfJoints);
@@ -219,9 +231,15 @@ void EnergySavingProvider::applyJointEnergySaving(const std::size_t& joint,
   jointDiffs[joint] = theJointAngles.angles[joint] - request.angles[joint];
   const bool adjustThisArm = joint < Joints::firstRightArmJoint ? adjustLeftArm : adjustRightArm;
   const bool adjustThisLeg = joint < Joints::firstRightLegJoint ? adjustLeftLeg : adjustRightLeg;
-  const int& useLegCurrentThreshold = std::abs(energySaving.offsets[joint]) < maxAngleOneJoint / 2.f ? currentThresholdLegs : currentThresholdLegsHighOffset;
-  if((joint >= Joints::firstLegJoint && theFilteredCurrent.currents[joint] > useLegCurrentThreshold && adjustThisLeg)
-     || (joint < Joints::firstLegJoint && theFilteredCurrent.currents[joint] > currentThresholdArms && adjustThisArm)) //if current is above the threshold, change the offset
+  int useLegCurrentThreshold = std::abs(energySaving.offsets[joint]) < maxAngleOneJoint / 2.f ? currentThresholdLegs : currentThresholdLegsHighOffset;
+  const auto it = std::find_if(specialJointHandling.begin(), specialJointHandling.end(), [joint](const SpecialJointHandling& handling) -> bool {return handling.joint == joint; });
+  if(it != specialJointHandling.end())
+    useLegCurrentThreshold = it->currentThreshold;
+
+  const int absoluteCurrent = std::abs(theFilteredCurrent.currents[joint]);
+
+  if((joint >= Joints::firstLegJoint && absoluteCurrent > useLegCurrentThreshold && adjustThisLeg)
+     || (joint < Joints::firstLegJoint && absoluteCurrent > currentThresholdArms && adjustThisArm)) //if current is above the threshold, change the offset
   {
     //It can happen, that the offset changes around the current measured joint value.
     //In such a case, we adjust by maxGearStep, because if the joint moved a bit more,

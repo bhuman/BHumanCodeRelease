@@ -20,6 +20,7 @@ STREAMABLE(WalkStepData,
   (bool)(false) isLeftPhase,
   (Pose2f) stepTarget, //current walk value
   (float)(250.f) stepDuration, // current step duration
+  (float)(50.f) yHipOffset,  /**< The acutall y-hip offset. */
   (int)(0) usedPredictedSwitch, // counter for how many predicted foot support switches were made
   (unsigned)(0) lastUpdate, // time stamp of last update
 });

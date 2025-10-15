@@ -52,6 +52,8 @@ STREAMABLE(WalkKickVariant,
   (Angle)(0_deg) direction,
   (float)(0.f) kickInterpolation, // interpolation factor between forward and turn kick
   (bool)(false) shiftTurnKickPose,
+  (bool)(false) ignoreNoStandPhaseRule, // Normally a kick is not allowed after a stand phase. This rule can be deactivated with this flag
+  (std::optional<bool>) forceSwingFoot, /**< Force the swing foot to be a specific leg instead of using the logically next one. */
   (WalkKickVariant::DiagonalKickInfo) diagonalKickInfo,
   (float)(-1.f) ballEstimationTime, // ball estimation time (used to propagate the ball position)
   (DelayKickParams) delayParams,

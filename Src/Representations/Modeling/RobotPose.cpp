@@ -9,6 +9,7 @@
 #include "BallModel.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Framework/Blackboard.h"
 #include "Math/Rotation.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -17,7 +18,6 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Math/Projection.h"
-#include "Framework/Blackboard.h"
 
 void RobotPose::operator>>(BHumanMessage& m) const
 {
@@ -137,6 +137,16 @@ void RobotPose::draw() const
       THREAD("perception:RobotPose", theCameraInfo.getThreadName());
     }
     ORIGIN("perception:RobotPose", translation.x(), translation.y(), rotation);
+  }
+
+  DEBUG_DRAWING("perception:RobotPose:up", "drawingOnField") // Set the origin to the robot's current position
+  {
+    if(Blackboard::getInstance().exists("CameraInfo"))
+    {
+      const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      THREAD("perception:RobotPose:up", theCameraInfo.getThreadName());
+    }
+    ORIGIN("perception:RobotPose:up", -translation.y(), translation.x(), rotation + 90_deg);
   }
 
   DEBUG_DRAWING("cognition:RobotPose", "drawingOnField") // Set the origin to the robot's current position

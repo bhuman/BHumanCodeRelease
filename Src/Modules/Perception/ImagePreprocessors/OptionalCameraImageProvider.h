@@ -12,12 +12,12 @@
 
 #include "Framework/Module.h"
 #include "Representations/Perception/ImagePreprocessing/OptionalCameraImage.h"
-#include "Representations/Perception/RefereePercept/OptionalImageRequest.h"
+#include "Representations/Perception/RefereeGestures/RefereeDetectionRequest.h"
 
 MODULE(OptionalCameraImageProvider,
 {,
   REQUIRES(CameraImage),
-  REQUIRES(OptionalImageRequest),
+  REQUIRES(RefereeDetectionRequest),
   PROVIDES(OptionalCameraImage),
 });
 

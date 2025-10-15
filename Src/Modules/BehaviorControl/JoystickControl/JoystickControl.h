@@ -2,8 +2,7 @@
  * @file JoystickControl.h
  *
  * This file declares a module that controls the robot through a joystick.
- * It can either provide a motion request and a head motion request or
- * a shared autonomy request (not both at the same time).
+ * It provides a motion request and a head motion request.
  *
  * @author Thomas Röfer
  */
@@ -13,10 +12,7 @@
 #include "Framework/Module.h"
 #include "Math/BHMath.h"
 #include "Representations/BehaviorControl/JoystickState.h"
-#include "Representations/BehaviorControl/SharedAutonomyRequest.h"
-#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -24,15 +20,10 @@
 MODULE(JoystickControl,
 {,
   REQUIRES(BallModel),
-  REQUIRES(ExtendedGameState),
-  REQUIRES(GameState),
   REQUIRES(JoystickState),
   REQUIRES(OdometryData),
-  REQUIRES(RobotPose),
-  REQUIRES(SharedAutonomyRequest2),
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
-  PROVIDES(SharedAutonomyRequest),
   LOADS_PARAMETERS(
   {
     STREAMABLE(Axis,
@@ -57,7 +48,7 @@ MODULE(JoystickControl,
     {
       CombineAxes() = default;
       CombineAxes(int source, int target, float factor)
-      : source(source) COMMA target(target) COMMA factor(factor) {}
+        : source(source) COMMA target(target) COMMA factor(factor) {}
 
       void apply(JoystickState& joystickState) const
       {
@@ -90,7 +81,7 @@ MODULE(JoystickControl,
     {
       AxisToButton() = default;
       AxisToButton(int axis, const Rangef& values, int button)
-      : axis(axis) COMMA values(values) COMMA button(button) {}
+        : axis(axis) COMMA values(values) COMMA button(button) {}
 
       void apply(JoystickState& joystickState) const
       {
@@ -102,6 +93,12 @@ MODULE(JoystickControl,
       (int) axis, /**< The axis to map to a button. */
       (Rangef) values, /**< The range of values that is mapped to the button. */
       (int) button, /**< The button that is mapped to. */
+    });
+
+    STREAMABLE(ButtonToKick,
+    {,
+      (int) button, /**< The button that is mapped. */
+      (KickInfo::KickType) kick, /**< The kick it is mapped to. */
     }),
 
     (std::vector<CombineAxes>) combineAxes, /**< Each pairs of axes is combined into a single axis. */
@@ -115,13 +112,7 @@ MODULE(JoystickControl,
     (Angle) panTiltSpeed, /**< The pan/tilt speed for the head. */
     (int) sitButton, /**< The button that sits down the robot. */
     (int) standButton, /**< The button that lets the robot stand (high on the second press). */
-    (int) scoreButton, /**< Toggle allowing the teammate to score goals.  */
-    (int) passButton, /**< The robot passes to its teammate while this button is pressed. */
-    (int) dribbleButton, /**< The robot dribbles in the direction indicated by the forward/sideways axes. */
-    (int) kickButton, /**< The robot kicks in the direction indicated by the forward/sideways axes. */
-    (int) forceButton, /**< Enforce passing, dribbling, or kicking, skipping Zweikampf. */
-    (Angle) directionThreshold, /**< The minimum change in forward/sideways axes to adapt the dribble/kick direction. */
-    (bool) passThroughSharedAutonomyRequest, /**< Just pass through the shared autonomy request? */
+    (std::vector<ButtonToKick>) buttonsToKicks, /**< Map buttons to kicks. */
   }),
 });
 
@@ -130,9 +121,8 @@ class JoystickControl : public JoystickControlBase
   HeadMotionRequest headMotionRequest; /**< The head motion request provided. */
   unsigned lastButtons = 0; /**< The buttons that were pressed during the previous execution. */
   JoystickState joystickState; /**< The joystick state with mapped buttons and axis. */
-  MotionRequest motionRequest; /**< Internal motion request if the shared autonomy request is provided. */
-  Angle direction = 0_deg; /**< The absolute dribble/kick direction used during the previous execution. */
-  bool passThrough;
+
+  const Rangef deadZone = Rangef(-0.2f, 0.2f); /**< Only start walking if the speed is high enough. */
 
   /**
    * This method is called when the representation provided needs to be updated.
@@ -145,18 +135,4 @@ class JoystickControl : public JoystickControlBase
    * @param theMotionRequest The representation updated.
    */
   void update(MotionRequest& theMotionRequest) override;
-
-  /**
-   * This method is called when the representation provided needs to be updated.
-   * @param theSharedAutonomyRequest The representation updated.
-   */
-  void update(SharedAutonomyRequest& theSharedAutonomyRequest) override;
-
-public:
-  /**
-   * Constructor.
-   * Selects standing as initial motion, which is only relevant if the shared
-   * autonomy request is provided.
-   */
-  JoystickControl() : passThrough(passThroughSharedAutonomyRequest) {motionRequest.motion = MotionRequest::stand;}
 };

@@ -116,14 +116,14 @@ void FieldDimensions::drawGoalFrame() const
       LINE("goal frame", l.from.x(), l.from.y(), l.to.x(), l.to.y(), fieldLinesWidth * 0.7, Drawings::solidPen, lineColor);
     }
 
-    CIRCLE("goal frame", xPosOpponentGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
+    CIRCLE("goal frame", xPosOpponentGoalPost, yPosLeftGoal, goalPostRadius, 0, Drawings::solidPen,
            ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
-    CIRCLE("goal frame", xPosOpponentGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
+    CIRCLE("goal frame", xPosOpponentGoalPost, yPosRightGoal, goalPostRadius, 0, Drawings::solidPen,
            ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
 
-    CIRCLE("goal frame", xPosOwnGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
+    CIRCLE("goal frame", xPosOwnGoalPost, yPosLeftGoal, goalPostRadius, 0, Drawings::solidPen,
            ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
-    CIRCLE("goal frame", xPosOwnGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
+    CIRCLE("goal frame", xPosOwnGoalPost, yPosRightGoal, goalPostRadius, 0, Drawings::solidPen,
            ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
   }
 }

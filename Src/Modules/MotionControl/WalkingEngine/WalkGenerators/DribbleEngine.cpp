@@ -8,6 +8,7 @@
 
 #include "DribbleEngine.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Framework/Settings.h"
 #include "Debugging/Annotation.h"
 #include "Math/BHMath.h"
 #include "Tools/Modeling/BallPhysics.h"
@@ -23,7 +24,7 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
   dribbleGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, Pose2f(0.f, motionRequest.ballEstimate.position));
-    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theRobotDimensions, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
+    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theWalkStepData.yHipOffset, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
 
     const Rangef ttrbRange(1.f, 2.f);
     const float timeToReachBall = ttrbRange.limit(std::max(std::abs(motionRequest.ballEstimate.position.x()) / theWalkingEngineOutput.maxSpeed.translation.x(), std::abs(motionRequest.ballEstimate.position.y()) / theWalkingEngineOutput.maxSpeed.translation.y()));
@@ -41,14 +42,14 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
       // check forward kick that is faster to execute
       Legs::Leg kickLeg = ballSCS.y() > 0.f ? Legs::left : Legs::right;
 
-      WalkKickVariant walkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
+      WalkKickVariant walkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, motionRequest.targetDirection, false);
       bool isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepType, motionRequest.turnKickAllowed);
 
       // check forward kick that is slower but executable on the next step
       if(!isInPositionForKick)
       {
         kickLeg = ballSCS.y() < 0.f ? Legs::left : Legs::right;
-        walkKickVariant = WalkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, directionSCS, false);
+        walkKickVariant = WalkKickVariant(kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight, WalkKicks::Type::forward, kickLeg, motionRequest.alignPrecisely, motionRequest.kickLength, motionRequest.targetDirection, false);
         isInPositionForKick = theWalkKickGenerator.canStart(walkKickVariant, lastPhase, motionRequest.directionPrecision, motionRequest.preStepType, motionRequest.turnKickAllowed);
       }
 
@@ -58,15 +59,14 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
 
       if(isInPositionForKick)
       {
-        const KickInfo::KickType kickType = kickLeg == Legs::left ? KickInfo::walkForwardsLeft : KickInfo::walkForwardsRight;
         auto kickPhase = theWalkKickGenerator.createPhase(walkKickVariant, lastPhase, false);
         if(kickPhase)
         {
-          kickPhase->kickType = kickType;
+          kickPhase->kickType = walkKickVariant.kickType;
           return kickPhase;
         }
         else
-          ANNOTATION("DribbleEngine", "Creating Kick Phase of Type " << TypeRegistry::getEnumName(kickType) << " in WalkToBallAndKickEngine returned an empty kick!");
+          ANNOTATION("DribbleEngine", "Creating Kick Phase of Type " << TypeRegistry::getEnumName(walkKickVariant.kickType) << " in WalkToBallAndKickEngine returned an empty kick!");
       }
     }
     MotionRequest::ObstacleAvoidance obstacleAvoidanceSCS = motionRequest.obstacleAvoidance;
@@ -76,7 +76,7 @@ void DribbleEngine::update(DribbleGenerator& dribbleGenerator)
 
     Vector2f newBallSCS = ballSCS;
     calcInterceptionPosition(motionRequest, newBallSCS, perceivedBallPosition, scsCognition);
-    return theWalkToBallGenerator.createPhase(calcBasePose(newBallSCS, directionSCS, lastSign, motionRequest.turnKickAllowed), newBallSCS, theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen), scsCognition, obstacleAvoidanceSCS, motionRequest.walkSpeed, lastPhase);
+    return theWalkToBallGenerator.createPhase(calcBasePose(newBallSCS, directionSCS, lastSign, motionRequest.turnKickAllowed && motionRequest.preStepType != PreStepType::notAllowed), newBallSCS, theFrameInfo.getTimeSince(motionRequest.ballTimeWhenLastSeen), scsCognition, obstacleAvoidanceSCS, motionRequest.walkSpeed, lastPhase);
   };
 }
 
@@ -92,7 +92,7 @@ Pose2f DribbleEngine::calcBasePose(const Vector2f& ballInSCS, Angle directionInS
   KickInfo::KickType forwardKick = sign > 0.f ? KickInfo::walkForwardsRight : KickInfo::walkForwardsLeft;
   KickInfo::KickType turnKick = forwardKick == KickInfo::walkForwardsLeft ? KickInfo::walkTurnLeftFootToRight : KickInfo::walkTurnRightFootToLeft;
   const Angle useDirection = turnKickAllowed ? directionInSCS : 0_deg;
-  const float factor = Rangef::ZeroOneRange().limit(useDirection / -theKickInfo[turnKick].rotationOffset);
+  const float factor = Global::getSettings().robotType != Settings::nao ? 0.f : Rangef::ZeroOneRange().limit(useDirection / -theKickInfo[turnKick].rotationOffset);
   kickPose.rotate(theKickInfo[forwardKick].rotationOffset * (1.f - factor) + theKickInfo[turnKick].rotationOffset * factor);
   kickPose.translate(theKickInfo[forwardKick].ballOffset * (1.f - factor) + theKickInfo[turnKick].ballOffset * factor);
   return kickPose;

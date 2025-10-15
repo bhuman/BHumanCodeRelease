@@ -10,6 +10,7 @@
  */
 
 #include "SetupPoses.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Debugging/Debugging.h"
 #include "Debugging/Debugging.h"
@@ -36,7 +37,9 @@ void SetupPoses::draw() const
         return 1;
     }();
     const auto& pose = getPoseOfRobot(playerNumber);
-    OUTPUT(idConsole, text, "mv " << pose.position.x() << " " << pose.position.y() << " 300 0 0 " << toDegrees((pose.turnedTowards - pose.position).angle()));
+    OUTPUT(idConsole, text, "mv " << pose.position.x() << " " << pose.position.y() << " "
+           << (Blackboard::getInstance().exists("RobotDimensions") ? static_cast<const RobotDimensions&>(Blackboard::getInstance()["RobotDimensions"]).simOriginHeight : 320.f)
+           << " 0 0 " << toDegrees((pose.turnedTowards - pose.position).angle()));
   }
 }
 

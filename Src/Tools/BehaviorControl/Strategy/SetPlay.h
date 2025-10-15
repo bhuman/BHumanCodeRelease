@@ -168,6 +168,7 @@ STREAMABLE(SetPlay,
     (Tactic::Position::Type)(Tactic::Position::none) position, /**< The position that is overridden by this entry. */
     (Pose2f) pose, /**< The pose that is used instead. */
     (std::vector<Action>) actions, /**< The actions to be executed as part of the set play. */
+    (bool)(false) relativeToTeamBall, /**< Whether the pose is relative to the team ball. */
   });
 
   /**

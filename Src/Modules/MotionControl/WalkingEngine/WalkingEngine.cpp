@@ -38,13 +38,18 @@ WalkingEngine::WalkingEngine()
   const DummyPhase dummy(MotionPhase::playDead);
   WalkPhase phase(*this, Pose2f(), dummy);
 
-  translationPolygon = phase.getTranslationPolygon(configuredParameters.maxSpeedBackwards, configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true);
-  translationPolygonBig = phase.getTranslationPolygon(configuredParameters.walkSpeedParams.maxSpeedBackwards, configuredParameters.walkSpeedParams.maxSpeed.translation.x(), configuredParameters.walkSpeedParams.maxSpeed.translation.y(), true);
+  translationPolygon = phase.getTranslationPolygon(configuredParameters.maxSpeedBackwards, configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true, configuredParameters.maxSideWithMaxForwardSpeed);
+  translationPolygonBig = phase.getTranslationPolygon(configuredParameters.walkSpeedParams.maxSpeedBackwards, configuredParameters.walkSpeedParams.maxSpeed.translation.x(), configuredParameters.walkSpeedParams.maxSpeed.translation.y(), true, std::optional<float>());
 
-  std::vector<Vector2f> translationPolygonTemp = phase.getTranslationPolygon(configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true);
+  std::vector<Vector2f> translationPolygonTemp = phase.getTranslationPolygon(configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true, std::optional<float>());
   filterTranslationPolygon(translationPolygonAfterKick, translationPolygonTemp, translationPolygonTemp);
 
-  translationPolygonBigNotClipped = phase.getTranslationPolygon(walkSpeedParamsWalkStep.maxSpeedBackwards, walkSpeedParamsWalkStep.maxSpeed.translation.x(), walkSpeedParamsWalkStep.maxSpeed.translation.y(), false);
+  translationPolygonBigNotClipped = phase.getTranslationPolygon(walkSpeedParamsWalkStep.maxSpeedBackwards, walkSpeedParamsWalkStep.maxSpeed.translation.x(), walkSpeedParamsWalkStep.maxSpeed.translation.y(), false, std::optional<float>());
+
+  // Ensure the values set are in a somewhat reasonable range (commented out for T1)
+  //ASSERT(kinematicParameters.walkHipHeight.min > 200.f && kinematicParameters.walkHipHeight.min < 245.f);
+  //ASSERT(kinematicParameters.walkHipHeight.max > 200.f && kinematicParameters.walkHipHeight.max < 245.f);
+  ASSERT(kinematicParameters.walkHipHeight.max >= kinematicParameters.walkHipHeight.min);
 }
 
 void WalkingEngine::reg()
@@ -66,12 +71,15 @@ void WalkingEngine::update(WalkStepData& walkStepData)
     walkStepData.stepDuration = stepDuration;
     walkStepData.lastUpdate = theFrameInfo.time;
   };
+
+  walkStepData.yHipOffset = theRobotDimensions.yHipOffset + kinematicParameters.yHipOffset;
 }
 
 void WalkingEngine::update(WalkGenerator& walkGenerator)
 {
   MODIFY("module:WalkingEngine:common", static_cast<WalkingEngineCommon&>(*this));
   DECLARE_DEBUG_DRAWING3D("module:WalkStepAdjustment:balance", "robot");
+  DECLARE_DEBUG_DRAWING3D("module:WalkDelayPhase:hitPoint", "robot");
   DECLARE_PLOT("module:WalkingEngine:current:left:x");
   DECLARE_PLOT("module:WalkingEngine:request:left:x");
   DECLARE_PLOT("module:WalkingEngine:current:left:y");
@@ -108,10 +116,10 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
   DECLARE_PLOT("module:WalkingEngine:SpeedPolygon:back");
   DECLARE_PLOT("module:WalkingEngine:Data:sideBalance");
   DECLARE_PLOT("module:WalkingEngine:Data:refCOMY");
-  DECLARE_PLOT("module:WalkingEngine:Data:sagittal");
-  DECLARE_PLOT("module:WalkingEngine:Data:lateral");
-  DECLARE_PLOT("module:WalkingEngine:Data:hipBalancing");
-  DECLARE_PLOT("module:WalkingEngine:Data:kneeHipBalance");
+  DECLARE_PLOT("module:WalkingEngine:Gyro:sagittal");
+  DECLARE_PLOT("module:WalkingEngine:Gyro:lateral");
+  DECLARE_PLOT("module:WalkingEngine:Gyro:hipKnee");
+  DECLARE_PLOT("module:WalkingEngine:Gyro:hipRoll");
   DECLARE_PLOT("module:WalkingEngine:Data:supportSoleRotationY");
   DECLARE_PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationX");
   DECLARE_PLOT("module:WalkingEngine:Data:supportSoleRotationCompensationY");
@@ -199,42 +207,38 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     const DummyPhase dummy(MotionPhase::playDead);
     WalkPhase phase(*this, Pose2f(), dummy);
 
-    translationPolygon = phase.getTranslationPolygon(configuredParameters.maxSpeedBackwards, configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true);
-    std::vector<Vector2f> translationPolygonTemp = phase.getTranslationPolygon(configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true);
+    translationPolygon = phase.getTranslationPolygon(configuredParameters.maxSpeedBackwards, configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true, configuredParameters.maxSideWithMaxForwardSpeed);
+    std::vector<Vector2f> translationPolygonTemp = phase.getTranslationPolygon(configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.x(), configuredParameters.maxSpeed.translation.y(), true, std::optional<float>());
 
     filterTranslationPolygon(translationPolygonAfterKick, translationPolygonTemp, translationPolygonTemp);
-    translationPolygonBigNotClipped = phase.getTranslationPolygon(walkSpeedParamsWalkStep.maxSpeedBackwards, walkSpeedParamsWalkStep.maxSpeed.translation.x(), walkSpeedParamsWalkStep.maxSpeed.translation.y(), false);
+    translationPolygonBigNotClipped = phase.getTranslationPolygon(walkSpeedParamsWalkStep.maxSpeedBackwards, walkSpeedParamsWalkStep.maxSpeed.translation.x(), walkSpeedParamsWalkStep.maxSpeed.translation.y(), false, std::optional<float>());
   }
 
   filteredGyroX = balanceParameters.gyroLowPassRatio * filteredGyroX + (1.f - balanceParameters.gyroLowPassRatio) * theInertialData.gyro.x();
   filteredGyroY = balanceParameters.gyroLowPassRatio * filteredGyroY + (1.f - balanceParameters.gyroLowPassRatio) * theInertialData.gyro.y();
 
-  // Decide if the gyroBalanceFactors shall be taken from the WalkLearner.
-  if(theWalkModifier.numOfGyroPeaks > 0)
-  {
-    if(theWalkLearner.newGyroBackwardBalance > 0)
-      balanceParameters.gyroBackwardBalanceFactor = theWalkLearner.newGyroBackwardBalance;
-    if(theWalkLearner.newGyroForwardBalance > 0)
-      balanceParameters.gyroForwardBalanceFactor = theWalkLearner.newGyroForwardBalance;
-  }
-
   // Set walk functions
   walkGenerator.createPhase = [this](const Pose2f& step, const MotionPhase& lastPhase, float delay)->std::unique_ptr<MotionPhase>
   {
-    Pose2f useStepTarget = SystemCall::getMode() == SystemCall::logFileReplay ? theWalkStepData.stepTarget : step;
+    Pose2f useStepTarget = step; // SystemCall::getMode() == SystemCall::logFileReplay ? theWalkStepData.stepTarget : step;
     if((lastPhase.type == MotionPhase::kick || lastPhase.type == MotionPhase::freeze) && useStepTarget == Pose2f())
       useStepTarget.translation.x() = 0.01f;
 
-    float delayPercentHeight = 1.f;
+    // If active, no delay phase
+    if(walkHipShiftPhaseParameters.useHipShift && lastPhase.type != MotionPhase::playDead)
+      return std::make_unique<WalkHipShiftPhase>(*this, useStepTarget, lastPhase);
 
+    // Determine delay duration and height scaling
+    float delayPercentHeight = step == Pose2f() ? 0.5f : 1.f;
     if(lastPhase.type == MotionPhase::kick)
     {
+      theRobotStableState.predictRotation(theWalkGenerator.isNextLeftPhase(lastPhase, useStepTarget), false, false);
       const bool comNearSwingFoot = (theKickGenerator.wasLeftPhase(lastPhase) && theRobotStableState.comInFeet[Legs::left].outerSide != 0.f) ||
       (!theKickGenerator.wasLeftPhase(lastPhase) && theRobotStableState.comInFeet[Legs::right].outerSide != 0.f);
 
       if(!comNearSwingFoot &&
-         (theKickGenerator.wasLeftPhase(lastPhase) ? theFsrData.legInfo[Legs::left] : theFsrData.legInfo[Legs::right]).hasPressure == theFsrData.lastUpdateTimestamp)
-        delay = Constants::motionCycleTime * 6.01f;
+         (theKickGenerator.wasLeftPhase(lastPhase) ? theSolePressureState.legInfo[Legs::left] : theSolePressureState.legInfo[Legs::right]).hasPressure)
+        delay = sideStabilizeParameters.delayRange.max;
     }
 
     if(lastPhase.type == MotionPhase::walk)
@@ -248,13 +252,21 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
       const Angle turnRL0 = (theRobotModel.soleLeft.rotation.getZAngle() - theRobotModel.soleRight.rotation.getZAngle()) * 0.5f;
       const float offset = mapToRange(static_cast<float>(turnRL0), static_cast<float>(p.turnIncreaseRange.min), static_cast<float>(p.turnIncreaseRange.max), 0.f, p.increaseThreshold);
       const bool stopping = (useStepTarget.translation.x() == 0.f && useStepTarget.translation.y() == 0.f && useStepTarget.rotation == 0_deg) || !theGroundContactState.contact;
-      if(!stopping && theRobotStableState.comInFeet[leg].outerSide > p.minOuterSide + offset && theRobotStableState.getTurnPoint(leg).outerSide > p.minOuterSideStop + offset)
+      const bool handleBasedOnCom = theRobotStableState.comInFeet[leg].outerSide > p.minOuterSide + offset && theRobotStableState.getTurnPoint(leg).outerSide > p.minOuterSideStop + offset;
+      const bool handleBasedOnStepDuration = std::abs(useStepTarget.translation.y()) < p.maxNextSideStepSize && std::abs(lastWalkPhaseDummy.sideHipShift) >= p.maxSideHipShift * p.minHipShiftRatioForDelay && lastWalkPhaseDummy.lastTBase > p.lastLastWalkPhaseStepDuration && lastWalkPhaseDummy.tBase < p.lastWalkPhaseStepDuration;
+      if(!stopping && (handleBasedOnCom || handleBasedOnStepDuration))
       {
-        delay = Constants::motionCycleTime * 3.f;
+        delay = p.delayRange.min;
         delayPercentHeight = mapToRange(theRobotStableState.comInFeet[leg].outerSide, p.comInOuterInterpolationRange.min, p.comInOuterInterpolationRange.max, p.heightRange.min, p.heightRange.max);
       }
     }
+    if(lastPhase.type == MotionPhase::stand && step != Pose2f())
+    {
+      delay = sideStabilizeParameters.delayRange.min;
+      delayPercentHeight = sideStabilizeParameters.firstStepHeightRange;
+    }
 
+    // Return next walk phase
     if(delay <= 0.f)
       return std::make_unique<WalkPhase>(*this, useStepTarget, lastPhase);
     else
@@ -267,8 +279,12 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     if((lastPhase.type == MotionPhase::kick || lastPhase.type == MotionPhase::freeze) && useStepTarget == Pose2f())
       useStepTarget.translation.x() = 0.01f;
 
-    float delayPercentHeight = 1.f;
+    // If active, no delay phase
+    if(walkHipShiftPhaseParameters.useHipShift)
+      return std::make_unique<WalkHipShiftPhase>(*this, useStepTarget, lastPhase, createNextPhaseCallback, walkKickStep);
 
+    // Determine delay duration and height scaling, if no kick was set
+    float delayPercentHeight = delay != 0.f ? 0.5f : 1.f;
     if(delay == 0.f && lastPhase.type == MotionPhase::walk)
     {
       const auto& lastWalkPhaseDummy = static_cast<const WalkPhaseBase&>(lastPhase);
@@ -282,14 +298,15 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
       const bool stopping = (useStepTarget.translation.x() == 0.f && useStepTarget.translation.y() == 0.f && useStepTarget.rotation == 0_deg) || !theGroundContactState.contact;
       if(!stopping && theRobotStableState.comInFeet[leg].outerSide > p.minOuterSide + offset && theRobotStableState.getTurnPoint(leg).outerSide > p.minOuterSide + offset)
       {
-        delay = Constants::motionCycleTime * 3.f;
+        delay = motionCycleTime * 3.f;
         delayPercentHeight = mapToRange(theRobotStableState.comInFeet[leg].outerSide, p.comInOuterInterpolationRange.min, p.comInOuterInterpolationRange.max, p.heightRange.min, p.heightRange.max);
       }
     }
 
+    // Return next walk kick phase
     ASSERT(walkKickStep.keyframe.size() > 0);
     if(delay <= 0.f)
-      return std::make_unique<WalkPhase>(*this, useStepTarget, lastPhase, createNextPhaseCallback, walkKickStep);
+      return std::make_unique<WalkPhase>(*this, useStepTarget, lastPhase, false, createNextPhaseCallback, walkKickStep);
     else
       return std::make_unique<WalkDelayPhase>(*this, useStepTarget, lastPhase, delay, delayPercentHeight, createNextPhaseCallback, walkKickStep);
   };
@@ -309,6 +326,9 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
         return theKickGenerator.wasLeftPhase(lastPhase);
       case MotionPhase::stand:
       {
+        const auto& lastWalkPhase = static_cast<const WalkPhase&>(lastPhase);
+        if(lastWalkPhase.isDelay != 0.f) // if the stand is actually a delay phase, we want to return the planned leftPhase
+          return lastWalkPhase.isLeftPhase;
         return stepTarget.translation.y() != 0.f // first step based on side translation
                ? stepTarget.translation.y() > 0
                : (stepTarget.rotation != 0_deg ? stepTarget.rotation > 0_deg // else first step based rotation
@@ -349,7 +369,7 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     const auto& lastWalkPhase = static_cast<const WalkPhase&>(lastPhase);
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, stepTarget);
     return WalkDelayPhase::isWalkDelayPossible(lastWalkPhase.forwardL, lastWalkPhase.forwardR, lastWalkPhase.sideL, lastWalkPhase.sideR,
-                                               lastWalkPhase.footHL, lastWalkPhase.footHR, lastWalkPhase.turnRL,
+                                               lastWalkPhase.footHL, lastWalkPhase.footHR, lastWalkPhase.turnRL, lastWalkPhase.currentWalkHipHeight,
                                                lastWalkPhase.soleRotationYL, lastWalkPhase.soleRotationXL,
                                                lastWalkPhase.soleRotationYR, lastWalkPhase.soleRotationXR,
                                                isLeftPhase, false, delay,
@@ -459,7 +479,7 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
       if(lastWalkPhase.noFastTranslationPolygonSteps > 0)
         useFastWalk = false;
 
-      armsAreBack = theFrameInfo.getTimeSince(lastWalkPhase.leftArmInterpolationStart) < Constants::motionCycleTime * 2.f * 1000.f || theFrameInfo.getTimeSince(lastWalkPhase.leftArmInterpolationStart) < Constants::motionCycleTime * 2.f * 1000.f;
+      armsAreBack = theFrameInfo.getTimeSince(lastWalkPhase.leftArmInterpolationStart) < motionCycleTime * 2.f * 1000.f || theFrameInfo.getTimeSince(lastWalkPhase.leftArmInterpolationStart) < motionCycleTime * 2.f * 1000.f;
     }
 
     Vector2f frontLeft, backRight;
@@ -482,7 +502,6 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
       backRight.x() = -maxStepSizeChange.x(); // when walking circular around the ball, the feet must be allowed to move far backward
     }
 
-    // TODO: Limit sidewards acceleration.
     backRight.y() = -1000.f;
     frontLeft.y() = 1000.f;
 
@@ -494,12 +513,12 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     // Limit to maximum speed (which is influenced by the rotation).
     // When the arms are on the back, the robot will unintentionally turn more in each step.
     // Allow more rotation + translation, so the robot does not walk that much slower
-    const Vector2f stepSizeFactor = getStepSizeFactor(rotation, useFastWalk, isLeftPhase, armsAreBack ? 10_deg : 0_deg);
+    const Vector2f stepSizeFactor = getStepSizeFactor(rotation, useFastWalk, isLeftPhase, armsAreBack ? 10_deg : 0_deg, useWalkSpeedRatio.translation);
 
-    backRight.x() = std::max(backRight.x(), stepSizeFactor.x() * -useSpeedBackwards * kinematicParameters.baseWalkPeriod / 1000.f * std::abs(useWalkSpeedRatio.translation.x()));
-    backRight.y() = std::max(backRight.y(), stepSizeFactor.y() * -2.f * useSpeed.y() * kinematicParameters.baseWalkPeriod / 1000.f * std::abs(useWalkSpeedRatio.translation.y()));
-    frontLeft.x() = std::min(frontLeft.x(), stepSizeFactor.x() * useSpeed.x() * kinematicParameters.baseWalkPeriod / 1000.f * std::abs(useWalkSpeedRatio.translation.x()));
-    frontLeft.y() = std::min(frontLeft.y(), stepSizeFactor.y() * 2.f * useSpeed.y() * kinematicParameters.baseWalkPeriod / 1000.f * std::abs(useWalkSpeedRatio.translation.y()));
+    backRight.x() = std::max(backRight.x(), stepSizeFactor.x() * -useSpeedBackwards * kinematicParameters.baseWalkPeriod / 1000.f);
+    backRight.y() = std::max(backRight.y(), stepSizeFactor.y() * -2.f * useSpeed.y() * kinematicParameters.baseWalkPeriod / 1000.f);
+    frontLeft.x() = std::min(frontLeft.x(), stepSizeFactor.x() * useSpeed.x() * kinematicParameters.baseWalkPeriod / 1000.f);
+    frontLeft.y() = std::min(frontLeft.y(), stepSizeFactor.y() * 2.f * useSpeed.y() * kinematicParameters.baseWalkPeriod / 1000.f);
 
     if(useFastWalk)
     {
@@ -534,11 +553,11 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
                                                     std::vector<Vector2f>& translationPolygon, Vector2f backRight, Vector2f frontLeft,
                                                     const bool useFastWalk, const bool useMaxPossibleStepSize)
   {
-    const Vector2f stepSizeFactor = getStepSizeFactor(rotation, useFastWalk, isLeftPhase, 0);
+    const Vector2f stepSizeFactor = getStepSizeFactor(rotation, useFastWalk, isLeftPhase, 0, walkSpeedRatio.translation);
 
     // (0,0) must be part of the rectangle.
-    const float maxXRatio = stepSizeFactor.x() * std::max(walkSpeedRatio.translation.x(), 0.01f);
-    const float maxYRatio = stepSizeFactor.y() * std::max(walkSpeedRatio.translation.y(), 0.01f);
+    const float maxXRatio = std::min(stepSizeFactor.x(), std::max(std::abs(walkSpeedRatio.translation.x()), 0.01f));
+    const float maxYRatio = std::min(stepSizeFactor.y(), std::max(std::abs(walkSpeedRatio.translation.y()), 0.01f));
     backRight.x() = std::min(backRight.x() * maxXRatio, -.01f);
     frontLeft.x() = std::max(frontLeft.x() * maxXRatio, .01f);
     backRight.y() = std::min(backRight.y() * maxYRatio, -.01f);
@@ -561,8 +580,8 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     else
     {
       const RobotModel lastRobotModel(theJointRequest, theRobotDimensions, theMassCalibration);
-      left.translate(lastRobotModel.soleLeft.translation.head<2>() + Vector2f(0.f, kinematicParameters.torsoOffset)).rotate(lastRobotModel.soleLeft.rotation.getZAngle());
-      right.translate(lastRobotModel.soleRight.translation.head<2>() + Vector2f(0.f, kinematicParameters.torsoOffset)).rotate(lastRobotModel.soleRight.rotation.getZAngle());
+      left.translate(lastRobotModel.soleLeft.translation.head<2>() + Vector2f(kinematicParameters.torsoOffset, -theRobotDimensions.yHipOffset - kinematicParameters.yHipOffset)).rotate(lastRobotModel.soleLeft.rotation.getZAngle());
+      right.translate(lastRobotModel.soleRight.translation.head<2>() + Vector2f(kinematicParameters.torsoOffset, theRobotDimensions.yHipOffset + kinematicParameters.yHipOffset)).rotate(lastRobotModel.soleRight.rotation.getZAngle());
     }
     return std::make_tuple(left, right, lastStep);
   };
@@ -582,6 +601,39 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
     return Pose2f();
   };
 
+  walkGenerator.getLastStepChangeWithOffsets = [&](const MotionPhase& lastPhase)
+  {
+    if(lastPhase.type == MotionPhase::walk)
+    {
+      const auto& lastWalkPhase = static_cast<const WalkPhase&>(lastPhase);
+      const RobotModel model(theJointAngles, theRobotDimensions, theMassCalibration);
+      Pose3f leftSole = model.soleLeft;
+      Pose3f rightSole = model.soleRight;
+
+      Pose3f rot(Rotation::aroundY(-lastWalkPhase.armCompensationTilt[0]));
+
+      leftSole = rot * leftSole; // revert rotation by adding both rotations, and rotate translation of sole
+      rightSole = rot * rightSole; // revert rotation by adding both rotations, and rotate translation of sole
+
+      const Angle turn = (leftSole.rotation.getZAngle() - rightSole.rotation.getZAngle()) * 0.5f;
+
+      const float forwardL = leftSole.translation.x() + kinematicParameters.torsoOffset;
+      const float sideL = leftSole.translation.y() - theRobotDimensions.yHipOffset - kinematicParameters.yHipOffset;
+
+      const float forwardR = rightSole.translation.x() + kinematicParameters.torsoOffset;
+      const float sideR = rightSole.translation.y() + theRobotDimensions.yHipOffset + kinematicParameters.yHipOffset;
+
+      Pose2f swing;
+      Pose2f support;
+      Pose2f step;
+      const Pose2f left(turn, forwardL, std::max(0.f, sideL));
+      const Pose2f right(turn, forwardR, std::min(0.f, sideR));
+
+      return std::make_tuple(left, right, Pose2f(turn, lastWalkPhase.isLeftPhase ? (forwardL - forwardR) : (forwardR - forwardL), lastWalkPhase.isLeftPhase ? (left.translation.y() - right.translation.y()) : (right.translation.y() - left.translation.y())));
+    }
+    return std::make_tuple(Pose2f(), Pose2f(), Pose2f());
+  };
+
   walkGenerator.wasLastPhaseInWalkKick = [](const MotionPhase& lastPhase)
   {
     if(lastPhase.type == MotionPhase::walk)
@@ -593,14 +645,14 @@ void WalkingEngine::update(WalkGenerator& walkGenerator)
   };
 }
 
-Vector2f WalkingEngine::getStepSizeFactor(const Angle rotation, const bool isFastWalk, const bool isLeftPhase, const Angle customReduceOffset)
+Vector2f WalkingEngine::getStepSizeFactor(const Angle rotation, const bool isFastWalk, const bool isLeftPhase, const Angle customReduceOffset, const Vector2f& walkSpeedRatio)
 {
   const Angle useReduceFactor = std::max(customReduceOffset, stepSizeParameters.reduceTranslationFromRotation.x());
   const float tFactorX = std::max(0.f, 1.f - sqr(std::max(0.f, (std::abs(rotation) - useReduceFactor) / (stepSizeParameters.noTranslationFromRotation.x() - useReduceFactor))));
   const float reduceTransitionY = !isFastWalk ? stepSizeParameters.noTranslationFromRotation.y() : ((isLeftPhase && rotation > 0_deg) || (!isLeftPhase && rotation < 0_deg) ? stepSizeParameters.noTranslationYFromRotationFastOuter : stepSizeParameters.noTranslationYFromRotationFastInner);
   const float useReduceTranslationFromRotation = !isFastWalk ? stepSizeParameters.reduceTranslationFromRotation.y() : stepSizeParameters.reduceTranslationYFromRotationFast;
   const float tFactorY = std::max(0.f, 1.f - sqr(std::max(0.f, (std::abs(rotation) - useReduceTranslationFromRotation) / (reduceTransitionY - useReduceTranslationFromRotation))));
-  return Vector2f(tFactorX, tFactorY);
+  return Vector2f(std::min(tFactorX, std::abs(walkSpeedRatio.x())), std::min(tFactorY, std::abs(walkSpeedRatio.y())));
 }
 
 Rangea WalkingEngine::getMaxRotationToStepFactor(const bool isFastWalk, const bool isLeftPhase, const Angle customReduceOffset, const Vector2f& stepRatio)
@@ -609,8 +661,8 @@ Rangea WalkingEngine::getMaxRotationToStepFactor(const bool isFastWalk, const bo
   const float useReduceTranslationFromRotation = !isFastWalk ? stepSizeParameters.reduceTranslationFromRotation.y() : stepSizeParameters.reduceTranslationYFromRotationFast;
   const float reduceTransitionYNeg = !isFastWalk ? stepSizeParameters.noTranslationFromRotation.y() : (!isLeftPhase ? stepSizeParameters.noTranslationYFromRotationFastOuter : stepSizeParameters.noTranslationYFromRotationFastInner);
   const float reduceTransitionYPos = !isFastWalk ? stepSizeParameters.noTranslationFromRotation.y() : (isLeftPhase ? stepSizeParameters.noTranslationYFromRotationFastOuter : stepSizeParameters.noTranslationYFromRotationFastInner);
-  const Angle minRotY = -std::sqrt(std::max(0.f, -(stepRatio.y() - 1.f))) * (reduceTransitionYNeg - useReduceTranslationFromRotation) + useReduceTranslationFromRotation;
-  const Angle maxRotY = std::sqrt(std::max(0.f, -(stepRatio.y() - 1.f))) * (reduceTransitionYPos - useReduceTranslationFromRotation) + useReduceTranslationFromRotation;
+  const Angle minRotY = -std::sqrt(std::max(0.f, -(stepRatio.y() - 1.f))) * std::max(reduceTransitionYNeg - useReduceTranslationFromRotation, 0.f) - useReduceTranslationFromRotation;
+  const Angle maxRotY = std::sqrt(std::max(0.f, -(stepRatio.y() - 1.f))) * std::max(reduceTransitionYPos - useReduceTranslationFromRotation, 0.f) + useReduceTranslationFromRotation;
 
   // rotation based on x-translation
   const Angle useReduceFactor = std::max(customReduceOffset, stepSizeParameters.reduceTranslationFromRotation.x());
@@ -720,6 +772,9 @@ void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
                                                    configuredParameters.walkSpeedParams.maxSpeed.translation.x() * walkingEngineOutput.walkStepDuration,
                                                    configuredParameters.walkSpeedParams.maxSpeed.translation.y() * walkingEngineOutput.walkStepDuration * 2.f);
   walkingEngineOutput.maxPossibleBackwardStepSize = configuredParameters.walkSpeedParams.maxSpeedBackwards * walkingEngineOutput.walkStepDuration;
+
+  walkingEngineOutput.energyEfficientWalkSpeed = kinematicParameters.energyEfficientWalkSpeed.maxSpeed;
+  walkingEngineOutput.noEfficientWalkSpeed = kinematicParameters.noEfficientWalkSpeed.maxSpeed;
 }
 
 float WalkingEngine::getSideSpeed(const float sideTarget) const
@@ -734,12 +789,29 @@ float WalkingEngine::stepDurationSpeedTarget(const float sideSpeed) const
   return (kinematicParameters.baseWalkPeriod + std::abs(sideSpeed) * kinematicParameters.sidewaysWalkHeightPeriodIncreaseFactor) / 1000.f;
 }
 
-WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPhase& lastPhase,
+float WalkingEngine::updateWalkHipHeight(const Pose2f& walkStep, const float stepDuration) const
+{
+  if(!theMotionRequest.energySavingWalk || !configuredParameters.energySavingWalk || theMotionRequest.shouldInterceptBall)
+    return kinematicParameters.walkHipHeight.min;
+
+  if(stepDuration == 0.f)
+    return kinematicParameters.walkHipHeight.max;
+
+  return std::min(
+  {
+    mapToRange(std::abs(walkStep.rotation / stepDuration), static_cast<float>(kinematicParameters.energyEfficientWalkSpeed.maxSpeed.rotation), static_cast<float>(kinematicParameters.noEfficientWalkSpeed.maxSpeed.rotation), kinematicParameters.walkHipHeight.max, kinematicParameters.walkHipHeight.min),
+    mapToRange(std::abs(walkStep.translation.x() / stepDuration), kinematicParameters.energyEfficientWalkSpeed.maxSpeed.translation.x(), kinematicParameters.noEfficientWalkSpeed.maxSpeed.translation.x(), kinematicParameters.walkHipHeight.max, kinematicParameters.walkHipHeight.min),
+    mapToRange(std::abs(walkStep.translation.y() / (stepDuration * 2.f)), kinematicParameters.energyEfficientWalkSpeed.maxSpeed.translation.y(), kinematicParameters.noEfficientWalkSpeed.maxSpeed.translation.y(), kinematicParameters.walkHipHeight.max, kinematicParameters.walkHipHeight.min)
+  });
+}
+
+WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPhase& lastPhase, const bool isDelay,
                      const WalkGenerator::CreateNextPhaseCallback& createNextPhaseCallback,
                      const WalkKickStep& walkKickStep) :
-  WalkPhaseBase(engine, walkKickStep),
+  WalkPhaseBase(engine, walkKickStep, isDelay),
   createNextPhaseCallback(createNextPhaseCallback)
 {
+  currentWalkHipHeight = engine.kinematicParameters.walkHipHeight.min;
   std::vector<Vector2f> dummyPolygon;
   engine.theWalkGenerator.getTranslationPolygon(isLeftPhase, 0, lastPhase, Pose2f(1.f, 1.f, 1.f), previousInterceptTranslationPolygon, dummyPolygon, false, true);
 
@@ -756,16 +828,15 @@ WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPh
   bool afterKickOrGetUp = (lastPhase.type == MotionPhase::kick || engine.theKeyframeMotionGenerator.wasLastGetUp(lastPhase) || lastPhase.type == MotionPhase::photoMode);
   if(lastPhase.type == MotionPhase::freeze)
   {
-    const Rangef acceptedHeightRange(-engine.kinematicParameters.walkHipHeight - 5.f, -engine.kinematicParameters.walkHipHeight + engine.kinematicParameters.baseFootLift + 5.f);
+    const Rangef acceptedHeightRange(-currentWalkHipHeight - 5.f, -currentWalkHipHeight + engine.kinematicParameters.baseFootLift + 5.f);
     afterKickOrGetUp = acceptedHeightRange.isInside(engine.theRobotModel.soleLeft.translation.z()) && acceptedHeightRange.isInside(engine.theRobotModel.soleRight.translation.z());
   }
   if(afterKickOrGetUp)
     timeWhenLastKick = engine.theFrameInfo.time;
   const bool standRequested = (useStepTarget.translation.x() == 0.f && useStepTarget.translation.y() == 0.f && useStepTarget.rotation == 0_deg) || (!engine.theGroundContactState.contact && !afterKickOrGetUp);
 
-  torsoShift = temperatureShiftHandling(useStepTarget);
+  isInWalkKickTransitionAllowed = lastPhase.type == MotionPhase::walk && !engine.theWalkGenerator.wasLastPhaseInWalkKick(lastPhase);
   timeWhenStandBegan = engine.theFrameInfo.time;
-  engine.theEnergySaving.shutDown();
   leftArmInterpolationStart = engine.theFrameInfo.time;
   rightArmInterpolationStart = engine.theFrameInfo.time;
   leftArm = engine.theJointRequest;
@@ -780,7 +851,7 @@ WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPh
     timeWhenLastKick = engine.theFrameInfo.time;
 
   leftArmInterpolationTime = rightArmInterpolationTime = engine.armParameters.armInterpolationTime;
-  speedRegulatorParams = engine.speedRegulatorParams;
+  speedControlParams = engine.speedControlParams;
 
   // Previous phase was a walk phase
   if(lastPhase.type == MotionPhase::walk)
@@ -811,6 +882,12 @@ WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPh
   else
     type = MotionPhase::stand;
 
+  if(!(lastPhase.type == MotionPhase::stand && type == MotionPhase::stand))
+    engine.theEnergySaving.shutDown();
+
+  /*if (lastPhase.type == MotionPhase::stand && type == MotionPhase::stand)
+    OUTPUT_ERROR("Stand phase followed by a stand phase!");*/
+
   constructorWeightShiftStatus();
 
   // Prevent false time stamps when replaying logs
@@ -819,47 +896,64 @@ WalkPhase::WalkPhase(WalkingEngine& engine, Pose2f useStepTarget, const MotionPh
   if(engine.theFrameInfo.time < rightArmInterpolationStart)
     rightArmInterpolationStart = engine.theFrameInfo.time;
 
-  // Decide if the gyroBalanceFactors shall be taken from the WalkLearner.
-  if(engine.theWalkModifier.numOfGyroPeaks > 0)
-    engine.theWalkLearner.setBaseWalkParams(engine.balanceParameters.gyroForwardBalanceFactor, engine.balanceParameters.gyroBackwardBalanceFactor, forwardStep);
-
   // Set walk values
   engine.theWalkStepData.updateWalkValues(step, stepDuration, isLeftPhase);
 
   // Calc relative ball
-  calculateBallPosition(isLeftPhase);
-  constructorJointSpeedRegulator();
+  calculateBallPosition(isLeftPhase, useStepTarget);
+  constructorJointSpeedController();
   initMaxRotationSpeedPerMotionStep(useStepTarget);
 
   // After kicks or after a freeze allow some clipping in the inverse kinematic
   increaseInverseKinematicClipThreshold = lastPhase.type == MotionPhase::kick || lastPhase.type == MotionPhase::freeze || afterWalkKickPhase;
   originalStep = step;
-  measuredSideL0 = engine.theRobotModel.soleLeft.translation.y() - engine.theRobotDimensions.yHipOffset;
-  measuredSideR0 = engine.theRobotModel.soleRight.translation.y() + engine.theRobotDimensions.yHipOffset;
+  measuredSideL0 = engine.theRobotModel.soleLeft.translation.y() - engine.theRobotDimensions.yHipOffset - engine.kinematicParameters.yHipOffset;
+  measuredSideR0 = engine.theRobotModel.soleRight.translation.y() + engine.theRobotDimensions.yHipOffset + engine.kinematicParameters.yHipOffset;
+
+  targetWalkHipHeight = engine.updateWalkHipHeight(step, stepDuration);
+
+  supportForwardCompensation = LowPassFilterPR(engine.supportCompensationParameters.lowPassFilterSlow, engine.supportCompensationParameters.lowPassFilterFast);
 }
 
 void WalkPhase::update()
 {
-  // Predict CoM position
-  engine.theRobotStableState.predictRotation(isLeftPhase, !afterWalkKickPhase, false);
-
-  // Stop moving with wrong ground contact
+  // Stop moving if swing foot has ground contact
   if(tBase < engine.minPhaseForStopWithWrongGroundContact * stepDuration || (
-       isLeftPhase && engine.theFsrData.legInfo[Legs::left].hasPressure != engine.theFsrData.lastUpdateTimestamp) ||
-     (!isLeftPhase && engine.theFsrData.legInfo[Legs::right].hasPressure != engine.theFsrData.lastUpdateTimestamp))
+       isLeftPhase && !engine.theSolePressureState.legInfo[Legs::left].hasPressure) ||
+     (!isLeftPhase && !engine.theSolePressureState.legInfo[Legs::right].hasPressure))
   {
-    tWalk += Constants::motionCycleTime * (1.f - engine.balanceParameters.slowdownFactor * Rangef::ZeroOneRange().limit((engine.theInertialData.angle.y() + engine.balanceParameters.slowdownTorsoOffset + armCompensationTilt[0]) / -engine.balanceParameters.minTorsoRotation));
-    tWalkSide += freezeSideMovement ? 0.f : Constants::motionCycleTime;
+    if((engine.balanceParameters.allowSlowDownWhenWalkingBackwards && step.translation.x() < 0.f) || step.translation.x() >= 0.f)
+      tWalk += engine.motionCycleTime * (1.f - engine.balanceParameters.slowdownFactor * Rangef::ZeroOneRange().limit((engine.theInertialData.angle.y() + engine.balanceParameters.slowdownTorsoOffset + armCompensationTilt[0]) / -engine.balanceParameters.minTorsoRotation));
+    else if(!engine.balanceParameters.allowSlowDownWhenWalkingBackwards && step.translation.x() < 0.f)
+      tWalk += engine.motionCycleTime * (1.f - engine.balanceParameters.slowdownFactor * Rangef::ZeroOneRange().limit((engine.theInertialData.angle.y() - engine.balanceParameters.slowdownTorsoOffset + armCompensationTilt[0]) / engine.balanceParameters.minTorsoRotation));
+    else
+      tWalk += engine.motionCycleTime;
+    tWalkSide += freezeSideMovement ? 0.f : engine.motionCycleTime;
   }
-  tBase += Constants::motionCycleTime;
+  tBase += engine.motionCycleTime;
+
+  // Update walk step
+  updateDynamicStep(); // TODO eval if there was a reason this was previously after the jointSpeedController update
+
+  // Update walk height
+  Rangef heightInterpolationSpeed = engine.kinematicParameters.hipHeightChangeSpeed;
+  heightInterpolationSpeed.min *= engine.motionCycleTime;
+  heightInterpolationSpeed.max *= engine.motionCycleTime;
+  currentWalkHipHeight += heightInterpolationSpeed.limit((targetWalkHipHeight - currentWalkHipHeight));
+  ASSERT(engine.kinematicParameters.walkHipHeight.isInside(currentWalkHipHeight));
+
+  // Save last values
   prevTurn = turnRL;
   lastPrevSideL = prevSideL;
   lastPrevSideR = prevSideR;
   prevSideL = sideL;
   prevSideR = sideR;
-  const Angle useSoleRotationOffsetSpeed = engine.theFrameInfo.getTimeSince(timeWhenLastKick) > engine.commonSpeedParameters.soleRotationOffsetSpeedAfterKickTime ? this->engine.commonSpeedParameters.soleRotationOffsetSpeed.max : this->engine.commonSpeedParameters.soleRotationOffsetSpeed.min;
-  lastWalkPhaseKneeHipBalance -= Rangea(-useSoleRotationOffsetSpeed * Constants::motionCycleTime, useSoleRotationOffsetSpeed * Constants::motionCycleTime).limit(lastWalkPhaseKneeHipBalance);
 
+  // Update ball prediction time
+  if(walkKickStep.currentKickVariant.has_value())
+    walkKickStep.currentKickVariant->ballEstimationTime = std::max(0.f, walkKickStep.currentKickVariant->ballEstimationTime - engine.motionCycleTime);
+
+  // Update support switch info
   const bool isSwitchAllowed = tBase > engine.configuredParameters.supportSwitchPhaseRange.min * stepDuration;
   // enough time passed, prediction is allowed, prediction predicts an actual switch
   supportSwitchInfo.isPredictedSwitch = engine.useFootSupportSwitchPrediction && isSwitchAllowed && engine.theFootSupport.trustedSupport && engine.theFootSupport.predictedSwitched && // prediction is active
@@ -893,17 +987,41 @@ bool WalkPhase::isDone(const MotionRequest& motionRequest) const
 
 void WalkPhase::updateDynamicStep()
 {
-  if(walkKickStep.currentKick != WalkKicks::none || !engine.dynamicStepUpdate)
+  if(walkState == standing || walkKickStep.currentKick != WalkKicks::none || (!engine.configuredParameters.dynamicStepUpdate && !engine.configuredParameters.dynamicKickPoseUpdate))
     return;
 
-  // TODO apply turn reduction
   // Robot shall intercept the ball and is still at the beginning of the walk step. Start intercept or update the already executed intercept step
-  if((engine.theMotionRequest.shouldInterceptBall || wasInterceptingLastFrame) && !engine.theMotionRequest.shouldWalkOutOfBallLine && tBase > 1.5f * Constants::motionCycleTime)
+  if((engine.theMotionRequest.shouldInterceptBall || wasInterceptingLastFrame) && !engine.theMotionRequest.shouldWalkOutOfBallLine && tBase > 1.5f * engine.motionCycleTime)
   {
     ASSERT(previousInterceptTranslationPolygon.size() >= 4);
     Pose2f nextStep = originalStep;
     if(engine.theMotionRequest.shouldInterceptBall)
-      nextStep = engine.theInterceptBallGenerator.intercept(engine.theMotionRequest, previousInterceptTranslationPolygon, isLeftPhase, step.translation);
+    {
+      if(engine.configuredParameters.dynamicStepUpdate)
+        nextStep = engine.theInterceptBallGenerator.intercept(engine.theMotionRequest, previousInterceptTranslationPolygon, isLeftPhase, step.translation);
+      else
+      {
+        if(!wasInterceptingLastFrame)  // update polygon, because we want to ensure the x-translation size is higher than normal
+        {
+          // first get highest x translations
+          // second get highest values from previous translation polygon
+          const float useRobotStateFactor = engine.useJointPlayScaling ? engine.theJointPlay.qualityOfRobotHardware : 1.f;
+          float yMin, yMax = 0.f;
+          const float useMinXBackwardTranslation = engine.stepSizeParameters.minXBackwardTranslationFastRange.min * (1.f - useRobotStateFactor) + engine.stepSizeParameters.minXBackwardTranslationFastRange.max * useRobotStateFactor;
+          float xMax = engine.stepSizeParameters.minXForwardTranslationFast * engine.theMotionRequest.walkSpeed.translation.x();
+          float xMin = useMinXBackwardTranslation * engine.theMotionRequest.walkSpeed.translation.x();
+          for(const Vector2f& v : previousInterceptTranslationPolygon)
+          {
+            xMin = std::min(v.x(), xMin);
+            yMin = std::min(v.y(), yMin);
+            xMax = std::max(v.x(), xMax);
+            yMax = std::max(v.y(), yMax);
+          }
+          engine.generateTranslationPolygon(previousInterceptTranslationPolygon, Vector2f(xMin, yMin), Vector2f(xMax, yMax), false);
+        }
+        nextStep = engine.theInterceptBallGenerator.kickIntercept(engine.theMotionRequest, previousInterceptTranslationPolygon, isLeftPhase, step.translation);
+      }
+    }
 
     // Make sure the step is valid
     if(std::isnan(nextStep.translation.x()) || std::isnan(nextStep.translation.y()) || std::isnan(nextStep.rotation))
@@ -917,9 +1035,9 @@ void WalkPhase::updateDynamicStep()
     {
       // Interpolate between old and new one
       const Pose2f useRefStep = step;
-      const float interpolationFactor = engine.theMotionRequest.shouldInterceptBall && wasInterceptingLastFrame ? 1.f - Constants::motionCycleTime / stepDuration : Rangef::ZeroOneRange().limit(tBase / stepDuration);
-      const float framesLeft = std::max(stepDuration - tBase, Constants::motionCycleTime) / Constants::motionCycleTime;
-      const float maxSideSpeed = engine.configuredParameters.walkSpeedParams.maxSpeed.translation.y() * Constants::motionCycleTime;
+      const float interpolationFactor = engine.theMotionRequest.shouldInterceptBall && wasInterceptingLastFrame ? 1.f - engine.motionCycleTime / stepDuration : Rangef::ZeroOneRange().limit(tBase / stepDuration);
+      const float framesLeft = std::max(stepDuration - tBase, engine.motionCycleTime) / engine.motionCycleTime;
+      const float maxSideSpeed = engine.configuredParameters.walkSpeedParams.maxSpeed.translation.y() * engine.motionCycleTime;
       const float maxSideSpeedAcc = maxSideSpeed / 4.f; // do not calculate the correct value into the future, because the real foot shall change the velocity
       const Rangef maxSideSpeedRange(-maxSideSpeed, maxSideSpeed);
 
@@ -928,6 +1046,7 @@ void WalkPhase::updateDynamicStep()
         if(engine.theMotionRequest.shouldInterceptBall)
           return framesLeft * sideAcc;
 
+        // This code below is only for the case the intercepting is stopping again
         const float supportCurrent = isLeftPhase ? sideR : sideL;
         const float supportNewTarget = ((-nextStep.translation.y() + sideHipShift) * engine.kinematicParameters.sidewaysHipShiftFactor);
         const float newDirectionSign = (supportNewTarget - supportCurrent > 0.f ? -1.f : 1.f);
@@ -952,6 +1071,7 @@ void WalkPhase::updateDynamicStep()
 
       {
         // we can use the current walk variables, because we know at least one walk frame was already executed
+        // this code is only useful when we continue to intercept
         const float supportCurrent = isLeftPhase ? sideR : sideL;
         const float supportNewTarget = ((-originalNextStep.translation.y() + sideHipShift) * engine.kinematicParameters.sidewaysHipShiftFactor);
         const float newDirectionSign = (supportNewTarget - supportCurrent > 0.f ? -1.f : 1.f);
@@ -990,53 +1110,96 @@ void WalkPhase::updateDynamicStep()
       // Need to update it. Otherwise the robot could have played moving the feet together and now wanting to intercept the ball.
       // This results in a large side step, but the old hip shift makes the feet pose unreachable
       if(sideHipShift != 0.f)
-      {
-        const SideStabilizeParameters& ssp = engine.sideStabilizeParameters;
+        updateSideHipShift(false);
 
-        // Side correction to slow down momentum
-        float sideLEnd;
-        float sideREnd;
-        float& sideSupport = isLeftPhase ? sideREnd : sideLEnd;
-        float& sideSwing = !isLeftPhase ? sideREnd : sideLEnd;
-        sideSupport = -sideStep * engine.kinematicParameters.sidewaysHipShiftFactor;
-        sideSwing = sideStep * (1.f - engine.kinematicParameters.sidewaysHipShiftFactor);
+      targetWalkHipHeight = engine.updateWalkHipHeight(step, stepDuration);
+    }
+  }
+}
 
-        const float requestedStartDiff = sideL0 - sideR0;
-        const float measuredStartDiff = measuredSideL0 - measuredSideR0;
-        const float endDiff = sideLEnd - sideREnd;
-        const float ratio = mapToRange(std::max(requestedStartDiff - endDiff, measuredStartDiff - endDiff), ssp.sideHipShiftStepSizeRange.min, ssp.sideHipShiftStepSizeRange.max, 0.f, 1.f);
-        const float useSideStep = sideStep;
-        const float stepRatio = 1.f - mapToRange(useSideStep * (isLeftPhase ? 1.f : -1.f), 0.f, ssp.maxSideHipShiftStepSize, 0.f, 1.f);
-        sideHipShift = ratio * stepRatio * ssp.maxSideHipShift * (!isLeftPhase ? 1.f : -1.f);
-      }
+void WalkPhase::transitionWalkToKick()
+{
+  // Do not overwrite current kick and also a transition is not allowed right now
+  if(engine.theMotionRequest.motion != MotionRequest::walkToBallAndKick || // dribbling not supported right now
+     engine.theMotionRequest.alignPrecisely != KickPrecision::justHitTheBall || // only for kicks that need to be executed fast
+     !engine.configuredParameters.transitionWalkToKick || walkKickStep.currentKick != WalkKicks::none ||
+     !isInWalkKickTransitionAllowed || tBase > Global::getSettings().motionCycleTime * 3.5f)
+    return;
+
+  // Only InWalkKicks are allowed
+  switch(engine.theMotionRequest.kickType)
+  {
+    case KickInfo::walkForwardsLeft:
+    case KickInfo::walkForwardsLeftLong:
+    case KickInfo::walkForwardsRight:
+    case KickInfo::walkForwardsRightLong:
+    case KickInfo::walkSidewardsRightFootToRight:
+    case KickInfo::walkTurnRightFootToLeft:
+    case KickInfo::walkSidewardsLeftFootToLeft:
+    case KickInfo::walkTurnLeftFootToRight:
+    case KickInfo::walkForwardStealBallLeft:
+    case KickInfo::walkForwardStealBallRight:
+    case KickInfo::walkForwardsRightAlternative:
+    case KickInfo::walkForwardsLeftAlternative:
+      break;
+    default:
+      return;
+  }
+
+  // Check whether the kick could start
+  WalkKickVariant walkKickVariant(engine.theMotionRequest.kickType, engine.theKickInfo[engine.theMotionRequest.kickType].walkKickType, engine.theKickInfo[engine.theMotionRequest.kickType].kickLeg, KickPrecision::justHitTheBall, engine.theMotionRequest.kickLength, engine.theMotionRequest.targetDirection, engine.theMotionRequest.shiftTurnKickPose);
+  walkKickVariant.forceSwingFoot = isLeftPhase;
+  if(engine.theWalkKickGenerator.canStart(walkKickVariant, *lastPhase, engine.theMotionRequest.directionPrecision, PreStepType::notAllowed, engine.theMotionRequest.turnKickAllowed))
+  {
+    // Create walk kick phase
+    std::unique_ptr<MotionPhase> otherWalkPhase = engine.theWalkKickGenerator.createPhase(walkKickVariant, *lastPhase, true);
+    if(otherWalkPhase)
+    {
+      // Copy walkKickStep
+      const auto& lastWalkPhaseDummy = static_cast<const WalkPhase&>(*otherWalkPhase);
+      walkKickStep = lastWalkPhaseDummy.walkKickStep;
+      createNextPhaseCallback = lastWalkPhaseDummy.createNextPhaseCallback;
+
+      forwardStep = this->walkKickStep.keyframe[walkKickStep.keyframe.size() - 1].stepTargetConverted.translation.x();
+      sideStep = this->walkKickStep.keyframe[walkKickStep.keyframe.size() - 1].stepTargetConverted.translation.y();
+      turnStep = this->walkKickStep.keyframe[walkKickStep.keyframe.size() - 1].stepTargetConverted.rotation;
+      maxFootHeight = engine.kinematicParameters.baseFootLift * walkKickStep.increaseSwingHeightFactor;
+      kickType = walkKickStep.currentKickVariant->kickType;
     }
   }
 }
 
 void WalkPhase::calculateCurrentBaseStepVariables()
 {
-  const float stepDurationOffset = SystemCall::getMode() == SystemCall::simulatedRobot ? Constants::motionCycleTime * 3.f : 0.f;
+  const float stepDurationOffset = SystemCall::getMode() == SystemCall::simulatedRobot ? engine.motionCycleTime * 3.f : 0.f;
 
   // Walking
   if(walkKickStep.currentKick == WalkKicks::none)
   {
     if(isLeftPhase)
-      calcFootOffsets(1.f, tWalk, tWalkSide, tBase, stepDuration - stepDurationOffset, stepHeightDuration, stepDurationSide - stepDurationOffset, forwardL0, forwardR0, forwardL, forwardR, sideL0, sideR0, sideL, sideR, footHL0, footHR0, footHL, footHR, turnRL, forwardStep, sideStep, turnStep);
+      calcFootOffsets(1.f, tWalk, tWalkSide, tBase, stepDuration - stepDurationOffset, stepHeightDuration, forwardL0, forwardR0, forwardL, forwardR, sideL0, sideR0, sideL, sideSwingStretch, sideR, footHL0, footHR0, footHL, footHR, turnRL, forwardStep, sideStep, turnStep);
     else
-      calcFootOffsets(-1.f, tWalk, tWalkSide, tBase, stepDuration - stepDurationOffset, stepHeightDuration, stepDurationSide - stepDurationOffset, forwardR0, forwardL0, forwardR, forwardL, sideR0, sideL0, sideR, sideL, footHR0, footHL0, footHR, footHL, turnRL, forwardStep, sideStep, turnStep);
+      calcFootOffsets(-1.f, tWalk, tWalkSide, tBase, stepDuration - stepDurationOffset, stepHeightDuration, forwardR0, forwardL0, forwardR, forwardL, sideR0, sideL0, sideR, sideSwingStretch, sideL, footHR0, footHL0, footHR, footHL, turnRL, forwardStep, sideStep, turnStep);
   }
   // InWalkKicks
   else
   {
     if(isLeftPhase)
-      calcWalkKickFootOffsets(1.f, tBase, forwardL0, forwardR0, forwardL, forwardR, sideL0, sideR0, sideL, sideR, footHL0, footHR0, footHL, footHR, turnRL, walkKickStep, turnRL0);
+      calcWalkKickFootOffsets(1.f, tBase, forwardL0, forwardR0, forwardL, forwardR, sideL0, sideR0, sideL, sideSwingStretch, sideR, footHL0, footHR0, footHL, footHR, turnRL, walkKickStep, turnRL0);
     else
-      calcWalkKickFootOffsets(-1.f, tBase, forwardR0, forwardL0, forwardR, forwardL, sideR0, sideL0, sideR, sideL, footHR0, footHL0, footHR, footHL, turnRL, walkKickStep, turnRL0);
+      calcWalkKickFootOffsets(-1.f, tBase, forwardR0, forwardL0, forwardR, forwardL, sideR0, sideL0, sideR, sideSwingStretch, sideL, footHR0, footHL0, footHR, footHL, turnRL, walkKickStep, turnRL0);
   }
 }
 
 void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo)
 {
+  // Predict CoM position
+  engine.theRobotStableState.predictRotation(isLeftPhase, !afterWalkKickPhase, false);
+
+  ASSERT(engine.kinematicParameters.walkHipHeight.isInside(currentWalkHipHeight));
+
+  transitionWalkToKick();
+
   JointRequest other = engine.theJointRequest;
   other.angles = engine.theJointAngles.angles;
   // Update the joints that are predicted.
@@ -1056,12 +1219,14 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
 
   if(walkState != standing)
   {
+    // TODO move jointSpeedController stuff into own function and call it in WalkPhase::update()
     // Save values, as those can change after the update step
     const float oldFootHL0 = footHL0;
     const float oldFootHR0 = footHR0;
     const float oldForwardL0 = forwardL0;
     const float oldForwardR0 = forwardR0;
     const float oldSideL0 = sideL0;
+    const float oldSwingStretch = sideSwingStretch;
     const float oldSideR0 = sideR0;
     const Angle oldTurnRL0 = turnRL0;
     const WalkKickStep oldWalkKick = walkKickStep;
@@ -1071,9 +1236,9 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
     // Calculate turnRL reduction
     const auto& ratioRef = engine.theRobotStableState.comInFeet[isLeftPhase ? Legs::right : Legs::left];
     const auto& ratioRefTorso = engine.theRobotStableState.comInTorso[isLeftPhase ? Legs::right : Legs::left];
-    jointSpeedRegulator->updateZRotation(speedRegulatorParams, supportSoleRotErrorMeasured, ratioRef.forward, ratioRefTorso.forward, engine.theJointPlay.qualityOfRobotHardware);
+    jointSpeedController->updateZRotation(speedControlParams, supportSoleRotErrorMeasured, ratioRef.forward, ratioRefTorso.forward, engine.theJointPlay.qualityOfRobotHardware, engine.filteredGyroY);
     const Angle preTurnRL = turnRL;
-    jointSpeedRegulator->regulateZRotation(turnRL);
+    jointSpeedController->clipZRotation(turnRL);
     const Angle reducedTurn = (turnRL - preTurnRL) * (isLeftPhase ? 1.f : -1.f) * 2.f;
 
     // Copy back here, as it is needed for the step conversion afterwards
@@ -1085,7 +1250,7 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
       forwardStep = convertedStep.translation.x();
       sideStep = convertedStep.translation.y();
     }
-    else // A bit more todo for InWalkKicks
+    else // A bit more to do for InWalkKicks
     {
       for(size_t i = 0; i < walkKickStep.keyframe.size(); i++)
       {
@@ -1114,13 +1279,12 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
     sideL0 = oldSideL0;
     sideR0 = oldSideR0;
     turnRL0 = oldTurnRL0;
-
-    updateDynamicStep();
+    sideSwingStretch = oldSwingStretch;
 
     // do update step once again
     calculateCurrentBaseStepVariables();
 
-    jointSpeedRegulator->regulateZRotation(turnRL);
+    jointSpeedController->clipZRotation(turnRL);
   }
   else
   {
@@ -1132,57 +1296,53 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
 
   Pose3f leftFootForArms;
   Pose3f rightFootForArms;
-  engine.calcFeetPoses(forwardL, forwardR, sideL, sideR, footHL, footHR, turnRL, soleRotationYL, soleRotationXL, soleRotationYR, soleRotationXR, leftFootForArms, rightFootForArms, torsoShift); // current request
 
-  if(!InverseKinematic::calcLegJoints(leftFootForArms, rightFootForArms, Vector2f::Zero(), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 0.f))
-  {
-    OUTPUT_ERROR("Left Foot - Rotations (x y z): " << Angle(leftFootForArms.rotation.getXAngle()).toDegrees() << " " << Angle(leftFootForArms.rotation.getYAngle()).toDegrees() << " " << Angle(leftFootForArms.rotation.getZAngle()).toDegrees() <<
-                 " | Left Foot - Translations (x y z): " << leftFootForArms.translation.x() << " " << leftFootForArms.translation.y() << " " << leftFootForArms.translation.z() <<
-                 " | Right Foot - Rotations (x y z): " << Angle(rightFootForArms.rotation.getXAngle()).toDegrees() << " " << Angle(rightFootForArms.rotation.getYAngle()).toDegrees() << " " << Angle(rightFootForArms.rotation.getZAngle()).toDegrees() <<
-                 " | Right Foot - Translations (x y z): " << rightFootForArms.translation.x() << " " << rightFootForArms.translation.y() << " " << rightFootForArms.translation.z() <<
-                 " | Inversekinematic Clip Threshold State: " << increaseInverseKinematicClipThreshold);
-    ASSERT(false); // Crash when not Release
-  }
-
-  const bool applyEnergySavingStand = walkState == standing && standFactor == 0.f && engine.theFrameInfo.getTimeSince(timeWhenStandBegan) > engine.standStiffnessDelay;
-  const bool applyEnergySavingHighStand = walkState == standing && standFactor == 1.f && engine.theFrameInfo.getTimeSince(timeWhenStandHighBegan) > engine.lowStiffnessDelay;
-
-  // Leg stiffness
-  const int legStiffness = applyEnergySavingHighStand ? engine.lowStiffnessLegs : (applyEnergySavingStand && engine.theIMUValueState.gyroValues.stableSinceTimestamp != engine.theFrameInfo.time ? StiffnessData::useDefault : engine.stiffnessParameters.walkStiffness);
-  for(uint8_t i = Joints::firstLegJoint; i < Joints::numOfJoints; ++i)
-    jointRequest.stiffnessData.stiffnesses[i] = legStiffness;
-
-  // Different ankle pitch stiffness in standHigh
-  if(applyEnergySavingHighStand)
-  {
-    jointRequest.stiffnessData.stiffnesses[Joints::lAnklePitch] = engine.lowStiffnessAnklePitch;
-    jointRequest.stiffnessData.stiffnesses[Joints::rAnklePitch] = engine.lowStiffnessAnklePitch;
-  }
+  engine.calcFeetPoses(forwardL, forwardR, sideL, sideR, footHL, footHR, turnRL, currentWalkHipHeight, soleRotationYL, soleRotationXL, soleRotationYR, soleRotationXR, leftFootForArms, rightFootForArms); // current request
 
   // Arm swing
+  // As the only change can be the arms, and their translation change is independent of the legs, we do not need to know the leg positions yet
+  for(std::size_t j = Joints::firstLegJoint; j < Joints::numOfJoints; j++)
+    jointRequest.angles[j] = 0_deg;
   JointRequest walkArms = jointRequest;
   setArms(leftFootForArms, rightFootForArms, jointRequest, walkArms);
 
   // Compensate arm position
-  compensateArms(leftFootForArms, rightFootForArms, jointRequest, walkArms);
+
+  compensateArms(jointRequest, walkArms);
 
   Pose3f leftFoot = leftFootForArms;
   Pose3f rightFoot = rightFootForArms;
 
+  // PlayDead to Stand
   if(standFactor < 0.f)
   {
-    VERIFY(InverseKinematic::calcLegJoints(leftFootForArms, rightFootForArms, Vector2f::Zero(), jointRequest, engine.theRobotDimensions));
+    // TODO eval whether the arm compensation should be applied here too
+    VERIFY(InverseKinematic::calcLegJoints(leftFootForArms, rightFootForArms, Vector2f(0.f, -armCompensationTilt[0]), jointRequest, engine.theRobotDimensions));
     // Interpolate to stand.
     const float f = 0.5f * (std::sin((standFactor + 0.5f) * pi) - 1.f);
     for(int i = Joints::firstArmJoint; i < Joints::numOfJoints; ++i)
       if(jointRequest.angles[i] != JointAngles::off)
         jointRequest.angles[i] += f * (jointRequest.angles[i] - startJointAngles.angles[i]);
+    if(jointRequest.angles[Joints::waistYaw] != JointAngles::off)
+      jointRequest.angles[Joints::waistYaw] += f * (jointRequest.angles[Joints::waistYaw] - startJointAngles.angles[Joints::waistYaw]);
   }
-  else
+  // Walking
+  else if(walkState != standing)
   {
     // InWalkKicks and balancing
     balanceFeetPoses(leftFoot, rightFoot);
-    VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, -armCompensationTilt[0]), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 0.f));
+    calculateSupportSideCompensation();
+    leftFoot.translation.x() += isLeftPhase ? supportForwardCompensation.currentValue : 0.f;
+    rightFoot.translation.x() += !isLeftPhase ? supportForwardCompensation.currentValue : 0.f;
+    if(!InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, -armCompensationTilt[0]), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 10.f))
+    {
+      OUTPUT_ERROR("Left Foot - Rotations (x y z): " << Angle(leftFoot.rotation.getXAngle()).toDegrees() << " " << Angle(leftFoot.rotation.getYAngle()).toDegrees() << " " << Angle(leftFoot.rotation.getZAngle()).toDegrees() <<
+                   " | Left Foot - Translations (x y z): " << leftFoot.translation.x() << " " << leftFoot.translation.y() << " " << leftFoot.translation.z() <<
+                   " | Right Foot - Rotations (x y z): " << Angle(rightFoot.rotation.getXAngle()).toDegrees() << " " << Angle(rightFoot.rotation.getYAngle()).toDegrees() << " " << Angle(rightFoot.rotation.getZAngle()).toDegrees() <<
+                   " | Right Foot - Translations (x y z): " << rightFoot.translation.x() << " " << rightFoot.translation.y() << " " << rightFoot.translation.z() <<
+                   " | Inverse Kinematic Clip Threshold State: " << increaseInverseKinematicClipThreshold);
+      ASSERT(false); // Crash when not Release
+    }
 
     if(!Approx::isZero(kneeBalance, 0.1_deg))
     {
@@ -1198,49 +1358,27 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
         leftFoot = sole;
       else
         rightFoot = sole;
-      VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f::Zero(), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 0.f));
+      VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, -armCompensationTilt[0]), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 10.f));
     }
   }
+  // Standing
+  else
+    VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, -armCompensationTilt[0]), jointRequest, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 10.f));
 
   // Offsets for the InWalkKicks
   applyWalkKickLongKickOffset(jointRequest, tBase);
 
   // Apply joint speed regulation
-  JointAngles speedRegulationChanges = applyJointSpeedRegulation(jointRequest, supportSoleRotErrorMeasured);
+  JointAngles speedRegulationChanges = applyJointSpeedControl(jointRequest, supportSoleRotErrorMeasured);
   const JointRequest lastJointRequestCopy = lastJointRequest;
   lastJointRequest = jointRequest;
 
-  // Add gyro balancing
-  // 1. Save current max allowed ankle pitch value
-  Angle& ankleLeft = jointRequest.angles[Joints::lAnklePitch];
-  Angle& ankleRight = jointRequest.angles[Joints::rAnklePitch];
-  currentMaxAnklePitch[Legs::left] = std::max(currentMaxAnklePitch[Legs::left],
-                                              std::max(engine.theJointAngles.angles[Joints::lAnklePitch], ankleLeft));
-  currentMaxAnklePitch[Legs::right] = std::max(currentMaxAnklePitch[Legs::right],
-                                               std::max(engine.theJointAngles.angles[Joints::rAnklePitch], ankleRight));
-
-  // 2. Apply gyro
+  // Apply gyro
   const JointAngles appliedGyroChanges = addGyroBalance(jointRequest, lastJointRequestCopy);
 
-  // 3. For balancing forward, the ankle is only allowed to hold the position, but increase the position
-  // The real nao can not execute the request anyway, so this helps to prevent the joint from doing other stupid things
-  // TODO: I assume this helps to prevent breaking ankle joints
-
   // TODO: test of offset should be applied afterwards
-  jointPlayOffsetRegulator->update(engine.theJointPlayTranslation, jointRequest, isLeftPhase, engine.configuredParameters.jointPlayOffsetParameters,
-                                   speedRegulationChanges, appliedGyroChanges, walkState == standing ? 1.f : Rangef::ZeroOneRange().limit(tBase / stepDuration));
-
-  // Clip gyros, both feet if standing
-  if(walkState == standing || !isLeftPhase)
-  {
-    ankleLeft = std::min(ankleLeft, currentMaxAnklePitch[Legs::left]);
-    currentMaxAnklePitch[Legs::left] = ankleLeft;
-  }
-  if(walkState == standing || isLeftPhase)
-  {
-    ankleRight = std::min(ankleRight, currentMaxAnklePitch[Legs::right]);
-    currentMaxAnklePitch[Legs::right] = ankleRight;
-  }
+  jointPlayOffsetController->update(engine.theJointPlayTranslation, jointRequest, isLeftPhase, walkState == standing, engine.configuredParameters.jointPlayOffsetParameters,
+                                    speedRegulationChanges, appliedGyroChanges, walkState == standing ? 1.f : Rangef::ZeroOneRange().limit(tBase / stepDuration));
 
   {
     const RobotModel model(jointRequest, engine.theRobotDimensions, engine.theMassCalibration);
@@ -1249,26 +1387,33 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
     armPitchShift[Legs::right] = (rot * model.soleRight).translation.x() - rightFootForArms.translation.x();
   }
 
-  // Apply dynamic stiffness
-  applyLegStiffness(jointRequest);
+  PLOT("module:WalkingEngine:JointOffset:lHipPitch", jointPlayOffsetController->at(Joints::lHipPitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:lKneePitch", jointPlayOffsetController->at(Joints::lKneePitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:lAnklePitch", jointPlayOffsetController->at(Joints::lAnklePitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:rHipPitch", jointPlayOffsetController->at(Joints::rHipPitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:rKneePitch", jointPlayOffsetController->at(Joints::rKneePitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:rAnklePitch", jointPlayOffsetController->at(Joints::rAnklePitch).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:rHipRoll", jointPlayOffsetController->at(Joints::rHipRoll).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:rAnkleRoll", jointPlayOffsetController->at(Joints::rAnkleRoll).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:lHipRoll", jointPlayOffsetController->at(Joints::lHipRoll).toDegrees());
+  PLOT("module:WalkingEngine:JointOffset:lAnkleRoll", jointPlayOffsetController->at(Joints::lAnkleRoll).toDegrees());
 
-  PLOT("module:WalkingEngine:JointOffset:lHipPitch", jointPlayOffsetRegulator->at(Joints::lHipPitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:lKneePitch", jointPlayOffsetRegulator->at(Joints::lKneePitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:lAnklePitch", jointPlayOffsetRegulator->at(Joints::lAnklePitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:rHipPitch", jointPlayOffsetRegulator->at(Joints::rHipPitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:rKneePitch", jointPlayOffsetRegulator->at(Joints::rKneePitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:rAnklePitch", jointPlayOffsetRegulator->at(Joints::rAnklePitch).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:rHipRoll", jointPlayOffsetRegulator->at(Joints::rHipRoll).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:rAnkleRoll", jointPlayOffsetRegulator->at(Joints::rAnkleRoll).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:lHipRoll", jointPlayOffsetRegulator->at(Joints::lHipRoll).toDegrees());
-  PLOT("module:WalkingEngine:JointOffset:lAnkleRoll", jointPlayOffsetRegulator->at(Joints::lAnkleRoll).toDegrees());
+  stiffnessState =
+    WalkStiffnessRegulator::getState(walkState, standFactor, engine.theFrameInfo.getTimeSince(timeWhenStandBegan),
+                                     engine.theFrameInfo.getTimeSince(timeWhenStandHighBegan), engine.walkStiffnessParameters,
+                                     engine.theIMUValueState.notMovingSinceTimestamp != engine.theFrameInfo.time || stiffnessState == StiffnessState::StandStill,
+                                     walkKickStep.currentKick != WalkKicks::none);
+
+  WalkStiffnessRegulator::setStiffness(jointRequest, engine.walkStiffnessParameters,
+                                       stiffnessState, engine.theGroundContactState.contact, isLeftPhase);
 
   // Apply stand heat
-  if(!(applyEnergySavingHighStand || applyEnergySavingStand) && engine.theEnergySaving.state == EnergySaving::EnergyState::working)
+  if(!(stiffnessState == StiffnessState::Stand || stiffnessState == StiffnessState::StandHigh || stiffnessState == StiffnessState::StandStill || standFactor == 0.f || standFactor == 1.f) &&
+     engine.theEnergySaving.state == EnergySaving::EnergyState::working)
     engine.theEnergySaving.reset();
-  if(!(applyEnergySavingHighStand || applyEnergySavingStand) && engine.theEnergySaving.state == EnergySaving::EnergyState::waiting)
+  if((stiffnessState == StiffnessState::Walk || stiffnessState == StiffnessState::Kick) && engine.theEnergySaving.state == EnergySaving::EnergyState::waiting)
     engine.theEnergySaving.shutDown();
-  if(applyEnergySavingHighStand || applyEnergySavingStand || engine.theEnergySaving.state != EnergySaving::off)
+  if(stiffnessState == StiffnessState::Stand || stiffnessState == StiffnessState::StandStill || stiffnessState == StiffnessState::StandHigh || engine.theEnergySaving.state != EnergySaving::off)
     engine.theEnergySaving.applyHeatAdjustment(jointRequest, true, true, true, true, standFactor == 1.f, engine.theCalibrationRequest.preciseJointPositions);
 
   // Odometry
@@ -1278,17 +1423,6 @@ void WalkPhase::calcJoints(const MotionRequest& motionRequest, JointRequest& joi
   motionInfo.isMotionStable = true;
   motionInfo.isWalkPhaseInWalkKick = walkKickStep.currentKick != WalkKicks::none;
   motionInfo.speed = stepDuration > 0.f ? Pose2f(turnStep / stepDuration, forwardStep / stepDuration, sideStep / stepDuration) : Pose2f(); // TODO
-
-  lastJointRequest = jointRequest;
-}
-
-void WalkPhase::applyLegStiffness(JointRequest& request)
-{
-  if(!engine.theGroundContactState.contact)
-  {
-    for(unsigned int index = Joints::firstLegJoint; index < Joints::numOfJoints; index++)
-      request.stiffnessData.stiffnesses[index] = engine.stiffnessParameters.pickedUpStiffness; // Make sure the robot does not break if something is wrong
-  }
 }
 
 std::unique_ptr<MotionPhase> WalkPhase::createNextPhase(const MotionPhase& defaultNextPhase) const
@@ -1304,17 +1438,33 @@ std::unique_ptr<MotionPhase> WalkPhase::createNextPhase(const MotionPhase& defau
 }
 
 void WalkPhase::calcFootOffsets(const float swingSign, const float ratio, const float ratioSide, const float ratioBase,
-                                const float duration, const float heightDuration, const float stepDurationSide,
+                                const float duration, const float heightDuration,
                                 const float forwardSwing0, const float forwardSupport0, float& forwardSwing,
                                 float& forwardSupport, const float sideSwing0, const float sideSupport0,
-                                float& sideSwing, float& sideSupport, float& footHeightSwing0,
+                                float& sideSwing, float& sideSwingStrecht, float& sideSupport, float& footHeightSwing0,
                                 float& footHeightSupport0, float& footHeightSwing,
                                 float& footHeightSupport, Angle& turnVal,
                                 const float useForwardStep, const float useSideStep, const Angle useTurnStep)
 {
   // Side translation
   sideSupport = sideSupport0 + ((-useSideStep + sideHipShift) * engine.kinematicParameters.sidewaysHipShiftFactor - sideSupport0) * Rangef::ZeroOneRange().limit(ratioSide / duration);
-  sideSwing = sideSwing0 + ((useSideStep + sideHipShift) * (1.f - engine.kinematicParameters.sidewaysHipShiftFactor) - sideSwing0) * Rangef::ZeroOneRange().limit(ratioSide / stepDurationSide);
+  sideSwing = sideSwing0 + ((useSideStep + sideHipShift) * (1.f - engine.kinematicParameters.sidewaysHipShiftFactor) - sideSwing0) * Rangef::ZeroOneRange().limit(ratioSide / duration);
+
+  if(engine.sideCatchWalkParameters.allowedAdjustmentDuringTimeRatio.isInside(ratioBase / duration) && !engine.theSolePressureState.legInfo[isLeftPhase ? Legs::left : Legs::right].hasPressure)
+  {
+    const Rangef maxSideAdjustment(-engine.sideCatchWalkParameters.maxAdjustment, engine.sideCatchWalkParameters.maxAdjustment);
+    const float maxAdjustmentSpeed = engine.configuredParameters.walkSpeedParams.maxSpeed.translation.y() * engine.motionCycleTime * swingSign;
+    sideSwingStrecht += mapToRange(engine.theRobotStableState.comInTorso[isLeftPhase ? Legs::left : Legs::right].outerSide, engine.sideCatchWalkParameters.comYThreshold.min, engine.sideCatchWalkParameters.comYThreshold.max, 0.f, maxAdjustmentSpeed);
+    sideSwingStrecht = maxSideAdjustment.limit(sideSwingStrecht);
+  }
+
+  if(ratioBase > duration + engine.commonSpeedParameters.swingStretchAfterOvertime && !engine.theSolePressureState.legInfo[isLeftPhase ? Legs::left : Legs::right].hasPressure)
+  {
+    const Rangef maxSideAdjustment(-engine.commonSpeedParameters.maxSwingSideStretch, engine.commonSpeedParameters.maxSwingSideStretch);
+    sideSwingStrecht += engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime * swingSign;
+    sideSwingStrecht = maxSideAdjustment.limit(sideSwingStrecht);
+  }
+  sideSwing += sideSwingStrecht;
 
   // Forward translation
   forwardSupport = forwardSupport0 + (-useForwardStep * 0.5f - forwardSupport0) * Rangef::ZeroOneRange().limit(ratio / duration);
@@ -1324,31 +1474,46 @@ void WalkPhase::calcFootOffsets(const float swingSign, const float ratio, const 
   turnVal = turnRL0 + (swingSign * useTurnStep * 0.5f - turnRL0) * parabolicStep(ratio, duration);
 
   // Feet height
-  const Rangef range(-engine.commonSpeedParameters.fastFeetAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.fastFeetAdjustment * Constants::motionCycleTime); // height can adjust to 0 this much per motion frame
-  const Rangef rangeSlow(-engine.commonSpeedParameters.slowFeetAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.slowFeetAdjustment * Constants::motionCycleTime); // height can adjust to 0 this much per motion frame
-  const Rangef rangeAfterKick(-engine.commonSpeedParameters.afterKickFeetHeightAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.afterKickFeetHeightAdjustment * Constants::motionCycleTime);
+  const Rangef range(-engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime); // height can adjust to 0 this much per motion frame
+  const Rangef rangeSlow(-engine.commonSpeedParameters.slowFeetAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.slowFeetAdjustment * engine.motionCycleTime); // height can adjust to 0 this much per motion frame
+  const Rangef rangeAfterKick(-engine.commonSpeedParameters.afterKickFeetHeightAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.afterKickFeetHeightAdjustment * engine.motionCycleTime);
+  // Support foot
   if(footHeightSupport0 < 0.f)
     footHeightSupport0 -= rangeSlow.limit(footHeightSupport0); // return support foot to 0 if it was still lifted
   else
     footHeightSupport0 -= useSlowSupportFootHeightAfterKickInterpolation ? rangeAfterKick.limit(footHeightSupport0) : range.limit(footHeightSupport0); // return support foot to 0 if it was still lifted
   footHeightSupport = footHeightSupport0;
 
+  // Swing foot
+  const float oldFootHeightSwing = maxFootHeight * parabolicFootHeight(ratioBase - engine.motionCycleTime, heightDuration);
   footHeightSwing = maxFootHeight * parabolicFootHeight(ratioBase, heightDuration); // lift swing foot
 
-  footHeightSwing0 -= range.limit(footHeightSwing0); // return swing foot offset to 0
+  if(ratioBase > duration + engine.commonSpeedParameters.swingStretchAfterOvertime && !engine.theSolePressureState.legInfo[isLeftPhase ? Legs::left : Legs::right].hasPressure && footHeightSwing0 >= -10.f)
+    footHeightSwing0 = std::max(engine.commonSpeedParameters.maxSwingStretchLength, footHeightSwing0 - engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime);
+  else
+  {
+    const float swingChange = footHeightSwing - oldFootHeightSwing;
+    const float swing0Change = Rangef(std::min(0.f, swingChange), std::max(0.f, swingChange)).limit(footHeightSwing0);
+    footHeightSwing0 -= swing0Change; // return swing foot offset to 0
+    if(footHeightSwing0 < 0 || footHeightSwing + footHeightSwing0 > maxFootHeight) // in case height is outside the allowed boundary, reduce it based in the max allowed velocity
+      footHeightSwing0 -= Rangef(range.min + std::max(0.f, -swing0Change), range.max + std::min(0.f, -swing0Change)).limit(footHeightSwing0);
+  }
+
   footHeightSwing += footHeightSwing0;
 }
 
 void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio,
                                         float& forwardSwing0, float& forwardSupport0, float& forwardSwing,
                                         float& forwardSupport, float& sideSwing0, float& sideSupport0,
-                                        float& sideSwing, float& sideSupport, float& footHeightSwing0,
+                                        float& sideSwing, float& sideSwingStrecht, float& sideSupport, float& footHeightSwing0,
                                         float& footHeightSupport0, float& footHeightSwing,
                                         float& footHeightSupport, Angle& turnVal, WalkKickStep& walkKickStep,
                                         Angle& turnRL0)
 {
   // TODO move upwards and apply turn reduction
-  if(engine.theWalkKickGenerator.dynamicWalkKickStepUpdate(walkKickStep, ratio))
+  // Only update if no delay phase was applied
+  if(!walkKickStep.usedWalkDelay && engine.theWalkKickGenerator.dynamicWalkKickStepUpdate(walkKickStep, ratio) &&
+     engine.configuredParameters.dynamicKickStepUpdate)
   {
     // Keyframes changed, update them once again
     for(size_t i = 0; i < walkKickStep.keyframe.size(); i++)
@@ -1369,14 +1534,12 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
   // Get current keyframe index and duration
   int keyframeIndex = 0;
   float finishedDuration = 0.f;
-  float finishedSideDuration = 0.f;
   float finishedRatio = 0.f;
   for(size_t i = 0; i < walkKickStep.keyframe.size(); i++)
   {
     if(walkKickStep.keyframe[i].reachedWaitPosition)
     {
       finishedDuration += stepDuration * walkKickStep.keyframe[i].stepRatio;
-      finishedSideDuration += stepDurationSide * walkKickStep.keyframe[i].stepRatio;
       finishedRatio += walkKickStep.keyframe[i].stepRatio;
       keyframeIndex++;
     }
@@ -1384,24 +1547,17 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
     engine.theWalkKickGenerator.drawStep(walkKickStep.keyframe[i].stepTargetSwing);
   }
   float useDuration = stepDuration * walkKickStep.keyframe[keyframeIndex].stepRatio;
-  float useDurationSide = stepDurationSide * walkKickStep.keyframe[keyframeIndex].stepRatio;
   float useRatio = ratio - finishedDuration;
-  float useRatioSide = ratio - finishedSideDuration;
-  float useSideHipShift = finishedRatio + walkKickStep.keyframe[keyframeIndex].stepRatio;
 
   // Next step target started
   if(useRatio / useDuration >= 1.f && keyframeIndex + 1 < static_cast<int>(walkKickStep.keyframe.size()))
   {
     walkKickStep.keyframe[keyframeIndex].reachedWaitPosition = true;
     finishedDuration += stepDuration * walkKickStep.keyframe[keyframeIndex].stepRatio;
-    finishedSideDuration += stepDurationSide * walkKickStep.keyframe[keyframeIndex].stepRatio;
     keyframeIndex++;
     useDuration = stepDuration * walkKickStep.keyframe[keyframeIndex].stepRatio;
-    useDurationSide = stepDurationSide * walkKickStep.keyframe[keyframeIndex].stepRatio;
     useRatio = ratio - finishedDuration;
-    useRatioSide = ratio - finishedSideDuration;
-    useSideHipShift = finishedRatio + walkKickStep.keyframe[keyframeIndex].stepRatio;
-    if(ratio != Constants::motionCycleTime)
+    if(ratio != engine.motionCycleTime)
     {
       if(!walkKickStep.useLastKeyframeForSupportFootXTranslation)
         forwardSupport0 = forwardSupport; // only if the keyframe interpolation is active
@@ -1413,6 +1569,7 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
   }
 
   // Get current step targets and other parameters
+  float useSideHipShiftRatio = finishedRatio + walkKickStep.keyframe[keyframeIndex].stepRatio;
   const Angle useTurnStep = walkKickStep.keyframe[keyframeIndex].stepTargetConverted.rotation;
   const float useForwardStep = walkKickStep.keyframe[keyframeIndex].stepTargetConverted.translation.x();
   const float useForwardSupportStep = !walkKickStep.useLastKeyframeForSupportFootXTranslation ? useForwardStep : walkKickStep.keyframe[walkKickStep.keyframe.size() - 1].stepTargetConverted.translation.x();
@@ -1423,8 +1580,19 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
   const float useForwardSupportRatio = !walkKickStep.useLastKeyframeForSupportFootXTranslation ? useRatio : ratio;
   const float useForwardSupportDuration = !walkKickStep.useLastKeyframeForSupportFootXTranslation ? useDuration : stepDuration;
 
-  sideSupport = sideSupport0 + ((-useSideStep + useSideHipShift * sideHipShift) * engine.kinematicParameters.sidewaysHipShiftFactor - sideSupport0) * Rangef::ZeroOneRange().limit(useRatio / useDuration);
-  sideSwing = sideSwing0 + ((useSideStep + useSideHipShift * sideHipShift) * (1.f - engine.kinematicParameters.sidewaysHipShiftFactor) + offsetSwingFoot.y() - sideSwing0) * swingInterpolation(useRatioSide * swingSpeedUp.y(), useDurationSide, interpolationType);
+  const float targetLastSideHipShift = walkKickStep.leftoverSideHipShift * (1.f - useSideHipShiftRatio);
+  sideSupport = sideSupport0 + ((-useSideStep + useSideHipShiftRatio * sideHipShift + targetLastSideHipShift) * engine.kinematicParameters.sidewaysHipShiftFactor - sideSupport0) * Rangef::ZeroOneRange().limit(useRatio / useDuration);
+  sideSwing = sideSwing0 + ((useSideStep + useSideHipShiftRatio * sideHipShift + targetLastSideHipShift) * (1.f - engine.kinematicParameters.sidewaysHipShiftFactor) + offsetSwingFoot.y() - sideSwing0) * swingInterpolation(useRatio * swingSpeedUp.y(), useDuration, interpolationType);
+
+  if(ratio > stepDuration + engine.commonSpeedParameters.swingStretchAfterOvertime && !engine.theSolePressureState.legInfo[isLeftPhase ? Legs::left : Legs::right].hasPressure)
+  {
+    sideSwingStrecht += engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime * swingSign;
+    if(swingSign > 0.f)
+      sideSwingStrecht = std::min(sideSwingStrecht, engine.commonSpeedParameters.maxSwingSideStretch);
+    else
+      sideSwingStrecht = std::max(sideSwingStrecht, -engine.commonSpeedParameters.maxSwingSideStretch);
+  }
+  sideSwing += sideSwingStrecht;
 
   if(!walkKickStep.keyframe[keyframeIndex].holdXSupportTarget)
     forwardSupport = forwardSupport0 + (-useForwardSupportStep * 0.5f - forwardSupport0) * Rangef::ZeroOneRange().limit(useForwardSupportRatio / useForwardSupportDuration);
@@ -1436,12 +1604,12 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
   else
     forwardSwing = forwardSwing0;
 
-  turnVal = turnRL0 + (swingSign * useTurnStep * 0.5f - turnRL0) * Rangef::ZeroOneRange().limit(useRatio / useDuration);
+  turnVal = turnRL0 + (swingSign * useTurnStep * 0.5f - turnRL0) * parabolicStep(useRatio, useDuration);
 
   // Feet height
-  const Rangef range(-engine.commonSpeedParameters.fastFeetAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.fastFeetAdjustment * Constants::motionCycleTime); // height can adjust to 0 this much per motion frame
-  const Rangef rangeSlow(-engine.commonSpeedParameters.slowFeetAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.slowFeetAdjustment * Constants::motionCycleTime); // height can adjust to 0 this much per motion frame
-  const Rangef rangeAfterKick(-engine.commonSpeedParameters.afterKickFeetHeightAdjustment * Constants::motionCycleTime, engine.commonSpeedParameters.afterKickFeetHeightAdjustment * Constants::motionCycleTime);
+  const Rangef range(-engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.fastFeetAdjustment * engine.motionCycleTime); // height can adjust to 0 this much per motion frame
+  const Rangef rangeSlow(-engine.commonSpeedParameters.slowFeetAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.slowFeetAdjustment * engine.motionCycleTime); // height can adjust to 0 this much per motion frame
+  const Rangef rangeAfterKick(-engine.commonSpeedParameters.afterKickFeetHeightAdjustment * engine.motionCycleTime, engine.commonSpeedParameters.afterKickFeetHeightAdjustment * engine.motionCycleTime);
   if(footHeightSupport0 < 0.f)
     footHeightSupport0 -= rangeSlow.limit(footHeightSupport0); // return support foot to 0 if it was still lifted
   else
@@ -1455,20 +1623,19 @@ void WalkPhase::calcWalkKickFootOffsets(const float swingSign, const float ratio
 }
 
 void WalkingEngine::calcFeetPoses(const float forwardL, const float forwardR, const float sideL, const float sideR,
-                                  const float footHL, const float footHR, const Angle turn,
+                                  const float footHL, const float footHR, const Angle turn, const float currentWalkHipHeight,
                                   const Angle soleRotationYL, const Angle soleRotationXL, const Angle soleRotationYR, const Angle soleRotationXR,
-                                  Pose3f& leftFoot, Pose3f& rightFoot, std::optional<float> torsoShift) const
+                                  Pose3f& leftFoot, Pose3f& rightFoot) const
 {
-  if(!torsoShift.has_value())
-    torsoShift = kinematicParameters.torsoOffset;
+  ASSERT(kinematicParameters.walkHipHeight.isInside(currentWalkHipHeight));
 
-  leftFoot = Pose3f(0, theRobotDimensions.yHipOffset, 0)
-             .translate(forwardL - torsoShift.value(), sideL, -(kinematicParameters.walkHipHeight - footHL))
+  leftFoot = Pose3f(0, theRobotDimensions.yHipOffset + kinematicParameters.yHipOffset, 0)
+             .translate(forwardL - kinematicParameters.torsoOffset, sideL, -(currentWalkHipHeight - footHL))
              .rotateZ(turn)
              .rotateY(soleRotationYL)
              .rotateX(soleRotationXL);
-  rightFoot = Pose3f(0, -theRobotDimensions.yHipOffset, 0)
-              .translate(forwardR - torsoShift.value(), sideR, -(kinematicParameters.walkHipHeight - footHR))
+  rightFoot = Pose3f(0, -theRobotDimensions.yHipOffset - kinematicParameters.yHipOffset, 0)
+              .translate(forwardR - kinematicParameters.torsoOffset, sideR, -(currentWalkHipHeight - footHR))
               .rotateZ(-turn)
               .rotateY(soleRotationYR)
               .rotateX(soleRotationXR);
@@ -1476,15 +1643,15 @@ void WalkingEngine::calcFeetPoses(const float forwardL, const float forwardR, co
 
 void WalkPhase::setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointRequest, JointRequest& walkArms)
 {
-  walkArms.angles[Joints::lShoulderPitch] = 90_deg + (leftFoot.translation.x() + torsoShift + armPitchShift[Legs::left]) * engine.armParameters.armShoulderPitchFactor / 1000.f;
-  walkArms.angles[Joints::lShoulderRoll] = engine.armParameters.armShoulderRoll + std::abs(leftFoot.translation.y() - engine.theRobotDimensions.yHipOffset) * engine.armParameters.armShoulderRollIncreaseFactor / 1000.f;
-  walkArms.angles[Joints::lElbowYaw] = 0_deg;
+  walkArms.angles[Joints::lShoulderPitch] = engine.armParameters.armShoulderPitch + (leftFoot.translation.x() + engine.kinematicParameters.torsoOffset + armPitchShift[Legs::left]) * engine.armParameters.armShoulderPitchFactor / 1000.f;
+  walkArms.angles[Joints::lShoulderRoll] = engine.armParameters.armShoulderRoll + std::abs(leftFoot.translation.y() - engine.theRobotDimensions.yHipOffset - engine.kinematicParameters.yHipOffset) * engine.armParameters.armShoulderRollIncreaseFactor / 1000.f;
+  walkArms.angles[Joints::lElbowYaw] = engine.armParameters.armElbowYaw;
   walkArms.angles[Joints::lElbowRoll] = 0_deg;
   walkArms.angles[Joints::lWristYaw] = -90_deg;
   walkArms.angles[Joints::lHand] = 0.f;
-  walkArms.angles[Joints::rShoulderPitch] = 90_deg + (rightFoot.translation.x() + torsoShift + armPitchShift[Legs::right]) * engine.armParameters.armShoulderPitchFactor / 1000.f;
-  walkArms.angles[Joints::rShoulderRoll] = -walkArms.angles[Joints::lShoulderRoll];
-  walkArms.angles[Joints::rElbowYaw] = 0_deg;
+  walkArms.angles[Joints::rShoulderPitch] = engine.armParameters.armShoulderPitch + (rightFoot.translation.x() + engine.kinematicParameters.torsoOffset + armPitchShift[Legs::right]) * engine.armParameters.armShoulderPitchFactor / 1000.f;
+  walkArms.angles[Joints::rShoulderRoll] = -engine.armParameters.armShoulderRoll - std::abs(rightFoot.translation.y() + engine.theRobotDimensions.yHipOffset + engine.kinematicParameters.yHipOffset) * engine.armParameters.armShoulderRollIncreaseFactor / 1000.f;
+  walkArms.angles[Joints::rElbowYaw] = -engine.armParameters.armElbowYaw;
   walkArms.angles[Joints::rElbowRoll] = 0_deg;
   walkArms.angles[Joints::rWristYaw] = 90_deg;
   walkArms.angles[Joints::rHand] = 0.f;
@@ -1494,17 +1661,17 @@ void WalkPhase::setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointR
   {
     MotionUtilities::copy(jointRequest, leftArm, engine.theStiffnessSettings, Joints::firstLeftArmJoint, Joints::firstRightArmJoint);
     leftArmInterpolationStart = engine.theFrameInfo.time;
-    leftArmInterpolationTime = std::max(std::abs(leftArm.angles[Joints::lShoulderPitch]), std::abs(leftArm.angles[Joints::lShoulderRoll] - engine.armParameters.armShoulderRoll)) / engine.standInterpolationVelocity * 1000.f;
+    leftArmInterpolationTime = std::max(std::abs(leftArm.angles[Joints::lShoulderPitch] - walkArms.angles[Joints::lShoulderPitch]), std::abs(leftArm.angles[Joints::lShoulderRoll] - walkArms.angles[Joints::lShoulderRoll])) / engine.standInterpolationVelocity * 1000.f;
   }
   if(jointRequest.angles[Joints::rShoulderPitch] != JointAngles::ignore)
   {
     MotionUtilities::copy(jointRequest, rightArm, engine.theStiffnessSettings, Joints::firstRightArmJoint, Joints::firstLegJoint);
     rightArmInterpolationStart = engine.theFrameInfo.time;
-    rightArmInterpolationTime = std::max(std::abs(rightArm.angles[Joints::rShoulderPitch]), std::abs(rightArm.angles[Joints::rShoulderRoll] - engine.armParameters.armShoulderRoll)) / engine.standInterpolationVelocity * 1000.f;
+    rightArmInterpolationTime = std::max(std::abs(rightArm.angles[Joints::rShoulderPitch] - walkArms.angles[Joints::rShoulderPitch]), std::abs(rightArm.angles[Joints::rShoulderRoll] - walkArms.angles[Joints::rShoulderRoll])) / engine.standInterpolationVelocity * 1000.f;
   }
 
   // Interpolate left arm
-  if(jointRequest.angles[Joints::lShoulderPitch] == JointAngles::ignore)
+  if(jointRequest.angles[Joints::lShoulderPitch] == JointAngles::ignore && leftArmInterpolationTime > 0)
   {
     for(int joint = Joints::firstLeftArmJoint; joint < Joints::firstRightArmJoint; ++joint)
     {
@@ -1515,7 +1682,7 @@ void WalkPhase::setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointR
     }
   }
   // Interpolate right arm
-  if(jointRequest.angles[Joints::rShoulderPitch] == JointAngles::ignore)
+  if(jointRequest.angles[Joints::rShoulderPitch] == JointAngles::ignore && rightArmInterpolationTime > 0)
   {
     for(int joint = Joints::firstRightArmJoint; joint < Joints::firstLegJoint; ++joint)
     {
@@ -1527,24 +1694,40 @@ void WalkPhase::setArms(Pose3f& leftFoot, Pose3f rightFoot, JointRequest& jointR
   }
 }
 
-void WalkPhase::compensateArms(Pose3f& leftFoot, Pose3f& rightFoot, JointRequest& jointRequest, const JointRequest& walkArms)
+void WalkPhase::compensateArms(JointRequest& jointRequest, const JointRequest& walkArms)
 {
   JointRequest temp = walkArms;
-  for(int joint = 0; joint < Joints::firstArmJoint; ++joint) // head
+  for(int joint = 0; joint < Joints::firstArmJoint; ++joint)
     temp.angles[joint] = temp.angles[joint] != JointRequest::off && temp.angles[joint] != JointRequest::ignore
                          ? temp.angles[joint] : engine.theJointAngles.angles[joint];
+  temp.angles[Joints::headPitch] = 0_deg;
+  temp.angles[Joints::headYaw] = 0_deg;
   const RobotModel withWalkGeneratorArms(temp, engine.theRobotDimensions, engine.theMassCalibration); // walk arms
-  for(int joint = Joints::firstArmJoint; joint < Joints::firstLegJoint; ++joint) // with arm engine request
-    temp.angles[joint] = jointRequest.angles[joint] != JointRequest::off
+  for(int joint = 0; joint < Joints::firstLegJoint; ++joint) // with arm engine request and head request
+    temp.angles[joint] = jointRequest.angles[joint] != JointRequest::off && jointRequest.angles[joint] != JointRequest::ignore
                          ? jointRequest.angles[joint] : engine.theJointAngles.angles[joint];
   RobotModel balanced(temp, engine.theRobotDimensions, engine.theMassCalibration);
 
-  VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, 0.f), temp, engine.theRobotDimensions, increaseInverseKinematicClipThreshold ? engine.kinematicParameters.legLengthClipThreshold : 0.f) || SystemCall::getMode() == SystemCall::logFileReplay);
-  ForwardKinematic::calculateLegChain(Legs::left, temp, engine.theRobotDimensions, balanced.limbs);
-  ForwardKinematic::calculateLegChain(Legs::right, temp, engine.theRobotDimensions, balanced.limbs);
-  balanced.updateCenterOfMass(engine.theMassCalibration);
-  armCompensationAfterKick = std::max(0.f, armCompensationAfterKick - Constants::motionCycleTime * 1000.f / engine.kinematicParameters.baseWalkPeriod);
+  armCompensationAfterKick = std::max(0.f, armCompensationAfterKick - engine.motionCycleTime * 1000.f / engine.kinematicParameters.baseWalkPeriod);
   armCompensationTilt.push_front((balanced.centerOfMass.x() - withWalkGeneratorArms.centerOfMass.x()) * (1.f - armCompensationAfterKick) * engine.armParameters.comTiltFactor);
 
   PLOT("module:WalkingEngine:armCompensation", armCompensationTilt[0].toDegrees());
+}
+
+void WalkPhase::calculateSupportSideCompensation()
+{
+  if(!engine.supportCompensationParameters.isActive || walkState == standing || engine.theSolePressureState.legInfo[isLeftPhase ? Legs::left : Legs::right].hasPressure || walkKickStep.currentKick == WalkKicks::none || walkKickStep.longKickParams.size() == 0)
+    return;
+
+  JointRequest lastExecutedRequest;
+  FOREACH_ENUM(Joints::Joint, joint)
+    lastExecutedRequest.angles[joint] = engine.theJointPlay.jointState[joint].lastExecutedRequest;
+
+  const RobotModel lastExecutedModel(lastExecutedRequest, engine.theRobotDimensions, engine.theMassCalibration);
+
+  const Pose3f& measuredSupportSole = isLeftPhase ? engine.theRobotModel.soleRight : engine.theRobotModel.soleLeft;
+  const Pose3f& requestedSupportSole = isLeftPhase ? lastExecutedModel.soleRight : lastExecutedModel.soleLeft;
+  float forwardError = (measuredSupportSole.translation.x() - requestedSupportSole.translation.x()) * engine.supportCompensationParameters.scaling;
+  forwardError *= mapToRange(tBase / stepDuration, engine.supportCompensationParameters.timeScaling.min, engine.supportCompensationParameters.timeScaling.max, 0.f, 1.f);
+  supportForwardCompensation.update(forwardError);
 }

@@ -61,17 +61,15 @@ StrategyStatus
   role: Enum(type=Role::Type)
 }
 
-InitialToReady
-{
-  state: Enum(type=InitialToReady::State)
-  gestureDetected: Boolean
-  detectedBy: Integer(min=0, max=14)
-  timestamp: Timestamp(bits=11, shift=4, reference=relativePast, noclip)
-}
-
 IndirectKick
 {
-  lastKickTimestamp: Timestamp(bits=24, shift=8, reference=relativePast)
+  lastKickTimestamp: Timestamp(bits=24, shift=8, reference=relativePast, noclip)
+}
+
+RefereeSignal
+{
+  signal: Enum(type=RefereeGesture::Gesture)
+  timeWhenDetected: Timestamp(bits=11, shift=4, reference=relativePast, noclip)
 }
 
 FrameInfo
@@ -89,5 +87,5 @@ TeamMessage
   theBehaviorStatus: BehaviorStatus
   theStrategyStatus: StrategyStatus
   theIndirectKick: IndirectKick
-  theInitialToReady: InitialToReady
+  theRefereeSignal: RefereeSignal
 }

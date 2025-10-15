@@ -45,10 +45,10 @@ option((SkillBehaviorControl) DemoGoToBallAndKick,
       LookAtBall();
       const float yOffset = kickLeft ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset;
       WalkToPoint({.target = {theBallModel.estimate.position + waitPosition + Vector2f(0.f, yOffset)},
-                  .reduceWalkingSpeed = ReduceWalkSpeedType::slow,
-                  .rough = true,
-                  .disableObstacleAvoidance = true,
-                  .disableStanding = true});
+                   .reduceWalkSpeedType = ReduceWalkSpeedType::slow,
+                   .rough = true,
+                   .disableObstacleAvoidance = true,
+                   .disableStanding = true});
     }
   }
 

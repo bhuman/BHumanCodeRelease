@@ -397,7 +397,7 @@ public:
    * @param container The container from which the data should be read.
    * @param baseTimestamp The timestamp relative to which other timestamps are.
    * @param rootType The type of the object that will be streamed out of this stream.
-   * @param toLocalTimestamp This function converts a read timtestamp to a local timestamp.
+   * @param toLocalTimestamp This function converts a read timestamp to a local timestamp.
    */
   CompressedTeamCommunicationIn(const std::vector<std::uint8_t>& container, unsigned baseTimestamp, const CompressedTeamCommunication::Type* rootType,
                                 const std::function<unsigned(unsigned)>& toLocalTimestamp = std::function<unsigned(unsigned)>());

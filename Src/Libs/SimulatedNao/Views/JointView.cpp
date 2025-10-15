@@ -11,6 +11,33 @@
 #include "SimulatedNao/Visualization/HeaderedWidget.h"
 #include "Tools/Motion/SensorData.h"
 
+static Joints::Joint t1Mapping[] =
+{
+  Joints::headYaw,
+  Joints::headPitch,
+  Joints::waistYaw,
+  Joints::lShoulderPitch,
+  Joints::lShoulderRoll,
+  Joints::lElbowYaw,
+  Joints::lElbowRoll,
+  Joints::rShoulderPitch,
+  Joints::rShoulderRoll,
+  Joints::rElbowYaw,
+  Joints::rElbowRoll,
+  Joints::lHipPitch,
+  Joints::lHipRoll,
+  Joints::lHipYaw,
+  Joints::lKneePitch,
+  Joints::lAnklePitch,
+  Joints::lAnkleRoll,
+  Joints::rHipPitch,
+  Joints::rHipRoll,
+  Joints::rHipYaw,
+  Joints::rKneePitch,
+  Joints::rAnklePitch,
+  Joints::rAnkleRoll
+};
+
 class JointHeaderedWidget : public HeaderedWidget, public SimRobot::Widget
 {
 private:
@@ -71,6 +98,7 @@ void JointWidget::forceUpdate()
 
 void JointWidget::paintEvent(QPaintEvent*)
 {
+  const bool isNao = Global::getSettings().robotType == Settings::nao;
   painter.begin(this);
   painter.setFont(font);
   painter.setBrush(RoboCupCtrl::getAlternateBackgroundColor());
@@ -89,9 +117,15 @@ void JointWidget::paintEvent(QPaintEvent*)
     SYNC_WITH(jointView.console);
     const JointSensorData& jointSensorData(jointView.jointSensorData);
     const JointRequest& jointRequest(jointView.jointRequest);
-    for(int i = 0; i < Joints::numOfJoints; ++i)
+    const int numOfJoints = isNao ? Joints::numOfJoints : static_cast<int>(sizeof(t1Mapping) / sizeof(*t1Mapping));
+    for(int j = 0; j < numOfJoints; ++j)
     {
-      if(i == Joints::lShoulderPitch || i == Joints::rShoulderPitch || i == Joints::lHipYawPitch || i == Joints::rHipYawPitch)
+      const int i = isNao ? j : t1Mapping[j];
+      if(isNao && i == Joints::waistYaw)
+        continue;
+      if(i == Joints::lShoulderPitch || i == Joints::rShoulderPitch
+         || (isNao && (i == Joints::lHipYawPitch || i == Joints::rHipYawPitch))
+         || (!isNao &&  (i == Joints::lHipPitch || i == Joints::rHipPitch)))
         newSection();
       if(i == Joints::lHand || i == Joints::rHand)
       {
@@ -103,10 +137,15 @@ void JointWidget::paintEvent(QPaintEvent*)
         jointRequest.angles[i] == JointAngles::off ? static_cast<void>(strcpy(request, "off")) : static_cast<void>(sprintf(request, "%.1f°", jointRequest.angles[i].toDegrees()));
         jointSensorData.angles[i] == JointAngles::off ? static_cast<void>(strcpy(sensor, "?")) : static_cast<void>(sprintf(sensor, "%.1f°", jointSensorData.angles[i].toDegrees()));
       }
-      jointSensorData.currents[i] == SensorData::off ? static_cast<void>(strcpy(load, "off")) : static_cast<void>(sprintf(load, "%d mA", jointSensorData.currents[i]));
+      jointSensorData.currents[i] == SensorData::off ? static_cast<void>(strcpy(load, "off"))
+        : isNao ? static_cast<void>(sprintf(load, "%d mA", jointSensorData.currents[i]))
+        : static_cast<void>(sprintf(load, "%.1f Nm", jointSensorData.currents[i] * 0.01f));
       jointSensorData.temperatures[i] == 0 ? static_cast<void>(strcpy(temp, "off")) : static_cast<void>(sprintf(temp, "%d °C", jointSensorData.temperatures[i]));
       jointRequest.stiffnessData.stiffnesses[i] == StiffnessData::useDefault ? static_cast<void>(strcpy(stiffness, "?")) : static_cast<void>(sprintf(stiffness, "%d %%", jointRequest.stiffnessData.stiffnesses[i]));
-      print(TypeRegistry::getEnumName(static_cast<Joints::Joint>(i)), request, sensor, load, temp, stiffness);
+      std::string name = TypeRegistry::getEnumName(static_cast<Joints::Joint>(i));
+      if(!isNao && (i == Joints::lHipYawPitch || i == Joints::rHipYawPitch))
+        name = name.substr(0, 7);
+      print(name.c_str() , request, sensor, load, temp, stiffness);
     }
   }
   painter.end();
@@ -152,7 +191,9 @@ void JointWidget::newSection()
 JointHeaderedWidget::JointHeaderedWidget(JointView& sensorView)
 {
   QStringList headerLabels;
-  headerLabels << "Joint" << "Request" << "Sensor" << "Load" << "Temp" << "Stiffness";
+  headerLabels << "Joint" << "Request" << "Sensor"
+               << (Global::getSettings().robotType == Settings::nao ? "Load" : "Torque")
+               << "Temp" << "Stiffness";
   setHeaderLabels(headerLabels, "lrrrrr");
   QHeaderView* headerView = getHeaderView();
   headerView->setMinimumSectionSize(30);

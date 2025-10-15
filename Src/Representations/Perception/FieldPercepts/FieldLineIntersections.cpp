@@ -97,19 +97,19 @@ void FieldLineIntersections::draw() const
       }
       if(transformationSuccessful)
       {
-        const Vector2f uncor1 = theImageCoordinateSystem->fromCorrected(p1);
-        const Vector2f uncor2 = theImageCoordinateSystem->fromCorrected(p2);
-        const Vector2f uncor3 = theImageCoordinateSystem->fromCorrected(p3);
-        const Vector2f uncor4 = theImageCoordinateSystem->fromCorrected(p4);
-        ARROW("representation:FieldLines:image", uncor1.x(), uncor1.y(), uncor2.x(), uncor2.y(),
+        const Vector2f uncorrected1 = theImageCoordinateSystem->fromCorrected(p1);
+        const Vector2f uncorrected2 = theImageCoordinateSystem->fromCorrected(p2);
+        const Vector2f uncorrected3 = theImageCoordinateSystem->fromCorrected(p3);
+        const Vector2f uncorrected4 = theImageCoordinateSystem->fromCorrected(p4);
+        ARROW("representation:FieldLines:image", uncorrected1.x(), uncorrected1.y(), uncorrected2.x(), uncorrected2.y(),
               3, Drawings::solidPen, ColorRGBA::red);
-        ARROW("representation:FieldLines:image", uncor3.x(), uncor3.y(), uncor4.x(), uncor4.y(),
+        ARROW("representation:FieldLines:image", uncorrected3.x(), uncorrected3.y(), uncorrected4.x(), uncorrected4.y(),
               3, Drawings::solidPen, ColorRGBA::green);
         Vector2f intersectionInImage;
         if(Transformation::robotToImage(inter->pos, *theCameraMatrix, *theCameraInfo, intersectionInImage))
         {
-          const Vector2f uncorIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
-          DRAW_TEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
+          const Vector2f uncorrectedIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
+          DRAW_TEXT("representation:FieldLines:image", uncorrectedIntersection.x(), uncorrectedIntersection.y(), 25, ColorRGBA(255, 180, 180),
                    (inter->type == Intersection::L ? "L" : inter->type == Intersection::T ? "T" : "X"));
         }
       }

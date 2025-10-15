@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 
 import numpy as np
 import sys
@@ -32,7 +32,7 @@ for element in root:
     around_z = np.matrix([[np.cos(y), -np.sin(y), 0], [np.sin(y), np.cos(y), 0], [0, 0, 1]])
     rotation = (around_z * around_y * around_x).transpose()
     a1, a2, a3 = rotation * np.matrix([a1, a2, a3]).transpose()
-    a = np.matrix([[0, -a3, a2], [a3, 0, -a1], [-a2, a1, 0]])
+    a = np.matrix([[0, -a3[0, 0], a2[0, 0]], [a3[0, 0], 0, -a1[0, 0]], [-a2[0, 0], a1[0, 0], 0]])
     I = I_S + m * a * a.transpose()
     print(element.attrib['name'])
     print(f'<InertiaMatrixMass value="{m:.2f}g" x="{a1[0, 0]:.2f}mm" y="{a2[0, 0]:.2f}mm" z="{a3[0, 0]:.2f}mm"')

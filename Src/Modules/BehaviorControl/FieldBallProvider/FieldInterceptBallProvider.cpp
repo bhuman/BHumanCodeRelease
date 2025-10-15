@@ -72,10 +72,6 @@ void FieldInterceptBallProvider::calculateInterceptedBallEndPosition(FieldInterc
   const float ballDistance = theFieldBall.positionRelative.norm();
   Vector2f ballPosition = theFieldBall.positionRelative;
   Vector2f ballVelocity = theFieldBall.velocityRelative;
-  float timeUntilIntersectsOwnYAxis = theFieldInterceptBall.timeUntilIntersectsOwnYAxis;
-  float timeUntilIntersectsOwnXAxis = theFieldInterceptBall.timeUntilIntersectsOwnXAxis;
-  Vector2f& intersectionPositionWithOwnYAxis = theFieldInterceptBall.intersectionPositionWithOwnYAxis;
-  Vector2f& intersectionPositionWithOwnXAxis = theFieldInterceptBall.intersectionPositionWithOwnXAxis;
   Vector2f endPosition = theFieldBall.endPositionRelative;
   bool isRollingTowardsOpponentGoal = theFieldBall.isRollingTowardsOpponentGoal;
   // The ball must be a min distance away and the risky estimate must have a higher velocity
@@ -92,33 +88,37 @@ void FieldInterceptBallProvider::calculateInterceptedBallEndPosition(FieldInterc
 
   if(!theFieldInterceptBall.interceptBall)
   {
-    const bool generalIntersectionCondition = theFieldBall.ballWasSeen(100) &&
+    const bool generalIntersectionCondition = theFieldBall.ballWasSeen(ballSeenTime.min) &&
                                               (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering) &&
                                               !isRollingTowardsOpponentGoal &&
-                                              ballDistance < 5000.f &&
-                                              endPosition.x() < 200.f;
+                                              ballDistance < 5000.f;
 
-    const bool yIntersectionCondition = between<float>(intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance, theBehaviorParameters.ballCatchMaxWalkDistance) &&
-                                        between<float>(timeUntilIntersectsOwnYAxis, 0.1f, 3.0f);
+    const bool yIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance, theBehaviorParameters.ballCatchMaxWalkDistance) &&
+                                        between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) &&
+                                        endPosition.x() < ballEndPositionX.min;
 
-    const bool xIntersectionCondition = between<float>(intersectionPositionWithOwnXAxis.x(), 0, theBehaviorParameters.ballCatchMaxWalkDistance) &&
-                                        between<float>(timeUntilIntersectsOwnXAxis, 0.1f, 3.0f);
+    const bool xIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnXAxis.x(), 0, theBehaviorParameters.ballCatchMaxWalkDistance) &&
+                                        between<float>(theFieldInterceptBall.timeUntilIntersectsOwnXAxis, 0.1f, 3.0f) &&
+                                        // ball rolls negative -> end must be further away (lower) than -min, else must be further away (higher) than +min
+                                        (ballVelocity.y() < 0.f ? endPosition.y() < -ballEndPositionY.min : endPosition.y() > ballEndPositionY.max);
 
     theFieldInterceptBall.interceptBall = generalIntersectionCondition && (yIntersectionCondition || (xIntersectionCondition && useXAxisIntersection));
   }
   else
   {
-    const bool generalIntersectionCondition = !theFieldBall.ballWasSeen(150) ||
-                                              isRollingTowardsOpponentGoal ||
-                                              endPosition.x() > 300.f;
+    const bool generalIntersectionCondition = theFieldBall.ballWasSeen(ballSeenTime.max) &&
+                                              !isRollingTowardsOpponentGoal;
 
-    const bool yIntersectionCondition = !(between<float>(intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
-                                          between<float>(timeUntilIntersectsOwnYAxis, 0.1f, 3.0f));
+    const bool yIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
+                                        between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) &&
+                                        endPosition.x() < ballEndPositionX.max;
 
-    const bool xIntersectionCondition = !(between<float>(intersectionPositionWithOwnXAxis.x(), 0 - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
-                                          between<float>(timeUntilIntersectsOwnXAxis, 0.1f, 3.0f));
+    const bool xIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnXAxis.x(), 0 - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
+                                        between<float>(theFieldInterceptBall.timeUntilIntersectsOwnXAxis, 0.1f, 3.0f) &&
+                                        // ball rolls negative -> end must be further away (lower) than -min, else must be further away (higher) than +min
+                                        (ballVelocity.y() < 0.f ? endPosition.y() < -ballEndPositionY.max : endPosition.y() > ballEndPositionY.min);
 
-    theFieldInterceptBall.interceptBall = !((yIntersectionCondition && (xIntersectionCondition || !useXAxisIntersection)) || generalIntersectionCondition);
+    theFieldInterceptBall.interceptBall = generalIntersectionCondition && (yIntersectionCondition || (xIntersectionCondition && useXAxisIntersection));
   }
   if(theFieldInterceptBall.interceptBall)
   {
@@ -127,32 +127,29 @@ void FieldInterceptBallProvider::calculateInterceptedBallEndPosition(FieldInterc
   }
   else
   {
-    float timeUntilIntersectsOwnYAxis;
-    checkIfBallIsPassingOwnYAxis(intersectionPositionWithOwnYAxis, timeUntilIntersectsOwnYAxis, ballPosition, ballVelocity, false);
-
     if(!theFieldInterceptBall.predictedInterceptBall)
     {
-      const bool generalIntersectionCondition = theFieldBall.ballWasSeen(100) &&
+      const bool generalIntersectionCondition = theFieldBall.ballWasSeen(ballSeenTime.min) &&
                                                 (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering) &&
                                                 !isRollingTowardsOpponentGoal &&
                                                 ballDistance < 5000.f &&
                                                 endPosition.x() < 1000.f;
 
-      const bool yIntersectionCondition = between<float>(intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance, theBehaviorParameters.ballCatchMaxWalkDistance) &&
-                                          (between<float>(timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) || ((endPosition - ballPosition).squaredNorm() > sqr(1000.f) && intersectionPositionWithOwnYAxis != Vector2f::Zero()));
+      const bool yIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance, theBehaviorParameters.ballCatchMaxWalkDistance) &&
+                                          (between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) || ((endPosition - ballPosition).squaredNorm() > sqr(1000.f) && theFieldInterceptBall.intersectionPositionWithOwnYAxis != Vector2f::Zero()));
 
       theFieldInterceptBall.predictedInterceptBall = generalIntersectionCondition && yIntersectionCondition;
     }
     else
     {
-      const bool generalIntersectionCondition = !theFieldBall.ballWasSeen(150) ||
-                                                isRollingTowardsOpponentGoal ||
-                                                endPosition.x() > 1200.f;
+      const bool generalIntersectionCondition = theFieldBall.ballWasSeen(ballSeenTime.max) &&
+                                                !isRollingTowardsOpponentGoal &&
+                                                endPosition.x() < 1200.f;
 
-      const bool yIntersectionCondition = !(between<float>(intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
-                                            (between<float>(timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) || ((endPosition - ballPosition).squaredNorm() > sqr(500.f) && intersectionPositionWithOwnYAxis != Vector2f::Zero())));
+      const bool yIntersectionCondition = between<float>(theFieldInterceptBall.intersectionPositionWithOwnYAxis.y(), -theBehaviorParameters.ballCatchMaxWalkDistance - ballInterceptionWidthHysteresis, theBehaviorParameters.ballCatchMaxWalkDistance + ballInterceptionWidthHysteresis) &&
+                                          (between<float>(theFieldInterceptBall.timeUntilIntersectsOwnYAxis, 0.1f, 3.0f) || ((endPosition - ballPosition).squaredNorm() > sqr(500.f) && theFieldInterceptBall.intersectionPositionWithOwnYAxis != Vector2f::Zero()));
 
-      theFieldInterceptBall.predictedInterceptBall = !(yIntersectionCondition || generalIntersectionCondition);
+      theFieldInterceptBall.predictedInterceptBall = generalIntersectionCondition && yIntersectionCondition;
     }
   }
 

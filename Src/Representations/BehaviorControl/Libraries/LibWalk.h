@@ -1,7 +1,7 @@
 /**
  * @file LibWalk.h
  *
- * This file defines a representation that allows to recalculate walktargets to avoid obstacles, fieldborder and penaltyarea
+ * This file defines a representation that allows to recalculate walktargets to avoid obstacles, fieldborder and penalty area
  *
  * @author Daniel Krause
  */

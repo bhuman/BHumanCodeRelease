@@ -6,10 +6,9 @@ Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vec
   covariance(covariance), center(center), left(left), right(right), velocity(velocity), lastSeen(lastSeen), type(type)
 {}
 
-Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, unsigned int lastSeen, Type type) :
+Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, float radius, unsigned int lastSeen, Type type) :
   covariance(covariance), center(center), velocity(Vector2f::Zero()), lastSeen(lastSeen), type(type)
 {
-  const float radius = getRobotDepth();
   left = right = center.normalized(radius);
   left.rotateLeft();
   right.rotateRight();

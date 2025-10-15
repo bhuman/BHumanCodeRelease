@@ -86,6 +86,9 @@ struct MotionPhase
     return 0;
   }
 
+  virtual void setLastPhase(std::unique_ptr<MotionPhase>&)
+  {}
+
   Type type; /**< The type of this phase. */
   unsigned kickType; /**< The type of kick in this phase (only valid if it sets \c motionInfo.isKicking()). Cannot be \c KickInfo::KickType due to circular include dependencies. */
 };

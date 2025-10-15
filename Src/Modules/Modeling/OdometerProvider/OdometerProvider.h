@@ -11,11 +11,13 @@
 
 #include "Framework/Module.h"
 #include "Debugging/DebugDrawings.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Modeling/Odometer.h"
 
 MODULE(OdometerProvider,
 {,
+  REQUIRES(FrameInfo),
   REQUIRES(OdometryData),
   PROVIDES(Odometer),
   LOADS_PARAMETERS(
@@ -34,6 +36,7 @@ class OdometerProvider : public OdometerProviderBase
 {
 private:
   Pose2f lastOdometryData; /**< Odometry data in last frame */
+  unsigned lastFrameInfoTime = 0; /**< Last timestamp when an update occurred. */
 
   /**
    * The method that computes the odometry information

@@ -9,6 +9,32 @@ from pathlib import Path
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
+# Fix weird build error, where build and pybh.egg-info needs to be removed.
+# Of course this is remote code execution, but who checks anyway what is run
+# when running pip install. No bad things are happening here
+def clean_build_artifacts():
+    """Clean build and egg-info directories"""
+    import os
+    import shutil
+    from pathlib import Path
+
+    current_dir = Path.cwd()
+
+    # Remove build directory
+    build_dir = current_dir / 'build'
+    if build_dir.exists():
+        print(f"Removing build directory: {build_dir}")
+        shutil.rmtree(build_dir)
+
+    # Remove egg-info directories
+    for egg_info in current_dir.glob('*.egg-info'):
+        if egg_info.is_dir():
+            print(f"Removing egg-info directory: {egg_info}")
+            shutil.rmtree(egg_info)
+
+# Run the RCE
+clean_build_artifacts()
+
 # Convert distutils Windows platform specifiers to CMake -A arguments
 PLAT_TO_CMAKE = {
     'win32': 'Win32',
@@ -24,7 +50,7 @@ PLAT_TO_CMAKE = {
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.join(os.path.abspath(sourcedir), '..', '..', 'Make', 'CMake')
+        self.sourcedir = os.path.join(os.path.abspath(sourcedir), 'Make', 'CMake')
 
 
 class CMakeBuild(build_ext):
@@ -97,7 +123,7 @@ class CMakeBuild(build_ext):
             ['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp
         )
         subprocess.check_call(
-            ['cmake', '--build', '.', '--target', 'PythonLogs']
+            ['cmake', '--build', '.', '--target', 'PythonLogs', 'PythonController']
             + build_args,
             cwd=self.build_temp,
         )
@@ -105,8 +131,8 @@ class CMakeBuild(build_ext):
         sys.path.append(Path(self.build_lib).resolve().as_posix())
         try:
             self.stubgen(stubs_path, 'pybh.logs')
-            shutil.copy(
-                stubs_path / 'pybh' / 'logs.pyi', Path(self.build_lib) / 'pybh' / 'logs.pyi'
+            shutil.copytree(
+                stubs_path / 'pybh', Path(self.build_lib) / 'pybh', dirs_exist_ok=True
             )
         except ImportError:
             # skip stub generation if pybind11_stubgen could not be found
@@ -217,7 +243,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name='pybh',
-    version='0.3.10rc0',
+    version='0.3.11',
     author='B-Human',
     author_email='b-human@uni-bremen.de',
     url='https://b-human.de',

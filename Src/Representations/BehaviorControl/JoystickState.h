@@ -15,6 +15,7 @@ STREAMABLE(JoystickState,
 {
   bool pressed(int button) const {return (buttons & 1 << button) != 0;},
 
+  (bool)(false) valid, /**< Is actually a joystick connected? */
   (std::array<float, 8>) axes, /**< The up to 8 axes, each in the range -1 .. 1. */
   (unsigned)(0) buttons, /**< The state of up to 32 buttons (bit set means pressed). */
 });

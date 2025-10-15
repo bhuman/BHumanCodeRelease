@@ -18,7 +18,6 @@ STREAMABLE(Obstacle,
     fallenTeammate,
   });
 
-  static constexpr float getRobotDepth() {return 80.f;};
   static void fusion2D(Obstacle& one, const Obstacle& other);
   void setLeftRight(const float radius);
   bool isTeammate() const;
@@ -29,7 +28,7 @@ STREAMABLE(Obstacle,
   Obstacle() = default;
   Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
            unsigned int lastSeen, Type type);
-  Obstacle(const Matrix2f& covariance, const Vector2f& center, unsigned int lastSeen = 0, Type type = Type::teammate),
+  Obstacle(const Matrix2f& covariance, const Vector2f& center, float radius, unsigned int lastSeen = 0, Type type = Type::teammate),
 
   (Matrix2f) covariance,                  /**< Covariance matrix of an obstacle */
   (Vector2f) center,                      /**< Center point of an obstacle */

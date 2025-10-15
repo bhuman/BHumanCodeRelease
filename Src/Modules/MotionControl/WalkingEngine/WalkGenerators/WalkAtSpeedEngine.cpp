@@ -51,8 +51,13 @@ std::unique_ptr<MotionPhase> WalkAtSpeedEngine::createPhase(const Pose2f& walkTa
   walkSpeedScaled.rotation /= factor;
   walkSpeedScaled.translation /= factor;
 
-  const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, walkTarget);
   Pose2f stepTarget = walkTarget;
+  if(walkSpeedScaled.translation.x() < 0.f)
+    stepTarget.translation.x() *= -1.f;
+  if(walkSpeedScaled.translation.y() < 0.f)
+    stepTarget.translation.y() *= -1.f;
+
+  const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, stepTarget);
   stepTarget.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeedScaled).clamped(walkTarget.rotation * walkSpeedScaled.rotation);
 
   std::vector<Vector2f> translationPolygon;

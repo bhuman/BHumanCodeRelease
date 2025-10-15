@@ -3,24 +3,6 @@
 # installed in a location where macOS can find it (e.g. /Applications). It runs both
 # on Intel and ARM Macs.
 
-# Set default value for using Rosetta 2. On Intel Macs, it must be empty. Otherwise,
-# CMake will complain about an unused definition.
-if [ "$(uname -m)" = arm64 ]; then
-  ROSETTA=-DROSETTA=0
-else
-  ROSETTA=
-fi
-
-# Parameter -r activates Rosetta 2 on ARM Macs.
-if [ ! -z "$ROSETTA" -a "$1" = "-r" ]; then
-  ROSETTA=-DROSETTA=1
-elif [ $# != 0 ]; then
-  echo "usage: $0 [-r]"
-  echo "  options:"
-  echo "    -r    Xcode project generates code for use with Rosetta 2 on an ARM Mac"
-  exit 1
-fi
-
 cd "$(dirname "$(which "$0")")"
 
 CMAKE=../../Util/Buildchain/macOS/bin/cmake
@@ -30,6 +12,31 @@ PROJECTSRC=$PROJECTDIR/B-Human.xcodeproj
 PLIST="/usr/libexec/PlistBuddy -c"
 TEMPPATH=/tmp/generate.tmp
 TEMPPATH2=/tmp/generate2.tmp
+
+# Set default value for using Rosetta 2. On Intel Macs, it must be empty. Otherwise,
+# CMake will complain about an unused definition.
+if [ "$(uname -m)" = arm64 ]; then
+  ROSETTA=-DROSETTA=0
+  HAD_ROSETTA=0
+  if [ -f "$PROJECTPATH/project.pbxproj" -a -z "$(grep /macOSarm64/ "$PROJECTPATH/project.pbxproj")" ]; then
+    HAD_ROSETTA=1
+  fi
+else
+  ROSETTA=
+fi
+
+# Parameter -r activates Rosetta 2 on ARM Macs.
+if [ ! -z "$ROSETTA" -a "$1" = "-r" ]; then
+  ROSETTA=-DROSETTA=1
+elif [ ! -z "$ROSETTA" -a "$1" = "-k" ]; then
+  ROSETTA=-DROSETTA=$HAD_ROSETTA
+elif [ $# != 0 ]; then
+  echo "usage: $0 [-k|-r]"
+  echo "  options:"
+  echo "    -k    Keep previous choice regarding the use of Rosetta 2 on an ARM Mac"
+  echo "    -r    Xcode project generates code for use with Rosetta 2 on an ARM Mac"
+  exit 1
+fi
 
 # Create a symbolic link to cmake.
 if [ ! -e "$CMAKE" ]; then
@@ -57,7 +64,9 @@ if [ ! -e "$CMAKE" ]; then
 fi
 
 # Determine current version of macOS SDK.
-SDKVERSION="$(grep "MinimalDisplayName" "$(xcrun --show-sdk-path)/SDKSettings.json" \
+SDKVERSION="$(sed <"$(xcrun --show-sdk-path)/SDKSettings.json" 's%,%,|%g' \
+| tr '|' '\n' \
+| grep "MinimalDisplayName" \
 | sed 's%^.*"MinimalDisplayName":"\([^"]*\).*$%\1%')"
 CLANGVERSION="$(clang --version | grep version | sed 's%.*(\(.*\)).*%\1%')"
 
@@ -69,7 +78,7 @@ if [ -d "$PROJECTPATH" ]; then
     OLDVERSION=
   fi
   if [ "$OLDVERSION" != "$SDKVERSION" ]; then
-    rm -r "$PROJECTPATH" "$PROJECTDIR"
+    rm -fr "$PROJECTPATH" "$PROJECTDIR"
   elif [ -d "$PROJECTDIR/PrecompiledHeaders" ]; then
     # Delete precompiled headers if clang version changed.
     if [ -f "$PROJECTPATH/clangversion" ]; then
@@ -91,10 +100,6 @@ fi
 # When switching between ARM and Intel code, copied frameworks will not be updated
 # by default. Therefore, app folders are deleted to force copying frameworks again.
 if [ ! -z "$ROSETTA" -a -f "$PROJECTPATH/project.pbxproj" ]; then
-  HAD_ROSETTA=0
-  if [ -z "$(grep /macOSarm64/ "$PROJECTPATH/project.pbxproj")" ]; then
-    HAD_ROSETTA=1
-  fi
   if [ "$ROSETTA" != "-DROSETTA=$HAD_ROSETTA" -a -d ../../Build/macOS ]; then
     find ../../Build/macOS -name "*.app" -type d | xargs rm -r
   fi
@@ -215,25 +220,27 @@ else
 
   # Create three schemes for Nao from the one CMake created.
   # Set the deployDialog as runnable target. Deactivate some building targets.
-  SCHEMETEMPLATE=$SCHEMESRC/DeployDialog.xcscheme
-  sed <$SCHEMETEMPLATE >$TEMPPATH \
-  -e "$SEDOPTION" \
-  -e 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%' \
-  -e 's%selectedDebuggerIdentifier.*%selectedDebuggerIdentifier = ""%' \
-  -e 's%selectedLauncherIdentifier.*%selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"%' \
-  -e 's%buildForTesting *= *"YES"%buildForTesting = "NO"%' \
-  -e 's% buildForProfiling *= *"YES"% buildForProfiling = "NO"%' \
-  -e 's%buildForArchiving *= *"YES"%buildForArchiving = "NO"%' \
-  -e 's%buildConfiguration *= *".*"%buildConfiguration = "Debug"%'
-  mv $TEMPPATH "$SCHEMEDIR/Nao - Debug.xcscheme"
-  sed <"$SCHEMEDIR/Nao - Debug.xcscheme" >$TEMPPATH \
-    -e 's%buildConfiguration *= *"Debug"%buildConfiguration = "Develop"%' \
-    -e 's%argument *= *"Debug"%argument = "Develop"%'
-  mv $TEMPPATH "$SCHEMEDIR/Nao - Develop.xcscheme"
-  sed <"$SCHEMEDIR/Nao - Debug.xcscheme" >$TEMPPATH \
-    -e 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%' \
-    -e 's%argument *= *"Debug"%argument = "Release"%'
-  mv $TEMPPATH "$SCHEMEDIR/Nao - Release.xcscheme"
+  for ROBOT in Nao Booster; do
+    SCHEMETEMPLATE=$SCHEMESRC/$ROBOT.xcscheme
+    sed <$SCHEMETEMPLATE >$TEMPPATH \
+    -e "$SEDOPTION" \
+    -e 's%"container:[^"]*/Build/macOS/B-Human%"container:../../Make/macOS/B-Human%' \
+    -e 's%selectedDebuggerIdentifier.*%selectedDebuggerIdentifier = ""%' \
+    -e 's%selectedLauncherIdentifier.*%selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"%' \
+    -e 's%buildForTesting *= *"YES"%buildForTesting = "NO"%' \
+    -e 's% buildForProfiling *= *"YES"% buildForProfiling = "NO"%' \
+    -e 's%buildForArchiving *= *"YES"%buildForArchiving = "NO"%' \
+    -e 's%buildConfiguration *= *".*"%buildConfiguration = "Debug"%'
+    mv $TEMPPATH "$SCHEMEDIR/$ROBOT - Debug.xcscheme"
+    sed <"$SCHEMEDIR/$ROBOT - Debug.xcscheme" >$TEMPPATH \
+      -e 's%buildConfiguration *= *"Debug"%buildConfiguration = "Develop"%' \
+      -e 's%argument *= *"Debug"%argument = "Develop"%'
+    mv $TEMPPATH "$SCHEMEDIR/$ROBOT - Develop.xcscheme"
+    sed <"$SCHEMEDIR/$ROBOT - Debug.xcscheme" >$TEMPPATH \
+      -e 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%' \
+      -e 's%argument *= *"Debug"%argument = "Release"%'
+    mv $TEMPPATH "$SCHEMEDIR/$ROBOT - Release.xcscheme"
+  done
 
   # Avoid automatically creating schemes for all targets.
   SETTINGSDIR=$PROJECTPATH/project.xcworkspace/xcshareddata
@@ -273,6 +280,11 @@ sed <../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/document
 mkdir -p ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
 cp ../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/Info.plist ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
 sed <../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow >~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow "s%PWD%`pwd`%"
+
+# Install Replay Log with SimRobot service.
+mkdir -p ~/Library/Services/Replay\ Log\ with\ SimRobot.workflow/Contents/
+cp ../../Util/Buildchain/macOS/Replay\ Log\ with\ SimRobot.workflow/Contents/Info.plist ~/Library/Services/Replay\ Log\ with\ SimRobot.workflow/Contents/
+sed <../../Util/Buildchain/macOS/Replay\ Log\ with\ SimRobot.workflow/Contents/document.wflow >~/Library/Services/Replay\ Log\ with\ SimRobot.workflow/Contents/document.wflow "s%PWD%`pwd`%"
 
 # Install certificate for app signing.
 cp ../../Util/Buildchain/macOS/B-Human_Code_Release.keychain-db ~/Library/Keychains/

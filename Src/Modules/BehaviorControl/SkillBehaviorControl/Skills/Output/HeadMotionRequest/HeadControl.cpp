@@ -71,6 +71,7 @@ option((SkillBehaviorControl) LookAtAngles,
 }
 
 option((SkillBehaviorControl) LookAtBall,
+       args((HeadMotionRequest::CameraControlMode) camera),
        defs((int)(2000) ownBallTimeout, /**< Use the team ball or look active if the ball hasn't been seen for this time. */
             (int)(500) ownBallDisappearedTimeout, /**< Use the team ball or look active if the ball disappeared for this time. */
             (float)(0.2f) propagateBallTime))
@@ -79,7 +80,7 @@ option((SkillBehaviorControl) LookAtBall,
 
   common_transition
   {
-    if(useOwnEstimate || theTeammatesBallModel.isValid)
+    if(useOwnEstimate || theTeamBallModel.isValid)
       goto lookAtBall;
     else
       goto lookActive;
@@ -90,7 +91,7 @@ option((SkillBehaviorControl) LookAtBall,
     action
     {
       const Vector2f ballPosition = theFieldBall.recentBallPropagatedPositionRelative(propagateBallTime, theBallSpecification.friction);
-      setTargetOnGroundRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera,
+      setTargetOnGroundRequest(theHeadMotionRequest, camera,
                                {ballPosition.x(), ballPosition.y(), theBallSpecification.radius}, 180_deg);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
@@ -128,7 +129,7 @@ option((SkillBehaviorControl) LookForward)
   {
     action
     {
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, 0.f, 0.38f, 150_deg);
+      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, 0.f, theBehaviorParameters.defaultLookDownAngle, 150_deg);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -184,7 +185,7 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
        args((bool) startBall, /**< If true, then look at the ball first. */
             (Angle) tilt,
             (Angle) thresholdAngle,
-            (Vector2f) walkingDirection),
+            (const Vector2f&) walkingDirection),
        defs((int)(100) minTimeBetweenTargetSwitch, /**< Switch from walk to ball target only after this time passed (in ms) */
             (int)(200) minTimeLookingAtBall, /**< Switch from ball to walk target only after this time passed (in ms) */
             (int)(1000) maxWalkTargetTime, /**< Do not stay in look at walk target state longer than this time (in s) */
