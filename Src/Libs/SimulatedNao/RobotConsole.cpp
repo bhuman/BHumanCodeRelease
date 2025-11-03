@@ -124,7 +124,7 @@ void RobotConsole::update()
       {
         if(!drawing.drawn)
         {
-          SimRobotCore2::PhysicalObject* object = static_cast<SimRobotCore2::PhysicalObject*>(ConsoleRoboCupCtrl::application->resolveObject(drawing.parts));
+          SimRobotCore3::PhysicalObject* object = static_cast<SimRobotCore3::PhysicalObject*>(ConsoleRoboCupCtrl::application->resolveObject(drawing.parts));
           object->registerDrawing(drawing);
           drawing.drawn = true;
         }

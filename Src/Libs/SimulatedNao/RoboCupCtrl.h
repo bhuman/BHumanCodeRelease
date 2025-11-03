@@ -11,7 +11,7 @@
 #include "SimulatedRobot.h"
 #include "TestGameController.h"
 #include "Framework/Settings.h"
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 #include <SimRobotCore2D.h>
 
 #include <QBrush>
@@ -26,7 +26,7 @@ class PaintMethods3DOpenGL;
 /**
  * The class implements the SimRobot controller for RoboCup.
  */
-class RoboCupCtrl : public SimRobot::Module, public SimRobotCore2::CollisionCallback, public SimRobotCore2D::CollisionCallback
+class RoboCupCtrl : public SimRobot::Module, public SimRobotCore3::CollisionCallback, public SimRobotCore2D::CollisionCallback
 {
   class Category : public SimRobot::Object
   {
@@ -140,7 +140,7 @@ protected:
    * @param geom1 The geometry at which the interface has been registered
    * @param geom2 The other geometry
    */
-  void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2) override;
+  void collided(SimRobotCore3::Geometry& geom1, SimRobotCore3::Geometry& geom2) override;
 
   /**
    * The callback function for the 2D core.

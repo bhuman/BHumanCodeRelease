@@ -27,7 +27,7 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
 
   if(mode == SystemCall::remoteRobot)
   {
-    SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
+    SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore3::body);
     if(puppet)
     {
       simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
@@ -43,7 +43,7 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
       logPlayer.state = LogPlayer::playing;
       if(!ctrl->is2D)
       {
-        SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
+        SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore3::body);
         if(puppet)
         {
           simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
@@ -58,7 +58,7 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
   }
   else if(mode == SystemCall::simulatedRobot)
   {
-    SimRobot::Object* robot = RoboCupCtrl::application->resolveObject("RoboCup.robots." + QString::fromStdString(robotName), ctrl->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+    SimRobot::Object* robot = RoboCupCtrl::application->resolveObject("RoboCup.robots." + QString::fromStdString(robotName), ctrl->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
     ASSERT(robot);
     if(ctrl->is2D)
       simulatedRobot = std::make_unique<SimulatedRobot2D>(robot);
@@ -67,7 +67,7 @@ LocalConsole::LocalConsole(const Settings& settings, const std::string& robotNam
     ctrl->gameController.registerSimulatedRobot(SimulatedRobot::getNumber(robot) - 1, *simulatedRobot);
     if(!ctrl->is2D)
     {
-      SimRobot::Object* referee = RoboCupCtrl::application->resolveObject("RoboCup.referee", static_cast<int>(SimRobotCore2::body));
+      SimRobot::Object* referee = RoboCupCtrl::application->resolveObject("RoboCup.referee", static_cast<int>(SimRobotCore3::body));
       ctrl->gameController.registerReferee(referee);
     }
   }

@@ -31,10 +31,10 @@ fi
 
 if [ ! -z "$app" ]; then
   if [ "$(uname)" == "Darwin" ]; then
-    open -n "$app" --args "$basePath/../../Config/Scenes/$scene.ros2"
+    open -n "$app" --args "$basePath/../../Config/Scenes/$scene.ros3"
   elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
-    cmd.exe /c start "$app" "../../Config/Scenes/$scene.ros2"
+    cmd.exe /c start "$app" "../../Config/Scenes/$scene.ros3"
   else
-    "$app" "../../Config/Scenes/$scene.ros2" </dev/null >/dev/null 2>&1 &
+    "$app" "../../Config/Scenes/$scene.ros3" </dev/null >/dev/null 2>&1 &
   fi
 fi

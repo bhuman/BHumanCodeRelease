@@ -10,11 +10,11 @@
 #pragma once
 
 #include "SimulatedNao/Visualization/DebugDrawing3D.h"
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 
 class RobotConsole;
 
-class DebugDrawing3DAdapter : private DebugDrawing3D, public SimRobotCore2::Controller3DDrawing
+class DebugDrawing3DAdapter : private DebugDrawing3D, public SimRobotCore3::Controller3DDrawing
 {
   /** Helper for temporarily changing the alpha value for drawing. */
   struct Alpha
@@ -33,7 +33,7 @@ class DebugDrawing3DAdapter : private DebugDrawing3D, public SimRobotCore2::Cont
 
 public:
   RobotConsole* robotConsole = nullptr; /**< The robot console to which this drawing belongs. */
-  QVector<QString> parts; /**< The path to the SimRobotCore2 object that this drawing is attached to. */
+  QVector<QString> parts; /**< The path to the SimRobotCore3 object that this drawing is attached to. */
   bool drawn = false; /**< Is this drawing already registered? */
   bool flip = false; /**< Rotate drawings 180 degrees around the z-axis. */
 

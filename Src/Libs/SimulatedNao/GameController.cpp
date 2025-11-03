@@ -15,7 +15,7 @@
 #include "Platform/Time.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include <algorithm>
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 
 GameController::GameController() :
   theTeamMessageChannel(new TeamMessageChannel[2] { {inTeamMessage, outTeamMessage}, {inTeamMessage, outTeamMessage} })
@@ -964,6 +964,6 @@ void GameController::showReferee(const RefereeSignal signal) const
   for(int i = 0; i < 3; ++i)
     for(int j = 0; j < 3; ++j)
       robotRotationConverted[i][j] = rotation(i, j);
-  static_cast<SimRobotCore2::Body*>(refereeObject)->move(translation.data(), robotRotationConverted);
-  static_cast<SimRobotCore2::Body*>(refereeObject)->resetDynamics();
+  static_cast<SimRobotCore3::Body*>(refereeObject)->move(translation.data(), robotRotationConverted);
+  static_cast<SimRobotCore3::Body*>(refereeObject)->resetDynamics();
 }

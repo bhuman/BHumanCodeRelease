@@ -23,9 +23,9 @@
 #include "Math/Pose3f.h"
 #include "Math/Approx.h"
 #include "Streaming/InStreams.h"
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 
-SimRobotCore2::SensorPort* SimulatedRobot3D::activeCameras[SimulatedRobot::robotsPerTeam * 2] = {nullptr};
+SimRobotCore3::SensorPort* SimulatedRobot3D::activeCameras[SimulatedRobot::robotsPerTeam * 2] = {nullptr};
 unsigned SimulatedRobot3D::activeCameraCount = 0;
 
 SimulatedRobot3D::SimulatedRobot3D(SimRobot::Object* robot) :
@@ -67,9 +67,9 @@ SimulatedRobot3D::SimulatedRobot3D(SimRobot::Object* robot) :
   QVector<QString> parts;
   parts.resize(1);
   parts[0] = "RFoot";
-  VERIFY(rightFoot = reinterpret_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
+  VERIFY(rightFoot = reinterpret_cast<SimRobotCore3::Body*>(application->resolveObject(parts, robot, SimRobotCore3::body)));
   parts[0] = "LFoot";
-  VERIFY(leftFoot = reinterpret_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
+  VERIFY(leftFoot = reinterpret_cast<SimRobotCore3::Body*>(application->resolveObject(parts, robot, SimRobotCore3::body)));
 
   // get joints
   parts.resize(1);
@@ -82,28 +82,28 @@ SimulatedRobot3D::SimulatedRobot3D(SimRobot::Object* robot) :
     jointName = QString(jointName.left(1)).toUpper() + jointName.mid(1);
 
     parts[0] = jointName + position;
-    jointSensors[i] = reinterpret_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
-    jointActuators[i] = reinterpret_cast<SimRobotCore2::ActuatorPort*>(application->resolveObject(parts, robot, SimRobotCore2::actuatorPort));
+    jointSensors[i] = reinterpret_cast<SimRobotCore3::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore3::sensorPort));
+    jointActuators[i] = reinterpret_cast<SimRobotCore3::ActuatorPort*>(application->resolveObject(parts, robot, SimRobotCore3::actuatorPort));
 
     parts[0] = jointName + velocity;
-    jointVelocitySensors[i] = reinterpret_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
+    jointVelocitySensors[i] = reinterpret_cast<SimRobotCore3::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore3::sensorPort));
   }
 
   // imu sensors
   parts.resize(1);
   parts[0] = "Gyroscope.angularVelocities";
-  gyroSensor = application->resolveObject(parts, robot, SimRobotCore2::sensorPort);
+  gyroSensor = application->resolveObject(parts, robot, SimRobotCore3::sensorPort);
 
   parts[0] = "Accelerometer.acceleration";
-  accSensor = application->resolveObject(parts, robot, SimRobotCore2::sensorPort);
+  accSensor = application->resolveObject(parts, robot, SimRobotCore3::sensorPort);
 
   // cameras
   parts[0] = "CameraTop.image";
-  upperCameraSensor = application->resolveObject(parts, robot, SimRobotCore2::sensorPort);
+  upperCameraSensor = application->resolveObject(parts, robot, SimRobotCore3::sensorPort);
   parts[0] = "CameraBottom.image";
-  lowerCameraSensor = application->resolveObject(parts, robot, SimRobotCore2::sensorPort);
+  lowerCameraSensor = application->resolveObject(parts, robot, SimRobotCore3::sensorPort);
   cameraSensor = upperCameraSensor;
-  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor);
+  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore3::SensorPort*>(cameraSensor);
 
   // load calibration
   InMapFile stream("jointCalibration.cfg");
@@ -167,22 +167,22 @@ template<bool avx> inline __m_auto_i toYUYV(const __m_auto_i rgb0, const __m_aut
   const __m_auto_i b1 = _mmauto_shuffle_epi8(rgb1, bMask);
 
   const __m_auto_i y = _mmauto_packs_epi32(
-      _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr0, scaledYCoeffGR), _mmauto_madd_epi16(b0, scaledYCoeffB)), scaleExponent),
-      _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr1, scaledYCoeffGR), _mmauto_madd_epi16(b1, scaledYCoeffB)), scaleExponent)
-  );
+                         _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr0, scaledYCoeffGR), _mmauto_madd_epi16(b0, scaledYCoeffB)), scaleExponent),
+                         _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr1, scaledYCoeffGR), _mmauto_madd_epi16(b1, scaledYCoeffB)), scaleExponent)
+                       );
 
   const __m_auto_i uv = _mmauto_add_epi16(
-      _mmauto_unpacklo_epi16(
-          _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(b0, b1), y), scaledUCoeff), scaleExponent + 1), c_0),
-          _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(_mmauto_srli_epi32(gr0, 16), _mmauto_srli_epi32(gr1, 16)), y), scaledVCoeff), scaleExponent + 1), c_0)
-      ),
-      c_128
-  );
+                          _mmauto_unpacklo_epi16(
+                            _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(b0, b1), y), scaledUCoeff), scaleExponent + 1), c_0),
+                            _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(_mmauto_srli_epi32(gr0, 16), _mmauto_srli_epi32(gr1, 16)), y), scaledVCoeff), scaleExponent + 1), c_0)
+                          ),
+                          c_128
+                        );
 
   return _mmauto_unpacklo_epi8(
-      _mmauto_packus_epi16(y, c_0),
-      _mmauto_packus_epi16(uv, c_0)
-  );
+           _mmauto_packus_epi16(y, c_0),
+           _mmauto_packus_epi16(uv, c_0)
+         );
 }
 
 template<bool srcAligned, bool destAligned, bool avx> void convertImage(const unsigned char* const src, CameraImage& dest)
@@ -236,14 +236,14 @@ void SimulatedRobot3D::getImage(CameraImage& cameraImage, CameraInfo& cameraInfo
 
   if(cameraSensor)
   {
-    reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->renderCameraImages(activeCameras, activeCameraCount);
+    reinterpret_cast<SimRobotCore3::SensorPort*>(cameraSensor)->renderCameraImages(activeCameras, activeCameraCount);
 
     ASSERT(!cameraImage.isReference());
 
     cameraInfo = cameraInfos[cameraSensor == upperCameraSensor ? CameraInfo::upper : CameraInfo::lower];
     cameraImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
 
-    const unsigned char* const src = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->getValue().byteArray;
+    const unsigned char* const src = reinterpret_cast<SimRobotCore3::SensorPort*>(cameraSensor)->getValue().byteArray;
     if(simdAligned<_supportsAVX2>(src))
     {
       if(simdAligned<_supportsAVX2>(cameraImage[0]))
@@ -272,7 +272,7 @@ void SimulatedRobot3D::getCameraInfo(CameraInfo& cameraInfo)
 void SimulatedRobot3D::toggleCamera()
 {
   cameraSensor = cameraSensor == lowerCameraSensor || !lowerCameraSensor ? upperCameraSensor : lowerCameraSensor;
-  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor);
+  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore3::SensorPort*>(cameraSensor);
 }
 
 void SimulatedRobot3D::setJointCalibration(const JointCalibration& jointCalibration)
@@ -290,8 +290,8 @@ void SimulatedRobot3D::getAndSetJointData(const JointRequest& jointRequest, Join
     if(jointSensors[i])
     {
       jointSensorData.angles[i] = applyDiscretization(
-                                    static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue, jointDiscretizationStep);
-      jointSensorData.velocity[i] = static_cast<SimRobotCore2::SensorPort*>(jointVelocitySensors[i])->getValue().floatValue;
+                                    static_cast<SimRobotCore3::SensorPort*>(jointSensors[i])->getValue().floatValue, jointDiscretizationStep);
+      jointSensorData.velocity[i] = static_cast<SimRobotCore3::SensorPort*>(jointVelocitySensors[i])->getValue().floatValue;
     }
 
     // Set angles
@@ -299,8 +299,8 @@ void SimulatedRobot3D::getAndSetJointData(const JointRequest& jointRequest, Join
     {
       const float targetAngle = jointRequest.angles[i];
       if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore)    // if joint does exist
-        reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
-      dynamic_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setStiffness(jointRequest.stiffnessData.stiffnesses[i]);
+        reinterpret_cast<SimRobotCore3::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
+      dynamic_cast<SimRobotCore3::ActuatorPort*>(jointActuators[i])->setStiffness(jointRequest.stiffnessData.stiffnesses[i]);
     }
   }
   jointSensorData.currents.fill(static_cast<short>(SensorData::off));
@@ -320,9 +320,9 @@ void SimulatedRobot3D::setJointRequest(const JointRequest& jointRequest, const b
     {
       const float targetAngle = jointRequest.angles[i];
       if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore)   // if joint does exist
-        reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
-      dynamic_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setStiffness(isPuppet ? 100 : jointRequest.stiffnessData.stiffnesses[i]);
-      dynamic_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setPuppetState(isPuppet);
+        reinterpret_cast<SimRobotCore3::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
+      dynamic_cast<SimRobotCore3::ActuatorPort*>(jointActuators[i])->setStiffness(isPuppet ? 100 : jointRequest.stiffnessData.stiffnesses[i]);
+      dynamic_cast<SimRobotCore3::ActuatorPort*>(jointActuators[i])->setPuppetState(isPuppet);
     }
   }
 }
@@ -355,8 +355,8 @@ void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, RawInertialSe
 
   if(accSensor && gyroSensor)
   {
-    const float* accArray = reinterpret_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
-    const float* gyroArray = reinterpret_cast<SimRobotCore2::SensorPort*>(gyroSensor)->getValue().floatArray;
+    const float* accArray = reinterpret_cast<SimRobotCore3::SensorPort*>(accSensor)->getValue().floatArray;
+    const float* gyroArray = reinterpret_cast<SimRobotCore3::SensorPort*>(gyroSensor)->getValue().floatArray;
 
     if(!newGyroMeasurement || !useTimeDelay)
     {
@@ -391,7 +391,7 @@ void SimulatedRobot3D::getSensorData(FsrSensorData& fsrSensorData, RawInertialSe
     // angle
     float position[3];
     float world2robot[3][3];
-    reinterpret_cast<SimRobotCore2::Body*>(robot)->getPose(position, world2robot);
+    reinterpret_cast<SimRobotCore3::Body*>(robot)->getPose(position, world2robot);
 
     const float axis[2] = {world2robot[1][2], -world2robot[0][2]}; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
     const float axisLength = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
@@ -429,23 +429,23 @@ void SimulatedRobot3D::moveRobot(const Vector3f& pos, const Vector3f& rot, bool 
     for(int i = 0; i < 3; ++i)
       for(int j = 0; j < 3; ++j)
         rotation2[i][j] = rotation(j, i); // Rotation of 180deg per definition (team/opponent)
-    static_cast<SimRobotCore2::Body*>(robot)->move(&position.x(), rotation2);
+    static_cast<SimRobotCore3::Body*>(robot)->move(&position.x(), rotation2);
   }
   else
-    static_cast<SimRobotCore2::Body*>(robot)->move(&position.x());
+    static_cast<SimRobotCore3::Body*>(robot)->move(&position.x());
 
   if(resetDynamics)
-    static_cast<SimRobotCore2::Body*>(robot)->resetDynamics();
+    static_cast<SimRobotCore3::Body*>(robot)->resetDynamics();
 }
 
 void SimulatedRobot3D::enablePhysics(bool enable)
 {
-  static_cast<SimRobotCore2::Body*>(robot)->enablePhysics(enable);
+  static_cast<SimRobotCore3::Body*>(robot)->enablePhysics(enable);
 }
 
 void SimulatedRobot3D::enableGravity(bool enable)
 {
-  static_cast<SimRobotCore2::Body*>(robot)->enableGravity(enable);
+  static_cast<SimRobotCore3::Body*>(robot)->enableGravity(enable);
 }
 
 void SimulatedRobot3D::enableSensorWhiteNoise(const bool enable)
@@ -467,7 +467,7 @@ bool SimulatedRobot3D::getPose2f(const SimRobot::Object* obj, Pose2f& pose) cons
 {
   float position[3];
   float rot3d[3][3];
-  static_cast<const SimRobotCore2::Body*>(obj)->getPose(position, rot3d);
+  static_cast<const SimRobotCore3::Body*>(obj)->getPose(position, rot3d);
 
   pose.translation = Vector2f(position[0], position[1]) * 1000.f;
 
@@ -507,13 +507,13 @@ bool SimulatedRobot3D::getPose2f(const SimRobot::Object* obj, Pose2f& pose) cons
 void SimulatedRobot3D::getPose3f(const SimRobot::Object* obj, Pose3f& pose) const
 {
   float rotation[3][3];
-  static_cast<const SimRobotCore2::Body*>(obj)->getPose(pose.translation.data(), rotation);
+  static_cast<const SimRobotCore3::Body*>(obj)->getPose(pose.translation.data(), rotation);
 
   pose.translation *= 1000.f;
   Matrix3f rot;
   rot << rotation[0][0], rotation[1][0], rotation[2][0],
-         rotation[0][1], rotation[1][1], rotation[2][1],
-         rotation[0][2], rotation[1][2], rotation[2][2];
+      rotation[0][1], rotation[1][1], rotation[2][1],
+      rotation[0][2], rotation[1][2], rotation[2][2];
   pose.rotation = rot;
 }
 

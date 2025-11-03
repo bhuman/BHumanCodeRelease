@@ -12,7 +12,7 @@
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Math/Eigen.h"
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 #include <SimRobotCore2D.h>
 #include <QString>
 
@@ -27,7 +27,7 @@ SimulatedRobot::SimulatedRobot(SimRobot::Object* robot) :
   firstTeam = isFirstTeam(robot);
   robotNumber = getNumber(robot);
 
-  const int compoundType = RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore2::compound);
+  const int compoundType = RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::compound) : static_cast<int>(SimRobotCore3::compound);
 
   // fill arrays with pointers to other robots
   firstTeamRobots.clear();
@@ -90,7 +90,7 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
 
       if(!RoboCupCtrl::controller->is2D)
       {
-        const float* velP = static_cast<const SimRobotCore2::Body*>(ball)->getVelocity();
+        const float* velP = static_cast<const SimRobotCore3::Body*>(ball)->getVelocity();
         Vector3f velo(velP[0], velP[1], velP[2]);
         if(!hadVelocity && gtBall.velocity.head<2>() != Vector2f::Zero())
           curveVel = Random::normal(0.015f * static_cast<float>(currentTime - lastBallTime) / 1000.f);
@@ -100,7 +100,7 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
         direct.rotate(curveVel);
         velo.x() = direct.x();
         velo.y() = direct.y();
-        static_cast<SimRobotCore2::Body*>(ball)->setVelocity(velo.data());
+        static_cast<SimRobotCore3::Body*>(ball)->setVelocity(velo.data());
       }
     }
     else
@@ -164,24 +164,24 @@ void SimulatedRobot::moveBall(const Vector3f& pos, bool resetDynamics)
   if(!ball)
     return;
   Vector3f position = pos * 0.001f;
-  RoboCupCtrl::controller->is2D ? static_cast<SimRobotCore2D::Body*>(ball)->move(position.data()) : static_cast<SimRobotCore2::Body*>(ball)->move(position.data());
+  RoboCupCtrl::controller->is2D ? static_cast<SimRobotCore2D::Body*>(ball)->move(position.data()) : static_cast<SimRobotCore3::Body*>(ball)->move(position.data());
   if(resetDynamics)
-    RoboCupCtrl::controller->is2D ? static_cast<SimRobotCore2D::Body*>(ball)->resetDynamics() : static_cast<SimRobotCore2::Body*>(ball)->resetDynamics();
+    RoboCupCtrl::controller->is2D ? static_cast<SimRobotCore2D::Body*>(ball)->resetDynamics() : static_cast<SimRobotCore3::Body*>(ball)->resetDynamics();
 }
 
 Vector2f SimulatedRobot::getPosition(const SimRobot::Object* obj)
 {
   const float* position = RoboCupCtrl::controller->is2D ?
-                          static_cast<const SimRobotCore2D::Body*>(obj)->getPosition() :
-                          static_cast<const SimRobotCore2::Body*>(obj)->getPosition();
+                                          static_cast<const SimRobotCore2D::Body*>(obj)->getPosition() :
+                                          static_cast<const SimRobotCore3::Body*>(obj)->getPosition();
   return Vector2f(position[0], position[1]) * 1000.f;
 }
 
 Vector3f SimulatedRobot::getPosition3D(const SimRobot::Object* obj)
 {
   const float* position = RoboCupCtrl::controller->is2D ?
-                          static_cast<const SimRobotCore2D::Body*>(obj)->getPosition() :
-                          static_cast<const SimRobotCore2::Body*>(obj)->getPosition();
+                                          static_cast<const SimRobotCore2D::Body*>(obj)->getPosition() :
+                                          static_cast<const SimRobotCore3::Body*>(obj)->getPosition();
   return Vector3f(position[0], position[1], RoboCupCtrl::controller->is2D ? 0.f : position[2]) * 1000.f;
 }
 

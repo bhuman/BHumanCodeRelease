@@ -16,7 +16,7 @@
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Streaming/EnumIndexedArray.h"
 #include "RobotParts/Joints.h"
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 #include <random>
 
 class SimulatedRobot3D : public SimulatedRobot
@@ -49,7 +49,7 @@ protected:
   void getPose3f(const SimRobot::Object* obj, Pose3f& pose) const override;
 
 private:
-  static SimRobotCore2::SensorPort* activeCameras[robotsPerTeam * 2]; /**< An array of all activated cameras */
+  static SimRobotCore3::SensorPort* activeCameras[robotsPerTeam * 2]; /**< An array of all activated cameras */
   static unsigned activeCameraCount; /**< Total count of constructed cameras */
   unsigned activeCameraIndex; /**< Index of this robot in the \c activeCameras array */
 

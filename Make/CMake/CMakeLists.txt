@@ -554,7 +554,7 @@ if(BUILD_DESKTOP)
 
   include("${SIMROBOT_PREFIX}/Make/CMake/SimRobot.cmake")
   include("${SIMROBOT_PREFIX}/Make/CMake/SimRobotCommon.cmake")
-  include("${SIMROBOT_PREFIX}/Make/CMake/SimRobotCore2.cmake")
+  include("${SIMROBOT_PREFIX}/Make/CMake/SimRobotCore3.cmake")
   include("${SIMROBOT_PREFIX}/Make/CMake/SimRobotCore2D.cmake")
   include("${SIMROBOT_PREFIX}/Make/CMake/SimRobotEditor.cmake")
 
@@ -570,7 +570,7 @@ if(BUILD_DESKTOP)
 
   set_property(TARGET SimRobot PROPERTY FOLDER Apps)
   if(MACOS)
-    set_property(TARGET SimRobot SimRobotCore2 SimRobotCore2D SimRobotEditor ${SIMROBOT_CONTROLLERS} DeployDialogRunner PROPERTY XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "B-Human Code Release")
+    set_property(TARGET SimRobot SimRobotCore3 SimRobotCore2D SimRobotEditor ${SIMROBOT_CONTROLLERS} DeployDialogRunner PROPERTY XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "B-Human Code Release")
   endif()
 endif()
 

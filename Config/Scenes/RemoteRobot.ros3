@@ -1,0 +1,19 @@
+<Simulation>
+
+  <Include href="Includes/NaoV6H25.rsi3"/>
+  <Include href="Includes/Field2020SPL.rsi3"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(50%, 50%, 50%)">
+    <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="puppets">
+      <Body ref="Nao" name="Remote">
+        <Translation z="320mm"/>
+        <Set name="TeamColor" value="black"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+  </Scene>
+</Simulation>

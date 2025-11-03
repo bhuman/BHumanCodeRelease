@@ -343,7 +343,7 @@ bool TestController::checkPenalized(const QString& name)
 bool TestController::checkTeamPossession(const QString& name)
 {
   int i = 0;
-  bool firstTeam = SimulatedRobot::isFirstTeam(RoboCupCtrl::application->resolveObject(name, RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body)));
+  bool firstTeam = SimulatedRobot::isFirstTeam(RoboCupCtrl::application->resolveObject(name, RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body)));
 
   for(const TestTarget& target : testParams.targets)
   {

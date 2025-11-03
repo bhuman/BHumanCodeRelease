@@ -15,7 +15,7 @@ RemoteConsole::RemoteConsole(const std::string& robotName, const std::string& ip
 {
   if(!ctrl->is2D)
   {
-    SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body);
+    SimRobot::Object* puppet = RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore3::body);
     if(puppet)
     {
       simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);

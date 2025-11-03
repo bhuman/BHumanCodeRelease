@@ -9,8 +9,10 @@ file(GLOB_RECURSE CONFIG_FILES_DEFAULT
 file(GLOB_RECURSE CONFIG_FILES_ALL
     "${CONFIG_ROOT_DIR}/*.cfg"
     "${CONFIG_ROOT_DIR}/*.def"
-    "${CONFIG_ROOT_DIR}/*.ros2*"
-    "${CONFIG_ROOT_DIR}/*.rsi2*"
+    "${CONFIG_ROOT_DIR}/*.ros2d"
+    "${CONFIG_ROOT_DIR}/*.rsi2d"
+    "${CONFIG_ROOT_DIR}/*.ros3"
+    "${CONFIG_ROOT_DIR}/*.rsi3"
     "${CONFIG_ROOT_DIR}/*.con"
     "${CONFIG_ROOT_DIR}/*.kmc"
     "${CONFIG_ROOT_DIR}/Scenes/Textures/*.png"

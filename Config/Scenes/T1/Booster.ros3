@@ -1,0 +1,37 @@
+<Simulation>
+
+  <Include href="../Includes/1vsDummies.rsi3"/>
+  <Include href="../Includes/BallFifa5.rsi3"/>
+  <Include href="../Includes/Field2025TeenSize.rsi3"/>
+  <Include href="../Includes/T1/T1.rsi3"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.002" color="rgb(65%, 65%, 70%)">
+    <PointLight z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound ref="teams"/>
+
+    <Compound name="robots">
+      <Body ref="T1" name="robot5">
+        <Set name="TeamColor" value="skin"/>
+        <Translation x="3" z="0.67m"/>
+        <Rotation z="180degree"/>
+      </Body>
+    </Compound>
+
+    <Compound name="extras"/>
+
+    <Compound name="balls">
+      <Body ref="ball">
+        <Translation z="1m"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+    <Compound name="location">
+      <Compound name="TeenSizeField"/>
+    </Compound>
+
+    <Compound ref="robot type"/>
+  </Scene>
+</Simulation>

@@ -499,7 +499,7 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     std::string objectID;
     Vector3f robotTranslationCmd;
     stream >> objectID >> robotTranslationCmd.x() >> robotTranslationCmd.y() >> robotTranslationCmd.z();
-    SimRobot::Object* robot = application->resolveObject(QString::fromStdString(objectID), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+    SimRobot::Object* robot = application->resolveObject(QString::fromStdString(objectID), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
     if(robot)
     {
       if(is2D)
@@ -523,7 +523,7 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
           for(int j = 0; j < 3; ++j)
             robotRotationConverted[i][j] = robotRotation(i, j);
         const Vector3f translationInMeters = robotTranslationCmd * 0.001f;
-        static_cast<SimRobotCore2::Body*>(robot)->move(translationInMeters.data(), robotRotationConverted);
+        static_cast<SimRobotCore3::Body*>(robot)->move(translationInMeters.data(), robotRotationConverted);
       }
     }
     else
@@ -645,7 +645,7 @@ bool ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
 void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
 {
   File file("Scenes/" + fileName, "w", true);
-  SimRobot::Object* ball = application->resolveObject(QString::fromStdString("RoboCup.balls.ball"), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+  SimRobot::Object* ball = application->resolveObject(QString::fromStdString("RoboCup.balls.ball"), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
   const float positionFactor = 1000.f;
   std::string output = "";
   if(ball != nullptr)
@@ -657,13 +657,13 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
     }
     else
     {
-      const float* ballPosition = static_cast<SimRobotCore2::Body*>(ball)->getPosition();
+      const float* ballPosition = static_cast<SimRobotCore3::Body*>(ball)->getPosition();
       output += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0] * positionFactor) + " " + std::to_string(ballPosition[1] * positionFactor) + " " + std::to_string(ballPosition[2] * positionFactor) + "\n";
     }
   }
   for(const ControllerRobot* controllerRobot : robots)
   {
-    SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+    SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
     if(robot)
     {
       if(is2D)
@@ -678,7 +678,7 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
       {
         float position[3];
         float(rotation[3])[3];
-        static_cast<SimRobotCore2::Body*>(robot)->getPose(position, rotation);
+        static_cast<SimRobotCore3::Body*>(robot)->getPose(position, rotation);
         const double rotationFactor = 57.2958;
         double yaw = std::atan2(rotation[1][0], rotation[0][0]) * rotationFactor;
         double pitch = std::atan2(-rotation[2][0], sqrt(pow(rotation[2][1], 2) + pow(rotation[2][2], 2))) * rotationFactor;
@@ -697,7 +697,7 @@ void ConsoleRoboCupCtrl::writeFastConfiguration(std::string fileName)
 
 void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
 {
-  SimRobot::Object* ball = application->resolveObject(QString::fromStdString("RoboCup.balls.ball"), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+  SimRobot::Object* ball = application->resolveObject(QString::fromStdString("RoboCup.balls.ball"), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
   float positionFactor = 1000.f;
   std::string file = "Locations/Default/staticInitialPoseProvider.cfg";
   InMapFile stream(file);
@@ -721,7 +721,7 @@ void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
     if(controllerRobot)
     {
       Pose2f pose;
-      SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+      SimRobot::Object* robot = application->resolveObject(QString::fromStdString("RoboCup.robots." + controllerRobot->getName()), is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
       controllerRobot->getRobotConsole()->simulatedRobot->getRobotPose(pose);
       if(SimulatedRobot::isFirstTeam(robot))
       {
@@ -749,7 +749,7 @@ void ConsoleRoboCupCtrl::writePerceptOracleConfig(std::string fileName)
   std::string text = "";
   if(ball != nullptr)
   {
-    const float* ballPosition = static_cast<SimRobotCore2::Body*>(ball)->getPosition();
+    const float* ballPosition = static_cast<SimRobotCore3::Body*>(ball)->getPosition();
     text += "mvo RoboCup.balls.ball " + std::to_string(ballPosition[0] * positionFactor) + " " + std::to_string(ballPosition[1] * positionFactor) + " " + std::to_string(ballPosition[2] * positionFactor) + "\n";
   }
   std::string valuesTeamA = outStreamTeamA.data();

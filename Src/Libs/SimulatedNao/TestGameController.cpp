@@ -13,7 +13,7 @@
 #include "Platform/Time.h"
 #include <MainWindow.h>
 #include <QTimer>
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 #include <SimRobotCore2D.h>
 
 bool TestGameController::startTest(TestParameters testParams)
@@ -180,7 +180,7 @@ void TestGameController::update()
   {
     if(!name.isEmpty())
     {
-      SimRobot::Object* robot = RoboCupCtrl::application->resolveObject(name, RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
+      SimRobot::Object* robot = RoboCupCtrl::application->resolveObject(name, RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore3::body));
 
       // Save robot's position
       pos.push_back(robot != nullptr

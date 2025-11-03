@@ -11,7 +11,7 @@
 
 #include "Math/Eigen.h"
 #include <qopengl.h>
-#include <SimRobotCore2.h>
+#include <SimRobotCore3.h>
 #include <unordered_map>
 #include <vector>
 
@@ -20,7 +20,7 @@ class DebugDrawing3D;
 class QOpenGLContext;
 class QOpenGLFunctions_3_3_Core;
 
-class PaintMethods3DOpenGL : public SimRobotCore2::Controller3DDrawingManager
+class PaintMethods3DOpenGL : public SimRobotCore3::Controller3DDrawingManager
 {
 public:
   /** Constructor. */
