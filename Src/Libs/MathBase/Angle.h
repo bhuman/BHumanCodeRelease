@@ -50,22 +50,22 @@ private:
   float value = 0.f;
 };
 
-inline constexpr Angle operator "" _deg(unsigned long long int angle)
+inline constexpr Angle operator ""_deg(unsigned long long int angle)
 {
   return Angle::fromDegrees(static_cast<float>(angle));
 }
 
-inline constexpr Angle operator "" _deg(long double angle)
+inline constexpr Angle operator ""_deg(long double angle)
 {
   return Angle::fromDegrees(static_cast<float>(angle));
 }
 
-inline constexpr Angle operator "" _rad(unsigned long long int angle)
+inline constexpr Angle operator ""_rad(unsigned long long int angle)
 {
   return Angle(static_cast<float>(angle));
 }
 
-inline constexpr Angle operator "" _rad(long double angle)
+inline constexpr Angle operator ""_rad(long double angle)
 {
   return Angle(static_cast<float>(angle));
 }

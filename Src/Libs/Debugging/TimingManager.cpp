@@ -1,8 +1,7 @@
 /**
- * File:   TimingManager.cpp
- * Author: arne
+ * @file TimingManager.cpp
  *
- * Created on May 9, 2013, 1:37 PM
+ * @author Arne Böckmann
  */
 
 #include "TimingManager.h"

@@ -1,7 +1,7 @@
 /**
  * @file Tools/Communication/TeamMessageChannel.cpp
  *
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  *
  * based on TeamHandler.cpp authored by
  * @author Thomas Röfer

@@ -30,25 +30,27 @@ MODULE(PassEvaluationProvider,
   REQUIRES(GlobalOpponentsModel),
   REQUIRES(GameState),
   PROVIDES(PassEvaluation),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (float)(0.01f) minValue, /**< Minimum probability of a successful pass in the worst situation possible. */
-    (Rangef)({50.f, 1000.f}) opponentDistToTargetThreshold, /**< Distance to the closest opponent for the pass target to be considered free */
-    (Rangef)({200.f, 1000.f}) opponentDistToLineThreshold, /**< Distance to the closest opponent for the pass line to be considered free */
-    (Rangef)({750.f, 3000.f}) opponentDistToBaseThreshold, /**< Scaling range based on the distance from the base to the closest opponent. */
-    (float)(4000.f) distancePenaltyThresholdPlaying, /**< if the point is further away than this the distance rating is below 1 */
-    (float)(6000.f) distancePenaltyThresholdFreeKick, /**< if the point is further away than this the distance rating is below 1 */
-    (float)(1000.f) distancePenaltyDeviation, /**< standard deviation for the upper limit of the distance */
-    (float)(800.f) distToBoundaryThreshold, /**< Distance to the closest field boundary for the ball to stay within the field */
-    (float)(200.f) opponentShiftToBall, /**< Shift each opponent's position this far in the direction of the ball, assuming their orientation */
-    (float)(100.f) obstacleBlockingRadius, /**< Radius of opponents in which a pass would definitely fail */
-    (float)(100.f) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
-    (Vector2f)(0.f, 500.f) goalPostShift, /**< Shift the blocking area of a teammate's goal shot on the y axis away from the goal posts */
-    (unsigned char)(255) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
-    (ColorRGBA)(213, 17, 48) worstRatingColor, /**< Red color in RGB corresponding to a pass rating value of 0 in the heatmap */
-    (ColorRGBA)(0, 104, 180) bestRatingColor, /**< Blue color in RGB corresponding to a pass rating value of 1 in the heatmap */
-    (float)(500.f) crossPassWidth, /**< Absolute y-coordinate of Ball must be bigger than this value. Also interpolate cross pass value with this width range. */
-    (float)(1000.f) crossPassBlockMaxYBallPos, /**< Absolute y-coordinate of Ball must be above this value to result in worst possible cross pass value. */
+    (float) minValue, /**< Minimum probability of a successful pass in the worst situation possible. */
+    (Rangef) opponentDistToTargetThreshold, /**< Distance to the closest opponent for the pass target to be considered free */
+    (Rangef) opponentDistToLineThresholdNearOwnGoal, /**< Distance to the closest opponent for the pass line to be considered free, if ball is near own goal */
+    (Rangef) opponentDistToLineThresholdNormal, /**< Distance to the closest opponent for the pass line to be considered free, for all other ball positions */
+    (float) interpolateOpponentDistToLineThreshold, /**< Interpolate between both opponentDistToLineThreshold ranges based on distance to own goal area. */
+    (Rangef) opponentDistToBaseThreshold, /**< Scaling range based on the distance from the base to the closest opponent. */
+    (float) distancePenaltyThresholdPlaying, /**< if the point is further away than this the distance rating is below 1 */
+    (float) distancePenaltyThresholdFreeKick, /**< if the point is further away than this the distance rating is below 1 */
+    (float) distancePenaltyDeviation, /**< standard deviation for the upper limit of the distance */
+    (float) distToBoundaryThreshold, /**< Distance to the closest field boundary for the ball to stay within the field */
+    (float) opponentShiftToBall, /**< Shift each opponent's position this far in the direction of the ball, assuming their orientation */
+    (float) obstacleBlockingRadius, /**< Radius of opponents in which a pass would definitely fail */
+    (float) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
+    (Vector2f) goalPostShift, /**< Shift the blocking area of a teammate's goal shot on the y axis away from the goal posts */
+    (unsigned char) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
+    (ColorRGBA) worstRatingColor, /**< Red color in RGB corresponding to a pass rating value of 0 in the heatmap */
+    (ColorRGBA) bestRatingColor, /**< Blue color in RGB corresponding to a pass rating value of 1 in the heatmap */
+    (float) crossPassWidth, /**< Absolute y-coordinate of Ball must be bigger than this value. Also interpolate cross pass value with this width range. */
+    (float) crossPassBlockMaxYBallPos, /**< Absolute y-coordinate of Ball must be above this value to result in worst possible cross pass value. */
   }),
 });
 
@@ -66,11 +68,13 @@ private:
   bool calcPassTargetInField = true;
   bool calcShotLineFree = true;
   bool calcShotDistance = true;
+  bool calcClear = true;
   bool calcCrossPass = true;
   bool isPositioningDrawing = false;
   unsigned int lastUpdateParameters;
-  Vector2f leftGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal - theBallSpecification.radius * 2.f);
-  Vector2f rightGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal + theBallSpecification.radius * 2.f);
+  Rangef interpolatedOpponentDistToLineThreshold;
+  Vector2f leftGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal + theBallSpecification.radius * 2.f);
+  Vector2f rightGoalPost = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal - theBallSpecification.radius * 2.f);
   Vector2f opponentFieldCorner = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
   Vector2f ownFieldCorner = Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline);
   std::vector<Vector2f> opponentsOnField;
@@ -100,9 +104,8 @@ private:
    * @param obstacleOnField The obstacle to check the distance for.
    * @param minDistToTarget The distance of the closest obstacle to the target position (could be updated by reference).
    * @param minDistToLine The distance of the closest obstacle to the line from the ball to the target position (could be updated by reference).
-   * @param isPositioning Are we currently calculating for positioning on the field?
    */
-  void updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine, const bool isPositioning) const;
+  void updateMinDistances(const Vector2f& baseOnField, const Vector2f& targetOnField, const Vector2f& obstacleOnField, float& minDistToTarget, float& minDistToLine) const;
 
   /**
    * Estimates the probability that the position is not blocking a teammate's direct shot at the opponent's goal.
@@ -111,6 +114,14 @@ private:
    * @return Probability that the point is outside of the angular range of the ball to the goal posts.
    */
   float isShotLineFree(const Vector2f& baseOnField, const Vector2f& targetOnField) const;
+
+  /**
+   * Estimates the probability that the position is not blocking a teammate's direct shot at the opponent's goal.
+   * @param baseOnField The start position to pass from.
+   * @param targetOnField The target position to pass to.
+   * @return Probability that the point is within a sector useful for clearing the ball
+   */
+  float isClearLineFree(const Vector2f& baseOnField, const Vector2f& targetOnField) const;
 
   /**
    * Estimates the probability that the distance from the ball to the target is within the range of a kick.

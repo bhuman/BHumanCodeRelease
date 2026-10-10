@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2024 B-Human.  All rights reserved.
+Copyright (c) 2026 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup
@@ -45,8 +45,8 @@ are met:
     conditions (if applicable):
 
       - The usage of this version of the code release must be
-        announced on the SPL mailing list (currently
-        robocup-nao@lists.robocup.org) at least one month before
+        announced on the HSL mailing list (currently
+        robocup-humanoid@lists.robocup.org) at least one month before
         the first competition in which it is used. The announcement
         shall name which parts of this code are used.
 
@@ -56,11 +56,11 @@ are met:
     to use "derived software" and the following additional
     conditions apply:
 
-      - The announcement on the SPL mailing list shall also contain
+      - The announcement on the HSL mailing list shall also contain
         a description of the own contribution that addresses the
-        criteria set by the SPL rule book (in the 2024 SPL rules
+        criteria set by the SPL rule book (in the 2025 SPL rules
         described in section A.1 of
-        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2024.pdf).
+        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2025.pdf).
 
       - For each year, the derived software as used in the last
         RoboCup competition game in that year, including the
@@ -68,7 +68,7 @@ are met:
         released as source code. The release must be licensed such
         that other RoboCup teams can use it, although it may place
         conditions on the use (such as this license). The release
-        must be published and announced on the SPL mailing list by
+        must be published and announced on the HSL mailing list by
         the end of that year.
 
 

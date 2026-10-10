@@ -9,12 +9,12 @@
 #pragma once
 
 #include "Streaming/Function.h"
-#include "Tools/Motion/MotionPhase.h"
+#include "Tools/Motion/MotionGenerator.h"
 #include "Streaming/AutoStreamable.h"
 #include <memory>
 
-STREAMABLE(FallGenerator,
+STREAMABLE_WITH_BASE(FallGenerator, MotionGenerator,
 {
   FUNCTION(bool(const MotionRequest&)) shouldCatchFall; /**< Returns whether the fall engine should become active. */
-  FUNCTION(std::unique_ptr<MotionPhase>()) createPhase, /**< Creates a fall phase. */
+  BASE_HAS_FUNCTION,
 });

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Start a terminal to login on a NAO.
-# The ip address of the NAO has to be passed as argument.
+# Start a terminal to login on a Booster.
+# The ip address of the Booster has to be passed as argument.
 
 basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
 cd "$basePath"

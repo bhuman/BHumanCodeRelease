@@ -8,9 +8,8 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/FieldInterceptBall.h"
+#include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/FieldRating.h"
-#include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
@@ -23,19 +22,18 @@
 
 MODULE(FieldRatingProvider,
 {,
-  REQUIRES(FieldInterceptBall),
+  REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GlobalTeammatesModel),
-  REQUIRES(IndirectKick),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   PROVIDES(FieldRating),
   DEFINES_PARAMETERS(
   {,
     // field border
-    (float)(3.f) fieldBorderValue, // high value to make sure the ball is not kicked outside
-    (float)(50.f) fieldBorderRange, // if distance exceeds this range, the potentialfield has no influence
+    (float)(1.f) fieldBorderValue, // high value to make sure the ball is not kicked outside
+    (float)(3000.f) fieldBorderRange, // if distance exceeds this range, the potentialfield has no influence
 
     // opponent, ownGoal
     (float)(1.f) repelValue, // max possible repel value for the potentialfield
@@ -52,7 +50,6 @@ MODULE(FieldRatingProvider,
 
     // opponentGoal
     (float)(1.5f) attractValue, // max possible attract value for the potentialfield
-    (float)(-750) indirectGoalOffset, // If a goal shot is not allowed, shift the target position by this amount in the x-axis
     (float) attractRange, // if distance exceeds this range, the potentialfield has no influence
 
     // teammate
@@ -71,11 +68,11 @@ MODULE(FieldRatingProvider,
     (float)(1000.f) teammateAttractRangeMin, // Reduce the pass rating range this this minimum.
 
     // get better goal angle
-    (float)(0.5f) betterGoalAngleValue,
+    (float)(1.f) betterGoalAngleValue,
     (float) betterGoalAngleRange,
 
     // ball distance
-    (float)(1000.f) bestDistanceForBall,
+    (float)(3000.f) bestDistanceForBall,
     (float)(500.f) bestDistanceWidth, // bestDistanceForBall +- bestDistanceWidth shall produce the best rating
     (float)(500.f) ballRange,
     (float)(0.5f) ballRating,

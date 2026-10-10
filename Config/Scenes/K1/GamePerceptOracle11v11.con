@@ -1,0 +1,4 @@
+call ../Includes/PerceptOracle
+call ../Includes/11vs11
+
+dr representation:SetupPoses:place

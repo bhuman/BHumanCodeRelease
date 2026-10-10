@@ -17,6 +17,7 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <string>
 #include <cstring>
 
@@ -287,6 +288,8 @@ int SoundPlayer::enqueue(const SoundRequest& soundRequest)
 
   {
     SYNC_WITH(soundPlayer);
+    if(std::find(soundPlayer.queue.rbegin(), soundPlayer.queue.rend(), soundRequest) != soundPlayer.queue.rend())
+      return static_cast<int>(soundPlayer.queue.size());
     soundPlayer.queue.push_back(soundRequest);
     queueLength = static_cast<int>(soundPlayer.queue.size());
     if(!soundPlayer.started)

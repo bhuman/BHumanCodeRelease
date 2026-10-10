@@ -1,7 +1,7 @@
 /**
  * KeyStateEnhancer.cpp
  *
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "KeyStateEnhancer.h"
@@ -46,14 +46,15 @@ void KeyStateEnhancer::update(EnhancedKeyStates& enhancedKeyStates)
 unsigned KeyStateEnhancer::getHitStreakOf(KeyStates::Key key, bool keyState, unsigned timeOut, unsigned allowedTimeBetweenHitStreak)
 {
   if(keyState || rangeBuffer[key].empty() // if keyState (pressed) the streak is not finished
-    || theFrameInfo.getTimeSince(rangeBuffer[key].front().max) <= static_cast<int>(allowedTimeBetweenHitStreak) // the streak might not be finished so we do not announce
-    || (lastTimes.full() && (lastTimes.back().getTimeSince(rangeBuffer[key].front().max) > static_cast<int>(allowedTimeBetweenHitStreak)))) // there might have been one but we do not longer announce
+     || theFrameInfo.getTimeSince(rangeBuffer[key].front().max) <= static_cast<int>(allowedTimeBetweenHitStreak) // the streak might not be finished so we do not announce
+     || (lastTimes.full() && (lastTimes.back().getTimeSince(rangeBuffer[key].front().max) > static_cast<int>(allowedTimeBetweenHitStreak)))) // there might have been one but we do not longer announce
     return 0;
 
   unsigned hitStreak = 0;
-  for(auto iter = rangeBuffer[key].begin(); iter != rangeBuffer[key].end() && iter->getSize() < timeOut; ++iter, ++hitStreak) // break if we at the end || a button is pressed to long
-    if(*iter != rangeBuffer[key].front() && (iter - 1)->min - iter->max > allowedTimeBetweenHitStreak)
-        break;                                                                                                                // the time between two hits exceeds the allowed one
-
+  for(auto iter = rangeBuffer[key].begin(); iter != rangeBuffer[key].end() && iter->getSize() < timeOut; ++iter, ++hitStreak)  // break if we at the end || a button is pressed to long
+  {
+    if(iter != rangeBuffer[key].begin() && (iter - 1)->min - iter->max > allowedTimeBetweenHitStreak)
+      break;                                                                                                                // the time between two hits exceeds the allowed one
+  }
   return hitStreak;
 }

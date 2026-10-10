@@ -1,4 +1,0 @@
-# Configuration for normal simulation scenes
-
-call BoosterNormalWithJPEG
-mr JPEGImage off

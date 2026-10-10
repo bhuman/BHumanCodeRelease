@@ -81,3 +81,11 @@ SkillRequest SkillRequest::Builder::clear()
   request.skill = SkillRequest::clear;
   return request;
 }
+
+SkillRequest SkillRequest::Builder::waitShoot(int target)
+{
+  SkillRequest request;
+  request.skill = SkillRequest::waitShoot;
+  request.passTarget = target;
+  return request;
+}

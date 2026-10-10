@@ -2,7 +2,7 @@
 * @file SideInformationProvider.cpp
 *
 * Implementation of the module SideInformationProvider.
-* The SPL field is symmetric and perceiving the field elements alone does not
+* A football field is symmetric and perceiving the field elements alone does not
 * allow to infer the correct playing direction.
 * This module computes some information
 * that might help to solve this problem in some situations.
@@ -63,7 +63,7 @@ void SideInformationProvider::update(SideInformation& sideInformation)
   }
 
   if(theStaticInitialPose.isActive && !theGameState.isPenalized()
-     && (theExtendedGameState.playerStateLastFrame == GameState::penalizedPlayerPushing || theExtendedGameState.playerStateLastFrame == GameState::penalizedManual))
+     && (theExtendedGameState.playerStateLastFrame == GameState::penalizedPushing || theExtendedGameState.playerStateLastFrame == GameState::penalizedManual))
     largestXPossibleAtKnownPosition = theStaticInitialPose.staticPoseOnField.translation.x();
 
   sideInformation.largestXCoordinatePossible = largestXPossibleAtKnownPosition + distanceUncertaintyOffset +

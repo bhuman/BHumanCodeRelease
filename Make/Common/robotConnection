@@ -1,9 +1,10 @@
 #!/bin/bash
 # Start the version of SimRobot that was compiled most recently and
-# remotely connect to a NAO.
+# remotely connect to a Booster.
 # This script can either be launched without arguments, e.g. from
-# the Finder, or by passing the ip address of the NAO as its only
-# argument.
+# the Finder, or by passing the ip address of the Booster as its only
+# argument. If not ip address is passed, a connection to a K1 robot is
+# assumed.
 
 basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
 cd "$basePath"
@@ -16,15 +17,16 @@ else
   app=$(ls -1dt ../../Build/Linux/SimRobot/*/SimRobot | head -1)
 fi
 
-source "$basePath"/setupTarget "$1"
-
-scene=RemoteRobot
-if [ "$TARGET_NAME" == "Booster" ]; then
-  scene=$TARGET_MODEL/BoosterRemote
+if [ -n "$1" ]; then
+  source "$basePath"/setupTarget "$1"
+else
+  TARGET_MODEL=K1
 fi
 
+scene=$TARGET_MODEL/Remote
+
 if [ ! -z "$app" ]; then
-  if [ ! -z "$1" ]; then
+  if [ -n "$1" ]; then
     echo "sc Remote $1" >"../../Config/Scenes/Includes/connect.con"
   fi
   if [ "$(uname)" == "Darwin" ]; then

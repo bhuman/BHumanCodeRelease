@@ -22,8 +22,12 @@ Tactic::Position::Type Tactic::Position::mirror(Type type)
   {
     case defenderL:
       return defenderR;
+    case defenderCL:
+      return defenderCR;
     case defenderR:
       return defenderL;
+    case defenderCR:
+      return defenderCL;
     case midfielderL:
       return midfielderR;
     case midfielderR:
@@ -37,11 +41,11 @@ Tactic::Position::Type Tactic::Position::mirror(Type type)
   }
 }
 
-Tactic::Position::Position(Type type, Pose2f pose): type(type), pose(pose) {}
+Tactic::Position::Position(Type type, Vector2f translation): type(type), translation(translation) {}
 
 bool Tactic::Position::isGoalkeeper(Tactic::Position::Type type)
 {
-  return type == Tactic::Position::attackingGoalkeeper || type == Tactic::Position::goalkeeper;
+  return type == Tactic::Position::goalkeeper;
 }
 
 Tactic::Position::Type Tactic::Position::mirrorIf(Type type, bool doIt)
@@ -114,7 +118,7 @@ std::vector<std::vector<std::vector<Tactic::Position::Type>>> Tactic::compilePri
     priorityGroupHandles.emplace_back(&priorityGroup);
   }
 
-  std::stable_sort(priorityLevels.begin(), priorityLevels.end(), [](const auto& a, const auto& b){return a.priority < b.priority;});
+  std::stable_sort(priorityLevels.begin(), priorityLevels.end(), [](const auto& a, const auto& b) {return a.priority < b.priority;});
 
   std::vector<std::size_t> multisetOfGroupsAtMarginalPriority;
   std::size_t elementsOfSubsetOfMarginalPriority = 0;
@@ -229,8 +233,8 @@ std::vector<std::vector<Vector2f>> Tactic::generateVoronoiDiagram(const std::vec
   // Get base pose from each position in the tactic
   for(int i = 0; i < numOfPositions; i++)
   {
-    points[i].x = positions[i].pose.translation.x();
-    points[i].y = positions[i].pose.translation.y();
+    points[i].x = positions[i].translation.x();
+    points[i].y = positions[i].translation.y();
   }
 
   jcv_diagram_generate(numOfPositions, points.data(), &boundingBox, nullptr, &diagram);

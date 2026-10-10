@@ -3,6 +3,8 @@
  *
  * Declaration of a representation that stores the estimated states
  * of the opponent robots.
+ * For each robot, only the position (and not the size/width) is considered. Thus, this model should
+ * only be used for tactical purposes but not for stuff like obstacle avoidance.
  *
  * @author Tim Laue
  */
@@ -28,8 +30,6 @@ STREAMABLE(GlobalOpponentsModel,
    STREAMABLE(OpponentEstimate,
    {,
      (Vector2f) position,        /**< The estimated position of an opponent robot in absolute field coordinates  */
-     (Vector2f) left,            /**< Left point of an opponent (in absolute field coordinates) */
-     (Vector2f) right,           /**< Right point of an opponent (in absolute field coordinates) */
      (bool)     unidentified,    /**< Indicates that the jersey has not been seen yet -> UFO (Unidentified Football-playing Object) */
    });
 

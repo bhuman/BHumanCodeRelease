@@ -3,7 +3,7 @@
  *
  * Some tools for covariance matrices.
  *
- * @author <a href="mailto:afabisch@tzi.de>Alexander Fabisch</a>
+ * @author Alexander Fabisch
  * @author Tim Laue
  */
 #pragma once

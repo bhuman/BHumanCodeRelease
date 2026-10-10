@@ -9,8 +9,12 @@
 
 #include "Debug.h"
 #include "Debugging/Debugging.h"
+#include "Framework/Settings.h"
 #include "Platform/Time.h"
+#include "Streaming/Global.h"
 #include "Streaming/TypeInfo.h"
+#include "../../Representations/Infrastructure/CameraInfo.h"
+#include "../../Representations/MotionControl/HeadMotionRequest.h"
 
 #ifndef TARGET_ROBOT
 static DebugReceiver<MessageQueue>* dummy = nullptr;
@@ -72,6 +76,12 @@ bool Debug::main()
 {
   for(Receiver<MessageQueue>& receiver : receivers)
     receiver.receivePacket();
+
+  DEBUG_RESPONSE_ONCE("automated requests:RobotName")
+  {
+    OUTPUT_TEXT("Hi, I am " << Global::getSettings().robotName << ".");
+    OUTPUT(idRobotName, bin, Global::getSettings().robotName << Global::getSettings().location << Global::getSettings().scenario << Global::getSettings().playerNumber);
+  }
 
   DEBUG_RESPONSE_ONCE("automated requests:TypeInfo") OUTPUT(idTypeInfo, bin, *TypeInfo::current);
 

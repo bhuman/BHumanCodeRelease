@@ -40,7 +40,7 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
   Vector2f propagatedBallPosition(lastUsedBallModel.estimate.position);
   Vector2f propagatedBallVelocity(lastUsedBallModel.estimate.velocity);
   BallPhysics::propagateBallPositionAndVelocity(propagatedBallPosition, propagatedBallVelocity,
-                                                deltaTime, theBallSpecification.friction);
+                                                deltaTime, theBallSpecification);
 
   // Incorporate robot motion
   Pose2f odometryOffset = lastUsedBallModelOdometry - theOdometryData;

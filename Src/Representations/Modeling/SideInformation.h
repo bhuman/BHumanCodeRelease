@@ -2,7 +2,7 @@
  * @file SideInformation.h
  *
  * Declaration of struct SideInformation.
- * The SPL field is symmetric and perceiving the field elements alone does not
+ * A football field is symmetric and perceiving the field elements alone does not
  * allow to infer the correct playing direction. This struct contains some information
  * that might help to solve this problem in some situations.
  *

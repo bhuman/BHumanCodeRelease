@@ -17,58 +17,53 @@ for Cognition mr GroundTruthWorldState LogDataProvider
 for Cognition mr GroundTruthRobotPose SimulatedWorldModelProvider
 for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
 
+# Activate, so they can provide drawings
+for Color mr RobotPercept OracledPerceptsProvider
+
 # Field views need ground truth and some later deactivated modules
 call FieldViews
 
 # Select modules for simulator
-for Lower Upper mr CameraInfo LogDataProvider
-for Lower Upper mr FrameInfo LogDataProvider
+for Color mr CameraInfo LogDataProvider
+for Color mr FrameInfo LogDataProvider
 for Motion mr FrameInfo LogDataProvider
-for Motion mr FsrSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
+for Motion mr JoystickState LogDataProvider
 for Motion mr KeyStates LogDataProvider
-for Motion mr RawInertialSensorData LogDataProvider
+for Motion mr InertialSensorData LogDataProvider
 
 # Switch to percept oracle
-for Lower Upper mr BallPercept OracledPerceptsProvider
-for Lower Upper mr CirclePercept OracledPerceptsProvider
-for Lower Upper mr FieldBoundary OracledPerceptsProvider
-for Lower Upper mr LinesPercept OracledPerceptsProvider
-for Lower Upper mr ObstaclesFieldPercept OracledPerceptsProvider
-for Lower Upper mr ObstaclesImagePercept OracledPerceptsProvider
-for Lower Upper mr PenaltyMarkPercept OracledPerceptsProvider
+for Color mr BallPercept OracledPerceptsProvider
+for Color mr CirclePercept OracledPerceptsProvider
+for Color mr FieldBoundary OracledPerceptsProvider
+for Color mr FieldLineIntersections OracledPerceptsProvider
+for Color mr LinesPercept OracledPerceptsProvider
+for Color mr PenaltyMarkPercept OracledPerceptsProvider
 
 # Representations not required anymore
-mr AutoExposureWeightTable off
 mr BallSpots off
 mr CameraImage off
 mr CameraIntrinsics off
 mr ColorScanLineRegionsHorizontal off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage default
+mr IntersectionCandidates off
+mr IntersectionsPercept default
 mr JerseyClassifier off
 mr JPEGImage off
-mr ObstacleScan off
-mr ObstaclesPerceptorData off
-mr OtherFieldBoundary off
-mr OtherObstaclesPerceptorData off
-mr OtherOdometryData off
+mr JPEGImageRequest off
 mr PenaltyMarkRegions off
 mr RelativeFieldColors off
 mr ScanGrid off
-mr SegmentedObstacleImage off
 
 # Representations that are still required
-mr CameraStatus default
-mr RobotHealth default
-mr RefereeGesture default
-mr RefereeSignal default
-mr OptionalCameraImage default
-mr OptionalECImage default
 for Motion mr CameraIntrinsics ConfigurationDataProvider
 
 call GameStates
 call DebugResponses
 
 dr debugDrawing3d:representation:RobotPose
-dr debugDrawing3d:representation:GameState:playerNumber
+# dr debugDrawing3d:representation:GameState:playerNumber
+
+# clear ball is not working correctly
+ar clearBall off

@@ -1,16 +1,16 @@
 /**
  * @file ECImageProvider.cpp
  * @author Felix Thielke
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "ECImageProvider.h"
-#include "Streaming/Global.h"
-#include <asmjit/asmjit.h>
 
 MAKE_MODULE(ECImageProvider);
 
 #if !defined __arm64__ && !defined __aarch64__
+#include "Streaming/Global.h"
+#include <asmjit/asmjit.h>
 
 void ECImageProvider::update(ECImage& ecImage)
 {
@@ -332,8 +332,6 @@ void updateSSE(const PixelTypes::YUYVPixel* const srcImage, const int srcWidth, 
                Image<PixelTypes::GrayscaledPixel>& grayscaled,
                Image<PixelTypes::HuePixel>& hued, Image<PixelTypes::GrayscaledPixel>& saturated)
 {
-  ASSERT(srcWidth % 32 == 0);
-
   __m_auto_i* grayscaledDest = reinterpret_cast<__m_auto_i*>(grayscaled[0]) - 1;
   __m_auto_i* saturatedDest = reinterpret_cast<__m_auto_i*>(saturated[0]) - 1;
   __m_auto_i* huedDest = reinterpret_cast<__m_auto_i*>(hued[0]) - 1;
@@ -430,12 +428,4 @@ void ECImageProvider::extractChromaticity(ECImage& eCImage)
       }
     }
   }
-}
-
-void ECImageProvider::update(OptionalECImage& theOptionalECImage)
-{
-  if(theCalibrationRequest.targetState == CameraCalibrationStatus::State::recordSamples)
-    theOptionalECImage.image = theECImage;
-  else
-    theOptionalECImage.image.reset();
 }

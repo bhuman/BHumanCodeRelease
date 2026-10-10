@@ -4,7 +4,7 @@
  * A new robot pose, based on recently observed field features.
  * This pose is meant to be used for sensor resetting inside the SelfLocalization
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  */
 
 #include "AlternativeRobotPoseHypothesis.h"

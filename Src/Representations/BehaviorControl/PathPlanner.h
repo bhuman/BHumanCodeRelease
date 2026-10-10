@@ -17,9 +17,10 @@ STREAMABLE(PathPlanner,
   /**
    * The function plans a path to a target and returns the resulting obstacle avoidance information.
    * The parameters of the function are:
-   * target The target to reach in field coordinates.
-   * speed The speed to walk with in ratios of the maximum speeds.
-   * The function returns the obstacle avoidance information.
+   * @param target The target to reach in field coordinates.
+   * @param speed The speed to walk with in ratios of the maximum speeds.
+   * @param ignoreBall Ignore the ball.
+   * @return The function returns the obstacle avoidance information.
    */
-  FUNCTION(MotionRequest::ObstacleAvoidance(const Pose2f& target, const Pose2f& speed)) plan,
+  FUNCTION(MotionRequest::ObstacleAvoidance(const Pose2f& target, const Pose2f& speed, const bool ignoreBall)) plan,
 });

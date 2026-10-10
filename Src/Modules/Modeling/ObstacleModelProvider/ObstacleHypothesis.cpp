@@ -4,13 +4,14 @@
  * Implementation of a class that represents a possible obstacle.
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  */
 
 #include "ObstacleHypothesis.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Math/BHMath.h"
 #include "Math/Covariance.h"
 #include "Tools/Math/Transformation.h"
@@ -26,7 +27,6 @@ ObstacleHypothesis::ObstacleHypothesis(const Matrix2f& covariance, const Vector2
   this->center = center;
   this->left = left;
   this->right = right;
-  this->velocity.setZero();
   this->lastSeen = lastSeen;
   this->type = type;
 
@@ -64,17 +64,10 @@ void ObstacleHypothesis::dynamic(const float odometryRotation, const Vector2f& o
   center.rotate(odometryRotation);
   left.rotate(odometryRotation);
   right.rotate(odometryRotation);
-  velocity.rotate(odometryRotation);
 
   center += odometryTranslation;
   left += odometryTranslation;
   right += odometryTranslation;
-
-  for(auto& observation : lastObservations)
-  {
-    observation.position.rotate(odometryRotation);
-    observation.position += odometryTranslation;
-  }
 
   // Process new covariance matrix.
   ASSERT(covariance(0, 1) == covariance(1, 0));
@@ -124,14 +117,11 @@ void ObstacleHypothesis::determineAndSetType(const ObstacleHypothesis& measureme
 
 bool ObstacleHypothesis::isFieldBoundaryFurtherAsObstacle(const CameraInfo& theCameraInfo,
                                                           const CameraMatrix& theCameraMatrix,
-                                                          const ImageCoordinateSystem& theImageCoordinateSystem,
                                                           const FieldBoundary& theFieldBoundary)
 {
   Vector2f obstacleLeftInImage, obstacleRightInImage;
   const bool hasLeft = Transformation::robotToImage(this->left, theCameraMatrix, theCameraInfo, obstacleLeftInImage);
   const bool hasRight = Transformation::robotToImage(this->right, theCameraMatrix, theCameraInfo, obstacleRightInImage);
-  obstacleLeftInImage = theImageCoordinateSystem.fromCorrected(obstacleLeftInImage);
-  obstacleRightInImage = theImageCoordinateSystem.fromCorrected(obstacleRightInImage);
   const int boundaryYLeft = theFieldBoundary.getBoundaryY(static_cast<int>(obstacleLeftInImage.x()));
   const int boundaryYRight = theFieldBoundary.getBoundaryY(static_cast<int>(obstacleRightInImage.x()));
 
@@ -145,63 +135,4 @@ float ObstacleHypothesis::squaredMahalanobis(const ObstacleHypothesis& other) co
   const Eigen::Matrix<float, 2, 1> meanDiff = center - other.center;
   const Eigen::Matrix<float, 2, 2> combinedCovs = (covariance + other.covariance) * .5f;
   return meanDiff.transpose() * combinedCovs.inverse() * meanDiff;
-}
-
-float ObstacleHypothesis::calculateStdDevOfStaticObstacleHypothesis() const
-{
-  Vector2f mean = Vector2f::Zero();
-  for(const auto& observation : lastObservations)
-    mean += observation.position;
-  mean /= static_cast<float>(lastObservations.size());
-
-  float variance = 0.f;
-  for(const auto& observation : lastObservations)
-    variance += (observation.position - mean).squaredNorm();
-  variance /= lastObservations.size();
-
-  return std::sqrt(variance);
-}
-
-float ObstacleHypothesis::calculateStdDevOfMovingObstacleHypothesis(Vector2f& velocity, Matrix2f& velocityCovariance) const
-{
-  const std::size_t size = lastObservations.size();
-  // The time difference of two consecutive lastObservations.
-  Eigen::MatrixXf A((size - 1) * 2, 2);
-  // Position differences between two consecutive lastObservations.
-  Eigen::VectorXf z((size - 1) * 2);
-  // Each of the diagonal 2x2 matrices contains the mean value of the covariances of two consecutive lastObservations.
-  Eigen::MatrixXf Sigma = MatrixXf::Zero((size - 1) * 2, (size - 1) * 2);
-
-  for(unsigned i = 0; i < static_cast<unsigned>(size - 1); i++)
-  {
-    const Vector2f dPos = lastObservations[i].position - lastObservations[i + 1].position;  // In mm
-    const float dt = static_cast<float>(lastObservations[i].timestamp - lastObservations[i + 1].timestamp) / 1000.f; // In s
-    const Matrix2f dCov = (lastObservations[i].covariance + lastObservations[i + 1].covariance) / 2;
-    z(i * 2) = dPos.x();
-    z(i * 2 + 1) = dPos.y();
-    A(i * 2, 0) = dt;
-    A(i * 2, 1) = 0.f;
-    A(i * 2 + 1, 0) = 0.f;
-    A(i * 2 + 1, 1) = dt;
-    Sigma(2 * i, 2 * i) = dCov(0, 0);
-    Sigma(2 * i, 2 * i + 1) = dCov(0, 1);
-    Sigma(2 * i + 1, 2 * i) = dCov(1, 0);
-    Sigma(2 * i + 1, 2 * i + 1) = dCov(1, 1);
-  }
-
-  if(Sigma.determinant() == 0)
-    return std::numeric_limits<float>::max();
-
-  velocityCovariance = ((A.transpose() * Sigma.inverse()) * A).inverse();
-  Covariance::fixCovariance<2>(velocityCovariance);
-  velocity = velocityCovariance * A.transpose() * Sigma.inverse() * z; // mm/s
-
-  ASSERT(velocity.allFinite());
-  ASSERT(velocityCovariance.allFinite());
-
-  // Compute residuals
-  const Eigen::VectorXf residuals = A * velocity - z;
-  const float meanError = residuals.norm() / std::sqrt(static_cast<float>(size));
-
-  return meanError; // In mm
 }

@@ -1,24 +1,23 @@
 /**
  * @file Modules/Infrastructure/RobotHealthProvider.h
  * This file declares a module that provides information about the robot's health.
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once
 
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
-#include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
+#include "Streaming/EnumIndexedArray.h"
 
 MODULE(RobotHealthProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(JointSensorData),
-  REQUIRES(LibDemo),
   REQUIRES(MotionRobotHealth),
   REQUIRES(SystemSensorData),
   PROVIDES(RobotHealth),

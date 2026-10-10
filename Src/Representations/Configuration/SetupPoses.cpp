@@ -13,7 +13,6 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Debugging/Debugging.h"
-#include "Debugging/Debugging.h"
 #include "Framework/Blackboard.h"
 #include "Framework/Settings.h"
 #include "Math/Angle.h"

@@ -13,32 +13,24 @@ source "${includeDir}/bhumanBase"
 robotName=""
 teamID=$(grep <"${settingsFile}" "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%")
 robotPart=""
-model=nao
+model=k1
 deleteBeforeWrite=""
 deleteOnly=""
 profilesOnly=""
-ip=""
-head=""
-body=""
 lansubnet="192.168"
 wlansubnet="10.0"
 
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} [-d] [-t <team>] -r <robot> [-m nao] -i <ip> [-l <subnet>] [-w <subnet>] <name>"
-  echo "${0} [-d] [-t <team>] -r <robot> [-m nao] -s <head> -b <body> [-l <subnet>] [-w <subnet>] <name>"
-  echo "${0} [-d] [-t <team>] -r <robot> -m <model> [-l <subnet>] [-w <subnet>] <name>"
+  echo "${0} [-d] [-t <team>] -r <robot> [-m <model>] [-l <subnet>] [-w <subnet>] <name>"
   echo "${0} -p [-t <team>] -r <robot> [-l <subnet>] [-w <subnet>] <name>"
   echo "${0} -D <name>"
   echo ""
   echo " <name>     : Name of the robot"
   echo " <team>     : The third number of the IPv4 address of the robot (same for all robots)"
   echo " <robot>    : The last number of the IPv4 address of the robot (different for all robots)"
-  echo " <model>    : The robot model (k1 or t1)"
-  echo " <ip>       : Retrieve serial numbers from the robot with the given ip address"
-  echo " <head>     : Specify serial numbers of the robot's head"
-  echo " <body>     : Specify serial numbers of the robot's body"
+  echo " <model>    : The robot model (k1 or t1), default is k1"
   echo ""
   echo " -d         : Delete existing files for the given robot before creating new files"
   echo " -D         : Only delete all files for the given robot"
@@ -69,24 +61,6 @@ parseOptions() {
         ;;
       D)
         deleteOnly="true"
-        ;;
-      i)
-        if [ ${model} != nao ]; then
-          usage
-        fi
-        ip="$OPTARG"
-        ;;
-      s)
-        if [ ${model} != nao ]; then
-          usage
-        fi
-        head="$OPTARG"
-        ;;
-      b)
-        if [ ${model} != nao ]; then
-          usage
-        fi
-        body="$OPTARG"
         ;;
       l)
         lansubnet="$OPTARG"
@@ -126,9 +100,6 @@ parseOptions() {
   debug "teamID: " "${teamID}"
   debug "robotPart: " "${robotPart}"
   debug "model: " "${model}"
-  debug "ip: " "${ip}"
-  debug "head: " "${head}"
-  debug "body: " "${body}"
   debug "deleteOnly: " "${deleteOnly}"
   debug "deleteBeforeWrite: " "${deleteBeforeWrite}"
 }
@@ -244,17 +215,6 @@ else
     message "Successfully deleted all files for ${robotName}"
     createConnectDialog
   else
-    if [ "$model" == nao ]; then
-      if [ -z "$ip$head$body" ]; then
-        fatal "Neither ip nor serial numbers were specified"
-      elif [ ! -z "$ip" ]; then
-        if [ ! -z "$head$body" ]; then
-          fatal "Only either ip or serial numbers can be specified"
-        fi
-      elif [ -z "$head" -o -z "$body" ]; then
-        fatal "Both serial numbers must be specified"
-      fi
-    fi
     if ! createCalibrationDirectory; then
       error "Failed to create calibration directory"
       fatal "Rerun ${0} with -d"
@@ -266,12 +226,6 @@ else
     createRobotsFile
     createConnectDialog
     message "Created needed files for robot ${robotName}"
-    if [ "$model" != nao ]; then
-      source "${includeDir}/addRobotIds" -m "$model" "$robotName"
-    elif [ ! -z "$ip" ]; then
-      source "${includeDir}/addRobotIds" -ip "$ip" "$robotName"
-    else
-      source "${includeDir}/addRobotIds" -ids "$head" "$body" "$robotName"
-    fi
+    source "${includeDir}/addRobotIds" -m "$model" "$robotName"
   fi
 fi

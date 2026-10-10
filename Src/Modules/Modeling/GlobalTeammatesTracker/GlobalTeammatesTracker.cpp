@@ -9,12 +9,14 @@
 
 #include "GlobalTeammatesTracker.h"
 #include "Debugging/DebugDrawings.h"
+#include "Platform/SystemCall.h"
 
 MAKE_MODULE(GlobalTeammatesTracker);
 
 
 GlobalTeammatesTracker::GlobalTeammatesTracker()
 {
+  lastFrameTime = theFrameInfo.time;
   // Set the zones in which robots are situated during a penalty
   // and when returning from a penalty.
   // The exact positions depend on the referees, thus the hardcoded values
@@ -43,10 +45,26 @@ GlobalTeammatesTracker::GlobalTeammatesTracker()
 
 void GlobalTeammatesTracker::update(GlobalTeammatesModel& globalTeammatesModel)
 {
+  // Initial check: if a log file is played and the user steps back: reset the state estimation process
+  // If time stands still: do nothing.
+  if(SystemCall::getMode() == SystemCall::logFileReplay &&
+     theFrameInfo.time <= lastFrameTime)
+  {
+    if(theFrameInfo.time < lastFrameTime)
+    {
+      ownTeam.clear();
+      ownTeam.resize(MAX_NUM_PLAYERS+1);
+    }
+    else
+      return;
+  }
+
   updateGameAndTeammateInfo();
-  integratePerceivedTeammates();
+  if(integratePercepts)
+    integratePerceivedTeammates();
   fillModel(globalTeammatesModel);
   draw();
+  lastFrameTime = theFrameInfo.time;
 }
 
 void GlobalTeammatesTracker::fillModel(GlobalTeammatesModel& globalTeammatesModel)
@@ -181,7 +199,7 @@ void GlobalTeammatesTracker::updateTeammateInformation(TeammateInformation& tmi,
     float yFactor = 1.f;
     Vector2f dVec(sqr(xFactor * dist), sqr(yFactor * dist));
     Matrix2f c2;
-    c2(0,0) = dVec.x();;
+    c2(0,0) = dVec.x();
     c2(0,1) = c2(1,0) = 0.f;
     c2(1,1) = dVec.y();
     c2 = Covariance::rotateCovarianceMatrix(c2,angle);
@@ -200,10 +218,10 @@ const Teammate* GlobalTeammatesTracker::findTeammateByNumber(int playerNumber) c
 void GlobalTeammatesTracker::integratePerceivedTeammates()
 {
   teammatePercepts.clear();
-  for(const auto& teammateObservation : theObstaclesFieldPercept.obstacles)
+  for(const auto& teammateObservation : theRobotPercept.robots)
   {
     // Only consider teammates, ignore opponents and unknown objects:
-    if(teammateObservation.type == ObstaclesFieldPercept::ownPlayer || teammateObservation.type == ObstaclesFieldPercept::ownGoalkeeper)
+    if(teammateObservation.type == RobotPercept::ownPlayer || teammateObservation.type == RobotPercept::ownGoalkeeper)
     {
       const Vector2f poseOnField = theRobotPose * teammateObservation.center;
       if(teammatePerceptCanBeUsed(poseOnField))
@@ -211,7 +229,7 @@ void GlobalTeammatesTracker::integratePerceivedTeammates()
         TeammatePercept tp;
         tp.pos = poseOnField;
         tp.cov = Covariance::rotateCovarianceMatrix(teammateObservation.covariance, theRobotPose.rotation);
-        tp.isGoalkeeper = teammateObservation.type == ObstaclesFieldPercept::ownGoalkeeper;
+        tp.isGoalkeeper = teammateObservation.type == RobotPercept::ownGoalkeeper;
         teammatePercepts.push_back(tp);
       }
     }
@@ -274,14 +292,13 @@ float GlobalTeammatesTracker::distanceTeammateAndPerception(const TeammateInform
     return squaredDistanceThreshold;
   // If both robots are not too far away from each other, return squared Mahalanobis distance:
   const Eigen::Matrix<float, 2, 2> combinedCovs = (tmi.covariance + tp.cov) * .5f;
-  return meanDiff.transpose() * combinedCovs.inverse() * meanDiff;;
+  return meanDiff.transpose() * combinedCovs.inverse() * meanDiff;
 }
 
 void GlobalTeammatesTracker::draw()
 {
   // The zones that will get a special handling:
-  DECLARE_DEBUG_DRAWING("module:GlobalTeammatesTracker:penaltyZones", "drawingOnField");
-  COMPLEX_DRAWING("module:GlobalTeammatesTracker:penaltyZones")
+  DEBUG_DRAWING("module:GlobalTeammatesTracker:penaltyZones", "drawingOnField")
   {
     for(const auto& rect : returnFromPenaltyZonesOwnTeam)
     {
@@ -293,8 +310,7 @@ void GlobalTeammatesTracker::draw()
     }
   }
   // The filtered list of observations that will be used for the clustering:
-  DECLARE_DEBUG_DRAWING("module:GlobalTeammatesTracker:teammatesDetails", "drawingOnField");
-  COMPLEX_DRAWING("module:GlobalTeammatesTracker:teammatesDetails")
+  DEBUG_DRAWING("module:GlobalTeammatesTracker:teammatesDetails", "drawingOnField")
   {
     for(std::size_t i=1; i < ownTeam.size(); i++)
     {
@@ -306,8 +322,7 @@ void GlobalTeammatesTracker::draw()
     }
   }
   // The perceived teammates:
-  DECLARE_DEBUG_DRAWING("module:GlobalTeammatesTracker:perceptions", "drawingOnField");
-  COMPLEX_DRAWING("module:GlobalTeammatesTracker:perceptions")
+  DEBUG_DRAWING("module:GlobalTeammatesTracker:perceptions", "drawingOnField")
   {
     for(const auto& tp : teammatePercepts)
     {

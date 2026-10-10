@@ -57,23 +57,20 @@ using namespace HandleBallAtOwnGoalPost;
 using enum KickInfo::KickType;
 
 option((SkillBehaviorControl) HandleBallAtOwnGoalPost,
-       defs((float)(500.f) radiusHandlingArea, /**< The radius of the area around the goal posts which shall receive special handling. */
-            (float)(1.2f) hysteresisMultiplierHandlingArea, /**< If this card was previously active, the radius is multiplied by this factor. */
-            (float)(100.f) ballGoalPostTangentOffset, /**< This amount of space should fit between the goal post and the ball. */
-            (float)(50.f) robotGoalPostTangentOffset, /**< This amount of space should fit between the goal post and the robot. */
-            (float)(500.f) hysteresisDecisionPenalty, /**< Changing the decision of the previous frame results in this penalty to the time. */
-            (std::vector<KickInfo::KickType>)({walkForwardsLeft, walkForwardsRight,
-                                               walkForwardsLeftLong, walkForwardsRightLong,
-                                               walkTurnLeftFootToRight, walkTurnRightFootToLeft}) availableKicks, /**< The kicks that may be selected. */
-            (float)(600.f) maxObstacleDistanceToBallForRiskyKicks, /**< If an obstacle is at least this close to the ball, allow for risky kicks. * */
-            (Angle)(5_deg) distanceToSectorBorder), /**< Buffer size for sector used for the kick direction, to determine the precision range. */
+       load((float) radiusHandlingArea, /**< The radius of the area around the goal posts which shall receive special handling. */
+            (float) hysteresisMultiplierHandlingArea, /**< If this card was previously active, the radius is multiplied by this factor. */
+            (float) ballGoalPostTangentOffset, /**< This amount of space should fit between the goal post and the ball. */
+            (float) robotGoalPostTangentOffset, /**< This amount of space should fit between the goal post and the robot. */
+            (float) hysteresisDecisionPenalty, /**< Changing the decision of the previous frame results in this penalty to the time. */
+            (std::vector<KickInfo::KickType>) availableKicks, /**< The kicks that may be selected. */
+            (Angle) distanceToSectorBorder), /**< Buffer size for sector used for the kick direction, to determine the precision range. */
        vars((std::array<bool, Arms::numOfArms>)({false, false}) armWasBack, /**< Whether the arm was back in the previous frame. */
             (KickInfo::KickType)(KickInfo::numOfKickTypes) lastKickType, /**< The kick type that has been selected in the previous frame. */
             (std::array<ContourAngleOffsets, KickInfo::numOfKickTypes>)(init(theKickInfo)) contourAngleOffsets))
 {
   const auto setArm = [&](Arms::Arm arm, const Vector2f& goalPost)
   {
-    if((armWasBack[arm] = (theRobotPose.translation - goalPost).squaredNorm() < sqr(armWasBack[arm] ? radiusHandlingArea * hysteresisMultiplierHandlingArea : radiusHandlingArea) &&
+    if((armWasBack[arm] = (theRobotPose.translation - goalPost).squaredNorm() < sqr(armWasBack[arm] ? radiusHandlingArea* hysteresisMultiplierHandlingArea : radiusHandlingArea) &&
                           (arm == Arms::left ? 1.f : -1.f) * (theRobotPose.inverse() * goalPost).angle() > (armWasBack[arm] ? -20_deg : 0_deg)))
       KeyFrameArms({.motion = ArmKeyFrameRequest::back,
                     .arm = arm});
@@ -81,7 +78,6 @@ option((SkillBehaviorControl) HandleBallAtOwnGoalPost,
 
   KickInfo::KickType bestKick = KickInfo::numOfKickTypes;
   Pose2f bestKickPoseRelative;
-  bool obstacleNear = false;
   Rangea precisionRange(0_deg, 0_deg);
 
   const auto calcBestKick = [&]
@@ -110,9 +106,7 @@ option((SkillBehaviorControl) HandleBallAtOwnGoalPost,
       if(obstacleOnField.x() < theFieldDimensions.xPosOwnGoalLine + 300.f)
         continue;
 
-      const float obstacleToBallDistanceSqr = (obstacleOnField - theFieldInterceptBall.interceptedEndPositionOnField).squaredNorm();
-      obstacleNear |= obstacleToBallDistanceSqr < sqr(maxObstacleDistanceToBallForRiskyKicks);
-
+      const float obstacleToBallDistanceSqr = (obstacleOnField - theFieldBall.positionOnField).squaredNorm();
       const float width = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
       const float distance = std::sqrt(std::max(obstacleToBallDistanceSqr - sqr(width / 2.f), 1.f));
 
@@ -120,7 +114,7 @@ option((SkillBehaviorControl) HandleBallAtOwnGoalPost,
         continue;
 
       const float radius = std::atan(width / (2.f * distance));
-      const Angle direction = (obstacleOnField - theFieldInterceptBall.interceptedEndPositionOnField).angle();
+      const Angle direction = (obstacleOnField - theFieldBall.positionOnField).angle();
       const Rangea angleRange(direction - radius, direction + radius);
 
       blueprintWheel.addSector(angleRange, distance, SectorWheel::Sector::obstacle);
@@ -200,8 +194,7 @@ option((SkillBehaviorControl) HandleBallAtOwnGoalPost,
     {
       GoToBallAndKick({.targetDirection = Angle::normalize(bestKickPoseRelative.rotation - theKickInfo[bestKick].rotationOffset),
                        .kickType = bestKick,
-                       .alignPrecisely = obstacleNear ? KickPrecision::justHitTheBall : KickPrecision::notPrecise,
-                       .directionPrecision = precisionRange});
+                       .alignPrecisely = KickPrecision::justHitTheBall});
     }
   }
 }

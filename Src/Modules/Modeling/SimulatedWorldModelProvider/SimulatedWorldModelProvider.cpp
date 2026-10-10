@@ -84,7 +84,7 @@ void SimulatedWorldModelProvider::updateInternalBallModel()
       {
         float deltaTimeSeconds = deltaTimeMilliSeconds / 1000.f;
         BallPhysics::propagateBallPositionAndVelocity(theBallModel.estimate.position, theBallModel.estimate.velocity,
-                                                      deltaTimeSeconds, theBallSpecification.friction);
+                                                      deltaTimeSeconds, theBallSpecification);
         lastBallVelocityUpdate = theFrameInfo.time;
       }
     }
@@ -119,6 +119,7 @@ void SimulatedWorldModelProvider::update(GroundTruthBallModel& groundTruthBallMo
   const Vector2f ballVelocity = theGroundTruthWorldState.balls[0].velocity.head<2>();
   groundTruthBallModel.estimate.position = theGroundTruthWorldState.ownPose.inverse() * ballPosition;
   groundTruthBallModel.estimate.velocity = ballVelocity.rotated(-theGroundTruthWorldState.ownPose.rotation);
+  groundTruthBallModel.estimate.radius = theBallSpecification.radius;
   groundTruthBallModel.lastPerception = groundTruthBallModel.estimate.position;
   groundTruthBallModel.timeWhenLastSeen = theFrameInfo.time;
   groundTruthBallModel.timeWhenDisappeared = theFrameInfo.time;
@@ -145,8 +146,7 @@ void SimulatedWorldModelProvider::update(GlobalOpponentsModel& globalOpponentsMo
 
     GlobalOpponentsModel::OpponentEstimate opponent;
     opponent.position = theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation;
-    opponent.left = theRobotPose * left;
-    opponent.right = theRobotPose * right;
+    opponent.unidentified = false;
     globalOpponentsModel.opponents.emplace_back(opponent);
   }
 }

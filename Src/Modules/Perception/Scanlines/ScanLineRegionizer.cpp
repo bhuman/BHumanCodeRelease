@@ -43,8 +43,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
   // find height in image up to which additional smoothing (5x5 filter) will be applied.
   // compute by projecting on-field distance into image
   Vector2f pointInImage;  // helper variable for projection
-  const int middle = theCameraInfo.camera == CameraInfo::lower ? 0 :
-                     Transformation::robotWithCameraRotationToImage(additionalSmoothingPoint, theCameraMatrix, theCameraInfo, pointInImage) ?
+  const int middle = Transformation::robotWithCameraRotationToImage(additionalSmoothingPoint, theCameraMatrix, theCameraInfo, pointInImage) ?
                      static_cast<const int>(pointInImage.y()) : theCameraInfo.height - 1;
   LINE("module:ScanLineRegionizer:horizontalRegionSplit", 0, middle, theECImage.grayscaled.width, middle, 3, Drawings::PenStyle::dottedPen, ColorRGBA(80, 6, 80));
 
@@ -54,7 +53,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsHorizontal& colorScanLineReg
     regionsPerScanLine.emplace_back();
 
     // 2. Detect edges and create temporary regions in between including a representative YHS triple.
-    if(theCameraInfo.camera == CameraInfo::lower || middle < horizontalLine.y)
+    if(middle < horizontalLine.y)
     {
       scanHorizontalAdditionalSmoothing(horizontalLine.y, regionsPerScanLine.back(), horizontalLine.left, horizontalLine.right);
     }
@@ -105,8 +104,7 @@ void ScanLineRegionizer::update(ColorScanLineRegionsVerticalClipped& colorScanLi
   // find height in image up to which additional smoothing (5x5 filter) will be applied.
   // compute by projecting on-field distance into image
   Vector2f pointInImage;  // helper variable for projection
-  const int middle = theCameraInfo.camera == CameraInfo::lower ? 0 :
-                     Transformation::robotWithCameraRotationToImage(additionalSmoothingPoint, theCameraMatrix, theCameraInfo, pointInImage) ?
+  const int middle = Transformation::robotWithCameraRotationToImage(additionalSmoothingPoint, theCameraMatrix, theCameraInfo, pointInImage) ?
                      static_cast<const int>(pointInImage.y()) : theCameraInfo.height - 1;
   LINE("module:ScanLineRegionizer:verticalRegionSplit", 0, middle, theECImage.grayscaled.width, middle, 3, Drawings::PenStyle::dottedPen, ColorRGBA(80, 6, 80));
 
@@ -815,11 +813,10 @@ void ScanLineRegionizer::classifyFieldSingleRegion(ScanLineRegionizer::InternalR
 
     unsigned char minSaturation = fieldClassificationSaturationThreshold(region, regionHeight);
     char hueRangeExpansion = 0;
-    if(theCameraInfo.camera == CameraInfo::upper)
-      hueRangeExpansion = static_cast<char>(0.5f * static_cast<float>(hueSimilarityThreshold) - (regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
-                                                                                                static_cast<float>(theCameraInfo.height -
-                                                                                                                   theScanGrid.fieldLimit) * 0.5f *
-                                                                                                static_cast<float>(hueSimilarityThreshold));
+    hueRangeExpansion = static_cast<char>(0.5f * static_cast<float>(hueSimilarityThreshold) - (regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
+                                                                                              static_cast<float>(theCameraInfo.height -
+                                                                                                                 theScanGrid.fieldLimit) * 0.5f *
+                                                                                              static_cast<float>(hueSimilarityThreshold));
 
     if(region.h >= estimatedFieldColor.minHue - hueRangeExpansion &&
        region.h <= estimatedFieldColor.maxHue + hueRangeExpansion &&
@@ -835,29 +832,20 @@ unsigned char ScanLineRegionizer::fieldClassificationSaturationThreshold(const I
   // saturation of very dark field pixels is often 0
   if(region.y > 2)
   {
-    if(theCameraInfo.camera == CameraInfo::upper)
-    {
-      // reduce saturation threshold for further away regions
-      float scalingFactor = ((regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
-                                   static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) + 1.f) / 1.8f;
-      return static_cast<unsigned char>(static_cast<float>(estimatedFieldColor.minSaturation) * scalingFactor);
-    }
-    return estimatedFieldColor.minSaturation;
+    // reduce saturation threshold for further away regions
+    float scalingFactor = ((regionHeight - static_cast<float>(theScanGrid.fieldLimit)) /
+                                 static_cast<float>(theCameraInfo.height - theScanGrid.fieldLimit) + 1.f) / 1.8f;
+    return static_cast<unsigned char>(static_cast<float>(estimatedFieldColor.minSaturation) * scalingFactor);
   }
   return 0;
 }
 
 bool ScanLineRegionizer::regionIsField(const InternalRegion* const region) const
 {
-  if((theCameraInfo.camera == CameraInfo::lower && region->regionSize > lowerMinRegionSize) ||
-     (theCameraInfo.camera == CameraInfo::upper && region->regionSize > upperMinRegionSize))
-  {
-    if(region->y <= theRelativeFieldColorsParameters.maxFieldLuminance &&
-       region->s >= theRelativeFieldColorsParameters.minFieldSaturation &&
-       theRelativeFieldColorsParameters.fieldHue.isInside(region->h))
-      return true;
-  }
-  return false;
+  return region->regionSize > minRegionSize &&
+         region->y <= theRelativeFieldColorsParameters.maxFieldLuminance &&
+         region->s >= theRelativeFieldColorsParameters.minFieldSaturation &&
+         theRelativeFieldColorsParameters.fieldHue.isInside(region->h);
 }
 
 void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vector<InternalRegion>>& regions, bool horizontal) const
@@ -874,9 +862,7 @@ void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vect
   {
     COMPLEX_DRAWING("module:ScanLineRegionizer:whiteRangeHorizontal")
     {
-      int fontSize = 9;
-      if(theCameraInfo.camera == CameraInfo::upper)
-        fontSize = 14;
+      const int fontSize = 12;
       const int xPos = 10 + theCameraInfo.width * 2 / 3;
       int yPos = fontSize + 2;
       DRAW_TEXT("module:ScanLineRegionizer:whiteRangeHorizontal", xPos, yPos, fontSize, ColorRGBA::orange, "MinLum: " << minWhiteLuminance);
@@ -886,9 +872,7 @@ void ScanLineRegionizer::classifyWhiteRegionsWithThreshold(std::vector<std::vect
   }else{
     COMPLEX_DRAWING("module:ScanLineRegionizer:whiteRangeVertical")
     {
-      int fontSize = 9;
-      if(theCameraInfo.camera == CameraInfo::upper)
-        fontSize = 14;
+      const int fontSize = 12;
       const int xPos = 10 + theCameraInfo.width * 2 / 3;
       int yPos = fontSize + 2;
       DRAW_TEXT("module:ScanLineRegionizer:whiteRangeVertical", xPos, yPos, fontSize, ColorRGBA::orange, "MinLum: " << minWhiteLuminance);
@@ -1038,9 +1022,7 @@ void ScanLineRegionizer::drawEstimatedFieldColorRangeHorizontal([[maybe_unused]]
 {
   COMPLEX_DRAWING("module:ScanLineRegionizer:fieldColorRangeHorizontal")
   {
-    int fontSize = 9;
-    if(theCameraInfo.camera == CameraInfo::upper)
-      fontSize = 14;
+    const int fontSize = 12;
     const int xPos = 10 + theCameraInfo.width / 3;
     int yPos = fontSize + 2;
     DRAW_TEXT("module:ScanLineRegionizer:fieldColorRangeHorizontal", xPos, yPos, fontSize, ColorRGBA::orange, "Horizontal");
@@ -1061,9 +1043,7 @@ void ScanLineRegionizer::drawEstimatedFieldColorRangeVertical([[maybe_unused]] i
 {
   COMPLEX_DRAWING("module:ScanLineRegionizer:fieldColorRangeVertical")
   {
-    int fontSize = 9;
-    if(theCameraInfo.camera == CameraInfo::upper)
-      fontSize = 14;
+    const int fontSize = 12;
     int yPos = fontSize + 2;
     DRAW_TEXT("module:ScanLineRegionizer:fieldColorRangeVertical", 10, yPos, fontSize, ColorRGBA::orange, "Vertical");
     yPos += fontSize + 2;

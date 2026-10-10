@@ -66,7 +66,6 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
   theTarget.pan = pan;
   theTarget.tilt = tilt;
   theTarget.speed = speed;
-  theTarget.cameraControlMode = HeadMotionRequest::CameraControlMode::upperCamera;
   theTarget.stopAndGoMode = !ignoreBall && theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout;
   return theTarget;
 }
@@ -75,12 +74,13 @@ Angle LibLookActiveProvider::calculatePan(const bool forceBall)
 {
   // head moves in the following pattern:
   std::vector<Angle> basePanAngles;
-  basePanAngles.emplace_back(largeDefaultPan);
-  basePanAngles.emplace_back(-smallDefaultPan);
-  basePanAngles.emplace_back(smallDefaultPan);
-  basePanAngles.emplace_back(-largeDefaultPan);
-  basePanAngles.emplace_back(smallDefaultPan);
-  basePanAngles.emplace_back(-smallDefaultPan);
+  const Rangea headPanRange(theHeadLimits.minPan(), theHeadLimits.maxPan());
+  basePanAngles.emplace_back(headPanRange.limit(largeDefaultPan));
+  basePanAngles.emplace_back(headPanRange.limit(-smallDefaultPan));
+  basePanAngles.emplace_back(headPanRange.limit(smallDefaultPan));
+  basePanAngles.emplace_back(headPanRange.limit(-largeDefaultPan));
+  basePanAngles.emplace_back(headPanRange.limit(smallDefaultPan));
+  basePanAngles.emplace_back(headPanRange.limit(-smallDefaultPan));
 
   for(Angle& pan : basePanAngles)
     pan = sgn(pan) * (minPanMoving + ((std::abs(pan) - minPanMoving) * translationSpeedFactor));
@@ -114,19 +114,9 @@ Angle LibLookActiveProvider::calculateTilt(const bool forceBall, const bool only
                                 .rotateY(theCameraCalibration.bodyRotationCorrection.y())
                                 .rotateX(theCameraCalibration.bodyRotationCorrection.x())
                                 .inverse() * Vector3f(theBallPositionRelative.x(), theBallPositionRelative.y(), theBallSpecification.radius);
-    Vector2a panTiltLowerCam, panTiltUpperCam;
-    InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, CameraInfo::lower, panTiltLowerCam, theCameraCalibration);
-    InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, CameraInfo::upper, panTiltUpperCam, theCameraCalibration);
-
-    const Angle oldTilt = theJointRequest.stiffnessData.stiffnesses[Joints::headPitch] == 0 ? theJointAngles.angles[Joints::headPitch] : theJointRequest.angles[Joints::headPitch];
-    Angle tilt = panTiltUpperCam.y();
-
-    //if can not use upper camera && upper camera is not near || lower camera is near && can not easily use upper camera
-    if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < ballPositionUnknownTimeoutLowerCamera &&
-       ((tilt > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max && std::abs(tilt - oldTilt) > cameraChoiceHysteresis) ||
-        (std::abs(panTiltLowerCam.y() - oldTilt) < cameraChoiceHysteresis && tilt + cameraChoiceHysteresis > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max)))
-      tilt = panTiltLowerCam.y();
-    return tilt;
+    Vector2a panTilt;
+    InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, panTilt, theCameraCalibration);
+    return panTilt.y();
   }
   else
   {
@@ -215,11 +205,11 @@ Angle LibLookActiveProvider::clipPanToNearObstacle(const Angle pan) const
 
 bool LibLookActiveProvider::ballAnglesReachable() const
 {
-  const Angle tolerance = theCameraInfo.openingAngleWidth / 3.f;
+  const Angle tolerance = theCameraInfo.openingAngleWidth / 2.f;
   const Angle ballAngle = theBallPositionRelative.angle();
 
   // TODO: Check Shoulder?
-  return Rangea(theHeadLimits.minPan(), theHeadLimits.maxPan()).contains(Rangea(ballAngle - tolerance, ballAngle + tolerance));
+  return Rangea(theHeadLimits.minPan(), theHeadLimits.maxPan()).contains(Rangea(ballAngle + tolerance, ballAngle - tolerance));
 }
 
 bool LibLookActiveProvider::ballInSight() const

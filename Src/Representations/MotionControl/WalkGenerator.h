@@ -12,13 +12,10 @@
 #include "Math/Pose3f.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Math/Range.h"
-#include "Tools/Motion/WalkKickStep.h"
 #include <memory>
 
 STREAMABLE(WalkGenerator,
 {
-  using CreateNextPhaseCallback = std::function<std::unique_ptr<MotionPhase>(const MotionPhase&, const WalkKickStep&)>;
-
   /**
    * @param lastPhase The previous MotionPhase
    * @param stepTarget The requested walk step
@@ -31,10 +28,11 @@ STREAMABLE(WalkGenerator,
    *
    * @param isLeftPhase Plan with the next swing foot being the left one
    * @param walkSpeedRatio The walk speed in % (for rotation and translation)
+   * @param walkTarget The walk target
    *
    * @return the min and max allowed rotation
    */
-  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio)) getRotationRange;
+  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, const Pose2f& walkTarget)) getRotationRange;
   /**
    * Normally, more rotation means less possible translation (because of stability reasons).
    * Therefore given a planned walk step, what is the maximal possible walk step rotation,
@@ -50,10 +48,10 @@ STREAMABLE(WalkGenerator,
    *
    * @return The min and max allowed rotation, that would not result in a translation reduction
    */
-  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, Vector2f step, const bool isFastWalk,
+  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, const Vector2f& step, const bool isFastWalk,
                   const MotionPhase& lastPhase, const bool ignoreXTranslation, const bool isMaxPossibleStepSize)) getStepRotationRange;
 
-  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, Vector2f step, const bool isFastWalk,
+  FUNCTION(Rangea(const bool isLeftPhase, const Pose2f& walkSpeedRatio, const Vector2f& step, const bool isFastWalk,
                   const std::vector<Vector2f>& translationPolygon, const bool ignoreXTranslation, const bool isMaxPossibleStepSize)) getStepRotationRangeOther;
   /**
    * Given the last walk step size and the requested walk step rotation, return the min and max allowed translation as a convex polygon.
@@ -63,14 +61,16 @@ STREAMABLE(WalkGenerator,
    * @param rotation The walk step rotation (z-axis; yaw)
    * @param lastPhase The previous MotionPhase
    * @param walkSpeedRatio The walk speed in % (for rotation and translation)
+   * @param walkTarget The walk target
    * @param translationPolygon The convex polygon, which must contain the point (0,0)
    * @param translationPolygonNoCenter The convec polygon, which does not need to contain the point (0,0). Can happen after InWalkKicks
    * @param fastWalk Is fast walk allowed? Meaning, more rotation with translation is allowed
    * @param useMaxPossibleStepSize Use the actual max allowed translation polygon. ONLY USE IN SPECIAL CASES!
+   * @param useWalkSpeedScaling Use speed scaling based on distance
    */
-  FUNCTION(void(const bool isLeftPhase, const float rotation, const MotionPhase& lastPhase, const Pose2f& walkSpeedRatio,
+  FUNCTION(void(const bool isLeftPhase, const float rotation, const MotionPhase& lastPhase, const Pose2f& walkSpeedRatio, const Pose2f& walkTarget,
                 std::vector<Vector2f>& translationPolygon, std::vector<Vector2f>& translationPolygonNoCenter, const bool fastWalk,
-                const bool useMaxPossibleStepSize)) getTranslationPolygon;
+                const bool useMaxPossibleStepSize, const bool useWalkSpeedScaling)) getTranslationPolygon;
   /**
    * A function to get a translation polygon (like getTranslationPolygon),
    * but here all accelerations are ignored and the min and max translations are partially given.
@@ -97,17 +97,6 @@ STREAMABLE(WalkGenerator,
    * @return The WalkPhase
    */
   FUNCTION(std::unique_ptr<MotionPhase>(const Pose2f& step, const MotionPhase& lastPhase, float delay)) createPhase;
-  /**
-   * Create a WalkPhase as InWalkKick
-   *
-   * @param walkKickStep All information about the InWalkKick
-   * @param lastPhase Last MotionPhase
-   * @param createNextPhaseCallback All information about the InWalkKick, after the WalkPhase is done (for InWalkKicks with multiple walk steps)
-   * @param delay A delay before the WalkPhase starts
-   *
-   * @return The WalkPhase with an InWalkKick
-   */
-  FUNCTION(std::unique_ptr<MotionPhase>(const WalkKickStep& walkKickStep, const MotionPhase& lastPhase, const CreateNextPhaseCallback& createNextPhaseCallback, float delay)) createPhaseWithNextPhase;
   /**
    * Gets information about the start positions of the feet
    *
@@ -137,14 +126,6 @@ STREAMABLE(WalkGenerator,
    * @return Was the last WalkPhase an InWalkKick?
    */
   FUNCTION(bool(const MotionPhase& lastPhase)) wasLastPhaseInWalkKick;
-  /**
-   * Gets information about the step and walk kick in the previous MotionPhase.
-   *
-   * @param walkKickStep InWalkKick information
-   * @param step Previous requested step size
-   * @param lastPhase The previous MotionPhase
-   */
-  FUNCTION(void(WalkKickStep& walkKickStep, Pose2f& step, const MotionPhase& lastPhase)) getLastWalkPhase;
   /**
    * Is a WalkDelayPhase possible?
    *

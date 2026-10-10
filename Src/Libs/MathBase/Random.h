@@ -113,15 +113,15 @@ T Random::triangular(T mean, T sigma)
 }
 
 template<typename T>
-T Random::triangular(T low, T mean, T high)
+T Random::triangular(T low, T mode, T high)
 {
   // See: https://en.wikipedia.org/wiki/Triangular_distribution
 
-  const T fmean = (mean - low) / (high - low);
+  const T fmode = (mode - low) / (high - low);
   std::uniform_real_distribution<T> dist(T(0), T(1));
   const T randVal = dist(getGenerator());
-  if(randVal < fmean)
-    return low + std::sqrt(randVal * (high - low) * (mean - low));
+  if(randVal < fmode)
+    return low + std::sqrt(randVal * (high - low) * (mode - low));
   else
-    return high - std::sqrt((T(1) - randVal) * (high - low) * (high - mean));
+    return high - std::sqrt((T(1) - randVal) * (high - low) * (high - mode));
 }

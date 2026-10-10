@@ -53,7 +53,6 @@ option(WalkPotentialField, args((const Vector2f&) target,
  * @param target The target pose in robot-relative coordinates
  * @param speed The walking speed as ratio of the maximum speed in [0, 1]
  * @param reduceWalkSpeedType How shall the walking speed be reduced?
- * @param disableEnergySavingWalk Is the energy saving walk allowed to be active?
  * @param rough Ignore obstacles if they prevent the robot from reaching its target
  * @param disableObstacleAvoidance Disables avoiding dynamic obstacles like robots and referees (keeps goal posts, own penalty area and field border avoidance enabled)
  * @param disableAligning Disables rotation to the walk target
@@ -65,7 +64,6 @@ option(WalkPotentialField, args((const Vector2f&) target,
 option(WalkToPoint, args((const Pose2f&) target,
                          (const Pose2f&)({1.f, 1.f, 1.f}) speed,
                          (ReduceWalkSpeedType::ReduceWalkSpeedType)(ReduceWalkSpeedType::slow) reduceWalkSpeedType,
-                         (bool)(false) disableEnergySavingWalk,
                          (bool)(false) rough,
                          (bool)(false) disableObstacleAvoidance,
                          (bool)(false) disableAligning,

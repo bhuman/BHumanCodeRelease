@@ -1,13 +1,12 @@
 #!/bin/bash
 
-ROBOT=$(whoami)
-BINARY="/home/${ROBOT}/Config/bhuman"
-LOGDIR="/home/${ROBOT}/logging"
-DUMPFILE="/home/${ROBOT}/bhdump.log"
+BASE=/home/booster
+BINARY="${BASE}/Config/bhuman"
+LOGDIR="${BASE}/logs"
+DUMPFILE="${BASE}/bhdump.log"
 BACKGROUND=false
 DEBUG=false
-ARGS=
-ROBOTS="/home/${ROBOT}/Config/Robots/robots.cfg"
+ROBOTS="${BASE}/Config/Robots/robots.cfg"
 
 usage()
 {
@@ -16,11 +15,6 @@ usage()
   echo "    -d  start bhuman in a debugger"
   exit 1
 }
-
-if [ ${ROBOT} != nao -a ${ROBOT} != booster ]; then
-  echo "bhuman can only be started by user 'nao' or 'booster'."
-  exit 1
-fi
 
 if [ $# -eq 1 ]; then
   case $1 in
@@ -38,13 +32,12 @@ elif [ $# -ne 0 ]; then
   usage
 fi
 
-if [ -f /home/${ROBOT}/touchfiles ]; then
-  touch /home/${ROBOT}/Config/Robots/*/*/cameraCalibration.cfg \
-    /home/${ROBOT}/Config/Robots/*/Body/footSoleRotationCalibration.cfg \
-    /home/${ROBOT}/Config/Robots/*/Body/imuCalibration.cfg 2>/dev/null
+if [ -f ${BASE}/touchfiles ]; then
+  touch ${BASE}/Config/Robots/*/cameraCalibration.cfg \
+    ${BASE}/Config/Robots/*/imuCalibration.cfg 2>/dev/null
   sleep 0.1
-  touch /home/${ROBOT}/Config/settings.cfg
-  rm /home/${ROBOT}/touchfiles
+  touch ${BASE}/Config/settings.cfg
+  rm ${BASE}/touchfiles
 fi
 
 # Remove assertion dumps from previous runs.
@@ -54,79 +47,38 @@ rm -f "${DUMPFILE}"
 # but bhuman installs its own handlers, so this script will come to an end, too.
 trap "" 2 15
 
-# Select USB sound card as default
-if [ "${ROBOT}" == booster ]; then
-  USB_AUDIO="$(pactl list sinks short | grep USB | sed -e 's%[^	]*.%%' -e 's%	.*%%')"
-  pactl set-default-sink "${USB_AUDIO}" >/dev/null 2>&1
-fi
-
-# Mount USB drive. In some contexts in which a USB drive is required (e.g. remote events), we refuse to continue without a USB drive.
-if [ -e /home/${ROBOT}/.config/requireUSB ]; then
-  while ! ( mount /media/usb 2>/dev/null && /home/${ROBOT}/bin/chmod-usb && mkdir -p /media/usb/logs ); do
-    trap - 2 15
-    aplay -q /home/${ROBOT}/Config/Sounds/insertUSBDrive.wav
-    sleep 10
-    trap "" 2 15
+# Wait for Motion PC to be available and switch sound output and input.
+if [ ! -z "$(grep "\"$(hostname)\"" "${ROBOTS}" | grep -E "robotType *= *t1 *;")" ]; then
+  while [ "$(ping -w 1 -c 1 192.168.10.101 >/dev/null && echo 1 || echo 0)" = "0" ]; do
+    sleep 1
   done
-else
-  mount /media/usb 2>/dev/null && /home/${ROBOT}/bin/chmod-usb && mkdir -p /media/usb/logs
+elif [ "$(systemctl is-active --quiet booster-daemon.service && echo 1 || echo 0)" = "0" ]; then
+  while [ "$(systemctl is-active --quiet booster-daemon.service && echo 1 || echo 0)" = "0" ]; do
+    sleep 1
+  done
+  sleep 10
 fi
 
-if [ -f /media/usb/config.json ]; then
-  settingsReplacements()
-  {
-    local SEDFLAGS=""
-    [ ! -z ${FIELDPLAYERCOLOR} ] && SEDFLAGS="${SEDFLAGS} -e 's/fieldPlayerColor =.*/fieldPlayerColor = ${FIELDPLAYERCOLOR};/'"
-    [ ! -z ${GOALKEEPERCOLOR} ] && SEDFLAGS="${SEDFLAGS} -e 's/goalkeeperColor =.*/goalkeeperColor = ${GOALKEEPERCOLOR};/'"
-    [ ! -z ${PLAYER} ] && SEDFLAGS="${SEDFLAGS} -e 's/playerNumber =.*/playerNumber = ${PLAYER};/'"
-    [ ! -z ${TEAM} ] && SEDFLAGS="${SEDFLAGS} -e 's/teamNumber =.*/teamNumber = ${TEAM};/'"
-    [ ! -z ${MAGICNUMBER} ] && SEDFLAGS="${SEDFLAGS} -e 's/magicNumber =.*/magicNumber = ${MAGICNUMBER};/'"
-    echo "${SEDFLAGS}"
-  }
-
-  PLAYER=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['playerNumber'])" 2>/dev/null)
-  if [ -z ${PLAYER} ]; then
-    PLAYER=$(lsblk -ndo label $(mount | grep -o ".* on /media/usb " | tr " " "\n" | head -1) | grep -Eo "[0-9]+$")
+# Select USB sound card as default
+while true; do
+  USB_AUDIO="$(pactl list sinks short | grep USB | sed -e 's%[^	]*.%%' -e 's%	.*%%')"
+  MONO_AUDIO="$(pactl list sources short | grep -E "mono|6ch" | sed -e 's%[^	]*.%%' -e 's%	.*%%')"
+  if [ -z "${USB_AUDIO}" -o -z "${MONO_AUDIO}" ]; then
+    sleep 1
+  else
+    pactl set-default-sink "${USB_AUDIO}" >/dev/null 2>&1
+    pactl set-default-source "${MONO_AUDIO}" >/dev/null 2>&1
+    break
   fi
-  FIELDPLAYERCOLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['fieldPlayerColor'])" 2>/dev/null)
-  GOALKEEPERCOLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['goalkeeperColor'])" 2>/dev/null)
-  TEAM=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['teamNumber'])" 2>/dev/null)
-  MAGICNUMBER=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['magicNumber'])" 2>/dev/null)
-  SEDFLAGS="$(settingsReplacements)"
-  if [ ! -z "${SEDFLAGS}" ]; then
-    touch -r /home/${ROBOT}/Config/settings.cfg /home/${ROBOT}/Config/teams.cfg
-    bash -c "sed ${SEDFLAGS} -i /home/${ROBOT}/Config/settings.cfg"
-    touch -r /home/${ROBOT}/Config/teams.cfg /home/${ROBOT}/Config/settings.cfg
-  fi
+done
 
-  IP=$(eval echo $(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['ipAddress'])" 2>/dev/null))
-  SSID=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['ssid'])" 2>/dev/null)
-  PASSWORD=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['password'])" 2>/dev/null)
-  if [ ! -z "${SSID}" -a ! -z "${IP}" ]; then
-    echo "\"${SSID}\":" >/home/${ROBOT}/Profiles/fromUSB
-    echo "  password: \"${PASSWORD}\"" >>/home/${ROBOT}/Profiles/fromUSB
-    /home/${ROBOT}/bin/setprofile fromUSB ${IP}
-  fi
-fi
-
-if [ -d /media/usb/logs ]; then
-  ln -sfT /media/usb/logs "${LOGDIR}"
-else
-  ln -sfT /home/${ROBOT}/logs "${LOGDIR}"
-fi
+# Set network profile
+export FASTRTPS_DEFAULT_PROFILES_FILE=/opt/booster/BoosterRos2/fastdds_profile.xml
 
 # Make log-names unique by numbering them.
 COUNTER=$(ls "${LOGDIR}" | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n | tail -n1)
 COUNTER=$(expr ${COUNTER} + 1)
 LOGFILE="${LOGDIR}/bhumand_(${COUNTER}).log"
-
-# Support running an executable from the USB drive.
-if [ -f /media/usb/Config/bhuman ]; then
-  cp /media/usb/Config/bhuman /home/${ROBOT}/bhuman
-  BINARY="/home/${ROBOT}/bhuman"
-  ARGS="-c /media/usb"
-  ROBOTS="/media/usb/Config/Robots/robots.cfg"
-fi
 
 # Check whether the binary actually exists
 if [ ! -f "${BINARY}" ]; then
@@ -134,37 +86,18 @@ if [ ! -f "${BINARY}" ]; then
   exit 1
 fi
 
-# This should fix a freaky cygwin bug.
-# ^- This comment is really old.
-if [ ! -x "${BINARY}" ]; then
-  chmod u+x "${BINARY}" || exit 1
-fi
-
-# On Booster, activate second IP and wait for Motion PC to be available
-if [ "${ROBOT}" == booster ]; then
-  LAN="$(nmcli device show | tr '\n' '|' | sed 's%||%!%g' | tr '!' '\n' | grep 192.168.10.102 | tr '|' '\n' | grep GENERAL.CONNECTION | sed 's%.* %%')"
-  sudo nmcli connection up "${LAN}"
-  if [ ! -z "$(grep "\"${ROBOT}\"" "${ROBOTS}" | grep -E "robotType *= *t1 *;")" ]; then
-    while [ "$(ping -w 1 -c 1 192.168.10.101 >/dev/null && echo 1 || echo 0)" = "0" ]; do
-      sleep 1
-    done
-  fi
-fi
+# Disable core dumps
+ulimit -c 0
 
 # Actually execute bhuman.
 if ${DEBUG}; then
-  gdb --args "${BINARY}" ${ARGS}
+  gdb --args "${BINARY}"
 elif ${BACKGROUND}; then
-  "${BINARY}" ${ARGS} -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
+  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
 else
-  "${BINARY}" ${ARGS} -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
+  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
 fi
 RESULT=${PIPESTATUS[0]}
-
-# Remove leftovers.
-rm -f "${LOGDIR}"
-rm -f /home/${ROBOT}/bhuman
-umount /media/usb 2>/dev/null
 
 # Exit with result of ${BINARY}.
 exit ${RESULT}

@@ -19,10 +19,9 @@ vfd worldState representation:FieldBall:global
 
 # views relative to robot
 vfd worldState cognition:RobotPose
-vfd worldState representation:BallModel:endPosition
 vfd worldState representation:BallModel
 vfd worldState representation:MotionRequest
-vfd worldState representation:ObstacleModel:rectangle
+vfd worldState representation:ObstacleModel
 vfd worldState representation:FieldBall:relative
 
 call GameStates2D

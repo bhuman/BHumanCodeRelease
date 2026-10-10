@@ -91,6 +91,10 @@ struct SoundRequest
   SoundRequest(const std::string& text, bool mute, float stretchFactor)
   : isTextToSpeech(true), ttsDurationStretchFactor(stretchFactor), fileOrText(text), mute(mute)
   {}
+  bool operator==(const SoundRequest& other) const
+  {
+    return other.fileOrText == fileOrText;
+  }
 };
 
 class SoundPlayer : public Thread

@@ -54,5 +54,3 @@ STREAMABLE(FieldBoundary,
   (bool)(false) extrapolated,  ///< True if the boundary is constructed from a previous
   (bool)(false) odd,           ///< True if the boundary is odd/not good
 });
-
-STREAMABLE_WITH_BASE(OtherFieldBoundary, FieldBoundary, {,});

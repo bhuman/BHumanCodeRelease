@@ -2,7 +2,7 @@
 
 set -eu
 
-model=nao
+model=k1
 remoteIp=""
 headId=""
 bodyId=""
@@ -11,19 +11,12 @@ name=""
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} [-m nao] -ids <headId> <bodyId> <name>"
-  echo "${0} [-m nao] -ip <remoteIp> <name>"
-  echo "${0} -m <model> <name>"
+  echo "${0} [-m <model>] <name>"
   echo ""
   echo " <name>     : Name of the robot."
   echo " <model>    : The robot model (k1 or t1)."
-  echo " <headId>   : The id of the robots head."
-  echo " <bodyId>   : The id of the robots body."
-  echo " <remoteIp> : The id of the robots body."
   echo ""
-  echo " -m         : Defines the robot model. The default is nao."
-  echo " -ids       : Uses the the provided ids."
-  echo " -ip        : Loads the ids from the robot with the provided ip."
+  echo " -m         : Defines the robot model. The default is k1."
   echo " -h         : Display this help."
   exit 1
 }
@@ -34,24 +27,7 @@ parseOptions() {
     shift
     shift
   fi
-  if [ $# -eq 4 -a ${model} == nao ]; then
-    if [ ${1} == "-ids" ]; then
-      headId=${2}
-      bodyId=${3}
-      name=${4}
-      return 0
-    else
-      usage
-    fi
-  elif [ $# -eq 3 -a ${model} == nao ]; then
-    if [ ${1} == "-ip" ]; then
-      remoteIp=${2}
-      name=${3}
-      return 1
-    else
-      usage
-    fi
-  elif [ $# -eq 1 -a ${model} != nao ]; then
+  if [ $# -eq 1 ]; then
     name=${1}
     return 0
   else
@@ -59,33 +35,11 @@ parseOptions() {
   fi
 }
 
-getIdsFromRobot() {
-  message "Loading ids from Robot. If prompted please enter password twice (usually nao)."
-
-  # get headId
-  headId=$(ssh ${sshOptions} nao@${remoteIp} "cat /sys/qi/head_id 2>/dev/null || true")
-  if [ -z ${headId} ]; then
-    fatal "Failed reading the headId!"
-  fi
-  bodyId=$(ssh ${sshOptions} nao@${remoteIp} "bash -l -c \"python -c \\\"import naoqi; print naoqi.ALProxy('ALMemory', '127.0.0.1', 9559).getData('Device/DeviceList/ChestBoard/BodyId')\\\"\" | grep -vE '\[(W|I)\]'")
-  if [ -z ${bodyId} ]; then
-    fatal "Failed reading the bodyId!"
-  fi
-}
-
 addIds() {
   if [[ $(grep "name = \"${name}\"" "${robotsFile}") ]]; then
     fatal "The robot ${name} already exists!"
-  elif [[ $(grep "headId = \"${headId}\"" "${robotsFile}") ]]; then
-    fatal "The headId ${headId} is already in use!"
-  elif [[ $(grep "bodyId = \"${bodyId}\"" "${robotsFile}") ]]; then
-    fatal "The bodyId ${bodyId} is already in use!"
   else
-    if [ ${model} == nao ]; then
-      line="{ name = \"${name}\"; robotType = ${model}; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
-    else
-      line="{ name = \"${name}\"; robotType = ${model}; }"
-    fi
+    line="{ name = \"${name}\"; robotType = ${model}; }"
     if [[ $(tr '\n' '|' <"${robotsFile}" | grep '\[|\]') ]]; then
       sed "s%\[%[|  ${line}%" <"${robotsFile}" \
       | tr '|' '\n' >/tmp/addRobotIds.tmp \
@@ -124,13 +78,11 @@ fi
 echo ""
 echo "using:"
 echo "  name:     ${name}"
-echo "  model:    ${name}"
-echo "  headId:   ${headId}"
-echo "  bodyId:   ${bodyId}"
+echo "  model:    ${model}"
 echo ""
 
 createRobotsFile
 addIds
 
 message "Added ${name} to ${robotsFile}."
-message "Don't forget to flash or install the robot!"
+message "Don't forget to install the robot!"

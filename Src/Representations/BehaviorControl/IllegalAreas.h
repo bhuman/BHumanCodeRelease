@@ -20,11 +20,13 @@ STREAMABLE(IllegalAreas,
   {,
     ownGoalArea, /**< The own goal area (including its bounding lines). */
     ownPenaltyArea, /**< The own penalty area (including its bounding lines). */
+    ownPenaltyMarkArea, /**< The area that is illegal during own penalty kicks */
     opponentPenaltyArea, /**< The opponent penalty area (including its bounding lines). */
+    opponentPenaltyMarkArea, /**< The area that is illegal during opponent penalty kicks */
     borderStrip, /**< The border strip (excluding the border lines). */
     opponentHalf, /**< The opponent half (including the halfway line, but without the center circle and its perimeter). */
     centerCircle, /**< The center circle (including its perimeter). */
-    ballArea, /**< The 0.75m area around the ball. */
+    ballArea, /**< The center circle sized area around the ball. */
     notOwnGoalLine, /**< Everything except for the own goal line (for goalkeeper during penalty kick). */
     fieldBorder, /**< The field border, the robots are not allowed to walk over under no circumstances. */
   });

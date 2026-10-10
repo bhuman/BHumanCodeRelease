@@ -6,15 +6,13 @@
 
 #pragma once
 
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "Math/Eigen.h"
 #include "Math/Angle.h"
 #include "Framework/Next.h"
-#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(CameraCalibration,
 {,
-  (ENUM_INDEXED_ARRAY(Vector3a, CameraInfo::Camera)) cameraRotationCorrections, //!< The correction of the both camera rotations
+  (Vector3a) cameraRotationCorrection, //!< The correction of the both camera rotations
   (Vector2a) bodyRotationCorrection, //!< The correction of the body rotation
 });
 

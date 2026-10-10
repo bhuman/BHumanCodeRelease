@@ -11,7 +11,6 @@
 #include "Framework/Module.h"
 #include "Representations/BehaviorControl/DribbleTarget.h"
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/BehaviorControl/FieldRating.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
@@ -24,7 +23,6 @@ MODULE(DribbleTargetProvider,
   REQUIRES(BallSpecification),
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
-  REQUIRES(FieldInterceptBall),
   REQUIRES(FieldRating),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
@@ -32,7 +30,7 @@ MODULE(DribbleTargetProvider,
   DEFINES_PARAMETERS(
   {,
     (int)(100) iterationSteps, /**< Num of iteration steps. */
-    (float)(10.f) stepLength, /**< Iterate this much per step. */
+    (float)(30.f) stepLength, /**< Iterate this much per step. */
     (float)(1200.f) obstacleDistance, /**< Ignore obstacles further away than this distance. */
     (Angle)(3_deg) minFreeSector,
     (float)(1000.f) dribbleRange, /**< Planned look ahead dribble kick range. */

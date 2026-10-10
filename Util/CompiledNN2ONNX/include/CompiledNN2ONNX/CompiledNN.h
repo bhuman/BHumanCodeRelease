@@ -10,10 +10,26 @@
 #include <span>
 #include <asmjit/asmjit.h>
 #include <onnxruntime_cxx_api.h>
-#ifdef MACOS
-#include <coreml_provider_factory.h>
-#endif
+#include <iostream>
+#include <mutex>
+#include "../../../Src/Libs/Platform/File.h"
+
 #include "Model.h"
+
+#if ORT_API_VERSION < 13
+namespace Ort
+{
+  struct AllocatedStringPtr
+  {
+    char* ptr;
+    AllocatedStringPtr(char* ptr) : ptr(ptr) {}
+    ~AllocatedStringPtr() {if(ptr) {AllocatorWithDefaultOptions allocator; allocator.Free(ptr);}}
+    char* get() {return ptr;}
+  };
+#define GetInputNameAllocated GetInputName
+#define GetOutputNameAllocated GetOutputName
+}
+#endif
 
 namespace NeuralNetworkONNX
 {
@@ -27,6 +43,9 @@ namespace NeuralNetworkONNX
     bool useExpApproxInTanh = true;
     bool debug = false;
     bool useCoreML = false;
+    bool useCUDA = false;
+    bool useTensorRT = false;
+    bool fp16 = false;
     int numOfThreads = 1;
   };
 
@@ -41,7 +60,9 @@ namespace NeuralNetworkONNX
     Ort::Session session {nullptr}; /**< The session for running a neural network. */
     Ort::AllocatorWithDefaultOptions allocator; /**< The allocator that handles memory. */
     std::vector<const char*> inputNames; /**< The input names required by Ort::Session::Run. */
-    std::vector<const char*> outputNames; /**< The input names required by Ort::Session::Run. */
+    std::vector<Ort::AllocatedStringPtr> inputNameAllocators; /**< The allocated input names. */
+    std::vector<const char*> outputNames; /**< The output names required by Ort::Session::Run. */
+    std::vector<Ort::AllocatedStringPtr> outputNameAllocators; /**< The allocated output names. */
     std::vector<std::vector<int64_t>> inputDims; /**< The dimensions (shapes) required to support Tensor::rank and Tensor::dims for each input. */
     std::vector<std::vector<int64_t>> outputDims; /**< The dimensions (shapes) required to support Tensor::rank and Tensor::dims for each output. */
     std::vector<size_t> inputSizes; /**< The overall number of values for each input. */
@@ -63,15 +84,22 @@ namespace NeuralNetworkONNX
       return environment;
     }
 
+    /**
+     * A single mutex for all threads.
+     * Only used to synchronize CoreML caching.
+     * @return The mutex.
+     */
+    static std::mutex& mutex()
+    {
+      static std::mutex mutex;
+      return mutex;
+    }
+
     /** Clear all buffers. */
     void clear()
     {
-      for(const char* inputName : inputNames)
-        allocator.Free(const_cast<char*>(inputName));
       for(unsigned char* uint8Buffer : uint8Buffers)
         delete[] uint8Buffer;
-      for(const char* outputName : outputNames)
-        allocator.Free(const_cast<char*>(outputName));
 
       inputNames.clear();
       inputDims.clear();
@@ -178,9 +206,35 @@ namespace NeuralNetworkONNX
       sessionOptions.SetExecutionMode(ORT_SEQUENTIAL);
       sessionOptions.SetIntraOpNumThreads(settings.numOfThreads);
 #endif
-#ifdef MACOS
+#if defined MACOS
       if(settings.useCoreML)
-        Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CoreML(sessionOptions, 0));
+      {
+        std::unordered_map<std::string, std::string> providerOptions;
+        providerOptions["ModelCacheDirectory"] = File::getBHDir() + std::string("/Config/NeuralNets/CoreMLCache");
+        sessionOptions.AppendExecutionProvider("CoreML", providerOptions);
+      }
+#elif defined TARGET_ROBOT
+      if(settings.useTensorRT)
+      {
+        const OrtApi* api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+        OrtTensorRTProviderOptionsV2* options;
+        Ort::ThrowOnError(api->CreateTensorRTProviderOptions(&options));
+        const char* keys[] = {"trt_engine_cache_enable", "trt_engine_cache_path", "trt_fp16_enable"};
+        const char* values[] = {"1", "/home/booster/Config/NeuralNets/TensorRTCache", settings.fp16 ? "1" : "0"};
+        Ort::ThrowOnError(api->UpdateTensorRTProviderOptions(options, keys, values, sizeof(keys) / sizeof(*keys)));
+        Ort::ThrowOnError(api->SessionOptionsAppendExecutionProvider_TensorRT_V2(sessionOptions, options));
+        api->ReleaseTensorRTProviderOptions(options);
+      }
+      if(settings.useCUDA)
+      {
+        OrtCUDAProviderOptions options;
+        options.device_id = 0;
+        options.arena_extend_strategy = 0;
+        options.gpu_mem_limit = 2 * 1024 * 1024 * 1024;
+        options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchExhaustive;
+        options.do_copy_in_default_stream = 1;
+        Ort::ThrowOnError(Ort::GetApi().SessionOptionsAppendExecutionProvider_CUDA(sessionOptions, &options));
+      }
 #else
       static_cast<void>(&settings);
 #endif
@@ -192,12 +246,18 @@ namespace NeuralNetworkONNX
 #elif defined TARGET_ROBOT
       session = Ort::Session(*env, model.filename.c_str(), sessionOptions);
 #else
+      // CoreML caching does not work with parallelism
+      if(settings.useCoreML)
+        mutex().lock();
       session = Ort::Session(environment(), model.filename.c_str(), sessionOptions);
+      if(settings.useCoreML)
+        mutex().unlock();
 #endif
       // Create the names, tensors, dimensions, sizes, and buffers for all inputs.
       for(size_t i = 0; i < session.GetInputCount(); i++)
       {
-        inputNames.emplace_back(session.GetInputName(i, allocator));
+        inputNameAllocators.emplace_back(session.GetInputNameAllocated(i, allocator));
+        inputNames.emplace_back(inputNameAllocators.back().get());
         if(session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
           ORT_CXX_API_THROW("Network inputs must be float values", ORT_FAIL);
         inputDims.emplace_back(session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
@@ -215,7 +275,8 @@ namespace NeuralNetworkONNX
       // Create the names, tensors, dimensions, and sizes for all outputs.
       for(size_t i = 0; i < session.GetOutputCount(); i++)
       {
-        outputNames.emplace_back(session.GetOutputName(i, allocator));
+        outputNameAllocators.emplace_back(session.GetOutputNameAllocated(i, allocator));
+        outputNames.emplace_back(outputNameAllocators.back().get());
         if(session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
           ORT_CXX_API_THROW("Network outputs must be float values", ORT_FAIL);
         outputDims.emplace_back(session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
@@ -228,6 +289,12 @@ namespace NeuralNetworkONNX
         outputSizes.emplace_back(size);
         outputTensors.emplace_back(Ort::Value::CreateTensor<float>(allocator, outputDims.back().data(), outputDims.back().size()));
       }
+
+#ifdef TARGET_ROBOT
+      // With CUDA, run the network once to finish initialization.
+      if(settings.useCUDA || settings.useTensorRT)
+        apply();
+#endif
     }
 
     /** Runs the network. */

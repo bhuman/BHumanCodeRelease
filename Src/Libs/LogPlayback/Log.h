@@ -210,7 +210,7 @@ public:
    * Returns an iterator to the first message in the queue.
    * @return A constant iterator.
    */
-  const_iterator begin() const {return const_iterator(0, this);}
+  const_iterator begin() const {const_cast<LogPlayer*>(logPlayer)->updateIndices(); return const_iterator(0, this);}
 
   /**
    * Returns an iterator that points behind the last message in the queue.

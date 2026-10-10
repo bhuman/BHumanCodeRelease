@@ -24,13 +24,13 @@ MODULE(ScanGridProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldBoundary),
   PROVIDES(ScanGrid),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (int)(12) minVerticalStepSize, /**< The minimum pixel distance between two neighboring vertical scan lines. */
-    (int)(8) minHorizontalLowResStepSize, /**< The minimum pixel distance between two neighboring horizontal scan lines. */
-    (int)(25) minNumOfLowResScanLines, /**< The minimum number of scan lines for low resolution. */
-    (float)(0.9f) lineWidthRatio, /**< The ratio of field line width that is sampled when scanning the image. */
-    (float)(0.8f) ballWidthRatio, /**< The ratio of ball width that is sampled when scanning the image. */
+    (int) minVerticalStepSize, /**< The minimum pixel distance between two neighboring vertical scan lines. */
+    (int) minHorizontalLowResStepSize, /**< The minimum pixel distance between two neighboring horizontal scan lines. */
+    (int) minNumOfLowResScanLines, /**< The minimum number of scan lines for low resolution. */
+    (float) lineWidthRatio, /**< The ratio of field line width that is sampled when scanning the image. */
+    (float) objectWidthRatio, /**< The ratio of ball or penalty mark width that is at least sampled when scanning the image. */
   }),
 });
 

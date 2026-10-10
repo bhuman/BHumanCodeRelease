@@ -17,7 +17,6 @@ STREAMABLE(HeadTarget,
   (Angle) pan,
   (Angle) tilt,
   (Angle) speed,
-  (HeadMotionRequest::CameraControlMode) cameraControlMode,
   (bool) stopAndGoMode,
 });
 

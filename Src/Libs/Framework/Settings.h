@@ -45,24 +45,21 @@ public:
   /** The different robot types. */
   ENUM(RobotType,
   {,
-    nao,
     t1,
     k1,
   });
 
   /**
    * Loads all settings except for the robot name from settings.cfg.
-   * @param headName The name of the robot's head.
-   * @param bodyName The name of the robot's body.
+   * @param robotName The name of the robot.
    * @param motionCycleTime The cycle time of the Motion thread in s.
    * @param robotType The robot type.
    */
-  Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType);
+  Settings(const std::string& robotName, float motionCycleTime, RobotType robotType);
 
   /**
    * Explicitly sets all settings.
-   * @param headName The name of the robot's head.
-   * @param bodyName The name of the robot's body.
+   * @param robotName The name of the robot.
    * @param motionCycleTime The cycle time of the Motion thread in s.
    * @param robotType The robot type.
    * @param teamNumber The team number.
@@ -73,7 +70,7 @@ public:
    * @param scenario The scenario.
    * @param magicNumber The magic number.
    */
-  Settings(const std::string& headName, const std::string& bodyName, float motionCycleTime, RobotType robotType, int teamNumber,
+  Settings(const std::string& robotName, float motionCycleTime, RobotType robotType, int teamNumber,
            TeamColor fieldPlayerColor, TeamColor goalkeeperColor, int playerNumber, const std::string& location,
            const std::string& scenario, unsigned char magicNumber);
 
@@ -85,8 +82,8 @@ public:
    * @param location If not \c nullptr, use this location.
    * @param scenario If not \c nullptr, use this scenario.
    */
-  explicit Settings(const std::string& logFileName, float motionCycleTime, RobotType robotType, const std::string* location = nullptr,
-                    const std::string* scenario = nullptr);
+  explicit Settings(const std::string& logFileName, float motionCycleTime, RobotType robotType,
+                    const std::string* location, const std::string* scenario);
 
   /** Creates a search path for files, in the order in which they will be tried. */
   void updateSearchPath();
@@ -106,8 +103,7 @@ public:
 
   std::vector<std::string> searchPath; /**< The file search path that results from these settings. */
 
-  std::string headName; /**< The name of this robot's head. */
-  std::string bodyName; /**< The name of this robot's body. */
+  std::string robotName; /**< The name of this robot. */
   float motionCycleTime; /**< The average time between two motion cycles in seconds. */
   RobotType robotType, /**< The robot type. */
 

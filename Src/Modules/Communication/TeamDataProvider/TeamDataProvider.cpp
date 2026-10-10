@@ -20,8 +20,7 @@ void TeamDataProvider::update(TeamData& teamData)
 
   for(auto it = teamData.teammates.begin(); it != teamData.teammates.end();)
   {
-    if(theGameState.ownTeam.playerStates[it->number - Settings::lowestValidPlayerNumber] != GameState::active &&
-       !theLibDemo.isOneVsOneDemoActive)
+    if(theGameState.ownTeam.playerStates[it->number - Settings::lowestValidPlayerNumber] != GameState::active)
       it = teamData.teammates.erase(it);
     else
     {
@@ -31,13 +30,13 @@ void TeamDataProvider::update(TeamData& teamData)
   }
 
   // Assume all teammates reached their target pose
-  if(theGameState.isSet() && theExtendedGameState.wasReady())
+  if(theGameState.isSet() && theExtendedGameState.wasReady() && !theGameState.isPenalized())
   {
     for(const Agent& agent : theAgentStates.agents)
     {
       auto it = std::find_if(teamData.teammates.begin(), teamData.teammates.end(), [&](const Teammate& teammate) {return teammate.number == agent.number; });
       if(it != teamData.teammates.end())
-        it->theRobotPose.translation = agent.basePose.translation;
+        it->theRobotPose.translation = agent.baseTranslation;
     }
   }
 }
@@ -61,5 +60,4 @@ void TeamDataProvider::handleMessage(Teammate& teammate, const ReceivedTeamMessa
   teammate.theWhistle = teamMessage.theWhistle;
   teammate.theStrategyStatus = teamMessage.theStrategyStatus;
   teammate.theIndirectKick = teamMessage.theIndirectKick;
-  teammate.theRefereeSignal = teamMessage.theRefereeSignal;
 }

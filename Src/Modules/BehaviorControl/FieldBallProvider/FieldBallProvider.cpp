@@ -19,7 +19,7 @@ void FieldBallProvider::update(FieldBall& fieldBall)
   fieldBall.positionOnFieldClipped  = fieldBall.positionOnField;
   theFieldDimensions.clipToField(fieldBall.positionOnFieldClipped);
   fieldBall.positionRelativeClipped = theRobotPose.inverse() * fieldBall.positionOnFieldClipped;
-  fieldBall.endPositionRelative     = BallPhysics::getEndPosition(theBallModel.estimate.position, theBallModel.estimate.velocity, theBallSpecification.friction);
+  fieldBall.endPositionRelative     = BallPhysics::getEndPosition(theBallModel.estimate.position, theBallModel.estimate.velocity, theBallSpecification);
   fieldBall.endPositionOnField      = theRobotPose * fieldBall.endPositionRelative;
   fieldBall.velocityRelative = theBallModel.estimate.velocity;
   fieldBall.velocityOnField = theRobotPose * fieldBall.velocityRelative;
@@ -29,7 +29,7 @@ void FieldBallProvider::update(FieldBall& fieldBall)
   {
     fieldBall.teamPositionOnField     = theTeamBallModel.position;
     fieldBall.teamPositionRelative    = theRobotPose.inverse() * theTeamBallModel.position;
-    fieldBall.teamEndPositionOnField  = BallPhysics::getEndPosition(theTeamBallModel.position, theTeamBallModel.velocity, theBallSpecification.friction);
+    fieldBall.teamEndPositionOnField  = BallPhysics::getEndPosition(theTeamBallModel.position, theTeamBallModel.velocity, theBallSpecification);
     fieldBall.teamEndPositionRelative = theRobotPose.inverse() * fieldBall.teamEndPositionOnField;
     fieldBall.teamVelocityOnField = theRobotPose.inverse() * fieldBall.teamVelocityRelative;
     fieldBall.teamVelocityRelative = theTeamBallModel.velocity;
@@ -51,7 +51,7 @@ void FieldBallProvider::checkIfBallIsRollingTowardsAGoal(bool& isRollingTowardsO
 {
   isRollingTowardsOpponentGoal = false;
   isRollingTowardsOwnGoal = false;
-  if(theBallModel.estimate.velocity.norm() == 0.f)
+  if(theBallModel.estimate.velocity.norm() == 0.f || !(theIndirectKick.lastStriker == 0 && theIndirectKick.allowDirectKick))
     return;
   const Vector2f bPosField = positionOnField;
   const Vector2f bVelField = velocity.rotated(theRobotPose.rotation);

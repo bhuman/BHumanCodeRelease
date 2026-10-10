@@ -137,6 +137,8 @@
     "C_Cpp.vcFormat.space.afterCastCloseParenthesis": true,
     "C_Cpp.vcFormat.space.afterKeywordsInControlFlowStatements": false,
     "C_Cpp.vcFormat.space.withinInitializerListBraces": false,
+    "cmake.configureOnEdit": false,
+    "cmake.configureOnOpen": false,
     "debug.hideSlowPreLaunchWarning": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 2,

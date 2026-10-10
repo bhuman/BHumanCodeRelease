@@ -3,6 +3,7 @@
 
 #include <string>
 #include <booster/third_party/nlohmann_json/json.hpp>
+#include <booster/robot/common/device_info.hpp>
 #include <booster/robot/b1/b1_api_const.hpp>
 #include <booster/robot/common/entities.hpp>
 #include <booster/robot/common/robot_shared.hpp>
@@ -34,6 +35,42 @@ enum class LocoApiId {
     kHandshake = 2015,
     kDance = 2016,
     kGetMode = 2017,
+    kGetStatus = 2018,
+    kPushUp = 2019,
+    kPlaySound = 2020,
+    kStopSound = 2021,
+    kGetRobotInfo = 2022,
+    kStopHandEndEffector = 2023,
+    kShoot = 2024,
+    kGetUpWithMode = 2025,
+    kZeroTorqueDrag = 2026,
+    kRecordTrajectory = 2027,
+    kReplayTrajectory = 2028,
+    kWholeBodyDance = 2029,
+    kUpperBodyCustomControl = 2030,
+    kResetOdometry = 2031,
+    kLoadCustomTrainedTraj = 2032,
+    kActivateCustomTrainedTraj = 2033,
+    kUnloadCustomTrainedTraj = 2034,
+    kEnterWBCGait = 2035,
+    kExitWBCGait = 2036,
+    kMoveDualHandEndEffector = 2037,
+    kVisualKick = 2038,
+    kLionDancePrepare = 2039,
+    kLionDanceStart = 2040,
+    kLionDanceMove = 2041,
+    kSwitchGait = 2042,
+    kRotateHeadWithTime = 2043,
+    kGetSensors = 2044,
+    kGetHands = 2045,
+    kGetRobotModel = 2046,
+};
+
+enum class GaitType {
+    kWholeBodyHumanlikeGait = 0,
+    kHalfBodyHumanlikeGait = 1,
+    kHalfBodyHumanlikeGaitV2 = 2,
+    kWholeBodyHumanlikeGaitV2 = 3,
 };
 
 class RotateHeadParameter {
@@ -62,6 +99,38 @@ public:
     float yaw_;
 };
 
+class RotateHeadWithTimeParameter {
+public:
+    RotateHeadWithTimeParameter() = default;
+
+    RotateHeadWithTimeParameter(float pitch, float yaw, int time_millis) :
+        pitch_(pitch),
+        yaw_(yaw),
+        time_millis_(time_millis) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        pitch_ = json["pitch"];
+        yaw_ = json["yaw"];
+        time_millis_ = json["time_millis"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+
+        json["pitch"] = pitch_;
+        json["yaw"] = yaw_;
+        json["time_millis"] = time_millis_;
+        return json;
+    }
+
+public:
+    float pitch_;
+    float yaw_;
+    int time_millis_;
+};
+
 class ChangeModeParameter {
 public:
     ChangeModeParameter() = default;
@@ -84,6 +153,28 @@ public:
     booster::robot::RobotMode mode_;
 };
 
+class SwitchGaitParameter {
+public:
+    SwitchGaitParameter() = default;
+    SwitchGaitParameter(GaitType gait_type) :
+        gait_type_(gait_type) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        gait_type_ = static_cast<GaitType>(json["gait_type"]);
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["gait_type"] = static_cast<int>(gait_type_);
+        return json;
+    }
+
+public:
+    GaitType gait_type_ = GaitType::kWholeBodyHumanlikeGait;
+};
+
 class GetModeResponse {
 public:
     GetModeResponse() = default;
@@ -101,6 +192,74 @@ public:
 
 public:
     booster::robot::RobotMode mode_;
+};
+
+class GetStatusResponse {
+public:
+    GetStatusResponse() = default;
+
+    void FromJson(nlohmann::json &json) {
+        current_mode_ = static_cast<booster::robot::RobotMode>(json["current_mode"]);
+        current_body_control_ = static_cast<booster::robot::BodyControl>(json["current_body_control"]);
+        std::vector<booster::robot::Action> actions_vec;
+        for (const auto &item : json["current_actions"]) {
+            actions_vec.push_back(static_cast<booster::robot::Action>(item));
+        }
+        current_actions_ = std::move(actions_vec);
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["current_mode"] = static_cast<int>(current_mode_);
+        json["current_body_control"] = static_cast<int>(current_body_control_);
+        std::vector<int> actions_int_vec;
+        for (const auto &action : current_actions_) {
+            actions_int_vec.push_back(static_cast<int>(action));
+        }
+        json["current_actions"] = actions_int_vec;
+        return json;
+    }
+
+public:
+    booster::robot::RobotMode current_mode_;
+    booster::robot::BodyControl current_body_control_;
+    std::vector<booster::robot::Action> current_actions_;
+};
+
+class GetRobotInfoResponse {
+public:
+    GetRobotInfoResponse() = default;
+
+    void FromJson(nlohmann::json &json) {
+        name_ = json["name"];
+        nickname_ = json["nickname"];
+        version_ = json["version"];
+        model_ = json["model"];
+        serial_number_ = json["serial_number"];
+        edition_ = json["edition"];
+        region_ = json["region"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["name"] = name_;
+        json["nickname"] = nickname_;
+        json["version"] = version_;
+        json["model"] = model_;
+        json["serial_number"] = serial_number_;
+        json["edition"] = edition_;
+        json["region"] = region_;
+        return json;
+    }
+
+public:
+    std::string name_;          // official name for robot
+    std::string nickname_;      // nickname for robot, user can set it through mobile app `Booster`
+    std::string version_;       // firmware version
+    std::string model_;         // model name for robot
+    std::string serial_number_; // serial number for robot
+    std::string edition_;       // edition for robot, e.g. K1 XXX, T1 XXX
+    std::string region_;        // region for robot, e.g. CN, Global
 };
 
 class MoveParameter {
@@ -159,11 +318,70 @@ public:
     int yaw_direction_;
 };
 
+enum class GetUpVersion {
+    kV1 = 0, // Initial/Base get-up behavior
+    kV2 = 1, // BMM get-up behavior
+};
+
+class GetUpParameter {
+public:
+    GetUpParameter() = default;
+    GetUpParameter(GetUpVersion version) :
+        version_(version) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        if (json.contains("version")) {
+            version_ = static_cast<GetUpVersion>(json["version"]);
+        } else {
+            version_ = GetUpVersion::kV1;
+        }
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["version"] = static_cast<int>(version_);
+        return json;
+    }
+
+public:
+    GetUpVersion version_ = GetUpVersion::kV1;
+};
+
+class GetUpWithModeParameter {
+public:
+    GetUpWithModeParameter() = default;
+    GetUpWithModeParameter(booster::robot::RobotMode mode, GetUpVersion version = GetUpVersion::kV1) :
+        mode_(mode), version_(version) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        mode_ = static_cast<booster::robot::RobotMode>(json["mode"]);
+        if (json.contains("version")) {
+            version_ = static_cast<GetUpVersion>(json["version"]);
+        } else {
+            version_ = GetUpVersion::kV1;
+        }
+    }
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["mode"] = static_cast<int>(mode_);
+        json["version"] = static_cast<int>(version_);
+        return json;
+    }
+
+public:
+    booster::robot::RobotMode mode_ = booster::robot::RobotMode::kUnknown;
+    GetUpVersion version_ = GetUpVersion::kV1;
+};
+
 class WaveHandParameter {
 public:
     WaveHandParameter() = default;
     WaveHandParameter(HandIndex hand_index, HandAction hand_action) :
-        hand_action_(hand_action), hand_index_(hand_index) {
+        hand_index_(hand_index), hand_action_(hand_action) {
     }
 
 public:
@@ -304,6 +522,7 @@ enum class GripperControlMode {
  *  force: represents the gripper's force control value, ranging from 50 to 1000
  *  speed represents the gripper's opening and closing speed ranging from 1 to 1000
  */
+
 class GripperMotionParameter {
 public:
     GripperMotionParameter() = default;
@@ -357,6 +576,39 @@ public:
     GripperMotionParameter motion_param_;
     GripperControlMode mode_;
     HandIndex hand_index_;
+};
+
+class MoveDualHandEndEffectorParameter {
+public:
+    MoveDualHandEndEffectorParameter() = default;
+    MoveDualHandEndEffectorParameter(
+        const Posture &left_target_posture,
+        const Posture &right_target_posture,
+        int time_millis) :
+        left_target_posture_(left_target_posture),
+        right_target_posture_(right_target_posture),
+        time_millis_(time_millis) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        left_target_posture_.FromJson(json["left_target_posture"]);
+        right_target_posture_.FromJson(json["right_target_posture"]);
+        time_millis_ = json["time_millis"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["left_target_posture"] = left_target_posture_.ToJson();
+        json["right_target_posture"] = right_target_posture_.ToJson();
+        json["time_millis"] = time_millis_;
+        return json;
+    }
+
+public:
+    Posture left_target_posture_;
+    Posture right_target_posture_;
+    int time_millis_ = 1000;
 };
 
 class GetFrameTransformParameter {
@@ -432,6 +684,7 @@ public:
  * value
  *
  */
+
 class DexterousFingerParameter {
 public:
     DexterousFingerParameter() = default;
@@ -471,13 +724,15 @@ public:
  * hand_index: represents the hand index, which can be `kLeftHand` or `kRightHand`
  *
  */
+
 class ControlDexterousHandParameter {
 public:
     ControlDexterousHandParameter() = default;
     ControlDexterousHandParameter(
-        const std::vector<DexterousFingerParameter> &finger_params, HandIndex hand_index) :
+        const std::vector<DexterousFingerParameter> &finger_params, HandIndex hand_index, BoosterHandType hand_type = BoosterHandType::kInspireHand) :
         finger_params_(finger_params),
-        hand_index_(hand_index) {
+        hand_index_(hand_index),
+        hand_type_(hand_type) {
     }
 
     void FromJson(nlohmann::json &json) {
@@ -487,6 +742,7 @@ public:
             finger_params_.push_back(param);
         }
         hand_index_ = static_cast<HandIndex>(json["hand_index"]);
+        hand_type_ = static_cast<BoosterHandType>(json["hand_type"]);
     }
 
     nlohmann::json ToJson() const {
@@ -495,18 +751,25 @@ public:
             json["finger_params"].push_back(finger_param.ToJson());
         }
         json["hand_index"] = static_cast<int>(hand_index_);
+        json["hand_type"] = static_cast<int>(hand_type_);
         return json;
     }
 
 public:
     std::vector<DexterousFingerParameter> finger_params_;
     HandIndex hand_index_;
+    BoosterHandType hand_type_;
 };
 
 enum class DanceId {
-    kNewYear = 0,       // 拜年舞蹈
-    kNezha = 1,         // 哪吒舞
-    kTowardsFuture = 2, // 时代少年团《一起向未来》
+    kNewYear = 0,
+    kNezha = 1,
+    kTowardsFuture = 2,
+    kDabbingGesture = 3,
+    kUltramanGesture = 4,
+    kRespectGesture = 5,
+    kCheeringGesture = 6,
+    kLuckyCatGesture = 7,
     kStop = 1000,
 };
 
@@ -514,6 +777,7 @@ enum class DanceId {
  * This class definition represents a dance parameter.
  * dance_id: represents the dance ID, which can be found in the `DanceId` enum
  */
+
 class DanceParameter {
 public:
     DanceParameter() = default;
@@ -535,6 +799,382 @@ public:
 public:
     DanceId dance_id_;
 };
+
+class PlaySoundParameter {
+public:
+    PlaySoundParameter() = default;
+    PlaySoundParameter(const std::string &sound_file_path) :
+        sound_file_path_(sound_file_path) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        sound_file_path_ = json["sound_file_path"];
+    }
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["sound_file_path"] = sound_file_path_;
+        return json;
+    }
+
+private:
+    std::string sound_file_path_;
+};
+
+class ReplayTrajectoryParameter {
+public:
+    ReplayTrajectoryParameter() = default;
+    ReplayTrajectoryParameter(const std::string &traj_file_path) :
+        traj_file_path_(traj_file_path) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        traj_file_path_ = json["traj_file_path"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["traj_file_path"] = traj_file_path_;
+        return json;
+    }
+
+private:
+    std::string traj_file_path_;
+};
+
+class ZeroTorqueDragParameter {
+public:
+    ZeroTorqueDragParameter() = default;
+    ZeroTorqueDragParameter(bool enable) :
+        enable_(enable) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        enable_ = json["enable"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["enable"] = enable_;
+        return json;
+    }
+
+private:
+    bool enable_ = false;
+};
+
+class RecordTrajectoryParameter {
+public:
+    RecordTrajectoryParameter() = default;
+    RecordTrajectoryParameter(bool enable) :
+        enable_(enable) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        enable_ = json["enable"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["enable"] = enable_;
+        return json;
+    }
+
+private:
+    bool enable_ = false;
+};
+
+enum class WholeBodyDanceId {
+    kArbicDance = 0,
+    kMichaelDance1 = 1,
+    kMichaelDance2 = 2,
+    kMichaelDance3 = 3,
+    kBoxingStyleKick = 5,
+    kRoundhouseKick = 6,
+    kShanHeGuRenDance = 7,
+    kGaiGeChunFengDance = 8,
+    kMichaelDance1And2 = 9,
+};
+
+class WholeBodyDanceParameter {
+public:
+    WholeBodyDanceParameter() = default;
+    WholeBodyDanceParameter(WholeBodyDanceId dance_id) :
+        dance_id_(dance_id) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        dance_id_ = json["dance_id"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["dance_id"] = dance_id_;
+        return json;
+    }
+
+public:
+    WholeBodyDanceId dance_id_;
+};
+
+class UpperBodyCustomControlParameter {
+public:
+    UpperBodyCustomControlParameter() = default;
+    UpperBodyCustomControlParameter(bool start) :
+        start_(start) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        start_ = json["start"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["start"] = start_;
+        return json;
+    }
+
+public:
+    bool start_;
+};
+
+// --- Custom Trained Trajectory Definitions ---
+enum class JointOrder {
+    kMuJoCo = 0,
+    kIsaacLab = 1,
+};
+
+class CustomModelParams {
+public:
+    CustomModelParams() = default;
+
+    CustomModelParams(const std::vector<double> &action_scale,
+                      const std::vector<double> &kp,
+                      const std::vector<double> &kd) :
+        action_scale_(action_scale),
+        kp_(kp), kd_(kd) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        if (json.contains("action_scale")) {
+            action_scale_ = json["action_scale"].get<std::vector<double>>();
+        }
+        if (json.contains("kp")) {
+            kp_ = json["kp"].get<std::vector<double>>();
+        }
+        if (json.contains("kd")) {
+            kd_ = json["kd"].get<std::vector<double>>();
+        }
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["action_scale"] = action_scale_;
+        json["kp"] = kp_;
+        json["kd"] = kd_;
+        return json;
+    }
+
+public:
+    std::vector<double> action_scale_;
+    std::vector<double> kp_;
+    std::vector<double> kd_;
+};
+
+class CustomModel {
+public:
+    CustomModel() = default;
+    CustomModel(const std::string &file_path,
+                const std::vector<CustomModelParams> &params,
+                JointOrder joint_order) :
+        file_path_(file_path),
+        params_(params),
+        joint_order_(joint_order) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        file_path_ = json["file_path"];
+        params_.clear();
+        if (json.contains("params") && json["params"].is_array()) {
+            for (auto &item : json["params"]) {
+                CustomModelParams p;
+                p.FromJson(item);
+                params_.push_back(p);
+            }
+        }
+        joint_order_ = static_cast<JointOrder>(json["joint_order"]);
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["file_path"] = file_path_;
+        json["params"] = nlohmann::json::array();
+        for (const auto &p : params_) {
+            json["params"].push_back(p.ToJson());
+        }
+        json["joint_order"] = static_cast<int>(joint_order_);
+        return json;
+    }
+
+public:
+    std::string file_path_;
+    std::vector<CustomModelParams> params_;
+    JointOrder joint_order_ = JointOrder::kMuJoCo;
+};
+
+class CustomTrainedTraj {
+public:
+    CustomTrainedTraj() = default;
+    CustomTrainedTraj(const std::string &traj_file_path, const CustomModel &model) :
+        traj_file_path_(traj_file_path),
+        model_(model) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        traj_file_path_ = json["traj_file_path"];
+        model_.FromJson(json["model"]);
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["traj_file_path"] = traj_file_path_;
+        json["model"] = model_.ToJson();
+        return json;
+    }
+
+public:
+    std::string traj_file_path_;
+    CustomModel model_;
+};
+
+class LoadCustomTrainedTrajResponse {
+public:
+    LoadCustomTrainedTrajResponse() = default;
+
+    void FromJson(nlohmann::json &json) {
+        tid_ = json["tid"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["tid"] = tid_;
+        return json;
+    }
+
+public:
+    std::string tid_;
+};
+
+class CustomTrainedTrajParameter {
+public:
+    CustomTrainedTrajParameter() = default;
+    CustomTrainedTrajParameter(const std::string &tid) :
+        tid_(tid) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        tid_ = json["tid"];
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["tid"] = tid_;
+        return json;
+    }
+
+public:
+    std::string tid_;
+};
+
+enum class VisualKickVersion {
+    kV1 = 0, // Initial/Base version
+    kV2 = 1, // V2 version, stronger kicking force
+};
+
+class VisualKickParameter {
+public:
+    VisualKickParameter() = default;
+    VisualKickParameter(bool start, VisualKickVersion version = VisualKickVersion::kV1) :
+        start_(start), version_(version) {
+    }
+
+public:
+    void FromJson(nlohmann::json &json) {
+        start_ = json["start"];
+        version_ = static_cast<VisualKickVersion>(json["version"]);
+    }
+
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["start"] = start_;
+        json["version"] = static_cast<int>(version_);
+        return json;
+    }
+
+private:
+    bool start_;
+    VisualKickVersion version_;
+};
+
+class LionDancePrepareParameter {
+public:
+    LionDancePrepareParameter() = default;
+    LionDancePrepareParameter(bool start) :
+        start_(start) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        start_ = json["start"];
+    }
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["start"] = start_;
+        return json;
+    }
+
+private:
+    bool start_;
+};
+
+class LionDanceMoveParameter {
+public:
+    LionDanceMoveParameter() = default;
+    LionDanceMoveParameter(bool start) :
+        start_(start) {
+    }
+    void FromJson(nlohmann::json &json) {
+        start_ = json["start"];
+    }
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["start"] = start_;
+        return json;
+    }
+
+private:
+    bool start_;
+};
+
+class LionDanceStartParameter {
+public:
+    LionDanceStartParameter() = default;
+    LionDanceStartParameter(int dance_idx) :
+        dance_idx_(dance_idx) {
+    }
+
+    void FromJson(nlohmann::json &json) {
+        dance_idx_ = json["dance_idx"];
+    }
+    nlohmann::json ToJson() const {
+        nlohmann::json json;
+        json["dance_idx"] = dance_idx_;
+        return json;
+    }
+
+private:
+    int dance_idx_;
+};
+
 }
 }
 } // namespace booster::robot::b1

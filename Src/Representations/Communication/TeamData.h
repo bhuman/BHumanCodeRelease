@@ -3,8 +3,8 @@
  *
  * This representation should soon be obsolete (04.2022).
  *
- * @author <A href="mailto:jesse@tzi.de">Jesse Richter-Klug</A>
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Jesse Richter-Klug
+ * @author Tim Laue
  */
 
 #pragma once
@@ -14,7 +14,6 @@
 #include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/RefereeSignal.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Tools/Communication/RobotStatus.h"
@@ -38,7 +37,6 @@ STREAMABLE(Teammate,
   (Whistle) theWhistle,
   (StrategyStatus) theStrategyStatus,
   (IndirectKick) theIndirectKick,
-  (RefereeSignal) theRefereeSignal,
 });
 
 /**

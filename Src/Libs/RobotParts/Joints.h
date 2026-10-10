@@ -3,176 +3,142 @@
 #include "RobotParts/Arms.h"
 #include "RobotParts/Legs.h"
 #include "Streaming/Enum.h"
-#include <vector>
 
 namespace Joints
 {
   ENUM(Joint,
-  {, //ALL ENUMS HERE MUST BE IN THE SAME ORDER LIKE THE ENUMS BELOW
+  {,
     headYaw,
     headPitch,
-
-    waistYaw, //< not present on the NAO
 
     firstArmJoint,
     firstLeftArmJoint = firstArmJoint,
 
     lShoulderPitch = firstLeftArmJoint,
     lShoulderRoll,
+    lElbowPitch,
     lElbowYaw,
-    lElbowRoll,
-    lWristYaw,
-    lHand, //< not an Angle, instead %
 
     firstRightArmJoint,
 
     rShoulderPitch = firstRightArmJoint,
     rShoulderRoll,
+    rElbowPitch,
     rElbowYaw,
-    rElbowRoll,
-    rWristYaw,
-    rHand, //< not an Angle, instead %
+
+    firstNoneArmJoint,
+    waistYaw = firstNoneArmJoint, //< only present on the Booster T1
 
     firstLegJoint,
     firstLeftLegJoint = firstLegJoint,
 
-    lHipYaw = firstLeftLegJoint,
-    lHipYawPitch = lHipYaw,
+    lHipPitch = firstLeftLegJoint,
     lHipRoll,
-    lHipPitch,
+    lHipYaw,
     lKneePitch,
     lAnklePitch,
     lAnkleRoll,
 
     firstRightLegJoint,
 
-    rHipYaw = firstRightLegJoint,
-    rHipYawPitch = rHipYaw, //< not a joint in the real NAO
+    rHipPitch = firstRightLegJoint,
     rHipRoll,
-    rHipPitch,
+    rHipYaw,
     rKneePitch,
     rAnklePitch,
     rAnkleRoll,
   });
 
-  using stdVectorJoint = std::vector<Joint>;
-
   ENUM(ArmJoint,
   {,
     shoulderPitch,
     shoulderRoll,
+    elbowPitch,
     elbowYaw,
-    elbowRoll,
-    wristYaw,
-    hand,
   });
+
+  static_assert(shoulderPitch == lShoulderPitch - firstLeftArmJoint && shoulderPitch == rShoulderPitch - firstRightArmJoint);
+  static_assert(shoulderRoll == lShoulderRoll - firstLeftArmJoint && shoulderRoll == rShoulderRoll - firstRightArmJoint);
+  static_assert(elbowPitch == lElbowPitch - firstLeftArmJoint && elbowPitch == rElbowPitch - firstRightArmJoint);
+  static_assert(elbowYaw == lElbowYaw - firstLeftArmJoint && elbowYaw == rElbowYaw - firstRightArmJoint);
 
   ENUM(LegJoint,
   {,
-    hipYaw,
-    hipYawPitch = hipYaw, //< not a joint in the real NAO
-    hipRoll,
     hipPitch,
+    hipRoll,
+    hipYaw,
     kneePitch,
     anklePitch,
     ankleRoll,
   });
 
-  inline Joint combine(const Arms::Arm arm, const ArmJoint jointV)
+  static_assert(hipPitch == lHipPitch - firstLeftLegJoint && hipPitch == rHipPitch - firstRightLegJoint);
+  static_assert(hipRoll == lHipRoll - firstLeftLegJoint && hipRoll == rHipRoll - firstRightLegJoint);
+  static_assert(hipYaw == lHipYaw - firstLeftLegJoint && hipYaw == rHipYaw - firstRightLegJoint);
+  static_assert(kneePitch == lKneePitch - firstLeftLegJoint && kneePitch == rKneePitch - firstRightLegJoint);
+  static_assert(anklePitch == lAnklePitch - firstLeftLegJoint && anklePitch == rAnklePitch - firstRightLegJoint);
+  static_assert(ankleRoll == lAnkleRoll - firstLeftLegJoint && ankleRoll == rAnkleRoll - firstRightLegJoint);
+
+  inline Joint combine(const Arms::Arm arm, const ArmJoint joint)
   {
-    static const unsigned offset[2] = { 0u, firstRightArmJoint - firstLeftArmJoint };
-    return Joint(firstArmJoint + offset[arm] + jointV);
+    static const Joint firstArmJoints[2] = {firstLeftArmJoint, firstRightArmJoint};
+    return static_cast<Joint>(firstArmJoints[arm] + static_cast<Joint>(joint));
   }
 
-  inline Joint combine(const Legs::Leg leg, const LegJoint jointV)
+  inline Joint combine(const Legs::Leg leg, const LegJoint joint)
   {
-    static const unsigned offset[2] = { 0u, firstRightLegJoint - firstLeftLegJoint };
-    return Joint(firstLeftLegJoint + offset[leg] + jointV);
+    static const Joint firstLegJoints[2] = {firstLeftLegJoint, firstRightLegJoint};
+    return static_cast<Joint>(firstLegJoints[leg] + static_cast<Joint>(joint));
   }
 
   inline Joint mirror(const Joint joint)
   {
     switch(joint)
     {
-      case Joints::headYaw:
-      case Joints::waistYaw:
-        return joint;
       case Joints::lShoulderPitch:
-      case Joints::lHand:
-        return Joint(joint - Joints::lShoulderPitch + Joints::rShoulderPitch);
-      case Joints::lElbowRoll:
       case Joints::lShoulderRoll:
+      case Joints::lElbowPitch:
       case Joints::lElbowYaw:
-      case Joints::lWristYaw:
-        return Joint(joint - Joints::lShoulderPitch + Joints::rShoulderPitch);
+        return Joint(joint - Joints::firstLeftArmJoint + Joints::firstRightArmJoint);
       case Joints::rShoulderPitch:
-      case Joints::rHand:
-        return Joint(joint - Joints::rShoulderPitch + Joints::lShoulderPitch);
-      case Joints::rElbowRoll:
       case Joints::rShoulderRoll:
+      case Joints::rElbowPitch:
       case Joints::rElbowYaw:
-      case Joints::rWristYaw:
-        return Joint(joint - Joints::rShoulderPitch + Joints::lShoulderPitch);
-      case Joints::lHipYawPitch:
+        return Joint(joint - Joints::firstRightArmJoint + Joints::firstLeftArmJoint);
       case Joints::lHipPitch:
+      case Joints::lHipRoll:
+      case Joints::lHipYaw:
       case Joints::lKneePitch:
       case Joints::lAnklePitch:
-        return Joint(joint - Joints::lHipYawPitch + Joints::rHipYawPitch);
-      case Joints::lHipRoll:
       case Joints::lAnkleRoll:
-        return Joint(joint - Joints::lHipYawPitch + Joints::rHipYawPitch);
-      case Joints::rHipYawPitch:
+        return Joint(joint - Joints::firstLeftLegJoint + Joints::firstRightLegJoint);
       case Joints::rHipPitch:
+      case Joints::rHipRoll:
+      case Joints::rHipYaw:
       case Joints::rKneePitch:
       case Joints::rAnklePitch:
-        return Joint(joint - Joints::rHipYawPitch + Joints::lHipYawPitch);
-      case Joints::rHipRoll:
       case Joints::rAnkleRoll:
-        return Joint(joint - Joints::rHipYawPitch + Joints::lHipYawPitch);
+        return Joint(joint - Joints::firstRightLegJoint + Joints::firstLeftLegJoint);
       default:
         return joint;
     }
   }
 
-  inline bool canNegate(const Joint joint, const bool hasSeparateHipYawJoints)
+  inline bool canNegate(const Joint joint)
   {
     switch(joint)
     {
       case Joints::headYaw:
-      case Joints::waistYaw:
-        return true;
-      case Joints::lShoulderPitch:
-      case Joints::lHand:
-        return false;
-      case Joints::lElbowRoll:
       case Joints::lShoulderRoll:
-      case Joints::lWristYaw:
-        return true;
-      case Joints::rShoulderPitch:
-      case Joints::rHand:
-        return false;
-      case Joints::rElbowRoll:
-      case Joints::rShoulderRoll:
-      case Joints::rWristYaw:
-        return true;
-      case Joints::rElbowYaw:
       case Joints::lElbowYaw:
-        return !hasSeparateHipYawJoints;
-      case Joints::lHipYawPitch:
-      case Joints::lHipPitch:
-      case Joints::lKneePitch:
-      case Joints::lAnklePitch:
-        return false;
+      case Joints::rShoulderRoll:
+      case Joints::rElbowYaw:
+      case Joints::waistYaw:
       case Joints::lHipRoll:
+      case Joints::lHipYaw:
       case Joints::lAnkleRoll:
-        return true;
-      case Joints::rHipYawPitch:
-        return hasSeparateHipYawJoints;
-      case Joints::rHipPitch:
-      case Joints::rKneePitch:
-      case Joints::rAnklePitch:
-        return false;
       case Joints::rHipRoll:
+      case Joints::rHipYaw:
       case Joints::rAnkleRoll:
         return true;
       default:

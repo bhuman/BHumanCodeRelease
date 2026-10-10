@@ -6,8 +6,7 @@
  * @author Jan Fiedler
  */
 
-#include "Modules/Infrastructure/RobotProvider/NaoProvider.h" // include must be the first, because of Visual Studio
-#include "Modules/Infrastructure/RobotProvider/BoosterProvider.h"
+#include "Modules/Infrastructure/BoosterProvider/BoosterProvider.h"
 #include "Motion.h"
 #include "Framework/ModulePacket.h"
 #include "Framework/Settings.h"
@@ -25,7 +24,6 @@ bool Motion::beforeFrame()
 
 void Motion::afterModules()
 {
-  NaoProvider::finishFrame();
   BoosterProvider::finishFrame();
 }
 
@@ -34,7 +32,6 @@ bool Motion::afterFrame()
   if(Blackboard::getInstance().exists("JointSensorData"))
   {
     BH_TRACE_MSG("before waitForFrameData");
-    NaoProvider::waitForFrameData();
     BoosterProvider::waitForFrameData();
   }
   else

@@ -3,14 +3,13 @@ for Cognition mr GameControllerData LogDataProvider
 dr module:GameStateProvider:active
 
 # use keyboard to set different game states
-jc press 9 gc initial # Shift+Ctrl+I
-jc press 20 gc standby # Shift+Ctrl+T
-jc press 18 gc ready # Shift+Ctrl+R
-jc press 19 gc set # Shift+Ctrl+S
-jc press 16 gc playing # Shift+Ctrl+P
-jc press 6 gc finished # Shift+Ctrl+F
-jc press 2 gc kickOffFirstTeam # Shift+Ctrl+B
-jc press 25 gc kickOffSecondTeam # Shift+Ctrl+Y
-jc press 21 pr none # Shift+Ctrl+U (Unpenalized)
-jc press 13 pr manual # Shift+Ctrl+M (Manual penalty)
-jc press 7 pr playerPushing # Shift+Ctrl+G (pushinG, GameController penalty)
+kc press I gc initial
+kc press R gc ready
+kc press S gc set
+kc press P gc playing
+kc press F gc finished #
+kc press B gc kickOff firstTeam
+kc press Y gc kickOff secondTeam
+kc press U pr none # Unpenalized
+kc press M pr manual # Manual penalty
+kc press G pr pushing # pushinG, GameController penalty

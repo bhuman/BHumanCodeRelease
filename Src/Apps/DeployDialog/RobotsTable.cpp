@@ -5,7 +5,7 @@
  * robot per row with status information. The table is split in a static part and a
  * dynamic part. The static part always has the same number of rows and
  * represents the different player numbers that exist in a team. Robots in this
- * part will be deployed. The dynamic part contains robot thats were not assigned
+ * part will be deployed. The dynamic part contains robots that were not assigned
  * to a player number yet. It grows and shrinks with the number of robots placed
  * into it. Each preset has its own static part. These rows are hidden if the
  * corresponding preset is not currently selected.
@@ -15,10 +15,14 @@
 
 #include "RobotsTable.h"
 #include <iostream>
-#include <QComboBox>
+#include <QScrollBar>
+#ifdef WINDOWS
+#include <QStyleHints>
+#include <QTimer>
+#endif
 #include "../../Util/SimRobot/Src/SimRobot/Theme.h"
 
-RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 11)
+RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 10)
 {
   const char* headers[][2] =
   {
@@ -26,9 +30,8 @@ RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 11)
     {"icons8-wired-network-50", "LAN ping time in ms"},
     {"icons8-wi-fi-50", "Wireless ping time in ms"},
     {"icons8-charged-battery-50", "Battery charge in %"},
-    {"icons8-temperature-50", "Max joint temperature in °C"},
-    {"icons8-log-50", "Number of logs on internal drive"},
-    {"icons8-usb-memory-stick-50", "Number of logs on USB drive if present"},
+    {"icons8-temperature-50", "Max CPU/GPU temperature in °C"},
+    {"icons8-log-50", "Number of logs"},
     {"icons8-measurement-tool-50", "New calibration present?"},
     {"b-human", "Status of bhuman service"},
     {"icons8-file-preview-50", "Crash dump present?"}
@@ -72,6 +75,19 @@ RobotsTable::RobotsTable(int rows) : QTableWidget(rows, 11)
   horizontalHeader()->setStyleSheet("::section {padding-left: " + left + "px; padding-right: " + right + "px}"
                                     "::section:first {padding-left: 0px}");
   setStyleSheet(QString("QTableWidget {gridline-color: ") + (Theme::isDarkMode(this) ? "#404040" : "#e0e0e0") + "}");
+#ifdef WINDOWS
+  connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme)
+  {
+    QTimer::singleShot(0, this, [this]
+    {
+      const QString css = horizontalHeader()->styleSheet();
+      horizontalHeader()->setStyleSheet(QString());
+      horizontalHeader()->setStyleSheet(css);
+      setStyleSheet(QString());
+      setStyleSheet(QString("QTableWidget {gridline-color: ") + (Theme::isDarkMode(this) ? "#404040" : "#e0e0e0") + "}");
+    });
+  });
+#endif
 }
 
 int RobotsTable::nextVisibleRow(int row) const
@@ -121,6 +137,9 @@ void RobotsTable::dropEvent(QDropEvent* event)
   const QModelIndex index = indexAt(event->position().toPoint());
   if(index.isValid())
   {
+    // Prepare to restore horizontal scroll position.
+    const int horizontalPosition = horizontalScrollBar()->value();
+
     selectRow(sourceRow);
     int targetRow = index.row();
     const bool below = indexAt(event->position().toPoint() + QPoint(0, rowInsertTolerance)).row() != targetRow;
@@ -133,6 +152,8 @@ void RobotsTable::dropEvent(QDropEvent* event)
 
     if(!sourceEmpty) // Suppress dropping empty rows.
     {
+      setUpdatesEnabled(false);
+
       // Should the target be inserted rather than overwritten? This can only be the case
       // in the dynamic area and if the drop position is close to the border between two
       // rows. We can either insert before the current row or after it. The latter is
@@ -186,9 +207,12 @@ void RobotsTable::dropEvent(QDropEvent* event)
       setDragDropOverwriteMode(true);
 
       // Simulate dropping on the first column, because otherwise the data is pasted
-      // across two rows.
+      // across two rows. Make sure that drop position is inside the viewport.
+      // Horizontally, the viewport is temporarily scrolled to the left, while
+      // vertically, the drop position is simply clipped at 0.
+      horizontalScrollBar()->setValue(0);
       const QRect rect = visualRect(index.sibling(targetRow, 0));
-      QDropEvent e(QPointF(rect.x(), rect.y()),
+      QDropEvent e(QPointF(rect.x(), std::max(rect.y(), 0)),
                    event->dropAction(),
                    event->mimeData(),
                    event->buttons(),
@@ -221,7 +245,10 @@ void RobotsTable::dropEvent(QDropEvent* event)
 
       // Clear selection, because it hides color information.
       clearSelection();
+      horizontalScrollBar()->setValue(horizontalPosition);
+      setUpdatesEnabled(true);
       robotAssignmentChanged();
+      setState(QAbstractItemView::NoState);
       return;
     }
   }
@@ -247,16 +274,8 @@ void RobotsTable::changeEvent(QEvent* event)
     {
       QIcon icon = model()->headerData(column, Qt::Horizontal, Qt::DecorationRole).value<QIcon>();
       model()->setHeaderData(column, Qt::Horizontal, QVariant::fromValue(Theme::updateIcon(this, icon)), Qt::DecorationRole);
-      setStyleSheet(QString("QTableWidget {gridline-color: ") + (Theme::isDarkMode(this) ? "#404040" : "#e0e0e0") + "}");
     }
-#ifdef MACOS
-    if(parent())
-    {
-      const QColor color = palette().text().color();
-      for(QComboBox* comboBox : parent()->findChildren<QComboBox*>())
-        comboBox->setStyleSheet("color: " + color.name(QColor::HexArgb) + ";");
-    }
-#endif
+    setStyleSheet(QString("QTableWidget {gridline-color: ") + (Theme::isDarkMode(this) ? "#404040" : "#e0e0e0") + "}");
   }
   QTableWidget::changeEvent(event);
 }

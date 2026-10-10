@@ -56,7 +56,9 @@ STREAMABLE(SimpleFieldDimensions,
   (float) goalPostRadius,
   (float) crossBarRadius,
   (float) goalHeight,
-  (float) penaltyMarkSize, //vertical (and horizontal) size of a penaltyMark
+  (float) markRadius, // radius / half-length of a center / penalty mark
+  (bool)  hasCornerArcs,
+  (float) cornerArcRadius,
 });
 
 /**
@@ -74,7 +76,13 @@ struct FieldDimensions : public SimpleFieldDimensions
   {
     STREAMABLE(Line,
     {
-      bool isPartOfCircle = false, /**< Whether the line is a part of a circle. */
+      enum PartOf
+      {
+        nothing COMMA
+        circle COMMA
+        mark
+      };
+      PartOf partOf = nothing, /**< Whether the line is a part of another feature. */
 
       (Vector2f)(Vector2f::Zero()) from, /**< Begin of the line. */
       (Vector2f)(Vector2f::Zero()) to, /**< End of the line. */
@@ -89,10 +97,9 @@ struct FieldDimensions : public SimpleFieldDimensions
 
     std::vector<Line> lines;
 
-    void push(const Pose2f& p, float l, bool isPartOfCircle = false);
-    void push(const Vector2f& s, const Vector2f& e, bool isPartOfCircle = false);
+    void push(const Vector2f& s, const Vector2f& e, Line::PartOf partOf = Line::nothing);
     void pushCircle(const Vector2f& center, float radius, int numOfSegments);
-
+    void pushCross(const Vector2f& center, float radius);
   };
 
   /**
@@ -121,6 +128,8 @@ public:
   LinesTable fieldLines; ///< Table of line segments
   LinesTable goalFrameLines; ///< Table of line segments that contains the parts of the goal frame that are on the ground.
   LinesTable fieldLinesWithGoalFrame; ///< Table of line segments that contains both fieldLines and goalFrameLines
+  bool marksAreCrosses = true; ///< Whether the center / penalty mark is a cross (instead of a circle).
+  std::vector<Vector2f> marks; ///< Table of center / penalty mark(s).
   ENUM_INDEXED_ARRAY(std::vector<Vector2f>, CornerClass) corners; ///< All corners on the field.
 
   /**
@@ -141,17 +150,17 @@ public:
    * @param v The point.
    * @return How far was the point moved?
    */
-  float clipToCarpet(Vector2f& v) const
+  float clipToCarpet(Vector2f& v, const float o = 0.f) const
   {
     const Vector2f old = v;
-    if(v.x() > xPosOpponentFieldBorder)
-      v.x() = xPosOpponentFieldBorder;
-    else if(v.x() < xPosOwnFieldBorder)
-      v.x() = xPosOwnFieldBorder;
-    if(v.y() > yPosLeftFieldBorder)
-      v.y() = yPosLeftFieldBorder;
-    else if(v.y() < yPosRightFieldBorder)
-      v.y() = yPosRightFieldBorder;
+    if(v.x() > xPosOpponentFieldBorder - o)
+      v.x() = xPosOpponentFieldBorder - o;
+    else if(v.x() < xPosOwnFieldBorder + o)
+      v.x() = xPosOwnFieldBorder + o;
+    if(v.y() > yPosLeftFieldBorder - o)
+      v.y() = yPosLeftFieldBorder - o;
+    else if(v.y() < yPosRightFieldBorder + o)
+      v.y() = yPosRightFieldBorder + o;
     return (v - old).norm();
   }
 
@@ -164,8 +173,8 @@ public:
   }
 
   /**
-  * Returns true when p is inside the own half.
-  */
+   * Returns true when p is inside the own half.
+   */
   bool isInsideOwnHalf(const Vector2f& p) const
   {
     return p.x() <= xPosHalfwayLine && p.x() >= xPosOwnGoalLine && p.y() <= yPosLeftTouchline && p.y() >= yPosRightTouchline;
@@ -174,19 +183,20 @@ public:
   /**
    * The function clips a point to the field.
    * @param v The point.
+   * @param o The extra offset to the field border
    * @return How far was the point moved?
    */
-  float clipToField(Vector2f& v) const
+  float clipToField(Vector2f& v, const float o = 0.f) const
   {
     const Vector2f old = v;
-    if(v.x() > xPosOpponentGoalLine)
-      v.x() = xPosOpponentGoalLine;
-    else if(v.x() < xPosOwnGoalLine)
-      v.x() = xPosOwnGoalLine;
-    if(v.y() > yPosLeftTouchline)
-      v.y() = yPosLeftTouchline;
-    else if(v.y() < yPosRightTouchline)
-      v.y() = yPosRightTouchline;
+    if(v.x() > xPosOpponentGoalLine - o)
+      v.x() = xPosOpponentGoalLine - o;
+    else if(v.x() < xPosOwnGoalLine + o)
+      v.x() = xPosOwnGoalLine + o;
+    if(v.y() > yPosLeftTouchline - o)
+      v.y() = yPosLeftTouchline - o;
+    else if(v.y() < yPosRightTouchline + o)
+      v.y() = yPosRightTouchline + o;
     return (v - old).norm();
   }
 

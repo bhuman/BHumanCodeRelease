@@ -29,7 +29,15 @@ File::File(const std::string& name, const char* mode, bool tryAlternatives)
   {
     for(auto& path : names)
     {
+#ifdef WINDOWS
+      wchar_t widePath[MAX_PATH];
+      wchar_t wideMode[16];
+      MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, widePath, MAX_PATH);
+      MultiByteToWideChar(CP_UTF8, 0, mode, -1, wideMode, 16);
+      stream = _wfopen(widePath, wideMode);
+#else
       stream = fopen(path.c_str(), mode);
+#endif
       if(stream)
       {
         fullName = path;

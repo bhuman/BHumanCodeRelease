@@ -9,6 +9,7 @@
 
 /*
  * Models to consider in the future:
+ * - RobotSoccerLeagueBallModel
  * - GlobalTeammatesModel
  * - Something that I forgot?
  */

@@ -2,7 +2,7 @@
  * @file TeamMessageContainer.h
  *
  * This file exists only to avoid Windows.h/WinSock2.h conflicts.
- * (see Libs/SimulatedNao/GameController.h)
+ * (see Libs/SimulatedRobot/GameController.h)
  *
  * @author Arne Hasselbring
  */

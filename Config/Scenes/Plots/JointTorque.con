@@ -1,0 +1,14 @@
+vp torquesLeft 500 -50 50
+vpd torquesLeft representation:JointSensorData:torque:lHipPitch blue
+vpd torquesLeft representation:JointSensorData:torque:lHipRoll green
+vpd torquesLeft representation:JointSensorData:torque:lHipYaw cyan
+vpd torquesLeft representation:JointSensorData:torque:lKneePitch orange
+vpd torquesLeft representation:JointSensorData:torque:lAnklePitch red
+vpd torquesLeft representation:JointSensorData:torque:lAnkleRoll magenta
+vp torquesRight 500 -50 50
+vpd torquesRight representation:JointSensorData:torque:rHipPitch blue
+vpd torquesRight representation:JointSensorData:torque:rHipRoll green
+vpd torquesRight representation:JointSensorData:torque:rHipYaw cyan
+vpd torquesRight representation:JointSensorData:torque:rKneePitch orange
+vpd torquesRight representation:JointSensorData:torque:rAnklePitch red
+vpd torquesRight representation:JointSensorData:torque:rAnkleRoll magenta

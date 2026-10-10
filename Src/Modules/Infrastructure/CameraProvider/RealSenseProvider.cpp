@@ -12,7 +12,7 @@
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
 #include "Platform/Time.h"
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_frame.h>
 #endif
@@ -47,7 +47,7 @@ const std::unordered_map<RealSenseProvider::Setting, RealSenseProvider::Setting>
   {RealSenseProvider::whiteBalance, RealSenseProvider::autoWhiteBalance}
 };
 
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
 const rs2_option RealSenseProvider::options[RealSenseProvider::numOfSettings] =
 {
   RS2_OPTION_BACKLIGHT_COMPENSATION,
@@ -140,7 +140,6 @@ void RealSenseProvider::Settings::reg()
 }
 
 RealSenseProvider::RealSenseProvider()
-  : cameraInfo(CameraInfo::upper)
 {
   theInstance = this;
   VERIFY(readCameraIntrinsics());
@@ -149,7 +148,7 @@ RealSenseProvider::RealSenseProvider()
   // Initialize applied settings with a value illegal for all settings.
   std::fill(appliedSettings.begin(), appliedSettings.end(), 20000);
 
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   // Create a context object. This object owns the handles to all connected RealSense devices.
   context = rs2_create_context(RS2_API_VERSION, &e);
   VERIFY(ok());
@@ -170,7 +169,7 @@ RealSenseProvider::~RealSenseProvider()
 {
   stopStream();
 
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   // Release RealSense resources.
   rs2_delete_config(config);
   rs2_delete_pipeline(pipeline);
@@ -182,7 +181,7 @@ RealSenseProvider::~RealSenseProvider()
 
 void RealSenseProvider::update(CameraImage& theCameraImage)
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   if(yuvFrameData)
   {
     const unsigned timestamp = static_cast<long long>(frameMetadataTimeOfArrival) > static_cast<long long>(Time::getSystemTimeBase())
@@ -223,8 +222,7 @@ bool RealSenseProvider::readCameraResolution()
 
 bool RealSenseProvider::processResolutionRequest()
 {
-  const CameraResolutionRequest::Resolutions requestedResolution = theCameraResolutionRequest.resolutions[CameraInfo::upper];
-  CameraResolutionRequest::Resolutions& currentResolution = cameraResolutionRequest.resolutions[CameraInfo::upper];
+  const CameraResolutionRequest::Resolution requestedResolution = theCameraResolutionRequest.resolution;
   if(SystemCall::getMode() == SystemCall::Mode::physicalRobot && requestedResolution != lastResolutionRequest)
   {
     lastResolutionRequest = requestedResolution;
@@ -234,16 +232,38 @@ bool RealSenseProvider::processResolutionRequest()
         return false;
       case CameraResolutionRequest::defaultRes:
         if(!readCameraResolution())
-          currentResolution = CameraResolutionRequest::w640h480;
+          cameraResolutionRequest.resolution = CameraResolutionRequest::w640h480f30;
         return true;
-      case CameraResolutionRequest::w424h240:
-      case CameraResolutionRequest::w480x270:
-      case CameraResolutionRequest::w640h360:
-      case CameraResolutionRequest::w640h480:
-      case CameraResolutionRequest::w848h480:
-      case CameraResolutionRequest::w1280h720:
-      case CameraResolutionRequest::w1280h800:
-        currentResolution = requestedResolution;
+      case CameraResolutionRequest::w424h240f5:
+      case CameraResolutionRequest::w424h240f15:
+      case CameraResolutionRequest::w424h240f30:
+      case CameraResolutionRequest::w424h240f60:
+      case CameraResolutionRequest::w424h240f90:
+      case CameraResolutionRequest::w480h270f5:
+      case CameraResolutionRequest::w480h270f15:
+      case CameraResolutionRequest::w480h270f30:
+      case CameraResolutionRequest::w480h270f60:
+      case CameraResolutionRequest::w480h270f90:
+      case CameraResolutionRequest::w640h360f5:
+      case CameraResolutionRequest::w640h360f15:
+      case CameraResolutionRequest::w640h360f30:
+      case CameraResolutionRequest::w640h360f60:
+      case CameraResolutionRequest::w640h360f90:
+      case CameraResolutionRequest::w640h480f5:
+      case CameraResolutionRequest::w640h480f15:
+      case CameraResolutionRequest::w640h480f30:
+      case CameraResolutionRequest::w640h480f60:
+      case CameraResolutionRequest::w848h480f5:
+      case CameraResolutionRequest::w848h480f15:
+      case CameraResolutionRequest::w848h480f30:
+      case CameraResolutionRequest::w848h480f60:
+      case CameraResolutionRequest::w1280h720f5:
+      case CameraResolutionRequest::w1280h720f15:
+      case CameraResolutionRequest::w1280h720f30:
+      case CameraResolutionRequest::w1280h800f5:
+      case CameraResolutionRequest::w1280h800f15:
+      case CameraResolutionRequest::w1280h800f30:
+        cameraResolutionRequest.resolution = requestedResolution;
         return true;
       default:
         FAIL("Unknown resolution.");
@@ -266,7 +286,7 @@ void RealSenseProvider::applySettings()
       if(limitedSetting != settings[setting])
         OUTPUT_WARNING(TypeRegistry::getEnumName(setting) << " should be inside [" << settingLimits[setting].min
                        << ", " << settingLimits[setting].max << "], but is " << settings[setting]);
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
       rs2_set_option(reinterpret_cast<rs2_options*>(sensor), options[setting], static_cast<float>(limitedSetting), &e);
       VERIFY(ok());
 #endif
@@ -278,15 +298,15 @@ void RealSenseProvider::applySettings()
 void RealSenseProvider::setupCamera()
 {
   // set resolution
-  cameraResolutionRequest.apply(CameraInfo::upper, cameraInfo);
+  cameraResolutionRequest.apply(cameraInfo);
 
   // set opening angle
-  cameraInfo.openingAngleWidth = cameraIntrinsics.cameras[CameraInfo::upper].openingAngleWidth;
-  cameraInfo.openingAngleHeight = cameraIntrinsics.cameras[CameraInfo::upper].openingAngleHeight;
+  cameraInfo.openingAngleWidth = cameraIntrinsics.openingAngleWidth;
+  cameraInfo.openingAngleHeight = cameraIntrinsics.openingAngleHeight;
 
   // set optical center
-  cameraInfo.opticalCenter.x() = cameraIntrinsics.cameras[CameraInfo::upper].opticalCenter.x() * cameraInfo.width;
-  cameraInfo.opticalCenter.y() = cameraIntrinsics.cameras[CameraInfo::upper].opticalCenter.y() * cameraInfo.height;
+  cameraInfo.opticalCenter.x() = cameraIntrinsics.opticalCenter.x() * cameraInfo.width;
+  cameraInfo.opticalCenter.y() = cameraIntrinsics.opticalCenter.y() * cameraInfo.height;
 
   // update focal length
   cameraInfo.updateFocalLength();
@@ -296,9 +316,9 @@ void RealSenseProvider::setupCamera()
 
 void RealSenseProvider::startStream()
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   // Request a specific configuration
-  rs2_config_enable_stream(config, RS2_STREAM_COLOR, 0, cameraInfo.width, cameraInfo.height, RS2_FORMAT_YUYV, 30, &e);
+  rs2_config_enable_stream(config, RS2_STREAM_COLOR, 0, cameraInfo.width, cameraInfo.height, RS2_FORMAT_YUYV, cameraInfo.frameRate, &e);
   VERIFY(ok());
 
   // Depth image is required to avoid constant restart of RealSense
@@ -354,7 +374,7 @@ void RealSenseProvider::startStream()
 
 void RealSenseProvider::stopStream()
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   // Free image frame
   if(yuvFrameData)
   {
@@ -374,7 +394,7 @@ void RealSenseProvider::stopStream()
 
 void RealSenseProvider::waitForFrameData2()
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   const bool hadFrame = yuvFrameData != nullptr;
   if(yuvFrameData)
   {
@@ -436,7 +456,7 @@ void RealSenseProvider::waitForFrameData2()
 
 bool RealSenseProvider::ok([[maybe_unused]] const bool print)
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   if(e)
   {
     if(print)
@@ -452,7 +472,7 @@ bool RealSenseProvider::ok([[maybe_unused]] const bool print)
 
 bool RealSenseProvider::isFrameDataComplete()
 {
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
   if(theInstance)
     return theInstance->yuvFrameData != nullptr;
   else

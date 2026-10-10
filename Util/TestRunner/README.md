@@ -19,7 +19,7 @@ pip install psutil
 
 The script requires the following command-line arguments:
 
-- `scene`: **Positional argument**. Path to a raw scene file (e.g., `.ros2` file), a test scene file with a configuration that includes a test command, or a directory containing such test scene files.
+- `scene`: **Positional argument**. Path to a raw scene file (e.g., `.ros3` file), a test scene file with a configuration that includes a test command, or a directory containing such test scene files.
 - `--env`: Environment mode. Options: `debug`, `develop`, `release` (default: `develop`).
 - `--testcmd`: Test command enclosed in double quotes (e.g., `--testcmd "test game 10"`).
 - `--workers`: Number of worker processes to run (default: number of CPU cores).
@@ -38,7 +38,7 @@ This command will run the test command "test game 10" on the specified scene usi
 Once the necessary arguments are provided, the script will:
 
 1. Parse the test command and configuration.
-2. If a directory is provided for the `scene`, it will find all `.ros2` scene files and extract their respective test commands.
+2. If a directory is provided for the `scene`, it will find all `.ros3` scene files and extract their respective test commands.
 3. Distribute the runs across the available workers.
 4. Run each test in a separate worker process.
 5. Monitor the processes and terminate them once completed or if they fail.

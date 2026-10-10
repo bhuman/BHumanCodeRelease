@@ -8,10 +8,10 @@ default_install_hook_types: [
 
 # Override all stages default for individual hooks that do not set stages. These hooks would run twice otherwise (during pre-commit and commit-msg stage). If you want to use any other than the following stages for any hook or in any command from the server pipeline, you have to add them here.
 default_stages: [
-  commit,
+  pre-commit,
   # commit-msg, # This stage should be excluded specifically, so that the hooks that ran at the commit stage do not run again.
   manual,
-  merge-commit,
+  pre-merge-commit,
   # post-checkout, # These other stages can be included, if needed.
   # post-commit,
   # post-merge,
@@ -84,9 +84,8 @@ repos:
         exclude_types: [plist]
         exclude: |
           (?x)^(
-            Config/Scenes/K1/BoosterReplay.con|
-            Config/Scenes/T1/BoosterReplay.con|
-            Config/Scenes/ReplayRobot.con|
+            Config/Scenes/K1/Replay.con|
+            Config/Scenes/T1/Replay.con|
             Install/Files/bin/bhuman|
             Make/|
             Util/
@@ -97,9 +96,8 @@ repos:
         exclude_types: [plist]
         exclude: |
           (?x)^(
-            Config/Scenes/K1/BoosterReplay.con|
-            Config/Scenes/T1/BoosterReplay.con|
-            Config/Scenes/ReplayRobot.con|
+            Config/Scenes/K1/Replay.con|
+            Config/Scenes/T1/Replay.con|
             Install/Files/bin/bhuman|
             Make/|
             Util/
@@ -112,7 +110,7 @@ repos:
       - id: typos
         name: Check for misspellings in code
         args: [--config=Make/Hooks/typos.toml, --locale=en-us, --no-check-filenames, --force-exclude, --write-changes, --format=long]
-        stages: [commit] # Select stage, to skip this hook on the server pipeline.
+        stages: [pre-commit] # Select stage, to skip this hook on the server pipeline.
 
   # TODO: Add commit style convention (at least for issue format, e.g. "(#123)"). See: https://www.conventionalcommits.org/
   # TODO: Prevent merge commits by supplying the --no-merge-commit argument.

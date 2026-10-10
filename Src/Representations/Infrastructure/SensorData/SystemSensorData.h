@@ -7,9 +7,8 @@ STREAMABLE(SystemSensorData,
 {
   void draw(),
 
-  (float)(SensorData::off) cpuTemperature, /**< The temperature of the cpu (in °C). */
-  (float)(SensorData::off) batteryCurrent, /**< The current of the battery (in A). */
+  (float)(SensorData::off) cpuTemperature, /**< The temperature of the CPU (in °C). */
+  (float)(SensorData::off) gpuTemperature, /**< The temperature of the GPU (in °C). */
   (float)(SensorData::off) batteryLevel, /**< The current of the battery (in %). Range: [0.0, 1.0] */
-  (float)(SensorData::off) batteryTemperature, /**< The temperature of the battery (in %, whatever that means...). Range: [0.0, 1.0] */
-  (bool)(false) batteryCharging, /**< The battery is charging */
+  (bool)(false) emergencyMode, /**< The robot is in emergency mode */
 });

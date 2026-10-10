@@ -1,7 +1,7 @@
 /**
  * @file Tools/Math/Transformation.h
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once

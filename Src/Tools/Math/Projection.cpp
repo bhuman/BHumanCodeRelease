@@ -195,7 +195,9 @@ bool Projection::pointIsInImage(const CameraMatrix& cameraMatrix, const CameraIn
 bool Projection::calculatePointByAngles(const Vector2f& angles, const CameraMatrix& cameraMatrix,
                                         const CameraInfo& cameraInfo, Vector2f& point)
 {
-  const Vector3f vectorToPointWorld(std::cos(angles.x()), std::sin(angles.x()), std::tan(angles.y()));
+  const Vector3f vectorToPointWorld(std::cos(angles.x()) * std::cos(angles.y()),
+                                    std::sin(angles.x()) * std::cos(angles.y()),
+                                    std::sin(angles.y()));
   const Vector3f vectorToPoint(cameraMatrix.rotation.inverse() * vectorToPointWorld);
   if(vectorToPoint.x() <= 0)
     return false;

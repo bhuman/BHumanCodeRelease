@@ -1,5 +1,5 @@
 #!/bin/bash
-# Login on a NAO robot using B-Human's private key.
+# Login on a Booster robot using B-Human's private key.
 # The ip address of the robot must be passed as an argument.
 # The ip address is remembered as default address for the
 # SimRobot scene RemoteRobot.ros3. This behavior can be

@@ -28,7 +28,7 @@ namespace ColorModelConversions
 {
   /*
    Coefficients for the YUV <-> RGB conversions.
-   These are taken from the possible output formats of the NAO's cameras.
+   These were originally taken from the possible output formats of the NAO's cameras.
    (see http://www.onsemi.com/pub_link/Collateral/MT9M114-D.PDF, page 41)
    */
   static constexpr float yCoeffR = 0.299f; // BT 601-YUV: 0.299f
@@ -53,7 +53,7 @@ namespace ColorModelConversions
   static constexpr int scaledGCoeffV = static_cast<int>(yCoeffR / (yCoeffG* vCoeff) * static_cast<float>(1 << scaleExponent));
 
   /**
-   * Converts an YUV pixel into an RGB pixel.
+   * Converts a YUV pixel into an RGB pixel.
    * @param Y The Y channel of the source pixel.
    * @param U The U channel of the source pixel.
    * @param V The V channel of the source pixel.
@@ -77,6 +77,50 @@ namespace ColorModelConversions
     R = r < 0 ? 0 : (r > 255 ? 255 : static_cast<unsigned char>(r));
     G = g < 0 ? 0 : (g > 255 ? 255 : static_cast<unsigned char>(g));
     B = b < 0 ? 0 : (b > 255 ? 255 : static_cast<unsigned char>(b));
+  }
+
+ /**
+  * Converts a YUYV pixel into two RGB pixels.
+  * @param Y0 The Y0 channel of the source pixel.
+  * @param U The U channel of the source pixel.
+  * @param Y1 The Y1 channel of the source pixel.
+  * @param V The V channel of the source pixel.
+  * @param R0 The R channel of the first target pixel.
+  * @param G0 The G channel of the first target pixel.
+  * @param B0 The B channel of the first target pixel.
+  * @param R1 The R channel of the second target pixel.
+  * @param G1 The G channel of the second target pixel.
+  * @param B1 The B channel of the first target pixel.
+  */
+  inline void fromYUYVToRGB(const unsigned char Y0,
+                            const unsigned char U,
+                            const unsigned char Y1,
+                            const unsigned char V,
+                            unsigned char& R0,
+                            unsigned char& G0,
+                            unsigned char& B0,
+                            unsigned char& R1,
+                            unsigned char& G1,
+                            unsigned char& B1)
+  {
+    const int u = U - 128;
+    const int v = V - 128;
+    const int tmp1 = ((u * scaledInvUCoeff) >> scaleExponent);
+    const int tmp2 = ((u * scaledGCoeffU + v * scaledGCoeffV) >> scaleExponent);
+    const int tmp3 = ((v * scaledInvVCoeff) >> scaleExponent);
+    const int b0 = Y0 + tmp1;
+    const int g0 = Y0 - tmp2;
+    const int r0 = Y0 + tmp3;
+    const int b1 = Y1 + tmp1;
+    const int g1 = Y1 - tmp2;
+    const int r1 = Y1 + tmp3;
+
+    R0 = r0 < 0 ? 0 : (r0 > 255 ? 255 : static_cast<unsigned char>(r0));
+    G0 = g0 < 0 ? 0 : (g0 > 255 ? 255 : static_cast<unsigned char>(g0));
+    B0 = b0 < 0 ? 0 : (b0 > 255 ? 255 : static_cast<unsigned char>(b0));
+    R1 = r1 < 0 ? 0 : (r1 > 255 ? 255 : static_cast<unsigned char>(r1));
+    G1 = g1 < 0 ? 0 : (g1 > 255 ? 255 : static_cast<unsigned char>(g1));
+    B1 = b1 < 0 ? 0 : (b1 > 255 ? 255 : static_cast<unsigned char>(b1));
   }
 
   /**

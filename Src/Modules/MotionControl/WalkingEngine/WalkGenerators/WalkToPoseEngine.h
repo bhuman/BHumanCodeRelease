@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -18,30 +17,23 @@
 #include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/TorsoMatrix.h"
 #include "Framework/Module.h"
 
 MODULE(WalkToPoseEngine,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(LibDemo),
   REQUIRES(OdometryDataPreview),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
   REQUIRES(WalkingEngineOutput),
   REQUIRES(WalkStepData),
   PROVIDES(WalkToPoseGenerator),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (Angle)(0.3f) controlAheadAngle, /**< The angular part of the arc by which the target is shifted when turning around a circle. */
-    (float)(200.f) startTurningBeforeCircleDistance, /**< The distance to the tangent point below which the robot wants to walk on the arc. */
-    (float)(0.75f) reduceForwardStepUpperThreshold, /**< If the next forward step size exceeds this much of the forward max speed (in %),
-                                                    then slow down. */
-    (float)(0.25f) reduceForwardStepLowerThreshold, /**< If after the next step the forward step distance is below this forward step size
-                                                    relative to the forward max speed (in %), then slow down. */
-    (float)(230.f) useReferenceMaxForwardSpeed,
+    (Angle) controlAheadAngle, /**< The angular part of the arc by which the target is shifted when turning around a circle. */
+    (float) startTurningBeforeCircleDistance, /**< The distance to the tangent point below which the robot wants to walk on the arc. */
+    (Rangef) targetInterpolationRange, /**< Target rotation is interpolated based on the distance to the target translation. */
   }),
 });
 

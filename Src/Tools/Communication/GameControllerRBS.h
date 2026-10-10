@@ -5,8 +5,8 @@
  * the team (reference broadcast synchronization using GameController
  * packets).
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
- * @author <A href="mailto:jesse@tzi.de">Jesse Richter-Klug</A>
+ * @author Tim Laue
+ * @author Jesse Richter-Klug
  * @author Arne Hasselbring
  */
 

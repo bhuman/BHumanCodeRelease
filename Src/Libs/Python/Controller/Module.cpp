@@ -54,7 +54,7 @@ Args:
     location: The location in the configuration file search path.
     scenario: The scenario in the configuration file search path.
     motion_cycle_time: The cycle time of the Motion thread in seconds.
-    robot_type: The robot type (nao or t1).
+    robot_type: The robot type (k1 or t1).
 )bhdoc", py::arg("name"), py::arg("team_number"), py::arg("field_player_color"), py::arg("goalkeeper_color"), py::arg("player_number"), py::arg("location"), py::arg("scenario"), py::arg("motion_cycle_time"), py::arg("robot_type"))
   .def("start", &Controller::start, "Starts all robot threads.")
   .def("stop", &Controller::stop, "Stops all robot threads.")

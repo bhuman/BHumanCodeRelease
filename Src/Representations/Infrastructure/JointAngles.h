@@ -19,13 +19,12 @@ public:
   /**
    * The method returns the angle of the mirror (left/right) of the given joint.
    * @param joint The joint the mirror of which is returned.
-   * @param hasSeparateHipYawJoints Does the robot have two separate hip yaw joints?
    * @return The angle of the mirrored joint.
    */
-  Angle mirror(Joints::Joint joint, bool hasSeparateHipYawJoints) const;
+  Angle mirror(Joints::Joint joint) const;
 
   /** Initializes this instance with the mirrored angles of other. */
-  void mirror(const JointAngles& other, bool hasSeparateHipYawJoints);
+  void mirror(const JointAngles& other);
 
 private:
   /**
@@ -38,7 +37,6 @@ private:
 public:
   ,
   (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) angles, /**< The angles of all joints. */
-  (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) variance, /**< The variance of all joints in squared rad. */
   (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) velocity,
   (unsigned)(0) timestamp, /**< The time when the joint angles were received*/
 });
@@ -46,15 +44,14 @@ public:
 inline JointAngles::JointAngles()
 {
   angles.fill(0.f);
-  variance.fill(0.f);
   velocity.fill(0.f);
 }
 
-inline void JointAngles::mirror(const JointAngles& other, bool hasSeparateHipYawJoints)
+inline void JointAngles::mirror(const JointAngles& other)
 {
   ASSERT(this != &other);
   for(int i = 0; i < Joints::numOfJoints; ++i)
-    angles[i] = other.mirror(static_cast<Joints::Joint>(i), hasSeparateHipYawJoints);
+    angles[i] = other.mirror(static_cast<Joints::Joint>(i));
   timestamp = other.timestamp;
 }
 

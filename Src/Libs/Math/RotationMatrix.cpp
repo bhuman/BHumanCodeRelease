@@ -1,9 +1,9 @@
 /**
  * @file RotationMatrix.cpp
  * Implementation of class RotationMatrix
- * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
+ * @author Martin Kallnik
  * @author Max Risler
- * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ * @author Alexis Tsogias
  */
 
 #include "RotationMatrix.h"

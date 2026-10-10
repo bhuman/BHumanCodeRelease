@@ -1,0 +1,85 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd "$(dirname "$(which "$0")")"; pwd)
+. "$SCRIPT_DIR/libBHuman"
+
+ONNX_LIB_DIR="$SCRIPT_DIR/../../Util/onnxruntime/lib"
+WORKING_DIR="$BH_TMPDIR/onnx"
+
+download_onnxruntime () {
+  local FILE_NAME="onnxruntime-$DOWNLOAD_OS-$ARCH-$BH_ONNX_RUNTIME_VERSION.$PACKAGE_FORMAT"
+  local DOWNLOAD_URL="https://github.com/microsoft/onnxruntime/releases/download/v$BH_ONNX_RUNTIME_VERSION/$FILE_NAME"
+  local PACKAGE_FILE="$WORKING_DIR/$FILE_NAME"
+
+  mkdir -p "$WORKING_DIR/$FILE_NAME-unpacked"
+  test -s "$PACKAGE_FILE" || {
+    echo "Downloading ONNX runtime"
+    echo "from $DOWNLOAD_URL"
+    curl -L -o "$PACKAGE_FILE" -s "$DOWNLOAD_URL" || error_and_exit "Failed to download $DOWNLOAD_URL"
+  }
+
+  echo "Unpacking ONNX runtime"
+  if test "$PACKAGE_FORMAT" = "zip" ; then
+    unzip "$PACKAGE_FILE" -d "$WORKING_DIR/$FILE_NAME-unpacked" || error_and_exit "Failed to unpack $PACKAGE_FILE"
+  else
+    tar -xf "$PACKAGE_FILE" -C "$WORKING_DIR/$FILE_NAME-unpacked" || error_and_exit "Failed to unpack $PACKAGE_FILE"
+  fi
+
+  echo "Removing old library files"
+  mkdir -p "$ONNX_ACTIVE_LIB_DIR"
+  rm "$ONNX_ACTIVE_LIB_DIR"/* 2> /dev/null
+
+  echo "Copying new ONNX runtime library files"
+  LIB_FILES=$(find "$WORKING_DIR"/$FILE_NAME-unpacked/*/lib/*.$LIBRARY_FORMAT* -maxdepth 0 -type f -o -type l)
+  test -n "$LIB_FILES" || {
+    error_and_exit 1 "No lib files found"
+  }
+  echo "$LIB_FILES" | while read FILE ; do
+    cp -P "$FILE" "$ONNX_ACTIVE_LIB_DIR"
+  done
+  echo -n "$BH_ONNX_RUNTIME_VERSION" > "$ONNX_RUNTIME_CURRENTLY_INSTALLED_VERSION_FILE"
+}
+
+for TARGET in $BH_ONNX_RUNTIME_TARGETS; do
+  ARCH="x64"
+  PACKAGE_FORMAT="tgz"
+  case "$TARGET" in
+    "osx")
+      ONNX_ACTIVE_LIB_DIR="$ONNX_LIB_DIR/macOS"
+      ARCH="arm64"
+      DOWNLOAD_OS="osx"
+      LIBRARY_FORMAT=dylib
+    ;;
+
+    "windows")
+      ONNX_ACTIVE_LIB_DIR="$ONNX_LIB_DIR/Windows"
+      DOWNLOAD_OS="win"
+      PACKAGE_FORMAT="zip"
+      LIBRARY_FORMAT=[dl]
+    ;;
+
+    "booster")
+      ONNX_ACTIVE_LIB_DIR="$ONNX_LIB_DIR/LinuxArm64"
+      ARCH="aarch64"
+      DOWNLOAD_OS="linux"
+      LIBRARY_FORMAT=so
+      ;;
+
+    *)
+      ONNX_ACTIVE_LIB_DIR="$ONNX_LIB_DIR/Linux"
+      test "$BH_ARCH" = "arm" && {
+        ONNX_ACTIVE_LIB_DIR="${ONNX_ACTIVE_LIB_DIR}Arm64"
+        ARCH="aarch64"
+      }
+      DOWNLOAD_OS="linux"
+      LIBRARY_FORMAT=so
+    ;;
+  esac
+
+  ONNX_RUNTIME_CURRENTLY_INSTALLED_VERSION_FILE=$ONNX_ACTIVE_LIB_DIR/installed_version
+  test -f "$ONNX_RUNTIME_CURRENTLY_INSTALLED_VERSION_FILE" && test "$(cat $ONNX_RUNTIME_CURRENTLY_INSTALLED_VERSION_FILE)" = "$BH_ONNX_RUNTIME_VERSION" && {
+    continue
+  }
+
+  download_onnxruntime
+done

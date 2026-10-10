@@ -1,7 +1,7 @@
 /**
  * @file MassCalibration.h
  * Declaration of a struct for representing the relative positions and masses of mass points.
- * @author <a href="mailto:allli@informatik.uni-bremen.de">Alexander Härtl</a>
+ * @author Alexander Härtl
  */
 
 #pragma once

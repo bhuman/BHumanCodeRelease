@@ -2,7 +2,7 @@
  * @file Geometry.cpp
  * Implements class Geometry
  *
- * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
+ * @author Matthias Jüngel
  */
 
 #include "Geometry.h"

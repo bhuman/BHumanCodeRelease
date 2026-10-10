@@ -47,7 +47,7 @@ option((SkillBehaviorControl) WalkToPointObstacle,
     float bestRating = -1;
     for(const auto& vec : evalPoints)
     {
-      const float rating = theExpectedGoals.getRating(theRobotPose * vec, false);
+      const float rating = theExpectedGoals.getRating(theRobotPose * vec, false, true, false);
       if(rating > bestRating)
       {
         shiftedTarget->translation = vec;

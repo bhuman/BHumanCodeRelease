@@ -10,15 +10,10 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 
-// Declare aliases of representation for lower and upper camera threads
-#define DECLARE(Representation) \
-  STREAMABLE_WITH_BASE(Lower##Representation, Representation, {, }); \
-  STREAMABLE_WITH_BASE(Upper##Representation, Representation, {, })
+// Declare aliases of representation for specific threads
+#define DECLARE(Representation, Thread) \
+  STREAMABLE_WITH_BASE(Thread##Representation, Representation, {, }); \
 
 // Needed by Cognition.cpp
-DECLARE(FrameInfo);
-
-// Define a module for the ImageCoordinateSystem, because it has to integrate CameraInfo
-DECLARE(ImageCoordinateSystem);
+DECLARE(FrameInfo, Color);

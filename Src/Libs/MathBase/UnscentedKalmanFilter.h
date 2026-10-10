@@ -3,7 +3,7 @@
  *
  * A generic implementation of an Unscented Kalman Filter.
  *
- * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ * @author Alexis Tsogias
  */
 
 #pragma once

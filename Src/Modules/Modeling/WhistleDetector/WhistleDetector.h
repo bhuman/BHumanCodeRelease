@@ -57,6 +57,7 @@ MODULE(WhistleDetector,
     (unsigned) minDetections, /**< The minimum number of detections to accept the whistle. */
     (int) minTimeBetweenWhistles, /**< Minimum time after a whistle was detected to accept the next one (in ms). */
     (unsigned char) numOfChannelsReported, /**< The number of channels reported when listening. */
+    (unsigned) sampleRate, /**< The sample rate the whistle detector is using. */
   }),
 });
 
@@ -68,6 +69,7 @@ class WhistleDetector : public WhistleDetectorBase
   fftw_plan fft; /**< The plan to compute the FFT. */
   double* in = nullptr; /**< The input of the FFT. */
   fftw_complex* out = nullptr; /**< The output of the FFT. */
+  fftw_complex* tempOut = nullptr; /**< A buffer for transforming \c out to a different sample rate. */
 
   std::vector<float> amplitudes; /**< The amplitudes of the different frequencies. */
   RingBufferWithSum<float, 200> maxAmpHist; /**< The maximum amplitudes of the last 200 FFTs. */
@@ -106,6 +108,9 @@ class WhistleDetector : public WhistleDetectorBase
 
   /** Creates two debug images. */
   void draw();
+
+  /** Remap the spectrum in \c out from the current sample rate to \c sampleRate. */
+  void remapSpectrum();
 
 public:
   WhistleDetector();

@@ -1,0 +1,22 @@
+{
+    "field": {
+        "edge_to_edge": true,
+        "length": 9.0,
+        "width": 6.0,
+        "lineWidth": 0.05,
+        "penaltyMarkSize": 0.1,
+        "goalAreaLength": 1.0,
+        "goalAreaWidth": 3.0,
+        "penaltyAreaLength": 2.0,
+        "penaltyAreaWidth": 4.0,
+        "penaltyMarkDistance": 1.5,
+        "centerCircleDiameter": 1.5,
+        "borderStripWidth": 1.0
+    },
+    "goal": {
+        "postDiameter": 0.1,
+        "height": 1.2,
+        "innerWidth": 1.8,
+        "depth": 0.5
+    }
+}

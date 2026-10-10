@@ -24,18 +24,15 @@ ip=$1
 
 source "$basePath/setupTarget" "$ip"
 
-robotNames=`ssh $SSHOPTIONS -o ConnectTimeout=2 $TARGET_USER@$ip "hostname; cat /var/volatile/tmp/bodyName.txt 2>/dev/null"`
-if [ -z "$robotNames" ]
+robotName="$(ssh $SSHOPTIONS -o ConnectTimeout=2 $TARGET_USER@$ip "hostname")"
+if [ -z "$robotName" ]
 then
   echo "Could not get name from robot."
   exit 1
 fi
-headName=$(echo $robotNames | cut -d " " -f 1)
-# This quietly falls back to the head name if bodyName.txt was not written yet. This may be a bad idea.
-bodyName=$(echo $robotNames | cut -d " " -f 2)
 
-files=("Config/Robots/$headName/$bodyName/cameraCalibration.cfg"
-       "Config/Robots/$bodyName/Body/imuCalibration.cfg")
+files=("Config/Robots/$robotName/cameraCalibration.cfg"
+       "Config/Robots/$robotName/imuCalibration.cfg")
 
 if [ "$(uname)" == "Darwin" ]; then
   rsync --chmod=F-x -Rzce "ssh $SSHOPTIONS" "$TARGET_USER@$ip:${files[*]}" "$basePath/../.." && ssh $SSHOPTIONS $TARGET_USER@$ip "touch Config/settings.cfg"

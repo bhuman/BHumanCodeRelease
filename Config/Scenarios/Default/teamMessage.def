@@ -1,7 +1,7 @@
 RobotPoseCompact
 {
   rotation: Angle(bits=8)
-  translation: Vector<Float(min=-5120, max=5110, bits=10)>(n=2)
+  translation: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)
   quality: Enum(type=RobotPose::LocalizationQuality)
   covariance: Matrix<Integer(min=-32768, max=32767)>(m=2, n=2, symmetric) // Is actually something like Matrix<float16_t>
   timestampLastJump: Timestamp(bits=1, shift=10, reference=relativePast, noclip)
@@ -15,8 +15,8 @@ RobotStatus
 
 BallState
 {
-  position: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)
-  velocity: Vector<Float(min=-8000, max=8000, bits=11)>(n=2)
+  position: Vector<Float(min=-29000, max=29000, bits=13)>(n=2)
+  velocity: Vector<Float(min=-10000, max=10000, bits=12)>(n=2)
   // covariance: Matrix<Float>(m=2, n=2, symmetric) // Unused
 }
 
@@ -45,7 +45,7 @@ BehaviorStatus
 {
   passTarget: Integer(min=-1, max=14)
   walkingTo: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)
-  speed: Float(min=0.0, max=310.0, bits=5)
+  speed: Float(min=0.0, max=2000.0, bits=5)
   shootingTo: Vector<Float(min=-12800, max=12800, bits=11)>(n=2)[:1]
 }
 
@@ -66,12 +66,6 @@ IndirectKick
   lastKickTimestamp: Timestamp(bits=24, shift=8, reference=relativePast, noclip)
 }
 
-RefereeSignal
-{
-  signal: Enum(type=RefereeGesture::Gesture)
-  timeWhenDetected: Timestamp(bits=11, shift=4, reference=relativePast, noclip)
-}
-
 FrameInfo
 {
   time: Timestamp(bits=0, reference=relativePast)
@@ -87,5 +81,4 @@ TeamMessage
   theBehaviorStatus: BehaviorStatus
   theStrategyStatus: StrategyStatus
   theIndirectKick: IndirectKick
-  theRefereeSignal: RefereeSignal
 }

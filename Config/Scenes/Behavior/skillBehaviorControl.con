@@ -1,0 +1,8 @@
+mr CalibrationRequest default
+mr BehaviorStateInformation default
+for Cognition mr CalibrationRequest SkillBehaviorControl
+for Cognition mr BehaviorStateInformation SkillBehaviorControl
+for Cognition mr MotionRequest SkillBehaviorControl
+for Cognition mr HeadMotionRequest SkillBehaviorControl
+for Cognition mr ArmMotionRequest SkillBehaviorControl
+for Cognition mr ActivationGraph SkillBehaviorControl

@@ -11,10 +11,8 @@
 
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Math/Geometry.h"
 #include "Math/LeastSquares.h"
 #include "Framework/Module.h"
@@ -33,10 +31,6 @@ MODULE(FieldBoundaryProvider,
   REQUIRES(CameraImage),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(ImageCoordinateSystem),
-  REQUIRES(OdometryData),
-  REQUIRES(OtherFieldBoundary),
-  REQUIRES(OtherOdometryData),
   PROVIDES(FieldBoundary),
   LOADS_PARAMETERS(
   {,
@@ -53,7 +47,6 @@ MODULE(FieldBoundaryProvider,
     (int) top, /**< to which pixel points are considered as at the top*/
     (float) uncertaintyLimit, /**< maximum average uncertainty of the non top spots to be not considered as odd */
     (int) maxPointsUnderBorder, /**< how much the points are allowed to be below the lower end on average */
-    (bool) useOtherFieldBoundary, /**< Allow using the field boundary of the other camera. */
   }),
 });
 
@@ -109,12 +102,6 @@ private:
   void update(FieldBoundary& fieldBoundary) override;
 
   void validatePrediction(FieldBoundary& fieldBoundary, std::vector<Spot>& spots);
-
-  /**
-   * Predict where the previous field boundary will be in the current image.
-   * @param fieldBoundary The field boundary that is updated.
-   */
-  void projectPrevious(FieldBoundary& fieldBoundary);
 
   void predictSpots(std::vector<Spot>& spots);
 

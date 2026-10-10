@@ -12,7 +12,6 @@
 #include "Framework/Settings.h"
 #include "Math/Geometry.h"
 #include "Tools/Motion/WalkUtilities.h"
-#include "Tools/Motion/Transformation.h"
 
 MAKE_MODULE(WalkToBallEngine);
 
@@ -93,17 +92,13 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
       }
 
       modTargetInSCS.translation = ((tangentPoint1 - targetInSCS.translation).norm() + tangentPoint1.norm()) < ((tangentPoint2 - targetInSCS.translation).norm() + tangentPoint2.norm()) ? tangentPoint1 : tangentPoint2;
-      const bool useModTarget = targetInSCS.translation.x() * modTargetInSCS.translation.x() >= 0.f && targetInSCS.translation.y() * modTargetInSCS.translation.y() >= 0.f;
-
       if(targetInSCS.translation.squaredNorm() > sqr(1000.f) || timeSinceBallWasSeen > minTimeSinceBallSeen)
-        WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, ballInSCS,
-                                    isLeftPhase, fastWalk, lastPhase, true, useModTarget);
+        WalkUtilities::calcDiagonal(theWalkStepData, modTargetInSCS, ballInSCS, fastWalk);
       else
       {
         Pose2f modTargetInSCS2 = modTargetInSCS;
-        WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, ballInSCS,
-                                    isLeftPhase, fastWalk, lastPhase, true, useModTarget);
-        WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS2, ballInSCS,
+        WalkUtilities::calcDiagonal(theWalkStepData, modTargetInSCS, ballInSCS, fastWalk);
+        WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, theWalkStepData, walkSpeed, targetInSCS, modTargetInSCS2, ballInSCS,
                                     isLeftPhase, fastWalk, lastPhase, true);
         const float interpolationRange = theRobotDimensions.soleToFrontEdgeLength;
         const float interpolationOffset = theRobotDimensions.soleToFrontEdgeLength + theBallSpecification.radius + 200.f;
@@ -158,11 +153,11 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
     }
 
     Pose2f step;
-    step.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeed).clamped(modTargetInSCS.rotation);
+    step.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeed, modTargetInSCS).clamped(modTargetInSCS.rotation);
     {
       std::vector<Vector2f> translationPolygon;
       std::vector<Vector2f> translationPolygonNoCenter;
-      theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, translationPolygon, translationPolygonNoCenter, fastWalk, false);
+      theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, modTargetInSCS, translationPolygon, translationPolygonNoCenter, fastWalk, false, true);
 
       if(Geometry::isPointInsideConvexPolygon(translationPolygon.data(), static_cast<int>(translationPolygon.size()), modTargetInSCS.translation))
         step.translation = modTargetInSCS.translation;
@@ -187,8 +182,6 @@ void WalkToBallEngine::update(WalkToBallGenerator& walkToBallGenerator)
             step.translation.x() = translationPolygonNoCenter.back().x();
         }
       }
-      if(Global::getSettings().robotType == Settings::nao && isLeftPhase == (step.translation.y() < 0.f))
-        step.translation.y() = 0.f;
     }
 
     return theWalkGenerator.createPhase(step, lastPhase, 0.f);

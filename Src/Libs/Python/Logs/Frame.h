@@ -24,6 +24,7 @@ class Frame
 {
 public:
   Frame(Log& log);
+  Frame(Log& log, MessageQueue::const_iterator start);
 
   /** Returns all representation names of this Frame. */
   std::vector<std::string> getRepresentations() const

@@ -3,7 +3,7 @@
  *
  * This file implements a module that provides percepts based on simulated data.
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #include "OracledPerceptsProvider.h"
@@ -35,50 +35,74 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   ccPoints.push_back(Vector2f(theFieldDimensions.centerCircleRadius, 0.f));
   ccPoints.push_back(Vector2f(-theFieldDimensions.centerCircleRadius, 0.f));
   // Half of the intersections
-  IntersectionsPercept::Intersection oppLeftCorner;
-  oppLeftCorner.type = IntersectionsPercept::Intersection::L;
+  FieldLineIntersections::Intersection oppLeftCorner;
+  oppLeftCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
   oppLeftCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
   oppLeftCorner.dir1 = Vector2f(-1.f, 0.f);
   oppLeftCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftCorner);
-  IntersectionsPercept::Intersection oppLeftPenaltyArea;
-  oppLeftPenaltyArea.type = IntersectionsPercept::Intersection::T;
+  FieldLineIntersections::Intersection oppLeftPenaltyArea;
+  oppLeftPenaltyArea.type = FieldLineIntersections::Intersection::IntersectionType::T;
   oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftPenaltyArea);
   oppLeftPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppLeftPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyArea);
-  IntersectionsPercept::Intersection oppRightPenaltyArea;
-  oppRightPenaltyArea.type = IntersectionsPercept::Intersection::T;
+  FieldLineIntersections::Intersection oppRightPenaltyArea;
+  oppRightPenaltyArea.type = FieldLineIntersections::Intersection::IntersectionType::T;
   oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightPenaltyArea);
   oppRightPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppRightPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppRightPenaltyArea);
-  IntersectionsPercept::Intersection oppRightCorner;
-  oppRightCorner.type = IntersectionsPercept::Intersection::L;
+  FieldLineIntersections::Intersection oppLeftGoalArea;
+  oppLeftPenaltyArea.type = FieldLineIntersections::Intersection::IntersectionType::T;
+  oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftGoalArea);
+  oppLeftPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
+  oppLeftPenaltyArea.dir2 = Vector2f(0.f, -1.f);
+  intersections.push_back(oppLeftGoalArea);
+  FieldLineIntersections::Intersection oppRightGoalArea;
+  oppRightPenaltyArea.type = FieldLineIntersections::Intersection::IntersectionType::T;
+  oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoalArea);
+  oppRightPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
+  oppRightPenaltyArea.dir2 = Vector2f(0.f, -1.f);
+  intersections.push_back(oppRightGoalArea);
+  FieldLineIntersections::Intersection oppRightCorner;
+  oppRightCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
   oppRightCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
   oppRightCorner.dir1 = Vector2f(-1.f, 0.f);
   oppRightCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightCorner);
-  IntersectionsPercept::Intersection oppLeftPenaltyCorner;
-  oppLeftPenaltyCorner.type = IntersectionsPercept::Intersection::L;
+  FieldLineIntersections::Intersection oppLeftPenaltyCorner;
+  oppLeftPenaltyCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
   oppLeftPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   oppLeftPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
   oppLeftPenaltyCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyCorner);
-  IntersectionsPercept::Intersection oppRightPenaltyCorner;
-  oppRightPenaltyCorner.type = IntersectionsPercept::Intersection::L;
+  FieldLineIntersections::Intersection oppRightPenaltyCorner;
+  oppRightPenaltyCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
   oppRightPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   oppRightPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
   oppRightPenaltyCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightPenaltyCorner);
-  IntersectionsPercept::Intersection leftHalfwayLineCrossing;
-  leftHalfwayLineCrossing.type = IntersectionsPercept::Intersection::T;
+  FieldLineIntersections::Intersection oppLeftGoalAreaCorner;
+  oppLeftPenaltyCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
+  oppLeftPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea);
+  oppLeftPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
+  oppLeftPenaltyCorner.dir2 = Vector2f(0.f, -1.f);
+  intersections.push_back(oppLeftGoalAreaCorner);
+  FieldLineIntersections::Intersection oppRightGoalAreaCorner;
+  oppRightPenaltyCorner.type = FieldLineIntersections::Intersection::IntersectionType::L;
+  oppRightPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea);
+  oppRightPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
+  oppRightPenaltyCorner.dir2 = Vector2f(0.f, 1.f);
+  intersections.push_back(oppRightGoalAreaCorner);
+  FieldLineIntersections::Intersection leftHalfwayLineCrossing;
+  leftHalfwayLineCrossing.type = FieldLineIntersections::Intersection::IntersectionType::T;
   leftHalfwayLineCrossing.pos = Vector2f(0.f, theFieldDimensions.yPosLeftTouchline);
   leftHalfwayLineCrossing.dir1 = Vector2f(1.f, 0.f);
   leftHalfwayLineCrossing.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(leftHalfwayLineCrossing);
-  IntersectionsPercept::Intersection leftCenterCircleCrossing;
-  leftCenterCircleCrossing.type = IntersectionsPercept::Intersection::X;
+  FieldLineIntersections::Intersection leftCenterCircleCrossing;
+  leftCenterCircleCrossing.type = FieldLineIntersections::Intersection::IntersectionType::X;
   leftCenterCircleCrossing.pos = Vector2f(0.f, theFieldDimensions.centerCircleRadius);
   leftCenterCircleCrossing.dir1 = Vector2f(1.f, 0.f);
   leftCenterCircleCrossing.dir2 = Vector2f(0.f, -1.f);
@@ -87,7 +111,7 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   const size_t numOfIntersections = intersections.size();
   for(unsigned int i = 0; i < numOfIntersections; i++)
   {
-    IntersectionsPercept::Intersection mirroredIntersection = intersections[i];
+    FieldLineIntersections::Intersection mirroredIntersection = intersections[i];
     mirroredIntersection.pos = Pose2f(pi) * mirroredIntersection.pos;
     mirroredIntersection.dir1 = Pose2f(pi) * mirroredIntersection.dir1;
     mirroredIntersection.dir2 = Pose2f(pi) * mirroredIntersection.dir2;
@@ -413,32 +437,18 @@ void OracledPerceptsProvider::falsePenaltyMarkPercept(PenaltyMarkPercept& penalt
   }
 }
 
-void OracledPerceptsProvider::update(ObstaclesImagePercept& obstaclesImagePercept)
+void OracledPerceptsProvider::update(RobotPercept& robotPercept)
 {
-  obstaclesImagePercept.obstacles.clear();
+  robotPercept.robots.clear();
   if(!theCameraMatrix.isValid || !Global::settingsExist())
     return;
 
   for(unsigned int i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
     if(!isPointBehindObstacle(theGroundTruthWorldState.ownTeamPlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.ownTeamPlayers[i], obstaclesImagePercept);
+      createPlayerOnField(theGroundTruthWorldState.ownTeamPlayers[i], false, robotPercept);
   for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
     if(!isPointBehindObstacle(theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.opponentTeamPlayers[i], obstaclesImagePercept);
-}
-
-void OracledPerceptsProvider::update(ObstaclesFieldPercept& obstaclesFieldPercept)
-{
-  obstaclesFieldPercept.obstacles.clear();
-  if(!theCameraMatrix.isValid || !Global::settingsExist())
-    return;
-
-  for(unsigned int i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.ownTeamPlayers[i].pose.translation))
-      createPlayerOnField(theGroundTruthWorldState.ownTeamPlayers[i], false, obstaclesFieldPercept);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation))
-      createPlayerOnField(theGroundTruthWorldState.opponentTeamPlayers[i], true, obstaclesFieldPercept);
+      createPlayerOnField(theGroundTruthWorldState.opponentTeamPlayers[i], true, robotPercept);
 }
 
 void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
@@ -486,36 +496,34 @@ void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
   }
 }
 
-void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::GroundTruthPlayer& player, ObstaclesImagePercept& obstaclesImagePercept)
+void OracledPerceptsProvider::update(FieldLineIntersections& fieldLineIntersections)
 {
+  // Simple solution without any noise
+  // TODO: Improve in the future.
+  if(!theCameraMatrix.isValid)
+    return;
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
-  Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
-  if(relativePlayerPos.norm() > playerMaxVisibleDistance)
-    return;
-  if(Random::bernoulli(1. - playerRecognitionRate))
-    return;
-  Vector2f playerInImage;
-  if(Projection::pointIsInImage(theCameraMatrix, theCameraInfo, relativePlayerPos, playerInImage))
+  fieldLineIntersections.intersections.clear();
+  for(const auto& i : intersections)
   {
-    bool success = true;
-    if(applyPlayerNoise)
+    const Vector2f relativeIntersectionPos = robotPoseInv * i.pos;
+    if(relativeIntersectionPos.norm() > intersectionMaxVisibleDistance || isPointBehindObstacle(i.pos))
+      continue;
+    Vector2f intersectionInImage;
+    if(Projection::pointIsInImage(theCameraMatrix, theCameraInfo, relativeIntersectionPos, intersectionInImage))
     {
-      applyNoise(playerPosInImageStdDev, playerInImage);
-      success = Transformation::imageToRobot(playerInImage, theCameraMatrix, theCameraInfo, relativePlayerPos);
-    }
-    if(success)
-    {
-      ObstaclesImagePercept::Obstacle o;
-      o.left = o.right = static_cast<int>(std::floor(playerInImage.x() + 0.5f));
-      o.top = o.bottom = static_cast<int>(std::floor(playerInImage.y() + 0.5f));
-      o.bottomFound = true;
-      o.fallen = !player.upright;
-      obstaclesImagePercept.obstacles.push_back(o);
+      FieldLineIntersections::Intersection newIntersection;
+      newIntersection.pos = relativeIntersectionPos;
+      newIntersection.cov = theMeasurementCovariance.computeForRelativePosition(relativeIntersectionPos);
+      newIntersection.type = i.type;
+      newIntersection.dir1 = i.dir1;
+      newIntersection.dir2 = i.dir2;
+      fieldLineIntersections.intersections.push_back(newIntersection);
     }
   }
 }
 
-void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, ObstaclesFieldPercept& obstaclesFieldPercept)
+void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, RobotPercept& robotPercept)
 {
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
@@ -541,11 +549,11 @@ void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::G
     }
     if(success)
     {
-      ObstaclesFieldPercept::Obstacle o;
+      RobotPercept::Robot o;
       if(player.number != 1)
-        o.type = isOpponent ? ObstaclesFieldPercept::opponentPlayer : ObstaclesFieldPercept::ownPlayer;
+        o.type = isOpponent ? RobotPercept::opponentPlayer : RobotPercept::ownPlayer;
       else
-        o.type = isOpponent ? ObstaclesFieldPercept::opponentGoalkeeper : ObstaclesFieldPercept::ownGoalkeeper;
+        o.type = isOpponent ? RobotPercept::opponentGoalkeeper : RobotPercept::ownGoalkeeper;
       o.fallen = !player.upright;
       o.right = o.center = o.left = relativePlayerPos;
       o.right.normalize(theRobotDimensions.robotDepth);
@@ -554,11 +562,15 @@ void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::G
       o.left.rotateLeft();
       o.right += o.center;
       o.left += o.center;
+      // Fill in fake values, not used in this scenario anyway:
+      Vector2i pImg((int)(playerInImage.x()), (int)(playerInImage.y()));
+      o.topLeftInImage = pImg - Vector2i(10, 10);
+      o.bottomRightInImage = pImg + Vector2i(10, 10);;
 
       Vector2f inImage;
       if(Transformation::robotToImage(o.center, theCameraMatrix, theCameraInfo, inImage)
          && theMeasurementCovariance.transformPointWithCov(inImage, 0.f, o.center, o.covariance))
-        obstaclesFieldPercept.obstacles.push_back(o);
+        robotPercept.robots.push_back(o);
     }
   }
 }
@@ -713,14 +725,6 @@ void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2f& p) c
 {
   p.x() += Random::normal(standardDeviation);
   p.y() += Random::normal(standardDeviation);
-}
-
-void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2i& p) const
-{
-  const float errorX = Random::normal(standardDeviation);
-  const float errorY = Random::normal(standardDeviation);
-  p.x() += static_cast<int>(floor(errorX + 0.5f));
-  p.y() += static_cast<int>(floor(errorY + 0.5f));
 }
 
 void OracledPerceptsProvider::applyNoise(float standardDeviation, float& angle) const

@@ -13,20 +13,26 @@
 #include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Communication/SentTeamMessage.h"
 #include "Representations/Configuration/BallSpecification.h"
+#include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
+#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Framework/Module.h"
 
 MODULE(TeamBallModelProvider,
 {,
   REQUIRES(BallSpecification),
+  REQUIRES(BehaviorParameters),
+  REQUIRES(CameraMatrix),
   REQUIRES(ExtendedGameState),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
+  REQUIRES(GlobalTeammatesModel),
   REQUIRES(ReceivedTeamMessages),
   REQUIRES(SentTeamMessage),
   REQUIRES(WorldModelPrediction),
@@ -64,6 +70,7 @@ public:
     Vector2f velocity;                            /**< The ball velocity in field coordinates */
     unsigned char playerNumber;                   /**< The player number of the observer */
     float weighting;                              /**< Weighting (somehow represents quality) used for merging */
+    float clusterWeighting;                       /**< Acucmulated weighting of this ball and the ones that it is close to*/
     unsigned time;                                /**< Point of time (in ms) of the observation */
     std::vector<unsigned> compatibleBallsIndices; /**< Indices of other balls that can be clustered with this one */
   };

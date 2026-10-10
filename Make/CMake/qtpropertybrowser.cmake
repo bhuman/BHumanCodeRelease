@@ -14,6 +14,11 @@ target_include_directories(qtpropertybrowser PRIVATE "${QTPROPERTYBROWSER_ROOT_D
 target_include_directories(qtpropertybrowser SYSTEM INTERFACE "${QTPROPERTYBROWSER_ROOT_DIR}")
 
 target_compile_definitions(qtpropertybrowser PRIVATE $<$<PLATFORM_ID:Windows>:QT_QTPROPERTYBROWSER_EXPORT> $<$<PLATFORM_ID:Windows>:_SCL_SECURE_NO_WARNINGS>)
+if(WINDOWS)
+  target_compile_options(qtpropertybrowser PRIVATE "/wd4995" "/wd4996" "/wd26813" "/wd26495")
+else()
+  target_compile_options(qtpropertybrowser PRIVATE "-Wno-deprecated-declarations" "-Wno-deprecated-pragma")
+endif()
 
 target_link_libraries(qtpropertybrowser PRIVATE Flags::Default)
 

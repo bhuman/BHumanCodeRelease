@@ -31,3 +31,5 @@ option(ArmObstacleAvoidanceLeftArm);
 
 /** This skill takes the right arm back to avoid obstacles. */
 option(ArmObstacleAvoidanceRightArm);
+
+option(GoalkeeperHighCatch);

@@ -6,3 +6,4 @@ dr representation:ActivationGraph
 # JointView
 dr representation:JointRequest
 dr representation:JointSensorData
+dr representation:MotorParameters

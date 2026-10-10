@@ -16,9 +16,5 @@ namespace Interception
   {,
     stand,
     walk,
-    genuflectStandDefender,
-    genuflectStand,
-    jumpLeft,
-    jumpRight,
   });
 }

@@ -1,7 +1,7 @@
 /**
  * @file Modules/Infrastructure/MotionRobotHealthProvider.h
  * This file declares a module that provides information about the robot's health.
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  * @author Yannik Meinken
  */
 
@@ -12,13 +12,13 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 
 MODULE(MotionRobotHealthProvider,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(RawInertialSensorData),
+  REQUIRES(InertialSensorData),
   PROVIDES(MotionRobotHealth),
   DEFINES_PARAMETERS(
   {,
@@ -49,7 +49,7 @@ private:
 
   unsigned bodyDisconnectTimestamp = 0;
 
-  RawInertialSensorData lastInertialSensorData;
+  InertialSensorData lastInertialSensorData;
 
 public:
   /** Constructor. */

@@ -15,6 +15,13 @@
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/Modify.h"
 
+Goalkeeper::Goalkeeper()
+{
+  InMapFile stream("roleGoalkeeper.cfg");
+  ASSERT(stream.exists());
+  stream >> p;
+}
+
 //Defines the parameters and debug drawings for the goalkeeper
 void Goalkeeper::preProcess()
 {

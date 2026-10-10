@@ -19,13 +19,6 @@ void CameraInfo::updateFocalLength()
   focalLengthHeightInv = 1.f / focalLengthHeight;
 }
 
-std::string CameraInfo::getThreadName() const
-{
-  std::string name = TypeRegistry::getEnumName(camera);
-  name[0] &= ~0x20;
-  return name;
-}
-
 void CameraInfo::draw() const
 {
   DECLARE_DEBUG_DRAWING3D("FieldOfView", "camera");
@@ -39,7 +32,7 @@ void CameraInfo::draw() const
   const Vector3f p2 = neg_y * x * Vector3f(length, 0, 0);
   const Vector3f p3 = y * neg_x * Vector3f(length, 0, 0);
   const Vector3f p4 = neg_y * neg_x * Vector3f(length, 0, 0);
-  ColorRGBA color = camera == upper ? ColorRGBA::blue : ColorRGBA::red;
+  ColorRGBA color = ColorRGBA::blue;
   color.a = 180;
   QUAD3D("FieldOfView", p0, p0, p1, p2, color);
   QUAD3D("FieldOfView", p0, p0, p2, p4, color);

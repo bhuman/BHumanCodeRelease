@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -29,12 +28,10 @@
 #include "Representations/Modeling/FilteredBallPercepts.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 
@@ -49,19 +46,13 @@ MODULE(BallPerceptFilter,
   REQUIRES(GameState),
   REQUIRES(IMUValueState),
   REQUIRES(MotionInfo),
-  REQUIRES(ObstaclesImagePercept),
   REQUIRES(Odometer),
-  REQUIRES(TeamData),
-  REQUIRES(TeamBallModel),
   REQUIRES(WorldModelPrediction),
   USES(RobotPose),
   PROVIDES(FilteredBallPercepts),
   LOADS_PARAMETERS(
   {,
     (float) fieldBorderExclusionDistance,              /**< Stuff that is more far away from the field (not the carpet!) is excluded. */
-    (float) robotBanRadius,                            /**< If a ball is at the image border and this close to a teammate, it becomes excluded. */
-    (int) farBallIgnoreTimeout,                        /**< If we have seen a ball in the lower image recently, ignore balls in upper image for this time, if they are far away. */
-    (float) farBallIgnoreDistance,                     /**< If we have seen a ball in the lower image recently, ignore balls in upper image (for some time) that are farther away than this parameter specifies. */
     (int) bufferedSeenBallTimeout,                     /**< The seen ball percepts for verification must have been seen within this amount of time. */
     (int) bufferedBallTimeout,                         /**< The other perceptions for verification must have been seen within this amount of time. */
     (unsigned) requiredPerceptionCountNear,            /**< For near balls, this many perceptions are required for verification. */
@@ -96,7 +87,6 @@ public:
   BallPerceptFilter();
 
 private:
-  unsigned int timeBallWasBeenSeenInLowerCameraImage;    /**< Yip, exactly the point of time when the ball was seen in the lower camera for the last time */
   unsigned int timeWhenLastKickWasExecuted;              /**< Yip. Your guess about this variable is absolutely right! */
   RingBuffer<FilteredBallPercept, 5> bufferedSeenBalls;  /**< Each percept needs to be verified. This is the verification buffer. However, it contains only perceptions that had the status "seen". */
   RingBuffer<FilteredBallPercept, 10> bufferedBalls;     /**< A buffer for all guessed and seen balls, used for accepting moving guessed balls. */
@@ -108,18 +98,6 @@ private:
    * @return true, if it is outside the field
    */
   bool perceptCanBeExcludedByLocalization();
-
-  /** Check, if the percept is seen in a teammate but a recently
-   *  computed team ball (by multiple teammates) indicates that the ball must be elsewhere.
-   * @return true, if it seems to be a false positive
-   */
-  bool perceptIsInsideTeammateAndCanBeExcludedByTeamBall();
-
-  /** Check, if the percept overlaps with a perceived robot.
-   *  Used as a check inside of perceptIsInsideTeammateAndCanBeExcludedByTeamBall
-   * @return true, if this is the case.
-   */
-  bool ballPerceptIntersectsObstaclesPercept();
 
   /** Check, if the percept is not in the same half as the robot. FOR TESTING ONLY
    * @return true, if this is the case

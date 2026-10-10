@@ -17,6 +17,8 @@
 #include "SoundPlayer.h"
 #include "Platform/File.h"
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 @interface SoundPlayerDelegate : NSObject<NSSoundDelegate, NSSpeechSynthesizerDelegate>
 {
   bool* isPlaying;
@@ -123,6 +125,8 @@ void SoundPlayer::playDirect(const std::string& basename)
 int SoundPlayer::play(const std::string& name)
 {
   SYNC_WITH(soundPlayer);
+  if(std::find(soundPlayer.queue.rbegin(), soundPlayer.queue.rend(), name) != soundPlayer.queue.rend())
+    return static_cast<int>(soundPlayer.queue.size());
   soundPlayer.queue.push_back(name.c_str()); // avoid copy-on-write
   int queueLen = static_cast<int>(soundPlayer.queue.size());
   if(!soundPlayer.isRunning())

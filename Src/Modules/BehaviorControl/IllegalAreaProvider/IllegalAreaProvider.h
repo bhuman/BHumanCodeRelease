@@ -35,7 +35,6 @@ MODULE(IllegalAreaProvider,
   PROVIDES(IllegalAreas),
   DEFINES_PARAMETERS(
   {,
-    (float)(750.f) freeKickClearAreaRadius, /**< The radius of the area that has to be cleared by the defending team during a free kick. */
     (float)(400.f) outsideGoalAreaDistanceThreshold, /**< Expansion of the own goal area to determine whether a teammate is in it if the calculating robot is outside. */
     (float)(50.f) insideGoalAreaDistanceThreshold, /**< Expansion of the own goal area to determine whether a teammate is in it if the calculating robot is inside. */
     (float)(300.f) goalKeeperDistanceToBallGoalKick, /**< The goal keeper target positio must be this much away from the ball. */

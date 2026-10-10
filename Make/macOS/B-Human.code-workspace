@@ -34,8 +34,7 @@
         "problemMatcher": [],
         "options": {
           "env": {
-            "NO_XCTEST": "ON",
-            "GENERATE_OPTION": "${input:generateOption}"
+            "NO_XCTEST": "ON"
           }
         }
       },
@@ -49,8 +48,7 @@
         ],
         "options": {
           "env": {
-            "NO_XCTEST": "ON",
-            "GENERATE_OPTION": "${input:generateOption}"
+            "NO_XCTEST": "ON"
           }
         },
         "problemMatcher": [
@@ -71,8 +69,7 @@
         ],
         "options": {
           "env": {
-            "NO_XCTEST": "ON",
-            "GENERATE_OPTION": "${input:generateOption}"
+            "NO_XCTEST": "ON"
           }
         },
         "problemMatcher": [
@@ -153,6 +150,8 @@
     "C_Cpp.vcFormat.space.afterCastCloseParenthesis": true,
     "C_Cpp.vcFormat.space.afterKeywordsInControlFlowStatements": false,
     "C_Cpp.vcFormat.space.withinInitializerListBraces": false,
+    "cmake.configureOnEdit": false,
+    "cmake.configureOnOpen": false,
     "debug.hideSlowPreLaunchWarning": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 2,

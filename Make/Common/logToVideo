@@ -1,0 +1,32 @@
+#!/bin/bash
+
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
+
+rm -f "$basePath/../../Config/Scenes/Includes/replay.con"
+echo "sl LOG \"$(realpath "$1")\"" >> "$basePath/../../Config/Scenes/Includes/replay.con"
+name="$(basename "$1")"
+ip="$(grep '^ *lan' "$basePath/../../Config/Robots/${name%%_*}/network.cfg" | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+source "$basePath/setupTarget" "$ip"
+scene=$TARGET_MODEL/Replay
+
+echo "log saveImages every 1 format jpg $2" >> "$basePath/../../Config/Scenes/Includes/replay.con"
+echo "log saveAudio $2" >> "$basePath/../../Config/Scenes/Includes/replay.con"
+
+
+cd "$basePath"
+IMAGE_DIR="$basePath/../../Config/Images/$2"
+mkdir -p "$IMAGE_DIR"
+rm -f "$IMAGE_DIR"/*
+
+if [ "$(uname)" == "Darwin" ]; then
+  app=$(ls -1dt $(find ../../Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
+  open -n "$app" --args "$basePath/../../Config/Scenes/$scene.ros3"
+elif [ -e /proc/version ] && [ ! -z "$(grep Microsoft </proc/version)" ]; then
+  app=$(ls -1dt ../../Build/Windows/SimRobot/*/SimRobot.exe | head -1)
+  cmd.exe /c start "$app" "../../Config/Scenes/$scene.ros3"
+else
+  app=$(ls -1dt ../../Build/Linux/SimRobot/*/SimRobot | head -1)
+  "$app" "../../Config/Scenes/$scene.ros3" </dev/null >/dev/null 2>&1
+fi
+
+ffmpeg -y -nostdin -framerate 30 -pattern_type glob -i "$IMAGE_DIR/*.jpg" -c:v libx264 "$IMAGE_DIR/output.mkv"

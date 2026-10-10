@@ -3,8 +3,8 @@
  *
  * Declaration of struct CameraInfo
  *
- * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
- * @author <a href="mailto:walter.nistico@uni-dortmund.de">Walter Nistico</a>
+ * @author Matthias Jüngel
+ * @author Walter Nistico
  */
 
 #pragma once
@@ -20,16 +20,6 @@
 STREAMABLE(CameraInfo,
 {
   /**
-   * @enum Camera
-   * Enum representing the possible sources of an image.
-   */
-  ENUM(Camera,
-  {,
-    upper,
-    lower,
-  });
-
-  /**
    * Intrinsic camera parameters: axis skew is modeled as 0 (90° perfectly orthogonal XY)
    * and the same has been modeled for focal axis aspect ratio; distortion is considering
    * only 2nd and 4th order coefficients of radial model, which account for about 95% of total.
@@ -40,24 +30,15 @@ STREAMABLE(CameraInfo,
   float focalLengthHeight = 0;
   float focalLengthHeightInv = 0;
 
-  CameraInfo() = default;
-  CameraInfo(Camera camera) : camera(camera) {}
-
   void updateFocalLength();
-
-  /**
-   * Returns the name of the thread associated with this camera.
-   * @return The name of the thread.
-   */
-  std::string getThreadName() const;
 
   void draw() const;
 
   void onRead() { updateFocalLength(); },
 
-  (Camera) camera,
   (int)(0) width,
   (int)(0) height,
+  (int)(30) frameRate,
   (Angle) openingAngleWidth,
   (Angle) openingAngleHeight,
   (Vector2f) opticalCenter,

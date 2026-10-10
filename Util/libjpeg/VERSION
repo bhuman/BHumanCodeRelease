@@ -1,6 +1,1 @@
 This is libjpeg-turbo 1.5.3.
-
-NaoV6:
-CFLAGS="-march=silvermont -mtune=silvermont -O2" ./configure --without-turbojpeg
-make
-make DESTDIR=<installation directory> install

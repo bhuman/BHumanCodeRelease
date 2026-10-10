@@ -51,8 +51,6 @@ void Assert::abort()
 {
 #ifdef WINDOWS
   __debugbreak();
-#elif defined MACOS && defined __x86_64__
-  __builtin_trap();
 #else
   ::abort();
 #endif

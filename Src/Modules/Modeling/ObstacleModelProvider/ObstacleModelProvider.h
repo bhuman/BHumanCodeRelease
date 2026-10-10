@@ -5,7 +5,8 @@
  * foot bumper contacts and players percepts into one obstacle model.
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  */
 #pragma once
 
@@ -23,12 +24,10 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/MeasurementCovariance.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/ObstaclePercepts/RobotPercept.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Framework/Module.h"
@@ -42,12 +41,10 @@ MODULE(ObstacleModelProvider,
   REQUIRES(FallDownState),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
-  REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
-  REQUIRES(ObstaclesFieldPercept),
+  REQUIRES(RobotPercept),
   REQUIRES(Odometer),
   REQUIRES(ReceivedTeamMessages),
   REQUIRES(RobotDimensions),
@@ -70,11 +67,6 @@ MODULE(ObstacleModelProvider,
     (bool) useArmContactModel,
     (Matrix2f) armCov,                         /**< 50mm standard deviation. */
     (int) maxContactTime,                      /**< Maximum time of a body contact. */
-    // addFootContacts()
-    (bool) useFootBumperState,
-    (Matrix2f) feetCov,                        /**< 30mm standard deviation and 80mm standard deviation. */
-    (unsigned) distJointToToe,                 /**< The distance from the joint to the toe. */
-    (unsigned) distToeToBumper,                /**< The distance between the bumper and the toe. */
     // addPlayerPercepts()
     // considerTeammates()
     (bool) useTeammatePositionForClassification,
@@ -91,11 +83,6 @@ MODULE(ObstacleModelProvider,
     // calculateMergeRadius()
     (float) mergeDistance,                     /**< Distance to merge obstacles. */
     (unsigned) minMergeDistance,               /**< Distance of an obstacle until it has a constant radius. */
-    // calculateVelocity
-    (int) velocitySampleTime,                  /**< Min time between two samples for velocity calculation in ms. */
-    (unsigned) minSamplesForCalculation,       /**< The minimum samples for velocity calculation. */
-    (int) minVelocityForMotionDetection,       /**< Minimum valid speed of a robot in mm/s. */
-    (int) maxVelocityForMotionDetection,       /**< Maximum valid speed of a robot in mm/s. */
     // ObstacleHypothesis::determineAndSetType
     (int) teamThreshold,                       /**< Only switch team if this threshold is reached. */
     (int) uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
@@ -128,7 +115,7 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   };
 
   // Used for writing annotations only once per contact.
-  bool armContact[Arms::numOfArms] = { false, false }, footContact[Legs::numOfLegs] = { false, false };
+  bool armContact[Arms::numOfArms] = { false, false };
 
   std::vector<ObstacleHypothesis> obstacleHypotheses; /**< List of obstacles. */
   std::vector<bool> merged; /**< This is to merge obstacles once for every "percept" per frame. */
@@ -153,8 +140,6 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   void dynamic();
   /** The function add hypotheses measured by arm contact. */
   void addArmContacts();
-  /** The function add hypotheses measured by foot contact. */
-  void addFootContacts();
   /** The function add players percepts. */
   void addPlayerPercepts();
 
@@ -190,7 +175,4 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   {
     return obstacle.seenCount >= minPercepts || debug;
   }
-
-  /** Calculates the velocity for every obstacles. */
-  void calculateVelocity();
 };

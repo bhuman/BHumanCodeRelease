@@ -13,9 +13,9 @@ robot all
 ci off
 
 # Select modules for simulator
-for Lower Upper mr CameraInfo LogDataProvider
-for Lower Upper mr FrameInfo LogDataProvider
-for Lower Upper Cognition Motion mr CameraCalibration ConfigurationDataProvider
+for Color mr CameraInfo LogDataProvider
+for Color mr FrameInfo LogDataProvider
+for Color Cognition Motion mr CameraCalibration ConfigurationDataProvider
 for Cognition mr BallModel SimulatedWorldModelProvider
 for Cognition mr GroundTruthBallModel SimulatedWorldModelProvider
 for Cognition mr GlobalOpponentsModel SimulatedWorldModelProvider
@@ -24,25 +24,17 @@ for Cognition mr GroundTruthWorldState LogDataProvider
 for Cognition mr ObstacleModel SimulatedWorldModelProvider
 for Cognition mr RobotPose SimulatedWorldModelProvider
 for Motion mr FrameInfo LogDataProvider
-for Motion mr FsrSensorData LogDataProvider
 for Motion mr JointSensorData LogDataProvider
+for Motion mr JoystickState LogDataProvider
 for Motion mr KeyStates LogDataProvider
-for Motion mr RawInertialSensorData LogDataProvider
-
-# Deactivate Upper/Lower inter-thread communication
-mr ObstaclesPerceptorData off
-mr OtherFieldBoundary off
-mr OtherObstaclesPerceptorData off
-mr OtherOdometryData off
+for Motion mr InertialSensorData LogDataProvider
 
 # Representations not required anymore
 mr AlternativeRobotPoseHypothesis off
-mr AutoExposureWeightTable off
 mr BallContactChecker off
 mr BallPercept off
 mr BallSpots off
 mr BodyContour off
-mr CameraCalibrationStatus off
 mr CameraImage off
 mr CameraIntrinsics off
 mr CameraResolutionRequest off
@@ -56,35 +48,25 @@ mr FieldBoundary off
 mr FieldLineIntersections off
 mr FieldLines off
 mr FilteredBallPercepts off
-mr ImageCoordinateSystem off
 mr IntersectionCandidates off
 mr IntersectionsPercept off
 mr JerseyClassifier off
 mr JPEGImage off
+mr JPEGImageRequest off
 mr LinesPercept off
-mr LineCorrector off
-mr ObstacleScan off
-mr ObstaclesImagePercept off
-mr OptionalECImage off
-mr PenaltyAreaAndGoalArea off
 mr PenaltyMarkPercept off
 mr PenaltyMarkRegions off
-mr PenaltyMarkWithPenaltyAreaLine off
 mr PerceptRegistration off
 mr RelativeFieldColors off
 mr ScanGrid off
-mr SegmentedObstacleImage off
 mr SelfLocalizationHypotheses off
 mr SideInformation off
-mr OptionalCameraImage off
 
 # Representations that are still required
-mr CameraStatus default
+mr ArmContactModel default
+mr CameraCalibrationStatus default
 #mr GlobalOpponentsModel default
-mr ObstaclesFieldPercept default
-mr RefereeGesture default
-mr RefereeSignal default
-mr RobotHealth default
+mr RobotPercept default
 for Motion mr CameraIntrinsics ConfigurationDataProvider
 
 call GameStates

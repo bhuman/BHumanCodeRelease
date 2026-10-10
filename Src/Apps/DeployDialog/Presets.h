@@ -30,14 +30,14 @@ struct Presets : public Streamable
     },
 
     (std::string) name, /**< The name of the preset. */
-    (int) number, /**< The team number. */
+    (int)(0) number, /**< The team number. */
     (std::string) fieldPlayerColor, /**< The jersey color of the field players. */
     (std::string) goalkeeperColor, /**< The jersey color of the goal keeper. */
     (std::string) scenario, /**< The scenario. */
     (std::string) location, /**< The location. */
     (std::string) wlanConfig, /**< The wifi profile to set when deploying. */
-    (int) volume, /**< The volume to set when deploying. */
-    (int) magicNumber, /**< The magic number to set when deploying. */
+    (int)(0) volume, /**< The volume to set when deploying. */
+    (int)(0) magicNumber, /**< The magic number to set when deploying. */
     (std::vector<std::string>) players, /**< The names of the robots for the different player numbers ("_" for no robot). */
   });
 

@@ -3,7 +3,7 @@
  *
  * This contains some often used mathematical definitions and functions.
  *
- * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ * @author Alexis Tsogias
  */
 
 #pragma once
@@ -122,7 +122,8 @@ constexpr V sqr(const V& a) { return a * a; }
  * @param a The value
  * @return The logit of \c a.
  */
-constexpr float logit(const float& a) {
+constexpr float logit(const float& a)
+{
   ASSERT(a >= 0.f && a < 1.f);
   if(a < 0.5f)
     return std::log(a / (1.f - a));

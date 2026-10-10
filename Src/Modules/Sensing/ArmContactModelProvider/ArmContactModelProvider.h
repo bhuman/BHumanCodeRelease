@@ -11,12 +11,11 @@
  * if the robot is standing or walking and not penalized.
  *
  * Declaration of class ArmContactModelProvider.
- * @author <a href="mailto:lrust@uni-bremen.de">Lukas Rust</a>
+ * @author Lukas Rust
  */
 
 #pragma once
 
-#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -25,7 +24,6 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Math/Eigen.h"
 #include "Math/Pose2f.h"
@@ -41,7 +39,6 @@ MODULE(ArmContactModelProvider,
   REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(GroundContactState),
   REQUIRES(MassCalibration),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
@@ -53,11 +50,12 @@ MODULE(ArmContactModelProvider,
     (int) frameBufferSize, /**< Buffer of the requested angles. */
     (int) errorBufferSize, /**< Buffer of the errors. */
     (unsigned int) minimalContactDuration,
-    (float) yErrorThresholdBase, /**< Minimal yErrorThreshold. The y threshold base cant never be less than this! */
-    (float) xErrorThresholdBase, /**< Minimal xErrorThreshold. The x threshold base cant never be less than this! */
+    (float) yErrorThresholdBase, /**< Minimal yErrorThreshold. The y threshold base can never be less than this! */
+    (float) xErrorThresholdBase, /**< Minimal xErrorThreshold. The x threshold base can never be less than this! */
     (float) yErrorThresholdExtension, /**< The y threshold extension which is added when the robot is moving in -y or y direction, this means left or right. */
     (float) xErrorThresholdExtension, /**< The x threshold extension which is added when the robot is moving in -x or x direction, this means back or forward. */
     (int) soundWaitTime, /**< Play the arm sound only once in this time frame. */
+    (int) adjustingHandThreshold, /**< TODO */
   }),
 });
 

@@ -20,9 +20,8 @@
 #include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/RelativeFieldColors.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
+#include "Representations/Perception/ObstaclePercepts/RobotPercept.h"
 #include "Math/Eigen.h"
 #include "Math/LeastSquares.h"
 #include "Framework/Module.h"
@@ -41,9 +40,8 @@ MODULE(LinePerceptor,
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
   REQUIRES(MeasurementCovariance),
-  REQUIRES(ObstaclesImagePercept),
+  REQUIRES(RobotPercept),
   REQUIRES(RelativeFieldColors),
   PROVIDES(LinesPercept),
   REQUIRES(LinesPercept),
@@ -178,7 +176,8 @@ private:
     void removeSpotsCloseToCenter(float minSquaredSpotToCircleCenterDistance)
     {
       bool spotWasRemoved = false;
-      auto spotCloseToCenter = [this, minSquaredSpotToCircleCenterDistance](Vector2f& spot) {
+      auto spotCloseToCenter = [this, minSquaredSpotToCircleCenterDistance](Vector2f& spot)
+      {
         return std::abs((center - spot).squaredNorm()) < minSquaredSpotToCircleCenterDistance;
       };
       do
@@ -443,7 +442,7 @@ private:
    * @param toX right coordinate of the region
    * @param fromY upper coordinate of the region
    * @param toY lower coordinate of the region
-   * @return `true` if the region is inside an obstable, else `false`
+   * @return `true` if the region is inside an obstacle, else `false`
    */
   bool isSpotInsideObstacle(const int fromX, const int toX, const int fromY, const int toY) const;
 

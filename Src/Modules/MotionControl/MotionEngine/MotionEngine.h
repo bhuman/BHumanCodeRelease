@@ -20,34 +20,28 @@
 
 #pragma once
 
-#include "Representations/MotionControl/PhotoModeGenerator.h"
-#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/StiffnessData.h"
+#include "Representations/Infrastructure/RobotHealth.h"
+#include "Representations/Modeling/BallKickInformation.h"
 #include "Representations/MotionControl/ArmKeyFrameGenerator.h"
 #include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Representations/MotionControl/DiveGenerator.h"
 #include "Representations/MotionControl/DribbleGenerator.h"
 #include "Representations/MotionControl/FallGenerator.h"
-#include "Representations/MotionControl/FreeBallHoldingGenerator.h"
-#include "Representations/MotionControl/FreezeGenerator.h"
 #include "Representations/MotionControl/GetUpGenerator.h"
 #include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/InterceptBallGenerator.h"
-#include "Representations/MotionControl/KeyframeMotionGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/PointAtGenerator.h"
-#include "Representations/MotionControl/ReplayWalkRequestGenerator.h"
-#include "Representations/MotionControl/SpecialGenerator.h"
+#include "Representations/MotionControl/PrepareGenerator.h"
 #include "Representations/MotionControl/StandGenerator.h"
 #include "Representations/MotionControl/WalkAtAbsoluteSpeedGenerator.h"
 #include "Representations/MotionControl/WalkAtRelativeSpeedGenerator.h"
@@ -57,50 +51,33 @@
 #include "Representations/MotionControl/WalkToBallAndKickGenerator.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GyroOffset.h"
-#include "Representations/Sensing/InertialData.h"
-#include "Representations/Sensing/JointPlay.h"
 #include "Framework/Module.h"
 #include "Tools/Motion/MotionGenerator.h"
 #include "Tools/Motion/MotionPhase.h"
-
-struct UpperFrameInfo;
-struct LowerFrameInfo;
 
 MODULE(MotionEngine,
 {,
   REQUIRES(ArmKeyFrameGenerator),
   REQUIRES(ArmMotionRequest),
-  REQUIRES(PhotoModeGenerator),
-  REQUIRES(CognitionFrameInfo),
-  REQUIRES(UpperFrameInfo),
-  REQUIRES(LowerFrameInfo),
-  REQUIRES(DamageConfigurationBody),
-  REQUIRES(DiveGenerator),
+  REQUIRES(BallKickInformation),
   REQUIRES(DribbleGenerator),
   REQUIRES(FallDownState),
   REQUIRES(FallGenerator),
   REQUIRES(FrameInfo),
-  REQUIRES(FreeBallHoldingGenerator),
-  REQUIRES(FreezeGenerator),
-  REQUIRES(GameState),
   REQUIRES(GetUpGenerator),
   REQUIRES(GyroOffset),
   REQUIRES(HeadMotionGenerator),
   REQUIRES(HeadMotionRequest),
-  REQUIRES(InertialData),
   REQUIRES(InterceptBallGenerator),
   REQUIRES(JointAngles),
   REQUIRES(JointLimits),
-  REQUIRES(JointPlay),
-  REQUIRES(KeyframeMotionGenerator),
   REQUIRES(MotionRequest),
+  REQUIRES(MotionRobotHealth),
   REQUIRES(OdometryDataPreview),
-  REQUIRES(OdometryTranslationRequest),
   REQUIRES(PointAtGenerator),
-  REQUIRES(ReplayWalkRequestGenerator),
-  REQUIRES(SpecialGenerator),
+  REQUIRES(PrepareGenerator),
+  REQUIRES(RobotHealth),
   REQUIRES(StandGenerator),
-  REQUIRES(StiffnessSettings),
   REQUIRES(WalkAtAbsoluteSpeedGenerator),
   REQUIRES(WalkAtRelativeSpeedGenerator),
   REQUIRES(WalkGenerator),
@@ -116,9 +93,6 @@ MODULE(MotionEngine,
   LOADS_PARAMETERS(
   {,
     (int) emergencySitDownDelay, /**< If no new data from Cognition arrived for this duration, the robot sits down. */
-    (int) brokenJointAutomaticStiffness, /**< If a broken joint is detected, reduce its stiffness. TODO set it to a lower value after tests on real NAO! */
-    (std::vector<Joints::Joint>) brokenJointsReducesStiffnessList, /**< Only automatically reduce stiffness of those joints. */
-    (Vector2a) uprightAngle,
     (int) uprightWarningTime,
     (bool) forcePlayDead, /**< If true, the old motion phase is deleted instantly and replaced with play dead when requested. */
   }),
@@ -188,7 +162,7 @@ private:
   HeadMotionInfo headMotionInfo; /**< The current head motion info. */
   OdometryData odometryData; /**< The accumulated odometry of the robot. */
   MotionGenerator playDeadGenerator; /**< The generator for the \c playDead request. */
-  unsigned int lastCognitionTime = 0; /**< The timestamp of the last packet received from Cognition. */
+  unsigned lastOlderPerceptionTimestamp = 0; /**< The last timestamp of the older perception frames. */
   bool forceSitDown = false; /**< Whether the motion request should be overridden with a sit down. */
 };
 

@@ -14,52 +14,49 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Representations/Sensing/InertialSensorData.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/SolePressureState.h"
+#include "Representations/Sensing/SoleHeightDifference.h"
 #include "Streaming/Global.h"
 #include "Tools/BehaviorControl/Cabsl.h"
 
 MODULE(FallDownStateProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(GroundContactState),
   REQUIRES(InertialData),
   REQUIRES(InertialSensorData),
   REQUIRES(MassCalibration),
+  USES(MotionInfo),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
-  REQUIRES(SolePressureState),
+  REQUIRES(SoleHeightDifference),
   PROVIDES(FallDownState),
   LOADS_PARAMETERS(
   {,
     (Angle) maxGyroToRegainStableState,
-    (Angle) maxVelForPrediction,
     (bool) useInertiaData,
     (bool) playSounds,
-    (float) velocityDiscountFactor,
     (float) forwardingTime,
     (float) minNormalizedFallVectorScalar,
     (float) minFallVectorScalar,
-    (float) minPredictNormalizedFallVectorScalar,
-    (float) minPredictFallVectorScalar,
     (float) minComDistanceToFootCenter,
     (float) minComDistanceToDetectFall,
     (float) maxTorsoHeightToKeepSquatting,
-    (float) minTorsoHeightToKeepUpright,
     (float) sigmaArea,
     (int) minTimeBetweenSound,
-    (int) minTimeWithoutGroundContactToAssumePickup,
     (Vector2a) minTorsoOrientationToDetermineDirection,
     (int) maxTimeStaggering, /**< If the robot stays this long staggering, something is wrong and the filter is reset. */
+    (float) torsoUprightRatio,
 
     (Vector3f) positionProcessDeviation, //  dynamic noise density of the com-position
     (Vector2a) velocityProcessDeviation, // dynamic noise density of the velocity
     (Vector3f) positionMeasurementDeviation, // measure noise of the com position
     (Vector2a) velocityMeasurementDeviation, // measure noise of the gyro
+
+    (Angle) boosterMinAngleKeepUpright, // Min torso angles to keep upright
   }),
 });
 
@@ -69,9 +66,9 @@ public:
   FallDownStateProvider();
 private:
   bool falling; /**< Is the com outside of the support polygon */
+  bool forcePickUpFallTransition; /**< Force the robot to enter falling state */
   bool stable; /**< Torso has very limited rotational motion. */
   bool torsoUpright; /**< Is the com within sub support polygon? */
-  bool toSquatting; /**< Are all conditions for a return to squatting from a fall met? */
   bool toUpright; /**< Are all conditions for a return to upright from a fall met? */
   bool isPickedUp; /**< Are all conditions for a return to picked up from a fall met? */
   bool useTorsoOrientation; /**< Torso orientation is big enough to be used. */

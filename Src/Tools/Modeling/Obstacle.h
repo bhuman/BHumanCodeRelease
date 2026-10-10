@@ -26,7 +26,7 @@ STREAMABLE(Obstacle,
   bool isUnknown() const;
 
   Obstacle() = default;
-  Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
+  Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right,
            unsigned int lastSeen, Type type);
   Obstacle(const Matrix2f& covariance, const Vector2f& center, float radius, unsigned int lastSeen = 0, Type type = Type::teammate),
 
@@ -34,7 +34,6 @@ STREAMABLE(Obstacle,
   (Vector2f) center,                      /**< Center point of an obstacle */
   (Vector2f) left,                        /**< Left point of an obstacle */
   (Vector2f) right,                       /**< Right point of an obstacle */
-  (Vector2f)(Vector2f::Zero()) velocity,  /**< Determined via extended Kalman filter (mm per ms) */
   (unsigned int) lastSeen,                /**< Timestamp of last measurement */
   (Type) type,                            /**< See enumeration 'Type' above */
 });

@@ -56,7 +56,7 @@ private:
   /**
    * Builds a log file description matching the current game state.
    * - If a GameController is running and the opponent team is known:
-   *   <opponent team name> "_" ( "1stHalf" | "2ndHalf" | "ShootOut" )
+   *   <opponent team name> "_" ( "1stHalf" | "2ndHalf" | "1stExtraHalf" | "2ndExtraHalf" | "ShootOut" )
    * - Otherwise: "Testing"
    * @return The description for the log file.
    */

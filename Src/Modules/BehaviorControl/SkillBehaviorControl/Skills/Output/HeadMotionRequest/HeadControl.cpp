@@ -12,22 +12,19 @@
 
 namespace HeadControl
 {
-  void setPanTiltRequest(HeadMotionRequest& theHeadMotionRequest, HeadMotionRequest::CameraControlMode camera,
-                         Angle pan, Angle tilt, Angle speed, bool stopAndGoMode = false, bool calibrationMode = false)
+  void setPanTiltRequest(HeadMotionRequest& theHeadMotionRequest, Angle pan, Angle tilt, Angle speed,
+                         bool stopAndGoMode = false, bool calibrationMode = false)
   {
     theHeadMotionRequest.mode = calibrationMode ? HeadMotionRequest::calibrationMode : HeadMotionRequest::panTiltMode;
-    theHeadMotionRequest.cameraControlMode = camera;
     theHeadMotionRequest.pan = pan;
     theHeadMotionRequest.tilt = tilt;
     theHeadMotionRequest.speed = speed;
     theHeadMotionRequest.stopAndGoMode = stopAndGoMode;
   }
 
-  void setTargetOnGroundRequest(HeadMotionRequest& theHeadMotionRequest, HeadMotionRequest::CameraControlMode camera,
-                                const Vector3f& target, Angle speed)
+  void setTargetOnGroundRequest(HeadMotionRequest& theHeadMotionRequest, const Vector3f& target, Angle speed)
   {
     theHeadMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
-    theHeadMotionRequest.cameraControlMode = camera;
     theHeadMotionRequest.target = target;
     theHeadMotionRequest.speed = speed;
     theHeadMotionRequest.stopAndGoMode = false;
@@ -47,7 +44,7 @@ option((SkillBehaviorControl) LookActive,
     action
     {
       const HeadTarget target = theLibLookActive.calculateHeadTarget(withBall, ignoreBall, onlyOwnBall, fixTilt, slowdownFactor);
-      setPanTiltRequest(theHeadMotionRequest, target.cameraControlMode, target.pan, target.tilt, target.speed, target.stopAndGoMode);
+      setPanTiltRequest(theHeadMotionRequest, target.pan, target.tilt, target.speed, target.stopAndGoMode);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -57,21 +54,19 @@ option((SkillBehaviorControl) LookAtAngles,
        args((Angle) pan,
             (Angle) tilt,
             (float) speed,
-            (HeadMotionRequest::CameraControlMode) camera,
             (bool) calibrationMode))
 {
   initial_state(execute)
   {
     action
     {
-      setPanTiltRequest(theHeadMotionRequest, camera, pan, tilt, speed, false, calibrationMode);
+      setPanTiltRequest(theHeadMotionRequest, pan, tilt, speed, false, calibrationMode);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
 }
 
 option((SkillBehaviorControl) LookAtBall,
-       args((HeadMotionRequest::CameraControlMode) camera),
        defs((int)(2000) ownBallTimeout, /**< Use the team ball or look active if the ball hasn't been seen for this time. */
             (int)(500) ownBallDisappearedTimeout, /**< Use the team ball or look active if the ball disappeared for this time. */
             (float)(0.2f) propagateBallTime))
@@ -90,9 +85,8 @@ option((SkillBehaviorControl) LookAtBall,
   {
     action
     {
-      const Vector2f ballPosition = theFieldBall.recentBallPropagatedPositionRelative(propagateBallTime, theBallSpecification.friction);
-      setTargetOnGroundRequest(theHeadMotionRequest, camera,
-                               {ballPosition.x(), ballPosition.y(), theBallSpecification.radius}, 180_deg);
+      const Vector2f ballPosition = theFieldBall.recentBallPropagatedPositionRelative(propagateBallTime, theBallSpecification);
+      setTargetOnGroundRequest(theHeadMotionRequest, {ballPosition.x(), ballPosition.y(), theBallSpecification.radius}, 180_deg);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -102,7 +96,7 @@ option((SkillBehaviorControl) LookAtBall,
     action
     {
       const HeadTarget target = theLibLookActive.calculateHeadTarget(false, false, false, false, 1.f);
-      setPanTiltRequest(theHeadMotionRequest, target.cameraControlMode, target.pan, target.tilt, target.speed, target.stopAndGoMode);
+      setPanTiltRequest(theHeadMotionRequest, target.pan, target.tilt, target.speed, target.stopAndGoMode);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -110,14 +104,13 @@ option((SkillBehaviorControl) LookAtBall,
 
 option((SkillBehaviorControl) LookAtPoint,
        args((const Vector3f&) target,
-            (HeadMotionRequest::CameraControlMode) camera,
             (Angle) speed))
 {
   initial_state(execute)
   {
     action
     {
-      setTargetOnGroundRequest(theHeadMotionRequest, camera, target, speed);
+      setTargetOnGroundRequest(theHeadMotionRequest, target, speed);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -129,7 +122,7 @@ option((SkillBehaviorControl) LookForward)
   {
     action
     {
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, 0.f, theBehaviorParameters.defaultLookDownAngle, 150_deg);
+      setPanTiltRequest(theHeadMotionRequest, 0.f, theBehaviorParameters.defaultLookDownAngle, 150_deg);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -161,7 +154,7 @@ option((SkillBehaviorControl) LookLeftAndRight,
     }
     action
     {
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, maxPan, tilt, speed);
+      setPanTiltRequest(theHeadMotionRequest, maxPan, tilt, speed);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -175,7 +168,7 @@ option((SkillBehaviorControl) LookLeftAndRight,
     }
     action
     {
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, -maxPan, tilt, speed);
+      setPanTiltRequest(theHeadMotionRequest, -maxPan, tilt, speed);
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
@@ -190,11 +183,11 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
             (int)(200) minTimeLookingAtBall, /**< Switch from ball to walk target only after this time passed (in ms) */
             (int)(1000) maxWalkTargetTime, /**< Do not stay in look at walk target state longer than this time (in s) */
             (float)(0.2f) propagateBallTime, /**< Propagate the ball position this time into the future (in s) */
-            (Angle)(75_deg) borderAngle, /**< Max head angle. */
             (Angle)(30_deg) searchBallAngle, /**< Max head angle when searching for the ball. */
             (Angle)(500_deg) headSpeedFast,
             (Angle)(100_deg) headSpeedNormal,
-            (Angle)(50_deg) headSpeedSlow),
+            (Angle)(50_deg) headSpeedSlow,
+            (Rangef)({750.f, 1500.f}) ballDistance),
        vars((Angle)(theJointAngles.angles[Joints::headYaw]) nextTurnedAngle, /**< The last angle the head in LookAtBallTarget was turned */
             (unsigned)(0) lastTargetSwitch, /**< Timestamp of last target switch. */
             (Angle)(theJointAngles.angles[Joints::headYaw]) lastHeadYawAngle, /**< Last head yaw angle. */
@@ -202,14 +195,20 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
             (unsigned)(theJointAngles.timestamp) lastJointAnglesTime, /**< Timestamp of last measured joint angles. */
             (bool)(false) searchForBall, /**< When moving from walk target to ball, but the ball is not seen, look further. */
             (bool)(false) isSearchingForBall, /**< Currently looking for the ball. */
-            (float)(1.f) searchBallLeft)) /**< Which side to search for the ball. */
+            (float)(1.f) searchBallLeft, /**< Which side to search for the ball. */
+            (Angle)(75_deg) borderAngle)) /**< Max head angle. */
 {
-  const Vector2f ballPosition = theFieldBall.recentBallPropagatedPositionRelative(propagateBallTime, theBallSpecification.friction);
+  const Angle useTilt = mapToRange(theFieldBall.positionRelative.norm(), ballDistance.min, ballDistance.max, static_cast<float>(theHeadLimits.getTiltBound(0_deg).max), static_cast<float>(tilt));
+  borderAngle = std::min(borderAngle, Angle(theHeadLimits.maxPan() - 5_deg));
+  const Vector2f ballPosition = theFieldBall.recentBallPropagatedPositionRelative(propagateBallTime, theBallSpecification);
   Angle ballPositionAngle = ballPosition.angle();
   Angle walkingAngle = Rangea(-borderAngle, borderAngle).limit(walkingDirection.angle()); // Angle of the walking direction related to the robot
   ballPositionAngle = Rangea(-borderAngle, borderAngle).limit(ballPositionAngle); // angle between robot position and ball position
   const float ratio = Rangef::ZeroOneRange().limit(walkingDirection.norm() / 500.f); //todo: threshold has to be adjusted
   walkingAngle = ballPositionAngle * (1.f - ratio) + walkingAngle * ratio;
+
+  const bool forceLookAtBall = std::abs(walkingAngle - ballPositionAngle) <= thresholdAngle
+                               || theBallModel.estimate.velocity.squaredNorm() > 0;
 
   initial_state(execute)
   {
@@ -224,12 +223,13 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
       goto lookAtWalkTarget;
     }
   }
+
   state(lookAtWalkTarget)
   {
     transition
     {
       const bool headNearTarget = std::abs(Angle::normalize(theJointAngles.angles[Joints::headYaw] - nextTurnedAngle)) <= thresholdAngle;
-      if(std::abs(walkingAngle - ballPositionAngle) <= thresholdAngle || theBallModel.estimate.velocity.squaredNorm() > 0 ||  //todo: oscillation
+      if(forceLookAtBall ||
          (!theHeadMotionInfo.moving && theFrameInfo.getTimeSince(lastTargetSwitch) > minTimeBetweenTargetSwitch && headNearTarget) ||
          theFrameInfo.getTimeSince(lastTargetSwitch) > maxWalkTargetTime)
       {
@@ -242,24 +242,24 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
     {
       if(state_time == 0)
       {
-        nextTurnedAngle = Angle(walkingDirection.angle());
+        nextTurnedAngle = walkingAngle;
         lastTargetSwitch = theFrameInfo.time;
       }
 
       searchForBall = !theFieldBall.ballWasSeen();
-      nextTurnedAngle = walkingAngle;
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, nextTurnedAngle, tilt, headSpeedFast);
+      setPanTiltRequest(theHeadMotionRequest, nextTurnedAngle, tilt, headSpeedFast);
       lastHeadYawAngle = theJointAngles.angles[Joints::headYaw];
       lastJointAnglesTime = theJointAngles.timestamp;
       theLibCheck.inc(LibCheck::headMotionRequest);
     }
   }
+
   state(lookAtBall)
   {
     transition
     {
       const bool headNearTarget = std::abs(Angle::normalize(theJointAngles.angles[Joints::headYaw] - nextTurnedAngle)) <= thresholdAngle;
-      if(!theHeadMotionInfo.moving && theFrameInfo.getTimeSince(lastTargetSwitch) > minTimeBetweenTargetSwitch &&
+      if(!forceLookAtBall && !theHeadMotionInfo.moving && theFrameInfo.getTimeSince(lastTargetSwitch) > minTimeBetweenTargetSwitch &&
          theFrameInfo.getTimeSince(lookingAtBallSince) > minTimeLookingAtBall && headNearTarget && !searchForBall && !isSearchingForBall)
         goto lookAtWalkTarget;
     }
@@ -280,7 +280,7 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
       if(isSearchingForBall) // stop searching when ball is seen
         isSearchingForBall = !theFieldBall.ballWasSeen();
       nextTurnedAngle = ballPositionAngle + (isSearchingForBall ? Angle(searchBallLeft * searchBallAngle) : 0_deg);
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, nextTurnedAngle, tilt, isSearchingForBall ? headSpeedSlow : headSpeedNormal); // move head slower when searching for ball
+      setPanTiltRequest(theHeadMotionRequest, nextTurnedAngle, useTilt, isSearchingForBall ? headSpeedSlow : headSpeedNormal); // move head slower when searching for ball
       lastHeadYawAngle = theJointAngles.angles[Joints::headYaw];
       lastJointAnglesTime = theJointAngles.timestamp;
       theLibCheck.inc(LibCheck::headMotionRequest);
@@ -292,7 +292,7 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
     transition
     {
       const bool headNearTarget = std::abs(Angle::normalize(theJointAngles.angles[Joints::headYaw] - nextTurnedAngle)) <= thresholdAngle;
-      if(theFrameInfo.getTimeSince(lastTargetSwitch) > maxWalkTargetTime ||
+      if(forceLookAtBall || theFrameInfo.getTimeSince(lastTargetSwitch) > maxWalkTargetTime ||
          (!theHeadMotionInfo.moving && theFrameInfo.getTimeSince(lastTargetSwitch) > minTimeBetweenTargetSwitch && headNearTarget))
         goto lookAtBall;
     }
@@ -304,7 +304,7 @@ option((SkillBehaviorControl) LookAtBallAndTarget,
         lastTargetSwitch = theFrameInfo.time;
       }
       searchForBall = !theFieldBall.ballWasSeen();
-      setPanTiltRequest(theHeadMotionRequest, HeadMotionRequest::autoCamera, nextTurnedAngle, tilt, headSpeedFast);
+      setPanTiltRequest(theHeadMotionRequest, nextTurnedAngle, useTilt, headSpeedFast);
       lastHeadYawAngle = theJointAngles.angles[Joints::headYaw];
       lastJointAnglesTime = theJointAngles.timestamp;
       theLibCheck.inc(LibCheck::headMotionRequest);

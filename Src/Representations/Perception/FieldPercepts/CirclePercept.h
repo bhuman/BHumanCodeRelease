@@ -1,7 +1,7 @@
 /**
  * @file CirclePercept.h
  * Declaration of a struct that represents the center circle.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

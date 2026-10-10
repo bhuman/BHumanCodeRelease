@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -25,6 +26,7 @@ MODULE(FieldBallProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
+  REQUIRES(IndirectKick),
   REQUIRES(RobotPose),
   REQUIRES(TeamBallModel),
   PROVIDES(FieldBall),

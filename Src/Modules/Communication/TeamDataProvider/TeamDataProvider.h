@@ -7,7 +7,6 @@
  * @author Arne Hasselbring
  */
 
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/AgentStates.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Communication/TeamData.h"
@@ -19,7 +18,6 @@ MODULE(TeamDataProvider,
   USES(AgentStates),
   USES(ExtendedGameState),
   USES(GameState),
-  USES(LibDemo),
   REQUIRES(ReceivedTeamMessages),
   PROVIDES(TeamData),
 });

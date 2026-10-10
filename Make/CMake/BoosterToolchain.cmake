@@ -17,27 +17,27 @@ else()
   set(_linker "ld.mold")
 endif()
 
-set(_t1_lib_dir "${_buildchain_dir}/T1/lib")
-set(_t1_include_dir "${_buildchain_dir}/T1/include")
+set(_booster_lib_dir "${_buildchain_dir}/Booster/lib")
+set(_booster_include_dir "${_buildchain_dir}/Booster/include")
 execute_process(COMMAND bash -c "for d in $(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); \
 do [ -f $d/xmmintrin.h ] && echo $d; done | head -1" OUTPUT_VARIABLE _clang_system_include_dir)
 
 set(CMAKE_CXX_LINK_EXECUTABLE "${_linker} <LINK_FLAGS> -nostdlib --hash-style=gnu --eh-frame-hdr -m aarch64linux \
 -dynamic-linker=/lib/ld-linux-aarch64.so.1 -o <TARGET> \
-\"${_t1_lib_dir}/crt1.o\" \"${_t1_lib_dir}/crti.o\" \"${_t1_lib_dir}/crtbegin.o\" \
--L\"${_t1_lib_dir}\" <OBJECTS> <LINK_LIBRARIES> \
-\"${_t1_lib_dir}\"/libstdc++.so.6.0.30 \
---start-group \"${_t1_lib_dir}/libm.so.6\" --end-group \
---start-group \"${_t1_lib_dir}/libgcc_s.so.1\" \"${_t1_lib_dir}/libgcc.a\" --end-group \
-\"${_t1_lib_dir}/libgcc.a\" \
---start-group \"${_t1_lib_dir}/libc.so.6\" \"${_t1_lib_dir}/libc_nonshared.a\" --as-needed \"${_t1_lib_dir}/ld-linux-aarch64.so.1\" --no-as-needed --end-group \
---start-group \"${_t1_lib_dir}/libgcc_s.so.1\" \"${_t1_lib_dir}/libgcc.a\" --end-group \
-\"${_t1_lib_dir}/libgcc.a\" \
-\"${_t1_lib_dir}/crtend.o\" \"${_t1_lib_dir}/crtn.o\"")
+\"${_booster_lib_dir}/crt1.o\" \"${_booster_lib_dir}/crti.o\" \"${_booster_lib_dir}/crtbegin.o\" \
+-L\"${_booster_lib_dir}\" <OBJECTS> <LINK_LIBRARIES> \
+\"${_booster_lib_dir}\"/libstdc++.so.6.0.30 \
+--start-group \"${_booster_lib_dir}/libm.so.6\" --end-group \
+--start-group \"${_booster_lib_dir}/libgcc_s.so.1\" \"${_booster_lib_dir}/libgcc.a\" --end-group \
+\"${_booster_lib_dir}/libgcc.a\" \
+--start-group \"${_booster_lib_dir}/libc.so.6\" \"${_booster_lib_dir}/libc_nonshared.a\" --as-needed \"${_booster_lib_dir}/ld-linux-aarch64.so.1\" --no-as-needed --end-group \
+--start-group \"${_booster_lib_dir}/libgcc_s.so.1\" \"${_booster_lib_dir}/libgcc.a\" --end-group \
+\"${_booster_lib_dir}/libgcc.a\" \
+\"${_booster_lib_dir}/crtend.o\" \"${_booster_lib_dir}/crtn.o\"")
 
-include_directories(SYSTEM "${_t1_include_dir}/c++/11")
-include_directories(SYSTEM "${_t1_include_dir}/aarch64-linux-gnu/c++/11")
-include_directories(SYSTEM "${_t1_include_dir}/c++/11/backward")
+include_directories(SYSTEM "${_booster_include_dir}/c++/11")
+include_directories(SYSTEM "${_booster_include_dir}/aarch64-linux-gnu/c++/11")
+include_directories(SYSTEM "${_booster_include_dir}/c++/11/backward")
 include_directories(SYSTEM "${_clang_system_include_dir}")
-include_directories(SYSTEM "${_t1_include_dir}/aarch64-linux-gnu")
-include_directories(SYSTEM "${_t1_include_dir}")
+include_directories(SYSTEM "${_booster_include_dir}/aarch64-linux-gnu")
+include_directories(SYSTEM "${_booster_include_dir}")

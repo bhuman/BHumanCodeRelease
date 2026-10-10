@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Representations/Configuration/KickInfo.h"
-#include "Representations/MotionControl/KeyframeMotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Math/BHMath.h"
 #include "Tools/Motion/MotionPhase.h"
@@ -29,17 +28,7 @@ STREAMABLE(MotionInfo,
 
   bool isKicking() const
   {
-    return executedPhase == MotionPhase::kick || (executedPhase == MotionPhase::walk && isWalkPhaseInWalkKick);
-  }
-
-  bool isKeyframeMotion(KeyframeMotionRequest::KeyframeMotionID motion) const
-  {
-    return executedPhase == MotionPhase::keyframeMotion && executedKeyframeMotion.keyframeMotion == motion;
-  }
-
-  bool isKeyframeMotion(KeyframeMotionRequest::KeyframeMotionID motion, bool mirror) const
-  {
-    return executedPhase == MotionPhase::keyframeMotion && executedKeyframeMotion.keyframeMotion == motion && executedKeyframeMotion.mirror == mirror;
+    return (executedPhase == MotionPhase::walk && isWalkPhaseInWalkKick);
   }
 
   void verify() const
@@ -66,9 +55,5 @@ STREAMABLE(MotionInfo,
   // get up phase
   (unsigned)(0) getUpTryCounter, /**< The number of consecutive get up phases before this one. */
 
-  // keyframe motion phase
-  (KeyframeMotionRequest) executedKeyframeMotion, /**< The specific type of keyframe motion. */
-
   (OdometryData) odometryAtLastPhaseSwitch,
-  (OdometryTranslationRequest) odometryRequestAtLastPhaseSwitch,
 });

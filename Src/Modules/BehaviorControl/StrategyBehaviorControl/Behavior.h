@@ -21,14 +21,13 @@
 #include "Framework/Settings.h"
 #include "Representations/BehaviorControl/BallSearchParticles.h"
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
+#include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/BallDropInModel.h"
 #include "Representations/Modeling/TeamBallModel.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include <array>
 #include <vector>
 
@@ -38,11 +37,12 @@ class Behavior final
 {
 public:
   /** Constructor. */
-  Behavior(const BallDropInModel& theBallDropInModel, const BallSearchParticles& theBallSearchParticles,
-           const BallSpecification& theBallSpecification, const ExtendedGameState& theExtendedGameState,
+  Behavior(const BallSearchParticles& theBallSearchParticles, const BallSpecification& theBallSpecification,
+           const BehaviorParameters& theBehaviorParameters,  const ExtendedGameState& theExtendedGameState,
            const FieldBall& theFieldBall, const FieldDimensions& theFieldDimensions,
            const FieldInterceptBall& theFieldInterceptBall, const FrameInfo& theFrameInfo,
-           const GameState& theGameState, const TeamBallModel& theTeamBallModel, const LibDemo& theLibDemo);
+           const GameState& theGameState, const IndirectKick& theIndirectKick,
+           const TeamBallModel& theTeamBallModel, const WalkingEngineOutput& theWalkingEngineOutput);
 
   /** Destructor. */
   ~Behavior();
@@ -72,7 +72,7 @@ private:
    * @param proposedMirror The proposed mirror flag.
    * @param acceptedMirror The actually used mirror flag.
    */
-  void assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::vector<Agent>& agents, bool dontChangePositions, bool& proposedMirror, bool& acceptedMirror) const;
+  void assignPositions(Tactic::Type tactic, SetPlay::Type setPlay, std::vector<Agent>& agents, bool dontChangePositions, bool& proposedMirror, bool& acceptedMirror);
 
   /**
    * Assign roles to all agents.
@@ -124,11 +124,12 @@ private:
   /**
    * Determines the agent which should have an active role.
    * @param self The agent that executes this function.
+   * @param setPlay The currently selected set play
    * @param agents All other agents (excluding \c self).
    * @param assign Whether \c nextRole should be set.
    * @return The selected agent (can be empty).
    */
-  const Agent* determineActiveAgent(Agent& self, const std::vector<const Agent*>& otherAgents, bool assign = false) const;
+  const Agent* determineActiveAgent(Agent& self, SetPlay::Type& setPlay, const std::vector<const Agent*>& otherAgents, bool assign = false) const;
 
   /**
    * Performs a majority vote among all agents on a specific topic.
@@ -153,19 +154,15 @@ private:
     unsigned lastTimeWhenNotBehind = 0; /**< The last time when the ball was not behind a certain x threshold. */
   };
 
-  const Pose2f ttrbWalkSpeed = Pose2f(100_deg, 260.f, 220.f); /**< Assumed walk speed for time to reach ball (TTRB) [rad/s, mm/s, mm/s]. */
   static constexpr float ttrbGetUpDuration = 5000.f; /**< Assumed get up duration for TTRB [ms]. */
-  static constexpr float ttrbStabilityOffset = 1000.f; /**< A bonus that the current active agent gets in its TTRB to prevent unnecessary role switches [ms]. */
-  static constexpr float ttrbGoalkeeperGoalKickPenalty = 20000.f; /**< A penalty for the goalkeeper's TTRB when a goal kick (for the own team) is going on [ms]. */
+  static constexpr float ttrbStabilityOffset = 500.f; /**< A bonus that the current active agent gets in its TTRB to prevent unnecessary role switches [ms]. */
   static constexpr float ttrbWithoutBallPenalty = 2000.f; /**< An penalty for the TTRB when assigning the closestToTeamBall role [ms]. */
   static constexpr float kickPoseBallOffsetX = 170.f; /**< The offset of the (fake) kick pose behind the ball for calculating the TTRB [mm]. */
   static constexpr int ballDisappearedThreshold = 64; /**< If the ball has disappeared longer than this [ms], an agent can not become active and its TTRB is increased. */
-  static constexpr int ballSeenThreshold = 1000; /**< If the ball is older than this [ms], an agent can not become active (it can stay active, though, if it already was). */
-  static constexpr int ballLostThreshold = 5000; /**< If the ball is older than this [ms], an agent can not be active (even if it was). */
   static constexpr float ballDistanceThresholdDemo = 800.f; /**< The distance threshold for the ball to be considered for the demo [mm]. */
   static constexpr float oscillationBuffer = 200.f /**< The buffer for oscillation [mm]. */;
-  static constexpr int yetAnotherBallThreshold = 8000; /**< No comment. */
   static constexpr int kickOffForwardDuration = 10000; /**< The time forwards will walk into the opposing half after kick to a specific position [ms]. */
+  unsigned timeWhenLastPlayedSound = 0; /**< Used to limit frequency of sound playback. */
 
   std::array<Strategy, Strategy::numOfTypes> strategies;
   std::array<Tactic, Tactic::numOfTypes> tactics;
@@ -181,20 +178,21 @@ private:
   std::array<ActiveRole*, ActiveRole::numOfTypes> activeRoles{nullptr};
   std::array<PositionRole*, PositionRole::numOfTypes> positionRoles{nullptr};
   std::vector<Role*> roles;
-  std::array<SetPlay::Action::Implementation*, SetPlay::Action::numOfTypes> setPlayActions{nullptr};
   BallSearch* ballSearch = nullptr;
 
   std::unordered_map<float, BallXTimestamps> ballXTimestamps;
+  bool hasTeam = false;
 
-  const BallDropInModel& theBallDropInModel;
   const BallSearchParticles& theBallSearchParticles;
   const BallSpecification& theBallSpecification;
+  const BehaviorParameters& theBehaviorParameters;
   const ExtendedGameState& theExtendedGameState;
   const FieldBall& theFieldBall;
   const FieldDimensions& theFieldDimensions;
   const FieldInterceptBall& theFieldInterceptBall;
   const FrameInfo& theFrameInfo;
   const GameState& theGameState;
+  const IndirectKick& theIndirectKick;
   const TeamBallModel& theTeamBallModel;
-  const LibDemo& theLibDemo;
+  const WalkingEngineOutput& theWalkingEngineOutput;
 };

@@ -10,15 +10,13 @@ MAKE_MODULE(BallLostProvider);
 
 void BallLostProvider::update(BallLostModel& theBallLostModel)
 {
-  bool* lastFrameDetected = theCameraInfo.camera == CameraInfo::upper ? &lastUpperDetectedBall : &lastLowerDetectedBall;
-
   if(theFrameInfo.time != theBallModel.timeWhenLastSeen && theBallModel.timeOfLastCollision > lastBallSeenTimestamp)
     theBallLostModel.relativeAlternateBallPosition = theOdometer.odometryOffset.inverse() * theBallLostModel.relativeAlternateBallPosition;
   else if(theFrameInfo.time == theBallModel.timeWhenLastSeen)
   {
-    if(!(*lastFrameDetected))
+    if(!lastFrameDetected)
     {
-      *lastFrameDetected = true;
+      lastFrameDetected = true;
       blockUpdate = true;
     }
     else

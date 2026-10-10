@@ -18,7 +18,6 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/MeasurementCovariance.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
@@ -45,7 +44,6 @@ MODULE(BallAndPenaltyMarkPerceptor,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(MeasurementCovariance),
-  REQUIRES(MotionInfo),
   REQUIRES(RobotPose),
   PROVIDES(BallPercept),
   REQUIRES(BallPercept),
@@ -79,7 +77,6 @@ private:
   NeuralNetwork::CompiledNN multihead;
 
   std::unique_ptr<NeuralNetwork::Model> multiheadModel;
-
 
   float bestRadius, bestProbPenalty, bestProbBall;
   Vector2f bestBallPosition;

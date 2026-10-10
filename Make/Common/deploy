@@ -7,10 +7,9 @@ usage()
   echo "  options:"
   echo "    -b                       restart bhuman"
   echo "    -c <field player color>  set field player color to blue, red, yellow, black, white, orange, purple, brown, or gray"
-  echo "    -d                       delete logs or add timestamp to image"
+  echo "    -d                       delete logs"
   echo "    -g <goalkeeper color>    set goalkeeper color to blue, red, yellow, black, white, orange, purple, brown, or gray"
   echo "    -h | --help | /h | /?    print this text"
-  echo "    -i                       create image instead of deploying"
   echo "    -k                       keep ip address for remote connection"
   echo "    -l <location>            set location"
   echo "    -m <magic number>        set magic number for teamcomm (0-255). Set -1 for random."
@@ -20,14 +19,14 @@ usage()
   echo "    -r <n> <ip>              copy to <ip> and set playernumber to <n> (one -r per robot)"
   echo "    -s <scenario>            set scenario"
   echo "    -t <team number>         set team number"
-  echo "    -u                       check for USB drive before starting (only when creating an image)"
-  echo "    -v <volume percent>      set NAO's volume"
+  echo "    -v <volume percent>      set Booster's volume"
   echo "    -w <wireless profile>    set wireless profile"
   echo "  examples:"
   echo "    ./deploy Develop 192.168.5.14 -p 1"
   echo "    ./deploy Release -r 1 10.0.5.14 -r 3 10.0.0.2"
-  echo "    ./deploy Release -i -nc -v 50 -w SPL_A"
-  exit 1
+  echo "    ./deploy Release -i -nc -v 50 -w HSL_A"
+
+  exit
 }
 
 settingsReplacements()
@@ -51,14 +50,12 @@ copy()
   source ../Common/setupTarget "$REMOTE"
 
   if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 20 )) ); then
-    echo "error: player number is $PLAYER!" >&2
-    exit 1
+    error_and_exit 1 "player number is $PLAYER!"
   fi
 
   if [ ! -z $CHECK ]; then
     if [ `ping ${PINGOPTIONS} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
-      echo "$REMOTE not reachable" >&2
-      exit 1
+      error_and_exit 1 "$REMOTE not reachable"
     fi
   fi
 
@@ -69,6 +66,9 @@ copy()
     echo "removing log files"
     ssh $SSHOPTIONS $TARGET_USER@$REMOTE "rm -f /home/$TARGET_USER/logs/* > /dev/null"
   fi
+
+  echo "updating bhuman"
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/$TARGET_NAME/$CONFIG/bhuman ../../Util/libduerwen/lib/LinuxArm64/libduerwen_wakeup_DOA_v1.1.0_20251113.so ../../Config/. $TARGET_USER@$REMOTE:/home/$TARGET_USER/Config
 
   echo "updating wireless profiles"
   rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $SSHOPTIONS" ../../Install/Profiles/. $TARGET_USER@$REMOTE:/home/$TARGET_USER/Profiles
@@ -85,21 +85,37 @@ copy()
     fi
     if [ ! -z "$RESULT" ]; then
       echo "$RESULT" | grep -v usage >&2
-      exit 1
+      error_and_exit 1
     fi
   fi
 
-  echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $SSHOPTIONS" ../../Build/Linux/$TARGET_NAME/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux$TARGET_ARCH/libonnxruntime.so.1.10.0 ../../Config/. $TARGET_USER@$REMOTE:/home/$TARGET_USER/Config
+  # adding links to ONNXruntime shared libraries
+  if [ "$TARGET_USER" = "booster" ]; then
+    ONNXRUNTIME_LIB=$(ssh $SSHOPTIONS $TARGET_USER@$REMOTE 'find ~/.local/lib/python*/site-packages/onnxruntime/capi/ | grep "libonnxruntime\.so\." | tail -1')
+    ONNXRUNTIME_PROVIDER_LIBS=$(ssh $SSHOPTIONS $TARGET_USER@$REMOTE 'find ~/.local/lib/python*/site-packages/onnxruntime/capi/ | grep "libonnxruntime_providers_"' | tr '\n' ' ')
+
+    if [ -z "$ONNXRUNTIME_LIB" ]; then
+      error_and_exit 1 "ONNXruntime not found"
+    elif [ -z "$ONNXRUNTIME_PROVIDER_LIBS" ]; then
+      error_and_exit 1 "no ONNXruntime providers found"
+    fi
+
+    echo "adding links to ONNXruntime"
+    CMD="ln -s \"$ONNXRUNTIME_LIB\" /home/$TARGET_USER/Config/libonnxruntime.so.1 ;"
+    for LIB in $ONNXRUNTIME_PROVIDER_LIBS; do
+      LIBNAME=$(basename $LIB)
+      CMD="$CMD ln -s \"$LIB\" \"/home/$TARGET_USER/Config/$LIBNAME\" ;"
+    done
+
+    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "$CMD"
+  fi
 
   # set playback volume
   echo "setting volume to $VOLUME%"
   ssh $SSHOPTIONS $TARGET_USER@$REMOTE "/home/$TARGET_USER/bin/setvolume $VOLUME"
 
   # Modify timestamp of all configuration files
-  if [ "$TARGET_NAME" == "Booster" ]; then
-    ssh $SSHOPTIONS $TARGET_USER@$REMOTE "touch /home/$TARGET_USER/Config/Robots/*/*/cameraCalibration.cfg /home/$TARGET_USER/Config/Robots/*/Body/imuCalibration.cfg"
-  fi
+  ssh $SSHOPTIONS $TARGET_USER@$REMOTE "touch /home/$TARGET_USER/Config/Robots/*/cameraCalibration.cfg /home/$TARGET_USER/Config/Robots/*/imuCalibration.cfg"
 
   # set settings on robot
   SEDFLAGS="$(settingsReplacements)"
@@ -128,6 +144,7 @@ fi
 
 cd "$(dirname "$(which "$0")")"
 
+source ../Common/libBHuman
 source ../Common/setupSSH
 
 # init variables
@@ -149,9 +166,6 @@ DELETELOGS=
 VOLUME=100
 PROFILE=
 MAGICNUMBER=
-REQUIREUSB=
-IMAGE=
-TARGET_Nao=
 TARGET_Booster=
 if [ -z "$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)" ]; then
   RESOLVE=cat
@@ -218,9 +232,6 @@ while true; do
       declare TARGET_$TARGET_NAME=$TARGET_NAME
       let "NUMMULTIPLE+=2"
       ;;
-    "-u" | "/u")
-      REQUIREUSB=1
-      ;;
     "-v" | "/v")
       shift
       VOLUME=$1
@@ -232,9 +243,6 @@ while true; do
     "-m" | "/m")
       shift
       MAGICNUMBER=$1
-      ;;
-    "-i" | "/i")
-      IMAGE=1
       ;;
     "Release")
       CONFIG="Release"
@@ -258,14 +266,6 @@ while true; do
   shift
 done
 
-if [ ! -z "$IMAGE" -a \( ! -z "$REMOTE$MULTIPLEDATA" -o -z "$CHECK" \) ]; then
-  echo >&2 "Option -i cannot be combined with a remote ip or -r or -nr."
-  exit 1
-elif [ -z "$IMAGE" -a ! -z "$REQUIREUSB" ]; then
-  echo >&2 "Option -u can only be combined with -i."
-  exit 1
-fi
-
 if [ ! -z $SCENARIO ]; then
   if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
     if [ "$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})" != "" ]; then
@@ -274,8 +274,7 @@ if [ ! -z $SCENARIO ]; then
       echo "Did you mean $SCENARIO?"
       echo "Now using $SCENARIO"
     else
-      echo "Scenario \"$SCENARIO\" is not present" >&2
-      exit 1
+      error_and_exit 1 "Scenario \"$SCENARIO\" is not present"
     fi
   fi
 fi
@@ -288,8 +287,7 @@ if [ ! -z $LOCATION ]; then
       echo "Did you mean $LOCATION?"
       echo "Now using $LOCATION"
     else
-      echo "Location \"$LOCATION\" is not present" >&2
-      exit 1
+      error_and_exit 1 "Location \"$LOCATION\" is not present"
     fi
   fi
 fi
@@ -317,8 +315,7 @@ if [ ! -z $MAGICNUMBER ]; then
                     | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
     fi
     if [ -z "$MAGICNUMBER" ]; then
-      echo "error: cannot generate magic number (set one other than -1)."
-      exit 1
+      error_and_exit 1 "cannot generate magic number (set one other than -1)."
     fi
   fi
   echo "setting magic number to $MAGICNUMBER"
@@ -328,56 +325,22 @@ fi
 chmod 600 $keyFile
 
 if [ ! -z $COMPILE ]; then
-  for TARGET in $TARGET_Nao $TARGET_Booster; do
+  for TARGET in $TARGET_Booster; do
     if [ "`uname`" = "Darwin" ]; then
       # macOS
       ../macOS/compile $TARGET $CONFIG
-      [ $? -ne 0 ] && exit 1
+      [ $? -ne 0 ] && error_and_exit 1
     else
       # Linux (either native or WSL)
       echo "------ Compiling $TARGET ($CONFIG) ------"
       ( cd ../Linux; cmake --build ../../Build/Linux/CMake/$CONFIG --target $TARGET --config $CONFIG )
-      [ $? -ne 0 ] && exit 1
+      [ $? -ne 0 ] && error_and_exit 1
       echo "------ Successfully compiled ------"
     fi
   done
 fi
 
-if [ ! -z $IMAGE ]; then # write an opn image
-  IMAGEPATH="$(pwd)/../../Build/Image/$CONFIG"
-  mkdir -p "$IMAGEPATH"
-  PROFILEOPT=
-  if [ ! -z $PROFILE ]; then
-    PROFILEOPT="-w $PROFILE";
-  fi
-  RESTARTOPT=
-  if [ ! -z $RESTART ]; then
-    RESTARTOPT="-b";
-  fi
-  USBOPT=
-  if [ ! -z $REQUIREUSB ]; then
-    USBOPT="-u";
-  fi
-  DATE=
-  if [ ! -z $DELETELOGS ]; then
-    DATE="$(date +"_%Y-%m-%d_%H-%M")"
-  fi
-
-  SEDFLAGS="$(settingsReplacements)"
-  if [ ! -z "$SEDFLAGS" ]; then
-    cp ../../Config/settings.cfg /tmp/deploy_settings.cfg
-    trap "mv /tmp/deploy_settings.cfg ../../Config/settings.cfg" EXIT
-    bash -c "sed $SEDFLAGS </tmp/deploy_settings.cfg >../../Config/settings.cfg"
-  fi
-
-  echo "y" | ../../Install/createHomeArchive $USBOPT -c $CONFIG -v $VOLUME $PROFILEOPT -H "$IMAGEPATH/home.tar.gz" \
-  && ../../Install/createOPN -H "$IMAGEPATH/home.tar.gz" -o "$IMAGEPATH/bhuman$DATE.opn" $RESTARTOPT
-
-  if [ -f /tmp/deploy_settings.cfg ]; then
-    mv /tmp/deploy_settings.cfg ../../Config/settings.cfg
-    trap - EXIT
-  fi
-elif [ ! -z $REMOTE ]; then # deploy to a single robot
+if [ ! -z $REMOTE ]; then # deploy to a single robot
   if [ -z "$KEEPIP" ]; then
     rm -f ../../Config/Scenes/Includes/connect.con
   else
@@ -394,6 +357,6 @@ else # try to deploy to multiple targets
     done
     wait
   else
-    exit 1
+    error_and_exit 1
   fi
 fi

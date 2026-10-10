@@ -4,7 +4,8 @@
  * Implementation of a module that aims to track all opponent robots on the pitch
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  * @author Tim Laue
  * @author Michelle Gusev
  */
@@ -47,8 +48,6 @@ void GlobalOpponentsTracker::update(GlobalOpponentsModel& globalOpponentsModel)
   dynamic(); // Apply extended kalman filter prediction step to hypotheses.
   if(useArmContactModel)
     addArmContacts(); // Add hypotheses measured by arm contact.
-  if(useFootBumperState)
-    addFootContacts(); // Add hypotheses measured by foot contact.
   addPlayerPercepts(); // Add players field percepts.
   mergeOverlapping(); // Overlapping hypotheses are merged together.
 
@@ -73,8 +72,6 @@ void GlobalOpponentsTracker::fillModel(GlobalOpponentsModel& globalOpponentsMode
     {
       GlobalOpponentsModel::OpponentEstimate opponent;
       opponent.position = theRobotPose * ob.center;
-      opponent.left = theRobotPose * ob.left;
-      opponent.right = theRobotPose * ob.right;
       opponent.unidentified = ob.isUnknown() || ob.isSomeRobot();
       globalOpponentsModel.opponents.emplace_back(opponent);
     }
@@ -96,9 +93,8 @@ void GlobalOpponentsTracker::updateGameInfo()
     if(theGameState.opponentTeam.playerStates[i] != GameState::substitute)
     {
       totalNumberOfOpponents++;
-      if(!GameState::isPenalized(theGameState.opponentTeam.playerStates[i]) ||                    // Playing
-         theGameState.opponentTeam.playerStates[i] == GameState::penalizedIllegalMotionInSet ||   // Not playing but still on pitch
-         theGameState.opponentTeam.playerStates[i] == GameState::penalizedIllegalMotionInStandby)
+      if(!GameState::isPenalized(theGameState.opponentTeam.playerStates[i]) ||         // Playing
+         theGameState.opponentTeam.playerStates[i] == GameState::penalizedMotionInSet) // Not playing but still on pitch
         numberOfUnpenalizedOpponents++;
     }
   }
@@ -195,53 +191,26 @@ void GlobalOpponentsTracker::addArmContacts()
   };
 }
 
-void GlobalOpponentsTracker::addFootContacts()
-{
-  merged.clear();
-  merged.resize(obstacleHypotheses.size(), false);
-
-  FOREACH_ENUM(Legs::Leg, leg)
-  {
-    if(theFootBumperState.status[leg].contact && theFrameInfo.getTimeSince(theFootBumperState.status[leg].lastContact) <= maxContactTime)
-    {
-      if(!footContact[leg])
-      {
-        footContact[leg] = true;
-      }
-      Vector2f center = (theTorsoMatrix.inverse() * theRobotModel.limbs[Limbs::combine(leg, Limbs::foot)].translation).topRows(2);
-      center.x() += theRobotDimensions.robotDepth + distJointToToe + distToeToBumper;
-      GlobalOpponentsHypothesis obstacle(feetCov, center, Vector2f::Zero(), Vector2f::Zero(), theFrameInfo.time, Obstacle::unknown, 1);
-      obstacle.setLeftRight(theRobotDimensions.robotDepth);
-      // Insert valid obstacle.
-      tryToMerge(obstacle);
-    }
-    else
-      footContact[leg] = false;
-  };
-}
-
 void GlobalOpponentsTracker::addPlayerPercepts()
 {
-  if(theObstaclesFieldPercept.obstacles.empty())
+  if(theRobotPercept.robots.empty())
     return;
 
   merged.clear();
   merged.resize(obstacleHypotheses.size(), false);
 
-  for(const ObstaclesFieldPercept::Obstacle& percept : theObstaclesFieldPercept.obstacles)
+  for(const RobotPercept::Robot& percept : theRobotPercept.robots)
   {
     // Too far away?
     if(percept.center.squaredNorm() >= sqr(maxOpponentDistance))
       continue;
 
     // TODO: Consider handling the goalkeepers in a different way.
-    Obstacle::Type type = (percept.type == ObstaclesFieldPercept::opponentPlayer || percept.type == ObstaclesFieldPercept::opponentGoalkeeper) ? (percept.fallen ? Obstacle::fallenOpponent : Obstacle::opponent)
-      : ((percept.type == ObstaclesFieldPercept::ownPlayer || percept.type == ObstaclesFieldPercept::ownGoalkeeper) ? (percept.fallen ? Obstacle::fallenTeammate : Obstacle::teammate)
+    Obstacle::Type type = (percept.type == RobotPercept::opponentPlayer || percept.type == RobotPercept::opponentGoalkeeper) ? (percept.fallen ? Obstacle::fallenOpponent : Obstacle::opponent)
+      : ((percept.type == RobotPercept::ownPlayer || percept.type == RobotPercept::ownGoalkeeper) ? (percept.fallen ? Obstacle::fallenTeammate : Obstacle::teammate)
         : (percept.fallen ? Obstacle::fallenSomeRobot : Obstacle::someRobot));
 
-    GlobalOpponentsHypothesis obstacle(percept.covariance, percept.center,
-      percept.left.normalized(percept.left.norm() + theRobotDimensions.robotDepth),
-      percept.right.normalized(percept.right.norm() + theRobotDimensions.robotDepth), theFrameInfo.time, type, 1);
+    GlobalOpponentsHypothesis obstacle(percept.covariance, percept.center, percept.left, percept.right, theFrameInfo.time, type, 1);
 
     // Obstacles have a minimum size
     if((obstacle.left - obstacle.right).squaredNorm() < sqr(2 * theRobotDimensions.robotDepth))
@@ -358,9 +327,8 @@ void GlobalOpponentsTracker::shouldBeSeen()
     Vector2f camRight(maxOpponentDistance, 0.f);
     camLeft = camLeft.rotate(cameraAngleLeft);
     camRight = camRight.rotate(cameraAngleRight);
-    const ColorRGBA cameraColor = theCameraInfo.camera == CameraInfo::upper ? ColorRGBA::blue : ColorRGBA::yellow;
-    LINE("module:ObstacleModelProvider:cameraAngle", 0, 0, camLeft.x(), camLeft.y(), 10, Drawings::solidPen, cameraColor);
-    LINE("module:ObstacleModelProvider:cameraAngle", 0, 0, camRight.x(), camRight.y(), 10, Drawings::solidPen, cameraColor);
+    LINE("module:ObstacleModelProvider:cameraAngle", 0, 0, camLeft.x(), camLeft.y(), 10, Drawings::solidPen, ColorRGBA::blue);
+    LINE("module:ObstacleModelProvider:cameraAngle", 0, 0, camRight.x(), camRight.y(), 10, Drawings::solidPen, ColorRGBA::blue);
   }
 
   // Iterate over the obstacle hypotheses
@@ -388,7 +356,7 @@ void GlobalOpponentsTracker::shouldBeSeen()
     // Increase notSeenButShouldSeen and continue with next obstacle if any other obstacle is in the shadow of the obstacle
     // or the field boundary is further as the obstacle
     if(isAnyObstacleInShadow(closer, i, cameraAngleLeft, cameraAngleRight) || (theFieldBoundary.isValid &&
-      closer->isFieldBoundaryFurtherAsObstacle(theCameraInfo, theCameraMatrix, theImageCoordinateSystem, theFieldBoundary)))
+      closer->isFieldBoundaryFurtherAsObstacle(theCameraInfo, theCameraMatrix, theFieldBoundary)))
     {
       closer->notSeenButShouldSeenCount += std::max(1u, notSeenThreshold / 10);
       continue;

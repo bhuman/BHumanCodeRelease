@@ -9,10 +9,8 @@
       "${workspaceFolder}/Util/fftw-3.3",
       "${workspaceFolder}/Util/GameController/include",
       "${workspaceFolder}/Util/libjpeg/include",
-      "${workspaceFolder}/Util/MD5",
       "${workspaceFolder}/Util/onnxruntime/include",
       "${workspaceFolder}/Util/SimRobot/Util/Eigen",
-      "${workspaceFolder}/Util/snappy/include",
       "${workspaceFolder}/Util/voronoi/include"
     ],
     "x86IncludePath": [
@@ -43,7 +41,7 @@
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore3_autogen/include_Debug/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore2D_autogen/include_Debug/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotEditor_autogen/include_Debug/**",
-      "${workspaceFolder}/Build/Windows/CMake/SimulatedNao_autogen/include_Debug/**"
+      "${workspaceFolder}/Build/Windows/CMake/SimulatedRobot_autogen/include_Debug/**"
     ],
     "windowsSimRobotDevelopIncludePath": [
       "${workspaceFolder}/Build/Windows/CMake/DeployDialog_autogen/include_Develop/**",
@@ -52,7 +50,7 @@
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore3_autogen/include_Develop/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore2D_autogen/include_Develop/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotEditor_autogen/include_Develop/**",
-      "${workspaceFolder}/Build/Windows/CMake/SimulatedNao_autogen/include_Develop/**"
+      "${workspaceFolder}/Build/Windows/CMake/SimulatedRobot_autogen/include_Develop/**"
     ],
     "windowsSimRobotReleaseIncludePath": [
       "${workspaceFolder}/Build/Windows/CMake/DeployDialog_autogen/include_Release/**",
@@ -61,7 +59,7 @@
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore3_autogen/include_Release/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotCore2D_autogen/include_Release/**",
       "${workspaceFolder}/Build/Windows/CMake/SimRobotEditor_autogen/include_Release/**",
-      "${workspaceFolder}/Build/Windows/CMake/SimulatedNao_autogen/include_Release/**"
+      "${workspaceFolder}/Build/Windows/CMake/SimulatedRobot_autogen/include_Release/**"
     ],
     "linuxSimRobotIncludePath": [
       "${workspaceFolder}/Util/SimRobot/Util/MuJoCo/Linux/include"
@@ -79,7 +77,7 @@
       "${workspaceFolder}/Build/Linux/CMake/Debug/SimRobotCore3_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Debug/SimRobotCore2D_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Debug/SimRobotEditor_autogen/**",
-      "${workspaceFolder}/Build/Linux/CMake/Debug/SimulatedNao_autogen/**"
+      "${workspaceFolder}/Build/Linux/CMake/Debug/SimulatedRobot_autogen/**"
     ],
     "linuxSimRobotDevelopIncludePath": [
       "${workspaceFolder}/Build/Linux/CMake/Develop/DeployDialog_autogen/**",
@@ -88,7 +86,7 @@
       "${workspaceFolder}/Build/Linux/CMake/Develop/SimRobotCore3_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Develop/SimRobotCore2D_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Develop/SimRobotEditor_autogen/**",
-      "${workspaceFolder}/Build/Linux/CMake/Develop/SimulatedNao_autogen/**"
+      "${workspaceFolder}/Build/Linux/CMake/Develop/SimulatedRobot_autogen/**"
     ],
     "linuxSimRobotReleaseIncludePath": [
       "${workspaceFolder}/Build/Linux/CMake/Release/DeployDialog_autogen/**",
@@ -97,7 +95,7 @@
       "${workspaceFolder}/Build/Linux/CMake/Release/SimRobotCore3_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Release/SimRobotCore2D_autogen/**",
       "${workspaceFolder}/Build/Linux/CMake/Release/SimRobotEditor_autogen/**",
-      "${workspaceFolder}/Build/Linux/CMake/Release/SimulatedNao_autogen/**"
+      "${workspaceFolder}/Build/Linux/CMake/Release/SimulatedRobot_autogen/**"
     ],
     "macOSSimRobotIncludePath": [
       "${workspaceFolder}/Util/SimRobot/Util/MuJoCo/macOS/include",
@@ -118,7 +116,7 @@
       "${workspaceFolder}/Build/macOS/SimRobotCore3_autogen/include_Debug/**",
       "${workspaceFolder}/Build/macOS/SimRobotCore2D_autogen/include_Debug/**",
       "${workspaceFolder}/Build/macOS/SimRobotEditor_autogen/include_Debug/**",
-      "${workspaceFolder}/Build/macOS/SimulatedNao_autogen/include_Debug/**"
+      "${workspaceFolder}/Build/macOS/SimulatedRobot_autogen/include_Debug/**"
     ],
     "macOSSimRobotDevelopIncludePath": [
       "${workspaceFolder}/Build/macOS/DeployDialog_autogen/include_Develop/**",
@@ -127,7 +125,7 @@
       "${workspaceFolder}/Build/macOS/SimRobotCore3_autogen/include_Develop/**",
       "${workspaceFolder}/Build/macOS/SimRobotCore2D_autogen/include_Develop/**",
       "${workspaceFolder}/Build/macOS/SimRobotEditor_autogen/include_Develop/**",
-      "${workspaceFolder}/Build/macOS/SimulatedNao_autogen/include_Develop/**"
+      "${workspaceFolder}/Build/macOS/SimulatedRobot_autogen/include_Develop/**"
     ],
     "macOSSimRobotReleaseIncludePath": [
       "${workspaceFolder}/Build/macOS/DeployDialog_autogen/include_Release/**",
@@ -136,24 +134,18 @@
       "${workspaceFolder}/Build/macOS/SimRobotCore3_autogen/include_Release/**",
       "${workspaceFolder}/Build/macOS/SimRobotCore2D_autogen/include_Release/**",
       "${workspaceFolder}/Build/macOS/SimRobotEditor_autogen/include_Release/**",
-      "${workspaceFolder}/Build/macOS/SimulatedNao_autogen/include_Release/**"
+      "${workspaceFolder}/Build/macOS/SimulatedRobot_autogen/include_Release/**"
     ],
     "boosterIncludePath": [
-      "${workspaceFolder}/Util/Buildchain/T1/include/c++/11",
-      "${workspaceFolder}/Util/Buildchain/T1/include/aarch64-linux-gnu/c++/11",
-      "${workspaceFolder}/Util/Buildchain/T1/include/c++/11/backward",
-      "${workspaceFolder}/Util/Buildchain/T1/include/aarch64-linux-gnu",
-      "${workspaceFolder}/Util/Buildchain/T1/include",
+      "${workspaceFolder}/Util/Buildchain/Booster/include/c++/11",
+      "${workspaceFolder}/Util/Buildchain/Booster/include/aarch64-linux-gnu/c++/11",
+      "${workspaceFolder}/Util/Buildchain/Booster/include/c++/11/backward",
+      "${workspaceFolder}/Util/Buildchain/Booster/include/aarch64-linux-gnu",
+      "${workspaceFolder}/Util/Buildchain/Booster/include",
       "${workspaceFolder}/Util/BoosterRoboticsSDK/include",
-      "${workspaceFolder}/Util/librealsense2/include"
-    ],
-    "naoIncludePath": [
-      "${workspaceFolder}/Util/Buildchain/V6/include/c++/12",
-      "${workspaceFolder}/Util/Buildchain/V6/include/x86_64-linux-gnu/c++/12",
-      "${workspaceFolder}/Util/Buildchain/V6/include/c++/12/backward",
-      "${workspaceFolder}/Util/Buildchain/V6/include/x86_64-linux-gnu",
-      "${workspaceFolder}/Util/Buildchain/V6/include",
-      "${workspaceFolder}/Util/openssl/include"
+      "${workspaceFolder}/Util/libduerwen/include",
+      "${workspaceFolder}/Util/librealsense2/include",
+      "${workspaceFolder}/Util/X5Camera/include"
     ],
     "pythonIncludePath": [
       "${bhumanIncludePath}",
@@ -177,11 +169,7 @@
     "boosterDefines": [
       "LINUX",
       "__aarch64__",
-      "TARGET_ROBOT"
-    ],
-    "naoDefines": [
-      "LINUX",
-      "__x86_64__",
+      "TARGET_BOOSTER",
       "TARGET_ROBOT"
     ]
   },
@@ -191,7 +179,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/SimRobot/Debug/SimRobot.exe"
+        "program": "${workspaceFolder}/Build/Windows/SimRobot/Debug/SimRobot.exe"
       },
       "includePath": [
         "${default}",
@@ -218,7 +206,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/SimRobot/Develop/SimRobot.exe"
+        "program": "${workspaceFolder}/Build/Windows/SimRobot/Develop/SimRobot.exe"
       },
       "includePath": [
         "${default}",
@@ -244,7 +232,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/SimRobot/Release/SimRobot.exe"
+        "program": "${workspaceFolder}/Build/Windows/SimRobot/Release/SimRobot.exe"
       },
       "includePath": [
         "${default}",
@@ -271,7 +259,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Debug/DeployDialogRunner.exe"
+        "program": "${workspaceFolder}/Build/Windows/DeployDialogRunner/Debug/DeployDialogRunner.exe"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -298,7 +286,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Develop/DeployDialogRunner.exe"
+        "program": "${workspaceFolder}/Build/Windows/DeployDialogRunner/Develop/DeployDialogRunner.exe"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -325,7 +313,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Release/DeployDialogRunner.exe"
+        "program": "${workspaceFolder}/Build/Windows/DeployDialogRunner/Release/DeployDialogRunner.exe"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -349,93 +337,11 @@
       ]
     },
     {
-      "name": "Windows Nao Debug",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Debug/DeployDialogRunner.exe"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Debug"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "cl.exe",
-      "compilerArgs": [
-        "/Zc:preprocessor"
-      ]
-    },
-    {
-      "name": "Windows Nao Develop",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Develop/DeployDialogRunner.exe"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Develop"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "cl.exe",
-      "compilerArgs": [
-        "/Zc:preprocessor"
-      ]
-    },
-    {
-      "name": "Windows Nao Release",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Windows/DeployDialogRunner/Release/DeployDialogRunner.exe"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Release",
-        "NDEBUG"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "cl.exe",
-      "compilerArgs": [
-        "/Zc:preprocessor"
-      ]
-    },
-    {
       "name": "Linux/ARM SimRobot Debug",
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Debug/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Debug/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -459,7 +365,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Develop/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Develop/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -483,7 +389,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Release/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Release/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -508,7 +414,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Debug/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Debug/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -532,7 +438,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Develop/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Develop/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -556,7 +462,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/SimRobot/Release/SimRobot"
+        "program": "${workspaceFolder}/Build/Linux/SimRobot/Release/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -581,7 +487,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Debug/DeployDialogRunner"
+        "program": "${workspaceFolder}/Build/Linux/DeployDialogRunner/Debug/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -605,7 +511,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Develop/DeployDialogRunner"
+        "program": "${workspaceFolder}/Build/Linux/DeployDialogRunner/Develop/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -629,7 +535,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Release/DeployDialogRunner"
+        "program": "${workspaceFolder}/Build/Linux/DeployDialogRunner/Release/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -650,85 +556,11 @@
       "compilerPath": "/usr/bin/clang++"
     },
     {
-      "name": "Linux Nao Debug",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Debug/DeployDialogRunner"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Debug"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "Linux Nao Develop",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Develop/DeployDialogRunner"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Develop"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "Linux Nao Release",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/Linux/DeployDialogRunner/Release/DeployDialogRunner"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Release",
-        "NDEBUG"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
       "name": "macOS/ARM SimRobot Debug",
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Debug/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": ""
+        "program": "${workspaceFolder}/Build/macOS/SimRobot/Debug/SimRobot.app/Contents/MacOS/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -756,8 +588,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Develop/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": ""
+        "program": "${workspaceFolder}/Build/macOS/SimRobot/Develop/SimRobot.app/Contents/MacOS/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -785,8 +616,7 @@
       "customConfigurationVariables": {
         "target": "SimRobot",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Release/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": ""
+        "program": "${workspaceFolder}/Build/macOS/SimRobot/Release/SimRobot.app/Contents/MacOS/SimRobot"
       },
       "includePath": [
         "${default}",
@@ -811,109 +641,11 @@
       "compilerPath": "/usr/bin/clang++"
     },
     {
-      "name": "macOS/x86 SimRobot Debug",
-      "customConfigurationVariables": {
-        "target": "SimRobot",
-        "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Debug/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": "-r"
-      },
-      "includePath": [
-        "${default}",
-        "${bhumanIncludePath}",
-        "${simRobotIncludePath}",
-        "${macOSSimRobotIncludePath}",
-        "${macOSSimRobotDebugIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "macFrameworkPath": [
-        "${default}",
-        "${workspaceFolder}/Util/SimRobot/Util/qt/macOS/lib"
-      ],
-      "defines": [
-        "${macOSDefines}",
-        "CONFIGURATION=Debug"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "macOS/x86 SimRobot Develop",
-      "customConfigurationVariables": {
-        "target": "SimRobot",
-        "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Develop/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": "-r"
-      },
-      "includePath": [
-        "${default}",
-        "${bhumanIncludePath}",
-        "${simRobotIncludePath}",
-        "${macOSSimRobotIncludePath}",
-        "${macOSSimRobotDevelopIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "macFrameworkPath": [
-        "${default}",
-        "${workspaceFolder}/Util/SimRobot/Util/qt/macOS/lib"
-      ],
-      "defines": [
-        "${macOSDefines}",
-        "CONFIGURATION=Develop"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "macOS/x86 SimRobot Release",
-      "customConfigurationVariables": {
-        "target": "SimRobot",
-        "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/SimRobot/Release/SimRobot.app/Contents/MacOS/SimRobot",
-        "generateOption": "-r"
-      },
-      "includePath": [
-        "${default}",
-        "${bhumanIncludePath}",
-        "${simRobotIncludePath}",
-        "${macOSSimRobotIncludePath}",
-        "${macOSSimRobotReleaseIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "macFrameworkPath": [
-        "${default}",
-        "${workspaceFolder}/Util/SimRobot/Util/qt/macOS/lib"
-      ],
-      "defines": [
-        "${macOSDefines}",
-        "CONFIGURATION=Release",
-        "NDEBUG"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
       "name": "macOS Booster Debug",
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Debug/DeployDialogRunner",
-        "generateOption": "-k"
+        "program": "${workspaceFolder}/Build/macOS/DeployDialogRunner/Debug/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -937,8 +669,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Develop/DeployDialogRunner",
-        "generateOption": "-k"
+        "program": "${workspaceFolder}/Build/macOS/DeployDialogRunner/Develop/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -962,8 +693,7 @@
       "customConfigurationVariables": {
         "target": "DeployDialogRunner",
         "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Release/DeployDialogRunner",
-        "generateOption": "-k"
+        "program": "${workspaceFolder}/Build/macOS/DeployDialogRunner/Release/DeployDialogRunner"
       },
       "includePath": [
         "${boosterIncludePath}",
@@ -977,82 +707,6 @@
       ],
       "forcedInclude": [
         "${workspaceFolder}/.vscode/noX86.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "macOS Nao Debug",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Debug",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Debug/DeployDialogRunner",
-        "generateOption": "-k"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Debug"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "macOS Nao Develop",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Develop",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Develop/DeployDialogRunner",
-        "generateOption": "-k"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Develop"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "${default}",
-      "compilerPath": "/usr/bin/clang++"
-    },
-    {
-      "name": "macOS Nao Release",
-      "customConfigurationVariables": {
-        "target": "DeployDialogRunner",
-        "configuration": "Release",
-        "program": "${workspaceFolder:B-Human}/Build/macOS/DeployDialogRunner/Release/DeployDialogRunner",
-        "generateOption": "-k"
-      },
-      "includePath": [
-        "${naoIncludePath}",
-        "${bhumanIncludePath}",
-        "${x86IncludePath}"
-      ],
-      "defines": [
-        "${naoDefines}",
-        "CONFIGURATION=Release",
-        "NDEBUG"
-      ],
-      "forcedInclude": [
-        "${workspaceFolder}/.vscode/noArm.h"
       ],
       "cStandard": "c17",
       "cppStandard": "c++20",

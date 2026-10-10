@@ -53,7 +53,7 @@ option((SkillBehaviorControl) PenaltyStrikerGoToBallAndKick,
                         .maxPan = 30_deg,
                         .tilt = 5.7_deg,
                         .speed = 20_deg});
-      Stand({.energySavingWalk = false});
+      Stand();
     }
   }
 
@@ -69,7 +69,7 @@ option((SkillBehaviorControl) PenaltyStrikerGoToBallAndKick,
       LookAtBall();
       WalkToBallAndKick({.targetDirection = Angle::normalize(kickPose.rotation - theKickInfo[kickType].rotationOffset),
                          .kickType = kickType,
-                         .alignPrecisely = theKickInfo[kickType].motion == MotionPhase::walk ? KickPrecision::notPrecise : KickPrecision::precise,
+                         .alignPrecisely = KickPrecision::normal,
                          .speed = walkSpeed});
     }
   }
@@ -81,7 +81,7 @@ option((SkillBehaviorControl) PenaltyStrikerGoToBallAndKick,
       LookAtBall();
       WalkToBallAndKick({.targetDirection = Angle::normalize(kickPose.rotation - theKickInfo[kickType].rotationOffset),
                          .kickType = kickType,
-                         .alignPrecisely = theKickInfo[kickType].motion == MotionPhase::walk ? KickPrecision::notPrecise : KickPrecision::precise,
+                         .alignPrecisely = KickPrecision::normal,
                          .speed = walkSpeed});
     }
   }

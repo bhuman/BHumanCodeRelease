@@ -24,23 +24,23 @@
   <Include href="right_foot_link_24.rsi3"/>
   <Include href="right_hand_link_11.rsi3"/>
 
-  <Surface name="BoosterDark" diffuseColor="rgba(40%, 40%, 40%)" ambientColor="rgb(32%, 32%, 32%)"/>
-  <Surface name="Booster-skin" diffuseColor="rgb(76%, 76%, 76%)" ambientColor="rgb(60%, 60%, 60%)"/>
-  <Surface name="Booster-red" diffuseColor="rgb(100%, 0%, 0%)" ambientColor="rgb(80%, 0%, 0%)"/>
-  <Surface name="Booster-blue" diffuseColor="rgb(0%, 60%, 80%)" ambientColor="rgb(0%, 48%, 64%)"/>
-  <Surface name="Booster-yellow" diffuseColor="rgb(100%, 100%, 0%)" ambientColor="rgb(80%, 80%, 0%)"/>
-  <Surface name="Booster-black" diffuseColor="rgb(0%, 0%, 0%)" ambientColor="rgb(0%, 0%, 0%)"/>
-  <Surface name="Booster-white" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(80%, 80%, 80%)"/>
-  <Surface name="Booster-green" diffuseColor="rgb(0%, 80%, 0%)" ambientColor="rgb(0%, 64%, 0%)"/>
-  <Surface name="Booster-orange" diffuseColor="rgb(100%, 50%, 0%)" ambientColor="rgb(80%, 40%, 0%)"/>
-  <Surface name="Booster-purple" diffuseColor="rgb(80%, 0%, 100%)" ambientColor="rgb(64%, 0%, 80%)"/>
-  <Surface name="Booster-brown" diffuseColor="rgb(50%, 20%, 0%)" ambientColor="rgb(40%, 16%, 0%)"/>
-  <Surface name="Booster-gray" diffuseColor="rgb(50%, 50%, 50%)" ambientColor="rgb(40%, 40%, 40%)"/>
+  <Surface name="BoosterDark" albedo="rgb(20%, 20%, 20%)" metallic="0.8" roughness="0.4"/>
+  <Surface name="Booster-skin" albedo="rgb(76%, 76%, 76%)" metallic="0.8" roughness="0.5"/>
+  <Surface name="Booster-red" albedo="rgb(100%, 0%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-blue" albedo="rgb(0%, 60%, 80%)" roughness="0.9"/>
+  <Surface name="Booster-yellow" albedo="rgb(100%, 100%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-black" albedo="rgb(0%, 0%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-white" albedo="rgb(100%, 100%, 100%)" roughness="0.9"/>
+  <Surface name="Booster-green" albedo="rgb(0%, 80%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-orange" albedo="rgb(100%, 50%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-purple" albedo="rgb(80%, 0%, 80%)" roughness="0.9"/>
+  <Surface name="Booster-brown" albedo="rgb(50%, 20%, 0%)" roughness="0.9"/>
+  <Surface name="Booster-gray" albedo="rgb(50%, 50%, 50%)" roughness="0.9"/>
 
   <Hinge name="RAnkleRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-25.2degree" max="25.2degree"/>
-      <ServoMotor maxVelocity="15" maxForce="15" p="50" d="3" delay="$Delay"/>
+      <Deflection min="-25.2degree" max="25.2degree"/>
+      <ServoMotor maxVelocity="12.9" velocityLowPassFactor="0.22" armature="0.0679104" maxForce="57" p="65" d="3" delay="$Delay"/>
     </Axis>
     <Body name="RFoot">
       <InertiaMatrixMass value="685.00g"
@@ -56,8 +56,8 @@
 
   <Hinge name="RAnklePitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-49.8degree" max="20degree"/>
-      <ServoMotor maxVelocity="24" maxForce="24" p="50" d="3" delay="$Delay"/>
+      <Deflection min="-49.8degree" max="20degree"/>
+      <ServoMotor maxVelocity="12.9" velocityLowPassFactor="0.22" armature="0.0679104" maxForce="57" p="65" d="3" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="73.00g"
@@ -73,11 +73,11 @@
 
   <Hinge name="RKneePitch">
     <Axis y="1">
-      <Deflection isActive="true" min="-11.4degree" max="123degree"/>
-      <ServoMotor maxVelocity="60" maxForce="60" p="200" d="5" delay="$Delay"/>
+      <Deflection min="0degree" max="125degree"/>
+      <ServoMotor maxVelocity="14.7" velocityLowPassFactor="0.22" armature="0.0636012" maxForce="110" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
-      <InertiaMatrixMass value="1790.00g"
+      <InertiaMatrixMass value="1820.00g"
           x="-5.74mm" y="-0.54mm" z="-122.60mm"
           ixx="62004462.12g*mm^2" ixy="-14559.53g*mm^2" ixz="294094.03g*mm^2"
           iyy="61922934.98g*mm^2" iyz="-204726.55g*mm^2" izz="2098520.65g*mm^2"/>
@@ -91,10 +91,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="RHipYawPitch"> <!-- RHipYaw -->
+  <Hinge name="RHipYaw">
     <Axis z="1">
-      <Deflection isActive="false" min="-58degree" max="58degree"/>
-      <ServoMotor maxVelocity="30" maxForce="30" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-62degree" max="62degree"/>
+      <ServoMotor maxVelocity="7.1" velocityLowPassFactor="0.22" armature="0.0478125" maxForce="40" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="2170.00g"
@@ -112,8 +112,8 @@
 
   <Hinge name="RHipRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-88degree" max="32.4degree"/>
-      <ServoMotor maxVelocity="25" maxForce="25" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-90degree" max="22.8degree"/>
+      <ServoMotor maxVelocity="7.1" velocityLowPassFactor="0.22" armature="0.0478125" maxForce="105" p="250" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="385.00g"
@@ -124,14 +124,14 @@
         <Translation z="-0.08"/>
       </CapsuleGeometry>
       <ComplexAppearance ref="B_Hip_Roll_Right"/>
-      <Hinge ref="RHipYawPitch"/>
+      <Hinge ref="RHipYaw"/>
     </Body>
   </Hinge>
 
   <Hinge name="RHipPitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-118degree" max="118degree"/>
-      <ServoMotor maxVelocity="60" maxForce="45" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-172degree" max="128degree"/>
+      <ServoMotor maxVelocity="15.2" velocityLowPassFactor="0.22" armature="0.0523908" maxForce="90" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="1021.00g"
@@ -147,8 +147,8 @@
 
   <Hinge name="LAnkleRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-25.2degree" max="25.2degree"/>
-      <ServoMotor maxVelocity="15" maxForce="15" p="50" d="3" delay="$Delay"/>
+      <Deflection min="-25.2degree" max="25.2degree"/>
+      <ServoMotor maxVelocity="12.9" velocityLowPassFactor="0.22" armature="0.0679104" maxForce="57" p="65" d="3" delay="$Delay"/>
     </Axis>
     <Body name="LFoot">
       <InertiaMatrixMass value="685.00g"
@@ -164,8 +164,8 @@
 
   <Hinge name="LAnklePitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-49.8degree" max="20degree"/>
-      <ServoMotor maxVelocity="24" maxForce="24" p="50" d="3" delay="$Delay"/>
+      <Deflection min="-49.8degree" max="20degree"/>
+      <ServoMotor maxVelocity="12.9" velocityLowPassFactor="0.22" armature="0.0679104" maxForce="57" p="65" d="3" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="73.00g"
@@ -181,11 +181,11 @@
 
   <Hinge name="LKneePitch">
     <Axis y="1">
-      <Deflection isActive="true" min="-11.4degree" max="123degree"/>
-      <ServoMotor maxVelocity="60" maxForce="60" p="200" d="5" delay="$Delay"/>
+      <Deflection min="0degree" max="125degree"/>
+      <ServoMotor maxVelocity="14.7" velocityLowPassFactor="0.22" armature="0.0636012" maxForce="110" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
-      <InertiaMatrixMass value="1730.00g"
+      <InertiaMatrixMass value="1820.00g"
           x="-6.01mm" y="0.26mm" z="-124.32mm"
           ixx="61355205.71g*mm^2" ixy="13693.80g*mm^2" ixz="267998.32g*mm^2"
           iyy="61338619.03g*mm^2" iyz="252703.17g*mm^2" izz="1996645.42g*mm^2"/>
@@ -199,10 +199,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="LHipYawPitch"> <!-- LHipYaw -->
+  <Hinge name="LHipYaw">
     <Axis z="1">
-      <Deflection isActive="false" min="-58degree" max="58degree"/>
-      <ServoMotor maxVelocity="30" maxForce="30" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-62degree" max="62degree"/>
+      <ServoMotor maxVelocity="7.1" velocityLowPassFactor="0.22" armature="0.0478125" maxForce="40" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="2166.00g"
@@ -220,8 +220,8 @@
 
   <Hinge name="LHipRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-32.4degree" max="88degree"/>
-      <ServoMotor maxVelocity="25" maxForce="25" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-22.8degree" max="90degree"/>
+      <ServoMotor maxVelocity="7.1" velocityLowPassFactor="0.22" armature="0.0478125" maxForce="105" p="250" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="385.00g"
@@ -232,14 +232,14 @@
         <Translation z="-0.08"/>
       </CapsuleGeometry>
       <ComplexAppearance ref="B_Hip_Roll_Left"/>
-      <Hinge ref="LHipYawPitch"/>
+      <Hinge ref="LHipYaw"/>
     </Body>
   </Hinge>
 
   <Hinge name="LHipPitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-118degree" max="118degree"/>
-      <ServoMotor maxVelocity="60" maxForce="45" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-172degree" max="128degree"/>
+      <ServoMotor maxVelocity="15.2" velocityLowPassFactor="0.22" armature="0.0523908" maxForce="90" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="1021.00g"
@@ -255,8 +255,8 @@
 
   <Hinge name="WaistYaw">
     <Axis z="1">
-      <Deflection isActive="false" min="-58degree" max="58degree"/>
-      <ServoMotor maxVelocity="12.5" maxForce="30" p="200" d="5" delay="$Delay"/>
+      <Deflection min="-60degree" max="60degree"/>
+      <ServoMotor maxVelocity="7.1" velocityLowPassFactor="0.22" armature="0.0478125" maxForce="40" p="200" d="5" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="2581.00g"
@@ -276,10 +276,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="RElbowRoll"> <!-- RElbow -->
+  <Hinge name="RElbowYaw"> <!-- RElbow -->
     <Axis z="1">
-      <Deflection isActive="false" min="-2degree" max="120degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-95degree" max="120degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="327.21g"
@@ -294,10 +294,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="RElbowYaw"> <!-- RShoulderYaw -->
+  <Hinge name="RElbowPitch"> <!-- RShoulderYaw -->
     <Axis y="1">
-      <Deflection isActive="false" min="-128degree" max="128degree" init="-90degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-128degree" max="128degree" init="-90degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="1020.00g"
@@ -311,7 +311,7 @@
       <ComplexAppearance ref="B_AR3">
         <Translation y="-0.0605"/>
       </ComplexAppearance>
-      <Hinge ref="RElbowRoll">
+      <Hinge ref="RElbowYaw">
         <Translation y="-0.2076"/>
       </Hinge>
     </Body>
@@ -319,8 +319,8 @@
 
   <Hinge name="RShoulderRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-88degree" max="114.6degree" init="70degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-97degree" max="90degree" init="70degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="160.00g"
@@ -328,14 +328,14 @@
           ixx="575748.25g*mm^2" ixy="15466.13g*mm^2" ixz="0.00g*mm^2"
           iyy="179386.41g*mm^2" iyz="0.00g*mm^2" izz="634134.66g*mm^2"/>
       <ComplexAppearance ref="B_AR2"/>
-      <Hinge ref="RElbowYaw"/>
+      <Hinge ref="RElbowPitch"/>
     </Body>
   </Hinge>
 
   <Hinge name="RShoulderPitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-188degree" max="68degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-190degree" max="70degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="530.00g"
@@ -349,10 +349,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="LElbowRoll"> <!-- LElbow -->
+  <Hinge name="LElbowYaw"> <!-- LElbow -->
     <Axis z="1">
-      <Deflection isActive="false" min="-120degree" max="2degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-120degree" max="95degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="327.21g"
@@ -367,10 +367,10 @@
     </Body>
   </Hinge>
 
-  <Hinge name="LElbowYaw"> <!-- LShoulderYaw -->
+  <Hinge name="LElbowPitch"> <!-- LShoulderYaw -->
     <Axis y="1">
-      <Deflection isActive="false" min="-128degree" max="128degree" init="90degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-128degree" max="128degree" init="90degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="1020.00g"
@@ -384,7 +384,7 @@
       <ComplexAppearance ref="B_AL3">
         <Translation y="0.0605"/>
       </ComplexAppearance>
-      <Hinge ref="LElbowRoll">
+      <Hinge ref="LElbowYaw">
         <Translation y="0.2076"/>
       </Hinge>
     </Body>
@@ -392,8 +392,8 @@
 
   <Hinge name="LShoulderRoll">
     <Axis x="1">
-      <Deflection isActive="false" min="-114.6degree" max="88degree" init="-70degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-90degree" max="97degree" init="-70degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="160.00g"
@@ -401,14 +401,14 @@
           ixx="575748.25g*mm^2" ixy="-15466.13g*mm^2" ixz="0.00g*mm^2"
           iyy="179386.41g*mm^2" iyz="0.00g*mm^2" izz="634134.66g*mm^2"/>
       <ComplexAppearance ref="B_AL2"/>
-      <Hinge ref="LElbowYaw"/>
+      <Hinge ref="LElbowPitch"/>
     </Body>
   </Hinge>
 
   <Hinge name="LShoulderPitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-188degree" max="68degree"/>
-      <ServoMotor maxVelocity="18.84" maxForce="40" p="200" d="2" delay="$Delay"/>
+      <Deflection min="-190degree" max="70degree"/>
+      <ServoMotor maxVelocity="18" velocityLowPassFactor="0.22" armature="0.01" maxForce="18" p="50" d="1" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="530.00g"
@@ -424,8 +424,8 @@
 
   <Hinge name="HeadPitch">
     <Axis y="1">
-      <Deflection isActive="false" min="-18degree" max="54.5degree"/>
-      <ServoMotor maxVelocity="12.56" maxForce="10" p="50" d="2" delay="$Delay"/>
+      <Deflection min="-22degree" max="60degree"/>
+      <ServoMotor maxVelocity="12.56" velocityLowPassFactor="0.22" armature="0.01" maxForce="7" p="100" d="1.2" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="631.02g"
@@ -436,7 +436,7 @@
         <Translation x="0.01" z="0.11"/>
       </SphereGeometry>
       <ComplexAppearance ref="B_H2"/>
-      <Camera name="CameraTop" imageWidth="640" imageHeight="480" angleX="79.2degree" angleY="63.6degree">
+      <Camera name="CameraColor" imageWidth="640" imageHeight="480" angleX="79.2degree" angleY="63.6degree">
         <Translation x="0.0429" y="-0.0139" z="0.1214"/>
       </Camera>
     </Body>
@@ -444,8 +444,8 @@
 
   <Hinge name="HeadYaw">
     <Axis z="1">
-      <Deflection isActive="false" min="-58degree" max="58degree"/>
-      <ServoMotor maxVelocity="12.56" maxForce="10" p="50" d="2" delay="$Delay"/>
+      <Deflection min="-60degree" max="60degree"/>
+      <ServoMotor maxVelocity="12.56" velocityLowPassFactor="0.22" armature="0.01" maxForce="7" p="100" d="1.2" delay="$Delay"/>
     </Axis>
     <Body>
       <InertiaMatrixMass value="443.91g"
@@ -495,6 +495,126 @@
     <Hinge ref="HeadYaw">
       <Translation z="0.30485"/>
     </Hinge>
+  </Body>
+
+  <Body name="T1Dummy">
+    <Set name="TeamColor" value="Booster-skin"/>
+
+    <BoxGeometry depth="0.18" width="0.3" height="1.165">
+      <Translation z="-0.095"/>
+    </BoxGeometry>
+    <BoxMass value="30000g" depth="0.12" width="0.18" height="1.25">
+      <Translation x="-4.34mm" y="-0.66mm" z="65.69mm"/>
+    </BoxMass>
+
+    <ComplexAppearance ref="B_Trunk">
+      <Translation x="-0.0625"/>
+    </ComplexAppearance>
+
+    <Appearance name="WaistYaw">
+      <Translation z="-0.1155"/>
+      <ComplexAppearance ref="B_Waist"/>
+      <Appearance name="RHipPitch">
+        <Translation y="-0.106"/>
+        <ComplexAppearance ref="B_Hip_Pitch_Right"/>
+        <Appearance name="RHipRoll">
+          <Translation z="-0.02"/>
+          <ComplexAppearance ref="B_Hip_Roll_Right"/>
+          <Appearance name="RHipYaw">
+            <ComplexAppearance ref="B_Hip_Yaw_Right">
+              <Translation z="-0.081854"/>
+            </ComplexAppearance>
+            <Appearance name="RKneePitch">
+              <Translation x="-0.014" z="-0.215854"/>
+              <ComplexAppearance ref="B_Shank_Right"/>
+              <Appearance name="RAnklePitch">
+                <Translation z="-0.28"/>
+                <ComplexAppearance ref="B_Ankle_Cross_Right"/>
+                <Appearance name="RAnkleRoll">
+                  <Translation z="-0.012"/>
+                  <ComplexAppearance ref="B_right_foot_link"/>
+                </Appearance>
+              </Appearance>
+            </Appearance>
+          </Appearance>
+        </Appearance>
+      </Appearance>
+      <Appearance name="LHipPitch">
+        <Translation y="0.106"/>
+        <ComplexAppearance ref="B_Hip_Pitch_Left"/>
+        <Appearance name="LHipRoll">
+          <Translation z="-0.02"/>
+          <ComplexAppearance ref="B_Hip_Roll_Left"/>
+          <Appearance name="LHipYaw">
+            <ComplexAppearance ref="B_Hip_Yaw_Left">
+              <Translation z="-0.081854"/>
+            </ComplexAppearance>
+            <Appearance name="LKneePitch">
+              <Translation x="-0.014" z="-0.215854"/>
+              <ComplexAppearance ref="B_Shank_Left"/>
+              <Appearance name="LAnklePitch">
+                <Translation z="-0.28"/>
+                <ComplexAppearance ref="B_Ankle_Cross_Left"/>
+                <Appearance name="LAnkleRoll">
+                  <Translation z="-0.012"/>
+                  <ComplexAppearance ref="B_left_foot_link"/>
+                </Appearance>
+              </Appearance>
+            </Appearance>
+          </Appearance>
+        </Appearance>
+      </Appearance>
+    </Appearance>
+
+    <Appearance name="RShoulderPitch">
+      <Translation x="-0.005" y="-0.1533" z="0.219"/>
+      <ComplexAppearance ref="B_AR1">
+        <Translation y="0.047"/>
+      </ComplexAppearance>
+      <Appearance name="RShoulderRoll">
+        <Rotation x="80degree"/>
+        <ComplexAppearance ref="B_AR2"/>
+        <Appearance name="RElbowPitch">
+          <ComplexAppearance ref="B_AR3">
+            <Translation y="-0.0605"/>
+          </ComplexAppearance>
+          <Appearance name="RElbowYaw">
+            <Translation y="-0.2076"/>
+            <ComplexAppearance ref="B_right_hand_link"/>
+          </Appearance>
+        </Appearance>
+      </Appearance>
+    </Appearance>
+
+    <Appearance name="LShoulderPitch">
+      <Translation x="-0.005" y="0.1533" z="0.219"/>
+      <ComplexAppearance ref="B_AL1">
+        <Translation y="-0.047"/>
+      </ComplexAppearance>
+      <Appearance name="LShoulderRoll">
+        <Rotation x="-80degree"/>
+        <ComplexAppearance ref="B_AL2"/>
+        <Appearance name="LElbowPitch">
+          <ComplexAppearance ref="B_AL3">
+            <Translation y="0.0605"/>
+          </ComplexAppearance>
+          <Appearance name="LElbowYaw">
+            <Translation y="0.2076"/>
+            <ComplexAppearance ref="B_left_hand_link"/>
+          </Appearance>
+        </Appearance>
+      </Appearance>
+    </Appearance>
+
+    <Appearance name="HeadYaw">
+      <Translation z="0.30485"/>
+      <ComplexAppearance ref="B_H1">
+        <Translation z="-0.06185"/>
+      </ComplexAppearance>
+      <Appearance name="HeadPitch">
+        <ComplexAppearance ref="B_H2"/>
+      </Appearance>
+    </Appearance>
   </Body>
 
   <Compound name="robot type">

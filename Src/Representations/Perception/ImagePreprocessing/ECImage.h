@@ -6,7 +6,7 @@
  * It is advised to use this representation for all further image processing.
  *
  * @author Felix Thielke
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once
@@ -38,13 +38,4 @@ STREAMABLE(ECImage,
   (Image<PixelTypes::HuePixel>) hued,
   (Image<PixelTypes::GrayscaledPixel>) blueChromaticity,
   (Image<PixelTypes::GrayscaledPixel>) redChromaticity,
-});
-
-/**
- * A wrapper representation for the ECImage that allows not to store one.
- * This allows to stream an ECImage only if it is necessary.
- */
-STREAMABLE(OptionalECImage,
-{,
-  (std::optional<ECImage>) image,
 });

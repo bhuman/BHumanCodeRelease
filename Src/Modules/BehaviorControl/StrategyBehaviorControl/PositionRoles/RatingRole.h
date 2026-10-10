@@ -18,27 +18,26 @@ class RatingRole : public PositionRole
 {
   STREAMABLE(Parameters,
   {,
-    (float)(100.f) delta, /**< how far the samples for the numerical gradient are from the last position */
-    (float)(100.f) step, /**< step size for gradient ascend */
-    (float)(100.f) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
-    (int)(10) numIterations, /**< how many iterations the gradient ascend does each cycle, does not need to be high as we start at the position computed in the previous cycle */
-    (unsigned char)(150) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
-    (ColorRGBA)(213, 17, 48) worstEvaluationColor, /**< Red color in RGB corresponding to a pass evaluation value of 0 in the heatmap */
-    (ColorRGBA)(0, 104, 180) bestEvaluationColor, /**< Blue color in RGB corresponding to a pass evaluation value of 1 in the heatmap */
-    (unsigned)(20) positionBufferSize, /**< The size of the position buffer. */
-    (float)(1000.f) baseDeviation, /**< The deviation around the base pose from where to draw sample points for random new initialization */
-    (float)(1.2f) lastPosBonus, /**< Hysteresis for last position rating. */
+    (float) delta, /**< how far the samples for the numerical gradient are from the last position */
+    (float) step, /**< step size for gradient ascend */
+    (float) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
+    (int) numIterations, /**< how many iterations the gradient ascend does each cycle, does not need to be high as we start at the position computed in the previous cycle */
+    (unsigned char) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
+    (ColorRGBA) worstEvaluationColor, /**< Red color in RGB corresponding to a pass evaluation value of 0 in the heatmap */
+    (ColorRGBA) bestEvaluationColor, /**< Blue color in RGB corresponding to a pass evaluation value of 1 in the heatmap */
+    (unsigned) positionBufferSize, /**< The size of the position buffer. */
+    (float) baseDeviation, /**< The deviation around the base pose from where to draw sample points for random new initialization */
+    (float) lastPosBonus, /**< Hysteresis for last position rating. */
 
-    (float)(1500.f) stopTeammateDistance, /**< Min distance to teammates to allow stopping based on rating alone */
+    (float) stopTeammateDistance, /**< Min distance to teammates to allow stopping based on rating alone */
 
     // start and stop thresholds (can (and some should) be overridden by the explicit role)
-    (float)(0.f) startThreshold, /**< the rating has to be at least this much better at the destination (normalized for the target pose) to start moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
-    (float)(0.f) stopThreshold, /**< if the rating is not at least this much better at the destination (normalized for the target pose) stop moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
-    (Angle)(30_deg) startAngle, /**< threshold for how much the angle can differ before correction starts */
-    (Angle)(10_deg) stopAngle, /**< threshold for how much the angle can differ to stop non the less */
-    (Angle)(75_deg) maxAngleToBall, /**< maximal angle to ball until we start correction even if the difference to the proposed angle is less than the other threshold */
-    (float)(250.f) startTranslationThreshold, /**< threshold for how much the translation pose can differ before correction starts */
-    (float)(150.f) stopTranslationThreshold, /**< threshold for how much the translation pose can differ to stop non the less */
+    (float) startThreshold, /**< the rating has to be at least this much better at the destination (normalized for the target pose) to start moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
+    (float) stopThreshold, /**< if the rating is not at least this much better at the destination (normalized for the target pose) stop moving. Defaults to zero as the value is heavily dependent on the rating function and should be overridden by the explicit role */
+    (Angle) startAngle, /**< threshold for how much the angle can differ before correction starts */
+    (Angle) stopAngle, /**< threshold for how much the angle can differ to stop non the less */
+    (float) startTranslationThreshold, /**< threshold for how much the translation pose can differ before correction starts */
+    (float) stopTranslationThreshold, /**< threshold for how much the translation pose can differ to stop non the less */
   });
 
   Pose2f position(Side side, const Pose2f& basePose, const std::vector<Vector2f>& baseArea, const Agent& self, const Agents& teammates) override;
@@ -51,11 +50,11 @@ class RatingRole : public PositionRole
 
   void reset() override;
 
-  /// <summary>
-  /// moves the position along the gradient of the rating function for numIterations steps
-  ///
-  /// <param name="pos">: position from which to start and which will be moved</param>
-  /// <param name="numIterations">: how many iteration should be done</param>
+  /**
+   * Moves the position along the gradient of the rating function for numIterations steps.
+   * @param pos Position from which to start and which will be moved.
+   * @param numIterations How many iteration should be done.
+   */
   void gradientAscent(Vector2f& pos, const int numIterations) const;
 
   //computes the rating for a given point
@@ -95,4 +94,7 @@ protected:
   void preProcess() override;
 
   float getClosestTeammateSquaredDistance(const Vector2f& fieldPos) const;
+
+public:
+  RatingRole();
 };

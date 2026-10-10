@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Streaming/Streamable.h"
+#include <unordered_map>
 
 /**
  * Please note that \c namesToIndices usually only contains three

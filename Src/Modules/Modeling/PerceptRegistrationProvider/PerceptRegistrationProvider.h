@@ -13,26 +13,26 @@
 #pragma once
 
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Modeling/PerceptRegistration.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
-#include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
-#include "Representations/Perception/FieldFeatures/PenaltyAreaAndGoalArea.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Framework/Module.h"
 
 MODULE(PerceptRegistrationProvider,
 {,
+  REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
   REQUIRES(CenterCircleWithLine),
   REQUIRES(CirclePercept),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLineIntersections),
   REQUIRES(FieldLines),
   REQUIRES(PenaltyMarkPercept),
-  REQUIRES(PenaltyMarkWithPenaltyAreaLine),
-  REQUIRES(PenaltyAreaAndGoalArea),
   PROVIDES(PerceptRegistration),
   LOADS_PARAMETERS(
   {,
@@ -40,10 +40,13 @@ MODULE(PerceptRegistrationProvider,
     (bool) registerLinesOnCenterCircle,               /**< Set to true, if small lines on an unperceived center circle should be used for localization. Set to false to ignore these short lines. */
     (float) maxPenaltyMarkDeviation,                  /**< The maximum distance (in mm) between model and perception for registering a penalty mark percept */
     (float) maxIntersectionDeviation,                 /**< The maximum distance (in mm) between model and perception for registering a field line intersection */
+    (float) minimumLineLength,                        /**< Only accept lines that are longer than this threshold */
     (float) lineAssociationCorridor,                  /**< Maximum distance between points on a perceived line and a line in the world model */
+    (Angle) lineMaxAngularDeviation,                  /**< Angular threshold for a lines */
     (float) globalPoseAssociationMaxDistanceDeviation,/**< Distance threshold (metric) for associating a computed pose (by field feature) and the currently estimated pose */
     (Angle) globalPoseAssociationMaxAngularDeviation, /**< Angular threshold for associating a computed pose (by field feature) and the currently estimated pose */
     (bool) useIntersectionDirections,                 /**< If set to false, the directions of intersections are ignored in the matching process. */
+    (bool) discardLinesOnCornerArcs,                  /**< If set to true, lines that might be on a corner arc will not be used. */
   }),
 });
 
@@ -101,8 +104,11 @@ private:
   std::vector<Vector2f> tIntersectionsWorld;                  /**< List of all t intersections in global field coordinates (used when direction checking is off). Contains all x intersections, too. */
   std::vector<Vector2f> lIntersectionsWorld;                  /**< List of all l intersections in global field coordinates (used when direction checking is off). Contains all x and t intersections, too. */
 
+  std::vector<Vector2f> fieldCorners;                         /**< List of all 4 corners of the field (where the goal lines meet the touch lines) */
+
   float maxCenterCircleDeviation;                             /**< The maximum distance (in mm) between model and perception for registering a center circle percept */
   float maxGoalPostDeviation;                                 /**< The maximum distance (in mm) between model and perception for registering a goal post percept */
+  bool centerCircleCanBeUsed;                                 /**< Flag that indicates, if a perceived center circle should be used in the current frame */
 
   /**
    * The module's main function, precomputes whatever can be precomputed
@@ -158,9 +164,10 @@ private:
    * are compatible (given some thresholds) to the assumed robot pose
    * @param pose The assumed robot pose
    * @param lines A list to which all compatible measurements are added
+   * @param numberOfAvailableLines The number of lines to be used (short lines at the end of the list might be skipped)
    * @param numberOfIgnoredLines The number of lines that appear to be on the center circle and should be ignored completely
    */
-  void registerLines(const Pose2f& pose, std::vector<RegisteredLine>& lines, int& numberOfIgnoredLines);
+  void registerLines(const Pose2f& pose, std::vector<RegisteredLine>& lines, int numberOfAvailableLines, int& numberOfIgnoredLines);
 
   /**
    * Determine, if the perceived penalty mark matches one of the two marks on the
@@ -219,9 +226,10 @@ private:
    * @param end The end of the perceived line (in robot coordinates)
    * @param lineLength The length of the line
    * @param isPartOfCenterCircle Set to true by this function, if the given line appears to be on the center circle.
-   * @return A pointer to the line entry in the world model (if a normal line was found) or a nullptr (otherwise). Special case: If the line is on the center circle, nullptr is returned, too, but isPartOfCenterCircle is set to true
+   * @param isOnCornerArc Set to true by this function, if the given line appears to be on a corner arc.
+   * @return A pointer to the line entry in the world model (if a normal line was found) or a nullptr (otherwise). Special case: If the line is on the center circle or on a corner arc, nullptr is returned, too, but isPartOfCenterCircle or isOnCornerArc is set to true.
    */
-  const WorldModelFieldLine* getPointerToCorrespondingLineInWorldModel(const Pose2f& pose, const Vector2f& start, const Vector2f& end, float lineLength, bool& isPartOfCenterCircle) const;
+  const WorldModelFieldLine* getPointerToCorrespondingLineInWorldModel(const Pose2f& pose, const Vector2f& start, const Vector2f& end, float lineLength, bool& isPartOfCenterCircle, bool& isOnCornerArc) const;
 
   /**
    * Checks, if a given line is probably on the center circle

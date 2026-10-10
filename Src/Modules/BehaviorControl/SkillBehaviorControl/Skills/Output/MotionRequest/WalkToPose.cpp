@@ -14,9 +14,9 @@ option((SkillBehaviorControl) WalkToPose,
             (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
             (bool) keepTargetRotation,
             (const std::optional<Vector2f>&) targetOfInterest,
-            (SideWalkingRequest::SideWalkingRequest) sideWalkingRequest,
-            (bool) energySavingWalk))
+            (SideWalkingRequest::SideWalkingRequest) sideWalkingRequest))
 {
+  ASSERT(target.isFinite());
   theMotionRequest.motion = MotionRequest::walkToPose;
   theMotionRequest.walkTarget = target;
   theMotionRequest.walkSpeed = speed;
@@ -24,7 +24,6 @@ option((SkillBehaviorControl) WalkToPose,
   theMotionRequest.obstacleAvoidance = obstacleAvoidance;
   theMotionRequest.targetOfInterest = targetOfInterest;
   theMotionRequest.sideWalkingRequest = sideWalkingRequest;
-  theMotionRequest.energySavingWalk = energySavingWalk;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

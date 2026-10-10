@@ -2,7 +2,7 @@
  * @file ArmContactModelProvider.cpp
  *
  * Implementation of class ArmContactModelProvider.
- * @author <a href="mailto:lrust@uni-bremen.de">Lukas Rust</a>
+ * @author Lukas Rust
  */
 
 #include "ArmContactModelProvider.h"
@@ -36,12 +36,12 @@ void ArmContactModelProvider::decideArmMovementDone(ArmContactModel& model)
     const bool change = model.status[arm].armOnBack != armOnBackLastFrame[arm];
     if(change || model.status[arm].armOnBack)
       adjustingHandCounter[arm] = 1;
-    if(adjustingHandCounter[arm] < 150 && adjustingHandCounter[arm] > 0)
+    if(adjustingHandCounter[arm] < adjustingHandThreshold && adjustingHandCounter[arm] > 0)
     {
       adjustingHand[arm] = true;
       adjustingHandCounter[arm]++;
     }
-    if(adjustingHandCounter[arm] >= 150)
+    if(adjustingHandCounter[arm] >= adjustingHandThreshold)
     {
       adjustingHand[arm] = false;
       adjustingHandCounter[arm] = 0;
@@ -52,7 +52,7 @@ void ArmContactModelProvider::decideArmMovementDone(ArmContactModel& model)
 
 Vector3f ArmContactModelProvider::calculateActualHandPosition(Arms::Arm arm) const
 {
-  return theRobotModel.limbs[arm == Arms::left ? Limbs::wristLeft : Limbs::wristRight].translation;
+  return theRobotModel.limbs[arm == Arms::left ? Limbs::elbowLeft : Limbs::elbowRight].translation;
 }
 
 float ArmContactModelProvider::calcXOffset(bool armOnBack) const
@@ -103,7 +103,7 @@ void ArmContactModelProvider::determinePushDirection(ArmContactModel& model)
       {
         if(!model.status[arm].contact && SystemCall::getMode() == SystemCall::physicalRobot && theFrameInfo.getTimeSince(lastArmSoundTimestamp) > soundWaitTime)
         {
-          //SystemCall::playSound("arm.wav");
+          SystemCall::playSound("arm.wav");
           ANNOTATION("ArmContactModelProvider", "Arm Contact");
           lastArmSoundTimestamp = theFrameInfo.time;
         }
@@ -139,7 +139,7 @@ void ArmContactModelProvider::calculateForce()
 
 Vector3f ArmContactModelProvider::calculateRequestedHandPosition(Arms::Arm arm) const
 {
-  return requestedRobotModel.limbs[arm == Arms::left ? Limbs::wristLeft : Limbs::wristRight].translation;
+  return requestedRobotModel.limbs[arm == Arms::left ? Limbs::elbowLeft : Limbs::elbowRight].translation;
 }
 
 void ArmContactModelProvider::update(ArmContactModel& model)
@@ -159,8 +159,7 @@ void ArmContactModelProvider::update(ArmContactModel& model)
      theGameState.isPenalized() ||
      theFallDownState.state == FallDownState::falling ||
      theFallDownState.state == FallDownState::fallen ||
-     (theMotionInfo.executedPhase != MotionPhase::stand && theMotionInfo.executedPhase != MotionPhase::walk) ||
-     !theGroundContactState.contact)
+     (theMotionInfo.executedPhase != MotionPhase::stand && theMotionInfo.executedPhase != MotionPhase::walk))
   {
     reset(model);
     return;

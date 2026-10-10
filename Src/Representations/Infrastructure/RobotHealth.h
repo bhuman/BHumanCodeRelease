@@ -1,7 +1,7 @@
 /**
  * @file RobotHealth.h
  * The file declares two classes to transport information about the current robot health
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once
@@ -76,12 +76,12 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
   {
     PLOT("representation:RobotHealth:batteryLevel", batteryLevel);
     PLOT("representation:RobotHealth:maxJointTemperature", maxJointTemperatureStatus);
-    PLOT("representation:RobotHealth:totalCurrent", totalCurrent);
+    PLOT("representation:RobotHealth:totalTorque", totalTorque);
   },
 
   (float)(0.f)                                   cognitionFrameRate,        /**< Frames per second within thread "Cognition" */
   (unsigned char)(100)                           batteryLevel,              /**< Current batteryLevel of robot battery in percent */
-  (float)(0.f)                                   totalCurrent,              /**< Sum of all motor currents (as a measure for the robot's current load) */
+  (float)(0.f)                                   totalTorque,               /**< Sum of all motor torques (as a measure for the robot's current load) */
   (JointSensorData::TemperatureStatus)(JointSensorData::regular) maxJointTemperatureStatus, /**< Highest temperature status of a robot actuator */
   (Joints::Joint)(Joints::headYaw)               jointWithMaxTemperature,   /**< The hottest joint. */
   (unsigned char)(0)                             cpuTemperature,            /**< The temperature of the cpu */
@@ -92,4 +92,5 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
   (Configuration)(Develop)                       configuration,             /**< The configuration that was deployed. */
   (std::string)                                  location,                  /**< The location selected. */
   (std::string)                                  scenario,                  /**< The scenario selected. */
+  (unsigned)(0)                                  olderPerceptionTimestamp,  /**< The older timestamp of the frames that drive Cognition. */
 });

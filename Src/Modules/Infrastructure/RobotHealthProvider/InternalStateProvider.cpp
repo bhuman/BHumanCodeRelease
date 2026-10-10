@@ -36,9 +36,10 @@ void InternalStateProvider::update(InternalState& theInternalState)
     {
       SYNC;
       theInternalState.batteryLevel = theSystemSensorData.batteryLevel;
-      theInternalState.batteryCharging = theSystemSensorData.batteryCharging;
-      const Joints::Joint jointWithMaxTemperature = static_cast<Joints::Joint>(std::distance(theJointSensorData.temperatures.begin(), std::max_element(theJointSensorData.temperatures.begin(), theJointSensorData.temperatures.end())));
-      theInternalState.maxTemperature = static_cast<float>(theJointSensorData.temperatures[jointWithMaxTemperature]);
+      theInternalState.maxTemperature = 0;
+      for(float temperature : {theSystemSensorData.cpuTemperature, theSystemSensorData.gpuTemperature})
+        if(temperature != SensorData::off && temperature > theInternalState.maxTemperature)
+          theInternalState.maxTemperature = temperature;
     }
     writeNow.post();
     timeWhenLastWritten = theFrameInfo.time;
@@ -56,6 +57,6 @@ void InternalStateProvider::writer()
     }
     OutTextFile stream("/var/volatile/tmp/internalState.txt");
     if(stream.exists())
-      stream << internalState.batteryLevel << static_cast<int>(internalState.batteryCharging) << internalState.maxTemperature;
+      stream << internalState.batteryLevel << static_cast<int>(internalState.maxTemperature);
   }
 }

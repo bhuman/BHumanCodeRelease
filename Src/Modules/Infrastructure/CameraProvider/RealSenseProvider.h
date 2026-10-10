@@ -12,25 +12,22 @@
 #include "Representations/Configuration/CameraResolutionRequest.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JPEGImage.h"
 #include "Framework/Module.h"
 
-#if defined TARGET_ROBOT && (defined __arm64__ || defined __aarch64__)
-#define TARGET_BOOSTER
+#ifdef TARGET_ROBOT
 #include <librealsense2/rs.h>
 #endif
 
 MODULE(RealSenseProvider,
 {,
-  REQUIRES(CameraResolutionRequest),
+  USES(CameraResolutionRequest),
   REQUIRES(CameraImage),
   PROVIDES_WITHOUT_MODIFY(CameraImage),
   PROVIDES(FrameInfo),
   PROVIDES(CameraInfo),
   PROVIDES(CameraIntrinsics),
-  PROVIDES(CameraStatus),
   PROVIDES_WITHOUT_MODIFY(JPEGImage),
   LOADS_PARAMETERS(
   {
@@ -81,17 +78,16 @@ MODULE(RealSenseProvider,
 class RealSenseProvider : public RealSenseProviderBase
 {
   static thread_local RealSenseProvider* theInstance; /**< The only instance of this module. */
-  unsigned time = 0; /**< The time the current frame began (in ms). */
-  CameraInfo cameraInfo; /**< The intrinsic calibration of the color camera. It is \c upper. */
-  CameraIntrinsics cameraIntrinsics; /**< The intrinsic calibration of the cameras. The color camera is \c upper. */
-  CameraResolutionRequest cameraResolutionRequest; /**< The resolution request for the cameras. The color camera is \c upper. */
-  CameraResolutionRequest::Resolutions lastResolutionRequest = CameraResolutionRequest::defaultRes; /**< The last resolution requested. */
-  unsigned lastImageTimestamp = 0; /**< The timestamp of the last image received. */
+  CameraInfo cameraInfo; /**< The intrinsic calibration of the color camera. It is \c color. */
+  CameraIntrinsics cameraIntrinsics; /**< The intrinsic calibration of the cameras. The color camera is \c color. */
+  CameraResolutionRequest cameraResolutionRequest; /**< The resolution request for the cameras. The color camera is \c color. */
+  CameraResolutionRequest::Resolution lastResolutionRequest = CameraResolutionRequest::defaultRes; /**< The last resolution requested. */
   Settings appliedSettings; /**< The settings that were already applied. */
   static const std::unordered_map<Setting, Setting> skipIfEnabled; /**< Skip setting an option if another option is currently enabled. */
   static const Rangei settingLimits[numOfSettings]; /**< The limits for the values of the settings. */
 
-#ifdef TARGET_BOOSTER
+#ifdef TARGET_ROBOT
+  unsigned lastImageTimestamp = 0; /**< The timestamp of the last image received. */
   static const rs2_option options[numOfSettings]; /**< The mapping from settings to RealSense options. */
   rs2_error* e = nullptr; /**< This pointer will become non-zero if an error occurs. */
   rs2_context* context; /**< The RealSense context. */
@@ -125,12 +121,6 @@ class RealSenseProvider : public RealSenseProviderBase
 
   /**
    * This method is called when the representation provided needs to be updated.
-   * @param theCameraStatus The representation updated.
-   */
-  void update(CameraStatus& theCameraStatus) override {theCameraStatus.ok = true;}
-
-  /**
-   * This method is called when the representation provided needs to be updated.
    * @param theFrameInfo The representation updated.
    */
   void update(FrameInfo& theFrameInfo) override {theFrameInfo.time = theCameraImage.timestamp;}
@@ -144,7 +134,7 @@ class RealSenseProvider : public RealSenseProviderBase
   /** Read the camera intrinsics from a configuration file. */
   bool readCameraIntrinsics();
 
-  /** Read the initial camera resolutions from a configuration file. */
+  /** Read the initial camera resolution from a configuration file. */
   bool readCameraResolution();
 
   /**

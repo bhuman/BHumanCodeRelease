@@ -1,0 +1,31 @@
+<Simulation>
+
+  <Include href="../Includes/BallFifa5.rsi3"/>
+  <Include href="../Includes/Field2026HSLL.rsi3"/>
+  <Include href="../Includes/T1/T1.rsi3"/>
+  <Include href="../Includes/T1/1vsDummies.rsi3"/>
+
+  <Scene name="RoboCup" controller="SimulatedRobot" stepLength="0.002" color="rgb(65%, 65%, 70%)">
+    <PointLight z="9m" intensity="8"/>
+
+    <Compound ref="teams"/>
+
+    <Compound ref="robots"/>
+
+    <Compound ref="extras"/>
+
+    <Compound name="balls">
+      <Body ref="ball">
+        <Translation z="1m"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+    <Compound name="location">
+      <Compound name="LField"/>
+    </Compound>
+
+    <Compound ref="robot type"/>
+  </Scene>
+</Simulation>

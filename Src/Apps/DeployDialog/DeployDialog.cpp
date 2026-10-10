@@ -204,7 +204,7 @@ RobotsTable* DeployDialog::createRobotsTable(const QStringList& substitutes)
 
       // "Show Crash Log" is only enabled if there is one.
       QAction* crashLog = new QAction("Show &Crash Log", this);
-      crashLog->setEnabled(table->item(index.row(), table->columnCount() - 1) && table->item(index.row(), table->columnCount() - 1)->text() == "yes");
+      crashLog->setEnabled(table->item(index.row(), 9) && table->item(index.row(), 9)->text() == "yes");
       connect(crashLog, &QAction::triggered, [process, ip]
       {
         process->startCommand(localCommand("../Make/Common/robotTerminal " + ip + " \"\"\"cat bhdump.log; read\"\"\"").c_str());
@@ -215,7 +215,7 @@ RobotsTable* DeployDialog::createRobotsTable(const QStringList& substitutes)
 
       // "Download Calibration" is only enabled if there is one.
       QAction* downloadCalibration = new QAction("&Download Calibration", this);
-      downloadCalibration->setEnabled(table->item(index.row(), 8) && table->item(index.row(), 8)->text() == "yes");
+      downloadCalibration->setEnabled(table->item(index.row(), 7) && table->item(index.row(), 7)->text() == "yes");
       connect(downloadCalibration, &QAction::triggered, [process, ip]
       {
         process->startCommand(localCommand("../Make/Common/downloadCalibration " + ip).c_str());
@@ -225,7 +225,7 @@ RobotsTable* DeployDialog::createRobotsTable(const QStringList& substitutes)
       menu.addSeparator();
 
       // Choose "Restart" or "Start" based on whether bhuman is currently running.
-      QAction* restart = new QAction(table->item(index.row(), 9) && table->item(index.row(), 9)->text() == "run" ? "Res&tart" : "S&tart", this);
+      QAction* restart = new QAction(table->item(index.row(), 8) && table->item(index.row(), 8)->text() == "run" ? "Res&tart" : "S&tart", this);
       connect(restart, &QAction::triggered, [process, ip]
       {
         process->startCommand(remoteCommand(ip, "systemctl --user restart bhuman.service </dev/null >/dev/null 2>&1 &").c_str());
@@ -234,7 +234,7 @@ RobotsTable* DeployDialog::createRobotsTable(const QStringList& substitutes)
 
       // "Stop" is only enabled if bhuman is currently running.
       QAction* stop = new QAction("Sto&p", this);
-      stop->setEnabled(table->item(index.row(), 9) && table->item(index.row(), 9)->text() == "run");
+      stop->setEnabled(table->item(index.row(), 8) && table->item(index.row(), 8)->text() == "run");
       connect(stop, &QAction::triggered, [process, ip]
       {
         process->startCommand(remoteCommand(ip, "systemctl --user stop bhuman.service </dev/null >/dev/null 2>&1 &").c_str());
@@ -247,13 +247,6 @@ RobotsTable* DeployDialog::createRobotsTable(const QStringList& substitutes)
         process->startCommand(remoteCommand(ip, "sudo systemctl poweroff </dev/null >/dev/null 2>&1 &").c_str());
       });
       menu.addAction(shutdown);
-
-      QAction* reboot = new QAction("Re&boot", this);
-      connect(reboot, &QAction::triggered, [process, ip]
-      {
-        process->startCommand(remoteCommand(ip, "sudo systemctl reboot </dev/null >/dev/null 2>&1 &").c_str());
-      });
-      menu.addAction(reboot);
 
       menu.exec(table->mapToGlobal(point));
 
@@ -278,40 +271,34 @@ void DeployDialog::createProcesses()
     connect(statusProcess, &QProcess::readyReadStandardOutput, this, [this, name = name]
     {
       const QStringList output = QString(dynamic_cast<QProcess*>(sender())->readAllStandardOutput()).trimmed().split(' ');
-      if(output.size() != 9)
+      if(output.size() != 6)
         for(int column = 4; column < table->columnCount(); ++column)
           table->setCell(name, column, "");
       else
       {
         int column = 4;
-        const bool usb = output[4] == "yes";
-        const bool active = output[7] == "active";
-        const bool inactive = output[7] == "inactive";
+        const bool active = output[4] == "active";
+        const bool inactive = output[4] == "inactive";
+        const bool deactivating = output[4] == "deactivating";
         const int battery = active ? static_cast<int>(output[0].toFloat() * 100.f + 0.5f) : 100;
-        const bool charging = !active || output[1].trimmed().toInt() != 0;
-        const int temperature = active ? output[2].toInt() : 0;
-        const int internalLogs = output[3].toInt() - (active && !usb ? 1 : 0); // Don't count log currently written
-        const bool usbReadable = output[5] != "no";
-        const int usbLogs = usbReadable ? output[5].toInt() - (active ? 1 : 0) : 0; // Don't count log currently written
-        const bool calibration = output[6] == "yes";
-        const bool dump = output[8] == "yes";
+        const int temperature = active ? output[1].toInt() : 0;
+        const int logs = output[2].toInt() - (active ? 1 : 0); // Don't count log currently written
+        const bool calibration = output[4] == "yes";
+        const bool dump = output[5] == "yes";
 
         table->setCell(name, column++, active ? std::to_string(battery) : "",
-                       !charging ? Qt::red : battery < batteryWarnThreshold ? warnColor : QColor(),
-                       !charging ? "Not charging" : battery < batteryWarnThreshold ? "Charge still enough?" : "");
-        table->setCell(name, column++, temperature ? output[2].toStdString() : "",
+                       battery < batteryWarnThreshold ? warnColor : QColor(),
+                       battery < batteryWarnThreshold ? "Charge still enough?" : "");
+        table->setCell(name, column++, temperature ? output[1].toStdString() : "",
                        temperature < temperatureWarnThreshold ? QColor() : temperature < temperatureCriticalThreshold ? warnColor : Qt::red,
                        temperature < temperatureWarnThreshold ? "" : temperature < temperatureCriticalThreshold ? "Hot" : "Critically hot");
-        table->setCell(name, column++, std::to_string(internalLogs), internalLogs ? warnColor : QColor(),
-                       internalLogs ? "Logs present on internal drive" : "");
-        table->setCell(name, column++, usb && !usbReadable ? "fail" : !usb ? "no" : std::to_string(usbLogs),
-                       !usbReadable ? Qt::red : usbLogs ? warnColor : QColor(),
-                       usb && !usbReadable ? "USB drive not readable" : !usb ? "USB drive missing" : usbLogs ? "Logs present on USB drive" : "");
-        table->setCell(name, column++, output[6].toStdString(), calibration ? warnColor : QColor(), calibration ? "New calibration present" : "");
-        table->setCell(name, column++, active ? "run" : inactive ? "stop" : "fail",
-                       active ? QColor() : inactive ? warnColor : Qt::red,
-                       active ? "" : inactive ? "bhuman not running" : "bhuman probably crashed (" + output[7].toStdString() + ")");
-        table->setCell(name, column++, output[8].toStdString(), dump ? Qt::red : QColor(),
+        table->setCell(name, column++, std::to_string(logs), logs ? warnColor : QColor(),
+                       logs ? "Logs present" : "");
+        table->setCell(name, column++, output[3].toStdString(), calibration ? warnColor : QColor(), calibration ? "New calibration present" : "");
+        table->setCell(name, column++, active ? "run" : deactivating ? "..." : inactive ? "stop" : "fail",
+                       active ? QColor() : inactive || deactivating ? warnColor : Qt::red,
+                       active ? "" : deactivating ? "bhuman deactivating" : inactive ? "bhuman not running" : "bhuman probably crashed (" + output[4].toStdString() + ")");
+        table->setCell(name, column++, output[5].toStdString(), dump ? Qt::red : QColor(),
                        dump ? "Crash log present" : "");
       }
     });
@@ -350,17 +337,13 @@ void DeployDialog::createProcesses()
             table->setCell(robot.name, column, "");
         else if(Time::getRealTimeSince(robot.lastStatusUpdate) > statusUpdateTime && statusProcess->state() == QProcess::NotRunning)
         {
-          statusProcess->startCommand(remoteCommand(ip, "( cat /var/volatile/tmp/internalState.txt 2>/dev/null || echo '0 0 0'; "
+          statusProcess->startCommand(remoteCommand(ip, "( cat /var/volatile/tmp/internalState.txt 2>/dev/null || echo '0 0'; "
                                                           "echo -n ' '; "
                                                           "ls /home/TARGET_USER/logs | wc -l; "
                                                           "echo -n ' '; "
-                                                          "mount | grep media/usb >/dev/null && echo yes || echo no; "
-                                                          "echo -n ' '; "
-                                                          "ls >/dev/null 2>&1 /media/usb/logs && ls /media/usb/logs | wc -l || echo no; "
-                                                          "echo -n ' '; "
                                                           "ls /home/TARGET_USER/Config/settings.cfg"
-                                                            " /home/TARGET_USER/Config/Robots/*/*/cameraCalibration.cfg"
-                                                            " /home/TARGET_USER/Config/Robots/*/Body/imuCalibration.cfg 2>/dev/null"
+                                                            " /home/TARGET_USER/Config/Robots/*/cameraCalibration.cfg"
+                                                            " /home/TARGET_USER/Config/Robots/*/imuCalibration.cfg 2>/dev/null"
                                                             " | xargs ls -t | head -1 | grep settings.cfg >/dev/null && echo no || echo yes; "
                                                           "echo -n ' '; "
                                                           "systemctl --user is-failed bhuman.service; "
@@ -465,7 +448,7 @@ void DeployDialog::done(int reason)
     stream << presets;
 
     // If "Close" is not checked, prevent closing the dialog by not calling the
-    // overridden method if "Deploy/Write/Download/Delete" was clicked.
+    // overridden method if "Deploy/Download/Delete" was clicked.
     if(!settingsArea->save(settings) && reason == QDialog::Accepted)
       return;
   }

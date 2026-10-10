@@ -4,7 +4,8 @@
  * Declaration of a class that represents a possible obstacle.
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  */
 #pragma once
 
@@ -14,18 +15,6 @@
 struct CameraInfo;
 struct CameraMatrix;
 struct FieldBoundary;
-struct ImageCoordinateSystem;
-
-/** Represents an observation of an obstacle by its timestamp, position and covariance. */
-struct Observation
-{
-  unsigned timestamp;
-  Vector2f position;
-  Matrix2f covariance;
-
-  Observation(unsigned timestamp, const Vector2f& position, const Matrix2f& covariance):
-    timestamp(timestamp), position(position), covariance(covariance) {}
-};
 
 /**
  * @class ObstacleHypothesis
@@ -40,9 +29,6 @@ class ObstacleHypothesis : public Obstacle
   int upright = 0;                         /**< Negative value is for fallen robots. */
   unsigned seenCount = 0u;                 /**< Somewhat validity (between minPercepts and maxPercepts in ObstacleModelProvider). */
   unsigned notSeenButShouldSeenCount = 0u; /**< How many times the obstacle was not seen but could be measured. */
-
-  Matrix2f velocityCovariance = Matrix2f::Identity();   /**< The covariance matrix to the velocity. */
-  RingBuffer<Observation, 10> lastObservations;
 
   /** The constructor. */
   ObstacleHypothesis(const Type type);
@@ -99,15 +85,8 @@ class ObstacleHypothesis : public Obstacle
    */
   bool isFieldBoundaryFurtherAsObstacle(const CameraInfo& theCameraInfo,
                                         const CameraMatrix& theCameraMatrix,
-                                        const ImageCoordinateSystem& theImageCoordinateSystem,
                                         const FieldBoundary& theFieldBoundary);
 
   /** Calculates the squared Mahalanobis distances to the other obstacle. */
   float squaredMahalanobis(const ObstacleHypothesis& other) const;
-
-  /** Calculates the mean of this obstacle (assumed static) based on the list lastPositionsWithTimestamp and returns the standard deviation to the mean. */
-  float calculateStdDevOfStaticObstacleHypothesis() const;
-
-  /** Calculates the mean of this obstacle (assumed moving) based on the list lastPositionsWithTimestamp and returns the standard deviation to the mean. */
-  float calculateStdDevOfMovingObstacleHypothesis(Vector2f& velocity, Matrix2f& velocityCovariance) const;
 };

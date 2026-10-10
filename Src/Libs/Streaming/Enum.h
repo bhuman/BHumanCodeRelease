@@ -19,7 +19,7 @@
  *
  * @author Thomas Röfer
  * @author Alexis Tsogias
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

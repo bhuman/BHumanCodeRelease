@@ -64,7 +64,7 @@ void Controller::update()
 
 void Controller::addPlayer(const std::string& name, int teamNumber, Settings::TeamColor fieldPlayerColor, Settings::TeamColor goalkeeperColor, int playerNumber, const std::string& location, const std::string& scenario, float motionCycleTime, Settings::RobotType robotType)
 {
-  robots.emplace_back(std::make_unique<PythonRobot>(Settings("Nao", "Nao", motionCycleTime, robotType, teamNumber, fieldPlayerColor, goalkeeperColor, playerNumber, location, scenario, 0), name));
+  robots.emplace_back(std::make_unique<PythonRobot>(Settings(name, motionCycleTime, robotType, teamNumber, fieldPlayerColor, goalkeeperColor, playerNumber, location, scenario, 0), name));
 }
 
 SystemCall::Mode SystemCall::getMode()

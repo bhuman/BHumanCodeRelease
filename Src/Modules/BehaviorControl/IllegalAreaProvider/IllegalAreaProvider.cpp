@@ -60,6 +60,17 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     return;
   }
 
+  const auto handlePenaltyKick = [this, &illegalAreas]()
+  {
+    if(theGameState.isForOwnTeam())
+    {
+      if(!Role::isActiveRole(theStrategyStatus.role))
+        illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyMarkArea);
+    }
+    else
+      illegalAreas.illegal |= bit(theGameState.isGoalkeeper() ? IllegalAreas::notOwnGoalLine : IllegalAreas::ownPenaltyMarkArea);
+  };
+
   // The rules don't make a difference between the goalkeeper and field players, but we want the goalkeeper to always be able to enter the own goal area.
   const bool ownGoalAreaIsFull = !theGameState.isGoalkeeper() && (nonKeeperTeammatesInOwnGoalArea() >= 2 || !isGoalAreaAllowed());
 
@@ -74,10 +85,10 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
       if(theGameState.isForOwnTeam())
       {
         if(!Role::isActiveRole(theStrategyStatus.role))
-          illegalAreas.anticipatedIllegal |= bit(IllegalAreas::opponentPenaltyArea);
+          illegalAreas.anticipatedIllegal |= bit(IllegalAreas::opponentPenaltyMarkArea);
       }
       else
-        illegalAreas.anticipatedIllegal |= bit(theGameState.isGoalkeeper() ? IllegalAreas::notOwnGoalLine : IllegalAreas::ownPenaltyArea);
+        illegalAreas.anticipatedIllegal |= bit(theGameState.isGoalkeeper() ? IllegalAreas::notOwnGoalLine : IllegalAreas::ownPenaltyMarkArea);
     }
     else
     {
@@ -92,15 +103,7 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
     if(ownGoalAreaIsFull)
       illegalAreas.illegal |= bit(IllegalAreas::ownGoalArea);
     if(theGameState.isPenaltyKick())
-    {
-      if(theGameState.isForOwnTeam())
-      {
-        if(!Role::isActiveRole(theStrategyStatus.role))
-          illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
-      }
-      else
-        illegalAreas.illegal |= bit(theGameState.isGoalkeeper() ? IllegalAreas::notOwnGoalLine : IllegalAreas::ownPenaltyArea);
-    }
+      handlePenaltyKick();
     else
     {
       illegalAreas.illegal |= bit(IllegalAreas::opponentHalf);
@@ -118,18 +121,17 @@ void IllegalAreaProvider::update(IllegalAreas& illegalAreas)
       // (rule book section 3.8.1)
       illegalAreas.illegal |= bit(IllegalAreas::borderStrip);
 
-      if(theGameState.isForOwnTeam())
-      {
-        if(!Role::isActiveRole(theStrategyStatus.role))
-          illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
-      }
-      else
-        illegalAreas.illegal |= bit(theGameState.isGoalkeeper() ? IllegalAreas::notOwnGoalLine : IllegalAreas::ownPenaltyArea);
+      handlePenaltyKick();
     }
     else if(theGameState.isFreeKick())
     {
       if(theGameState.isForOpponentTeam())
         illegalAreas.illegal |= bit(IllegalAreas::ballArea);
+
+      // Rule 16.2: "For a goal kick, the avoidance region is the entire penalty area. All robots of the opposing team
+      // must remain outside the penalty area until the ball is in play"
+      if(theGameState.isGoalKick() && theGameState.isForOpponentTeam())
+        illegalAreas.illegal |= bit(IllegalAreas::opponentPenaltyArea);
     }
     else if(theGameState.isKickOff())
     {
@@ -158,18 +160,34 @@ unsigned IllegalAreaProvider::getIllegalAreas(unsigned illegal, const Vector2f& 
       positionOnField.y() > theFieldDimensions.yPosRightGoalArea - halfLineWidth - margin &&
       positionOnField.y() < theFieldDimensions.yPosLeftGoalArea + halfLineWidth + margin))
     illegalAreas |= bit(IllegalAreas::ownGoalArea);
-  if((illegal & bit(IllegalAreas::ownPenaltyArea)) &&
-     (positionOnField.x() < theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth + margin &&
-      positionOnField.x() > theFieldDimensions.xPosOwnGoalLine - halfLineWidth - margin &&
-      positionOnField.y() > theFieldDimensions.yPosRightPenaltyArea - halfLineWidth - margin &&
-      positionOnField.y() < theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth + margin))
+
+  bool isInOwnPenaltyArea = (positionOnField.x() < theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth + margin &&
+                             positionOnField.x() > theFieldDimensions.xPosOwnGoalLine - halfLineWidth - margin &&
+                             positionOnField.y() > theFieldDimensions.yPosRightPenaltyArea - halfLineWidth - margin &&
+                             positionOnField.y() < theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth + margin);
+  bool isBetweenOwnPenaltyMarkAndGoal = (positionOnField.x() < theFieldDimensions.xPosOwnPenaltyMark + theFieldDimensions.markRadius + margin &&
+                                         positionOnField.x() > theFieldDimensions.xPosOwnGoalLine - halfLineWidth - margin &&
+                                         positionOnField.y() > theFieldDimensions.yPosRightTouchline - halfLineWidth - margin &&
+                                         positionOnField.y() < theFieldDimensions.yPosLeftTouchline + halfLineWidth + margin);
+  bool isInOwnPenaltyMarkRadius = (positionOnField - Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0)).squaredNorm() < sqr(std::abs(theFieldDimensions.centerCircleRadius + theFieldDimensions.markRadius + margin));
+  bool isInOpponentPenaltyArea = (positionOnField.x() > theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth - margin &&
+                                  positionOnField.x() < theFieldDimensions.xPosOpponentGoalLine + halfLineWidth + margin &&
+                                  positionOnField.y() > theFieldDimensions.yPosRightPenaltyArea - halfLineWidth - margin &&
+                                  positionOnField.y() < theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth + margin);
+  bool isBetweenOpponentPenaltyMarkAndGoal = (positionOnField.x() > theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.markRadius - margin &&
+                                              positionOnField.x() < theFieldDimensions.xPosOpponentGoalLine + halfLineWidth + margin &&
+                                              positionOnField.y() > theFieldDimensions.yPosRightTouchline - halfLineWidth - margin &&
+                                              positionOnField.y() < theFieldDimensions.yPosLeftTouchline + halfLineWidth + margin);
+  bool isInOpponentPenaltyMarkRadius = (positionOnField - Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0)).squaredNorm() < sqr(std::abs(theFieldDimensions.centerCircleRadius + theFieldDimensions.markRadius + margin));
+
+  if((illegal & bit(IllegalAreas::ownPenaltyArea)) && isInOwnPenaltyArea)
     illegalAreas |= bit(IllegalAreas::ownPenaltyArea);
-  if((illegal & bit(IllegalAreas::opponentPenaltyArea)) &&
-     (positionOnField.x() > theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth - margin &&
-      positionOnField.x() < theFieldDimensions.xPosOpponentGoalLine + halfLineWidth + margin &&
-      positionOnField.y() > theFieldDimensions.yPosRightPenaltyArea - halfLineWidth - margin &&
-      positionOnField.y() < theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth + margin))
+  if((illegal & bit(IllegalAreas::ownPenaltyMarkArea)) && (isInOwnPenaltyArea || isBetweenOwnPenaltyMarkAndGoal || isInOwnPenaltyMarkRadius))
+    illegalAreas |= bit(IllegalAreas::ownPenaltyMarkArea);
+  if((illegal & bit(IllegalAreas::opponentPenaltyArea)) && isInOpponentPenaltyArea)
     illegalAreas |= bit(IllegalAreas::opponentPenaltyArea);
+  if((illegal & bit(IllegalAreas::opponentPenaltyMarkArea)) && (isInOpponentPenaltyArea || isBetweenOpponentPenaltyMarkAndGoal || isInOpponentPenaltyMarkRadius))
+    illegalAreas |= bit(IllegalAreas::opponentPenaltyMarkArea);
   if((illegal & bit(IllegalAreas::borderStrip)) &&
      (positionOnField.x() > theFieldDimensions.xPosOpponentGoalLine + halfLineWidth - margin ||
       positionOnField.x() < theFieldDimensions.xPosOwnGoalLine - halfLineWidth + margin ||
@@ -184,8 +202,18 @@ unsigned IllegalAreaProvider::getIllegalAreas(unsigned illegal, const Vector2f& 
      (positionOnField.squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + halfLineWidth + margin))))
     illegalAreas |= bit(IllegalAreas::centerCircle);
   if((illegal & bit(IllegalAreas::ballArea)) &&
-     (positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm() < sqr(std::max(0.f, freeKickClearAreaRadius + margin)) &&
+     (positionOnField - theFieldBall.recentBallPositionOnField()).squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + margin)) &&
      (theTeamBallModel.isValid || theFieldBall.timeSinceBallWasSeen < theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) + ballSeenBeforeFreeKickTime))
+    illegalAreas |= bit(IllegalAreas::ballArea);
+  if((illegal & bit(IllegalAreas::ballArea)) && //Dummy Ball positions for goalkick
+     ((positionOnField - Vector2f(theFieldDimensions.xPosOpponentGoalArea,theFieldDimensions.yPosLeftGoalArea)).squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + margin))
+     || (positionOnField - Vector2f(theFieldDimensions.xPosOpponentGoalArea,theFieldDimensions.yPosRightGoalArea)).squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + margin))) &&
+     (theTeamBallModel.isValid || theFieldBall.timeSinceBallWasSeen < theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) + ballSeenBeforeFreeKickTime) && (theGameState.isGoalKick()) && theGameState.isForOpponentTeam() )
+    illegalAreas |= bit(IllegalAreas::ballArea);
+  if((illegal & bit(IllegalAreas::ballArea)) && //Dummy Ball positions for cornerkick
+     ((positionOnField - Vector2f(theFieldDimensions.xPosOpponentGoalLine,theFieldDimensions.yPosLeftTouchline)).squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + margin))
+     || (positionOnField - Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline)).squaredNorm() < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + margin))) &&
+     (theTeamBallModel.isValid || theFieldBall.timeSinceBallWasSeen < theFrameInfo.getTimeSince(theGameState.timeWhenStateStarted) + ballSeenBeforeFreeKickTime) && (theGameState.isCornerKick()) && theGameState.isForOpponentTeam() )
     illegalAreas |= bit(IllegalAreas::ballArea);
   if((illegal & bit(IllegalAreas::notOwnGoalLine)) &&
      (std::abs(positionOnField.x() - theFieldDimensions.xPosOwnGoalLine) > halfLineWidth - std::min(0.f, margin) ||
@@ -247,7 +275,7 @@ unsigned int IllegalAreaProvider::nonKeeperTeammatesInOwnGoalArea() const
     {
       if(isNear && !theLibPosition.isNearOwnGoalArea(teammatePosition, insideGoalAreaDistanceThreshold, insideGoalAreaDistanceThreshold))
       {
-        /// breaks ties between two robots attempting to enter simultaneously
+        // breaks ties between two robots attempting to enter simultaneously
         if(agent.role == ActiveRole::toRole(ActiveRole::playBall))
           ++teammatesInGoalArea;
       }
@@ -294,6 +322,22 @@ void IllegalAreaProvider::draw(unsigned illegal, unsigned anticipatedIllegal) co
                                                    };
       POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::ownPenaltyMarkArea))
+    {
+      const std::vector<Vector2f> penaltyArea = {Vector2f(theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOwnPenaltyArea + halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOwnGoalLine - halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOwnGoalLine - halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth)
+                                                };
+      const std::vector<Vector2f> betweenGoalAndPenaltyMark = {Vector2f(theFieldDimensions.xPosOwnPenaltyMark + theFieldDimensions.markRadius, theFieldDimensions.yPosRightTouchline - halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOwnPenaltyMark + theFieldDimensions.markRadius, theFieldDimensions.yPosLeftTouchline + halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOwnGoalLine - halfLineWidth, theFieldDimensions.yPosLeftTouchline + halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOwnGoalLine - halfLineWidth, theFieldDimensions.yPosRightTouchline - halfLineWidth)
+                                                              };
+      POLYGON("module:IllegalAreaProvider:illegalAreas", penaltyArea.size(), penaltyArea.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      POLYGON("module:IllegalAreaProvider:illegalAreas", betweenGoalAndPenaltyMark.size(), betweenGoalAndPenaltyMark.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOwnPenaltyMark, 0, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+    }
     if((illegal | anticipatedIllegal) & bit(IllegalAreas::opponentPenaltyArea))
     {
       const std::vector<Vector2f> illegalPolygon = {Vector2f(theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth),
@@ -302,6 +346,22 @@ void IllegalAreaProvider::draw(unsigned illegal, unsigned anticipatedIllegal) co
                                                     Vector2f(theFieldDimensions.xPosOpponentGoalLine + halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth)
                                                    };
       POLYGON("module:IllegalAreaProvider:illegalAreas", illegalPolygon.size(), illegalPolygon.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+    }
+    if((illegal | anticipatedIllegal) & bit(IllegalAreas::opponentPenaltyMarkArea))
+    {
+      const std::vector<Vector2f> penaltyArea = {Vector2f(theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOpponentPenaltyArea - halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOpponentGoalLine + halfLineWidth, theFieldDimensions.yPosLeftPenaltyArea + halfLineWidth),
+                                                 Vector2f(theFieldDimensions.xPosOpponentGoalLine + halfLineWidth, theFieldDimensions.yPosRightPenaltyArea - halfLineWidth)
+                                                };
+      const std::vector<Vector2f> betweenGoalAndPenaltyMark = {Vector2f(theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.markRadius, theFieldDimensions.yPosRightTouchline - halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOpponentPenaltyMark - theFieldDimensions.markRadius, theFieldDimensions.yPosLeftTouchline + halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOpponentGoalLine + halfLineWidth, theFieldDimensions.yPosLeftTouchline + halfLineWidth),
+                                                               Vector2f(theFieldDimensions.xPosOpponentGoalLine + halfLineWidth, theFieldDimensions.yPosRightTouchline - halfLineWidth)
+                                                              };
+      POLYGON("module:IllegalAreaProvider:illegalAreas", penaltyArea.size(), penaltyArea.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      POLYGON("module:IllegalAreaProvider:illegalAreas", betweenGoalAndPenaltyMark.size(), betweenGoalAndPenaltyMark.data(), 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOpponentPenaltyMark, 0, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
     }
     if((illegal | anticipatedIllegal) & bit(IllegalAreas::opponentHalf))
     {
@@ -319,7 +379,17 @@ void IllegalAreaProvider::draw(unsigned illegal, unsigned anticipatedIllegal) co
     }
     if((illegal | anticipatedIllegal) & bit(IllegalAreas::ballArea))
     {
-      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldBall.recentBallPositionOnField().x(), theFieldBall.recentBallPositionOnField().y(), freeKickClearAreaRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldBall.recentBallPositionOnField().x(), theFieldBall.recentBallPositionOnField().y(), theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      if(theGameState.isGoalKick() && theGameState.isForOpponentTeam())
+      {
+        CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+        CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      }
+      if((theGameState.isCornerKick()) && theGameState.isForOpponentTeam())
+      {
+        CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+        CIRCLE("module:IllegalAreaProvider:illegalAreas", theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline, theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, color, Drawings::solidBrush, brushColor);
+      }
     }
   }
 }

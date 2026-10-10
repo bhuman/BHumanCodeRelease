@@ -21,6 +21,7 @@ STREAMABLE(LibCheck,
     headMotionRequest,
     calibrationFinished,
     passTarget,
+    behaviorState,
   });
 
   /** Increments one counter */

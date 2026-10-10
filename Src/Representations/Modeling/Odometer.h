@@ -3,8 +3,8 @@
  *
  * Some additional odometry information
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
- * @author marcel
+ * @author Tim Laue
+ * @author Marcel Steinbeck
  */
 
 #pragma once

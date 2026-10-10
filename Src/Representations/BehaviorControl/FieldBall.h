@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Math/Eigen.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Streaming/AutoStreamable.h"
 
 /**
@@ -66,23 +67,25 @@ STREAMABLE(FieldBall,
    * Returns the ball's propagated position in field coordinates, i.e. the position where it will come to a stop.
    * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param t Time to propagate the ball into the future.
+   * @param ballSpecs The ball specification
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @ballFriction The ball friction (negative force)  (in m/s^2)
    * @return Position of the ball's propagated position in field coordinates.
    */
-  Vector2f recentBallPropagatedPositionOnField(const float t, const float friction, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
+  Vector2f recentBallPropagatedPositionOnField(const float t, const BallSpecification& ballSpecs, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
 
   /**
    * Returns the ball's propagated position in relative coordinates, i.e. the position where it will come to a stop.
    * Regarding to which ball model is used, the semantics of useTeamBall are used.
    * @param t Time to propagate the ball into the future.
+   * * @param ballSpecs The ball specification
    * @param ballSeenTimeout See recentBallPositionOnField.
    * @param ballDisappearedTimeout See recentBallPositionOnField.
    * @ballFriction The ball friction (negative force)  (in m/s^2)
    * @return Position of the ball's propagated position in relative coordinates.
    */
-  Vector2f recentBallPropagatedPositionRelative(const float t, const float friction, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
+  Vector2f recentBallPropagatedPositionRelative(const float t, const BallSpecification& ballSpecs, const int ballSeenTimeout = 1000, const int ballDisappearedTimeout = 100) const;
 
   /**
    * Obtains the ball's position in field coordinates as well as robot coordinates.
@@ -133,12 +136,12 @@ STREAMABLE(FieldBall,
   (Vector2f)(Vector2f::Zero()) teamVelocityRelative,      /**< The ball velocity in relative robot coordinates, as estimated by the whole team */
   (int)(0) timeSinceBallWasSeen,                          /**< Yes, you guessed it */
   (int)(0) timeSinceBallDisappeared,                      /**< Yes, you guessed it */
-  (bool)(false) teamBallIsValid,                     /**< Yes, you guessed it */
+  (bool)(false) teamBallIsValid,                          /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOpponentGoal,             /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOwnGoal,                  /**< Yes, you guessed it */
   (bool)(false) isInsideOwnPenaltyArea,                   /**< Yes, you guessed it */
   (float)(0.f) distanceToOwnPenaltyArea,                  /**< Yes, you guessed it. If the ball is inside the area, member is set to 0.f. If the position is unknown, member is set to -1.f. */
-  (bool)(false) teamBallNewerThanOwnBall,            /**< Is my ball older than the team's? Only to use in internal function, do not get it from here */
+  (bool)(false) teamBallNewerThanOwnBall,                 /**< Is my ball older than the team's? Only to use in internal function, do not get it from here */
   (bool)(false) ballPositionConsistentWithGameState,      /**< Is the ball position consistent with the ball drop in positions of the current game state? */
   (bool)(false) teamBallPositionConsistentWithGameState,  /**< Is the team ball position consistent with the ball drop in positions of the current game state? */
 });

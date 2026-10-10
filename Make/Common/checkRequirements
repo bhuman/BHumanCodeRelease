@@ -39,8 +39,6 @@ UNUSED="$(
       OTHER="$(dirname "$CPP")/Options.h"
     elif [ ! -z "$(grep KeyframeMotionEngine <<<"$CPP")" ]; then
       OTHER="$(find "$(dirname "$CPP")/KeyframeMotionLibs" -name "*.h" -o -name "*.cpp")"
-    elif [ ! -z "$(grep 'WalkingEngine\.cpp' <<<"$CPP")" ]; then
-      OTHER="$(find "$(dirname "$CPP")/WalkLibs" -name "*.h" -o -name "*.cpp")"
     fi
     USED="$(cat $H $CPP $OTHER \
     | sed "s%$WORDSTART\\([A-Za-z][A-Za-z0-9_]*\\)%|\\1|%g" \

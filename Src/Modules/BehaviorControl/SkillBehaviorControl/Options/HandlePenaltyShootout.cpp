@@ -32,7 +32,7 @@ option((SkillBehaviorControl) HandlePenaltyShootout)
       LookAtAngles({.pan = 0_deg,
                     .tilt = 0_deg,
                     .speed = 150_deg});
-      Stand({.high = true});
+      Stand();
     }
   }
 
@@ -41,7 +41,7 @@ option((SkillBehaviorControl) HandlePenaltyShootout)
     action
     {
       LookForward();
-      Stand({.high = true});
+      Stand();
     }
   }
 
@@ -66,7 +66,7 @@ option((SkillBehaviorControl) HandlePenaltyShootout)
     action
     {
       LookForward();
-      Stand({.high = true});
+      Stand();
     }
   }
 }

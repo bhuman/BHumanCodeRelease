@@ -20,6 +20,11 @@ Frame::Frame(Log& log) :
   it(log.begin())
 {}
 
+Frame::Frame(Log& log, MessageQueue::const_iterator start) :
+  log(log),
+  it(start)
+{}
+
 bool Frame::readFrame()
 {
   representations.clear();

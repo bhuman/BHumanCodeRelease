@@ -1,14 +1,13 @@
 /**
  * @file CirclePercept.cpp
  * Implementation of a struct that represents the center circle.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "CirclePercept.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Transformation.h"
@@ -19,7 +18,6 @@ void CirclePercept::draw() const
   FieldDimensions* theFieldDimensions = nullptr;
   CameraInfo* theCameraInfo = nullptr;
   CameraMatrix* theCameraMatrix = nullptr;
-  ImageCoordinateSystem* theImageCoordinateSystem = nullptr;
 
   if(Blackboard::getInstance().exists("FieldDimensions"))
     theFieldDimensions = static_cast<FieldDimensions*>(&(Blackboard::getInstance()["FieldDimensions"]));
@@ -27,10 +25,8 @@ void CirclePercept::draw() const
     theCameraInfo = static_cast<CameraInfo*>(&(Blackboard::getInstance()["CameraInfo"]));
   if(Blackboard::getInstance().exists("CameraMatrix"))
     theCameraMatrix = static_cast<CameraMatrix*>(&(Blackboard::getInstance()["CameraMatrix"]));
-  if(Blackboard::getInstance().exists("ImageCoordinateSystem"))
-    theImageCoordinateSystem =  static_cast<ImageCoordinateSystem*>(&(Blackboard::getInstance()["ImageCoordinateSystem"]));
 
-  if(theFieldDimensions == nullptr || theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr)
+  if(theFieldDimensions == nullptr || theCameraInfo == nullptr || theCameraMatrix == nullptr)
     return;
 
   DEBUG_DRAWING("representation:CirclePercept:field", "drawingOnField")
@@ -57,10 +53,7 @@ void CirclePercept::draw() const
     {
       Vector2f p1;
       if(Transformation::robotToImage(pos, *theCameraMatrix, *theCameraInfo, p1))
-      {
-        Vector2f uncorrected = theImageCoordinateSystem->fromCorrected(p1);
-        CROSS("representation:FieldLines:image", uncorrected.x(), uncorrected.y(), 5, 3, Drawings::solidPen, ColorRGBA::red);
-      }
+        CROSS("representation:FieldLines:image", p1.x(), p1.y(), 5, 3, Drawings::solidPen, ColorRGBA::red);
       const float stepSize = 0.2f;
       for(float i = 0; i < pi2; i += stepSize)
       {
@@ -68,11 +61,7 @@ void CirclePercept::draw() const
         Vector2f p2 = Vector2f::Zero();
         if(Transformation::robotToImage(Vector2f(pos + Vector2f(theFieldDimensions->centerCircleRadius, 0).rotate(i)), *theCameraMatrix, *theCameraInfo, p1) &&
            Transformation::robotToImage(Vector2f(pos + Vector2f(theFieldDimensions->centerCircleRadius, 0).rotate(i + stepSize)), *theCameraMatrix, *theCameraInfo, p2))
-        {
-          Vector2f uncorrected1 = theImageCoordinateSystem->fromCorrected(p1);
-          Vector2f uncorrected2 = theImageCoordinateSystem->fromCorrected(p2);
-          LINE("representation:FieldLines:image", uncorrected1.x(), uncorrected1.y(), uncorrected2.x(), uncorrected2.y(), 3, Drawings::solidPen, ColorRGBA::red);
-        }
+          LINE("representation:FieldLines:image", p1.x(), p1.y(), p2.x(), p2.y(), 3, Drawings::solidPen, ColorRGBA::red);
       }
     }
   }

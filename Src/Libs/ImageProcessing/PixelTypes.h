@@ -1,6 +1,6 @@
 /**
  * @author Felix Thielke
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once
@@ -14,7 +14,7 @@ namespace PixelTypes
   {,
     RGB,              // useful for DebugImages?
     BGRA,             // the format that QImage uses
-    YUYV,             // the format the NaoCamera supplies
+    YUYV,             // the format mainly used by this software
     YUV,              // useful for DebugImages?
     Grayscale,        // format of the gray-scaled image in ECImage
     Hue,              // hue channel of a YHS image
@@ -22,6 +22,7 @@ namespace PixelTypes
     Edge2,            //
     Edge2MonoAvg,     //
     Edge2MonoAbsAvg,  //
+    Depth,            // 16 bit depth value in mm
   });
 
   struct RGBPixel
@@ -157,7 +158,7 @@ namespace PixelTypes
     operator unsigned char& () { return value; }
     constexpr operator const unsigned char& () const { return value; }
 
-    constexpr HuePixel operator-() const { return -value; }
+    constexpr HuePixel operator-() const { return static_cast<unsigned char>(-value); }
     HuePixel& operator+=(unsigned char hue) { value += hue; return *this; }
     HuePixel& operator-=(unsigned char hue) { value -= hue; return *this; }
     HuePixel& operator*=(unsigned char hue) { value *= hue; return *this; }
@@ -187,4 +188,6 @@ namespace PixelTypes
                               : (type == Binary ? sizeof(BinaryPixel)
                                  : 0)))))));
   }
+
+  using DepthPixel = unsigned short;
 }

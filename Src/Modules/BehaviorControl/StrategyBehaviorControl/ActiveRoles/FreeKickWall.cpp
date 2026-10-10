@@ -13,7 +13,8 @@ SkillRequest FreeKickWall::execute(const Agent&, const Agents&)
 {
   const Vector2f ballPosition = theFieldBall.recentBallPositionOnField(); // the position of the ball on the field
   const Vector2f defenderVector = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f) - ballPosition; // change of direction
-  const Vector2f newTarget = ballPosition + defenderVector.normalized(normalizeValue); // calculated new target
+  const float distanceValue = std::max(theFieldDimensions.centerCircleRadius + margin, theGameState.isGoalKick() ? normalizeGoalKickValue : normalizeValue);
+  const Vector2f newTarget = ballPosition + defenderVector.normalized(distanceValue); // calculated new target
   const Angle rotationAngle = defenderVector.angle(); // angle for the rotation of the direction
   const Vector2f rotatedNewTargetPosition = newTarget.rotated(-rotationAngle); // rotated new target
   const Vector2f rotatedOldTargetPosition = currentTarget.rotated(-rotationAngle); // rotated old target

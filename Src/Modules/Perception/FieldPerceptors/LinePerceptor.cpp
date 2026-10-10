@@ -154,12 +154,11 @@ void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
             }
             spotsH[scanLineId].emplace_back(regionXMidPos, scanLine.y);
             Spot& thisSpot = spotsH[scanLineId].back();
-            Vector2f corrected(theImageCoordinateSystem.toCorrected(thisSpot.image));
             Vector2f otherImage;
-            if(Transformation::imageToRobot(corrected, theCameraMatrix, theCameraInfo, thisSpot.field) &&
+            if(Transformation::imageToRobot(thisSpot.image, theCameraMatrix, theCameraInfo, thisSpot.field) &&
                Transformation::robotToImage(Vector2f(thisSpot.field + thisSpot.field.normalized(theFieldDimensions.fieldLinesWidth).rotateLeft()), theCameraMatrix, theCameraInfo, otherImage))
             {
-              float expectedWidth = (otherImage - corrected).norm();
+              float expectedWidth = (otherImage - thisSpot.image).norm();
               if(getAbsoluteDeviation(static_cast<int>(expectedWidth), region->range.right - region->range.left) <= maxLineWidthDeviationPx &&
                   (before->range.right - before->range.left >= static_cast<int>(expectedWidth * GREEN_AROUND_LINE_RATIO) ||
                       (relaxedGreenCheckAtImageBorder && before->range.left == 0)) &&
@@ -331,16 +330,14 @@ void LinePerceptor::scanVerticalScanLines(LinesPercept& linesPercept)
           {
             spotsV[scanLineId].emplace_back(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, regionYMidPos);
             Spot& thisSpot = spotsV[scanLineId].back();
-            Vector2f corrected = theImageCoordinateSystem.toCorrected(thisSpot.image);
             Vector2f otherImage;
-            if(Transformation::imageToRobot(corrected, theCameraMatrix, theCameraInfo, thisSpot.field) &&
+            if(Transformation::imageToRobot(thisSpot.image, theCameraMatrix, theCameraInfo, thisSpot.field) &&
                Transformation::robotToImage(Vector2f(thisSpot.field + thisSpot.field.normalized(theFieldDimensions.fieldLinesWidth)), theCameraMatrix, theCameraInfo, otherImage))
             {
-              float expectedHeight = (corrected - otherImage).norm();
+              float expectedHeight = (thisSpot.image - otherImage).norm();
               if((before->range.lower - before->range.upper >= static_cast<int>(expectedHeight * GREEN_AROUND_LINE_RATIO) ||
                       (relaxedGreenCheckAtImageBorder && before->range.lower == theCameraInfo.height)) &&
-                  (after->range.lower - after->range.upper >= static_cast<int>(expectedHeight * GREEN_AROUND_LINE_RATIO) ||
-                      (relaxedGreenCheckAtImageBorder && theCameraInfo.camera == CameraInfo::lower && after->range.upper == 0)))
+                  after->range.lower - after->range.upper >= static_cast<int>(expectedHeight * GREEN_AROUND_LINE_RATIO))
                 goto keepVSpot;
             }
             spotsV[scanLineId].pop_back();
@@ -482,7 +479,7 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
           pos.y() < static_cast<float>(theECImage.grayscaled.height); pos += step, changed = true)
     {
       Vector2f pointOnField;
-      if(!Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, pointOnField) ||
+      if(!Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, pointOnField) ||
          !isPointWhite(pointOnField, pos.cast<int>(), n0) ||
          isSpotInsideBall(pos.x(), pos.y()))
         break;
@@ -491,7 +488,7 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
     {
       pos -= step;
       Vector2f field;
-      if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, field))
+      if(Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, field))
       {
         line->firstImg = static_cast<Vector2i>(pos.cast<int>());
         line->firstField = field;
@@ -506,7 +503,7 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
           pos.y() < static_cast<float>(theECImage.grayscaled.height); pos -= step, changed = true)
     {
       Vector2f pointOnField;
-      if(!Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, pointOnField) ||
+      if(!Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, pointOnField) ||
          !isPointWhite(pointOnField, pos.cast<int>(), n0) ||
          isSpotInsideBall(pos.x(), pos.y()))
         break;
@@ -515,7 +512,7 @@ void LinePerceptor::extendLines(LinesPercept& linesPercept) const
     {
       pos += step;
       Vector2f field;
-      if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, field))
+      if(Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, field))
       {
         line->lastImg = static_cast<Vector2i>(pos.cast<int>());
         line->lastField = field;
@@ -587,8 +584,8 @@ void LinePerceptor::trimLine(LinesPercept::Line& line) const
       if((upper - lower).squaredNorm() > maxWidthImageSquared)
       {
         Vector2f lowerField, upperField;
-        if(!Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(lower), theCameraMatrix, theCameraInfo, lowerField) ||
-           !Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(upper), theCameraMatrix, theCameraInfo, upperField) ||
+        if(!Transformation::imageToRobot(lower, theCameraMatrix, theCameraInfo, lowerField) ||
+           !Transformation::imageToRobot(upper, theCameraMatrix, theCameraInfo, upperField) ||
            (upperField - lowerField).norm() > theFieldDimensions.fieldLinesWidth * mFactor)
         {
           CROSS("module:LinePerceptor:upLow", lower.x(), lower.y(), 1, 1, Drawings::solidPen, ColorRGBA::yellow);
@@ -615,12 +612,12 @@ void LinePerceptor::trimLine(LinesPercept::Line& line) const
         if(trimmed && pos.cast<int>() != start && pos.cast<int>() != end)
         {
           Vector2f field;
-          if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, field))
+          if(Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, field))
           {
             line.spotsInImg.emplace_back(pos.cast<int>());
             line.spotsInField.emplace_back(field);
             pos -= (minConsecutiveSpots - 1) * step;
-            if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(pos), theCameraMatrix, theCameraInfo, field))
+            if(Transformation::imageToRobot(pos, theCameraMatrix, theCameraInfo, field))
             {
               if(i == 0)
               {
@@ -703,7 +700,7 @@ bool LinePerceptor::isWhite(const Spot& a, const Spot& b, const Vector2f& n0Fiel
     COMPLEX_DRAWING("module:LinePerceptor:isWhite") debugIsPointWhite = true;
     for(const Vector2i& p : line)
     {
-      if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(p), theCameraMatrix, theCameraInfo, pointOnField))
+      if(Transformation::imageToRobot(p, theCameraMatrix, theCameraInfo, pointOnField))
       {
         if(!isPointWhite(pointOnField, p, n0Field))
         {
@@ -742,7 +739,7 @@ bool LinePerceptor::isWhite(const Spot& a, const Spot& b, const Vector2f& n0Fiel
     COMPLEX_DRAWING("module:LinePerceptor:isWhite") debugIsPointWhite = true;
     for(const Vector2i& p : line)
     {
-      if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(p), theCameraMatrix, theCameraInfo, pointOnField))
+      if(Transformation::imageToRobot(p, theCameraMatrix, theCameraInfo, pointOnField))
         s = calcWhiteCheckDistanceInImage(pointOnField);
       else
         return false;
@@ -779,8 +776,6 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
   if(!Transformation::robotToImage(circle.center, theCameraMatrix, theCameraInfo, centerInImage))
     return false;
 
-  centerInImage = theImageCoordinateSystem.fromCorrected(centerInImage);
-
   circle.fieldSpots.clear();
 
   for(Angle a = 0_deg; a < 360_deg; a += 5_deg)
@@ -791,7 +786,6 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
     {
       auto imageWidth = static_cast<float>(theCameraInfo.width);
       auto imageHeight = static_cast<float>(theCameraInfo.height);
-      pointInImage = theImageCoordinateSystem.fromCorrected(pointInImage);
       if(pointInImage.x() >= 0 && pointInImage.x() < imageWidth && pointInImage.y() >= 0 && pointInImage.y() < imageHeight)
       {
         if(static_cast<float>(theFieldBoundary.getBoundaryY(static_cast<int>(pointInImage.x()))) > pointInImage.y())
@@ -851,8 +845,6 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
         CROSS("module:LinePerceptor:circlePoint", outer.x(), outer.y(), 5, 2, Drawings::solidPen, ColorRGBA::cyan);
         CROSS("module:LinePerceptor:circlePoint", inner.x(), inner.y(), 5, 2, Drawings::solidPen, ColorRGBA::yellow);
 
-        outer = theImageCoordinateSystem.toCorrected(outer);
-        inner = theImageCoordinateSystem.toCorrected(inner);
         Vector2f outerField, innerField;
         if(Transformation::imageToRobot(outer, theCameraMatrix, theCameraInfo, outerField) &&
            Transformation::imageToRobot(inner, theCameraMatrix, theCameraInfo, innerField) &&
@@ -861,8 +853,8 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
           circle.fieldSpots.emplace_back((outerField + innerField) / 2);
           COMPLEX_DRAWING("module:LinePerceptor:circlePoint")
           {
-            Vector2f uncorrected = (theImageCoordinateSystem.fromCorrected(outer) + theImageCoordinateSystem.fromCorrected(inner)) / 2.f;
-            CROSS("module:LinePerceptor:circlePoint", uncorrected.x(), uncorrected.y(), 3, 1, Drawings::solidPen, ColorRGBA::gray);
+            Vector2f middle = (outer + inner) / 2.f;
+            CROSS("module:LinePerceptor:circlePoint", middle.x(), middle.y(), 3, 1, Drawings::solidPen, ColorRGBA::gray);
           }
           CROSS("module:LinePerceptor:circlePointField", circle.fieldSpots.back().x(), circle.fieldSpots.back().y(), 5, 2, Drawings::solidPen, ColorRGBA::black);
         }
@@ -913,7 +905,6 @@ bool LinePerceptor::isCircleWhite(const Vector2f& center, const float radius) co
     Vector2f pointInImage;
     if(Transformation::robotToImage(pointOnField, theCameraMatrix, theCameraInfo, pointInImage))
     {
-      pointInImage = theImageCoordinateSystem.fromCorrected(pointInImage);
       if(pointInImage.x() >= 0 && pointInImage.x() < static_cast<float>(theCameraInfo.width) &&
          pointInImage.y() >= 0 && pointInImage.y() < static_cast<float>(theCameraInfo.height))
       {
@@ -989,7 +980,6 @@ bool LinePerceptor::isPointWhite(const Vector2f& pointOnField, const Vector2i& p
   bool isOuterPointInImage = false;
   if(Transformation::robotToImage(outerPointOnField, theCameraMatrix, theCameraInfo, referencePointInImage))
   {
-    referencePointInImage = theImageCoordinateSystem.fromCorrected(referencePointInImage);
     Vector2i integerReferenceInImage = referencePointInImage.cast<int>();
     if(integerReferenceInImage.x() >= 0 && integerReferenceInImage.x() < theCameraInfo.width &&
        integerReferenceInImage.y() >= 0 && integerReferenceInImage.y() < theCameraInfo.height)
@@ -1007,7 +997,6 @@ bool LinePerceptor::isPointWhite(const Vector2f& pointOnField, const Vector2i& p
   }
   if(Transformation::robotToImage(innerPointOnField, theCameraMatrix, theCameraInfo, referencePointInImage))
   {
-    referencePointInImage = theImageCoordinateSystem.fromCorrected(referencePointInImage);
     Vector2i integerReferenceInImage = referencePointInImage.cast<int>();
     if(integerReferenceInImage.x() >= 0 && integerReferenceInImage.x() < theCameraInfo.width &&
        integerReferenceInImage.y() >= 0 && integerReferenceInImage.y() < theCameraInfo.height)
@@ -1087,17 +1076,10 @@ float LinePerceptor::calcWhiteCheckDistance(const Vector2f& pointOnField) const
 float LinePerceptor::calcWhiteCheckDistanceInImage(const Vector2f& pointOnField) const
 {
   // sorry for these magic numbers and formulas. I can't explain them, but they kind of work
-  if(theCameraInfo.camera == CameraInfo::lower)
-  {
-    return 15.f + 32.f * (1.f - (pointOnField.x() + 0.5f * std::abs(pointOnField.y())) / 1500.f);
-  }
-  else
-  {
-    // avoid computing a root. accurate enough for this purpose
-    float yFactor = pointOnField.x() <= 0 ? 1.f : pointOnField.x() <= 350.f ? 0.25f + 0.75f * (1.f - pointOnField.x() / 350.f) : 0.25f;
-    float estimatedDistance = pointOnField.x() + yFactor * std::abs(pointOnField.y());
-    return 35000.f / estimatedDistance;
-  }
+  // avoid computing a root. accurate enough for this purpose
+  float yFactor = pointOnField.x() <= 0 ? 1.f : pointOnField.x() <= 350.f ? 0.25f + 0.75f * (1.f - pointOnField.x() / 350.f) : 0.25f;
+  float estimatedDistance = pointOnField.x() + yFactor * std::abs(pointOnField.y());
+  return 35000.f / estimatedDistance;
 }
 
 int LinePerceptor::previousVerticalScanLine(const Spot& spot, int scanLineId) const
@@ -1118,14 +1100,15 @@ int LinePerceptor::previousVerticalScanLine(const Spot& spot, int scanLineId) co
 
 bool LinePerceptor::isSpotInsideObstacle(const int fromX, const int toX, const int fromY, const int toY) const
 {
-  auto predicate = [&](const ObstaclesImagePercept::Obstacle& obstacle)
+  auto predicate = [&](const RobotPercept::Robot& robot)
   {
-    if(toX >= obstacle.left && fromX <= obstacle.right && toY >= obstacle.top && fromY <= obstacle.bottom)
+    if(toX >= robot.topLeftInImage.x() && fromX <= robot.bottomRightInImage.x() &&
+       toY >= robot.topLeftInImage.y() && fromY <= robot.bottomRightInImage.y())
       return true;
     else
       return false;
   };
-  return std::any_of(theObstaclesImagePercept.obstacles.cbegin(), theObstaclesImagePercept.obstacles.cend(), predicate);
+  return std::any_of(theRobotPercept.robots.cbegin(), theRobotPercept.robots.cend(), predicate);
 }
 
 bool LinePerceptor::isSpotInsideBall(const float xPos, const float yPos) const

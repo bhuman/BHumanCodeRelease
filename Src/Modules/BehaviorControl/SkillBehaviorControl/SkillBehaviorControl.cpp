@@ -9,6 +9,7 @@
 #define FULL_HEADER
 #include "SkillBehaviorControl.h"
 #include "Debugging/DebugDrawings3D.h"
+#include "Platform/SystemCall.h"
 #include "Streaming/TypeRegistry.h"
 #include <string>
 
@@ -21,14 +22,12 @@ SkillBehaviorControl::SkillBehaviorControl() :
 void SkillBehaviorControl::update(ActivationGraph&)
 {
   DECLARE_DEBUG_RESPONSE("option:ManualCameraCalibration:finishNow");
-  DECLARE_DEBUG_RESPONSE("option:AutonomousCameraCalibration:finishNow");
-  DECLARE_DEBUG_DRAWING("option:AutonomousCameraCalibration:position", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("option:BallControlLeaderboard", "drawingOnField");
+  DECLARE_DEBUG_RESPONSE("option:ManualCameraCalibration:prepareRecording");
   DECLARE_DEBUG_DRAWING("option:ClearBall:bonus", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:borders", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:clearBall", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:ClearBall:evaluation", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("option:ClearBall:Zero", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("option:ClearBall:zero", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:DirectKickOff:wheel", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:DribbleTargetProvider:wheel", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:DribbleTargetProvider:direction", "drawingOnField");
@@ -43,9 +42,7 @@ void SkillBehaviorControl::update(ActivationGraph&)
   DECLARE_DEBUG_DRAWING("option:KickAtGoal:primaryRange", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Mark:markPose", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:PassToTeammate:target", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("option:PassToTeammate:evaluation", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:PassToTeammate:precision", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("option:PassToTeammate:wheel", "drawingOnField");
   DECLARE_DEBUG_DRAWING3D("option:PassToTeammate:trajectory", "field");
   DECLARE_DEBUG_DRAWING("option:ReceivePass:target", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:WalkPotentialField:angles", "drawingOnField");
@@ -58,6 +55,9 @@ void SkillBehaviorControl::update(ActivationGraph&)
   DECLARE_DEBUG_DRAWING("option:Zweikampf:sidewardRange", "drawingOnField");
   DECLARE_DEBUG_DRAWING("option:Zweikampf:sideSteal", "drawingOnField");
 
+  theBehaviorStateInformation.transitionFailed = false;
+  theBehaviorStateInformation.remoteControlActive = false;
+
   theBehaviorStatus.calibrationFinished = false;
   theBehaviorStatus.passTarget = -1;
   theBehaviorStatus.passOrigin = -1;
@@ -69,7 +69,6 @@ void SkillBehaviorControl::update(ActivationGraph&)
   theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::none;
 
   theHeadMotionRequest.mode = HeadMotionRequest::panTiltMode;
-  theHeadMotionRequest.cameraControlMode = HeadMotionRequest::autoCamera;
   theHeadMotionRequest.pan = JointAngles::off;
   theHeadMotionRequest.tilt = JointAngles::off;
   theHeadMotionRequest.speed = 150_deg;
@@ -79,51 +78,31 @@ void SkillBehaviorControl::update(ActivationGraph&)
   theMotionRequest.ballEstimate = theBallModel.estimate;
   theMotionRequest.ballEstimateTimestamp = theFrameInfo.time;
   theMotionRequest.ballTimeWhenLastSeen = theBallModel.timeWhenLastSeen;
-  theMotionRequest.shouldInterceptBall = !theLibDemo.isDemoActive && theGameState.isPlaying() && !theGameState.isPenalized() && (theFieldInterceptBall.interceptBall || theFieldInterceptBall.predictedInterceptBall);
-  theMotionRequest.shouldWalkOutOfBallLine = theFieldBall.isRollingTowardsOpponentGoal;
   theMotionRequest.targetOfInterest.reset();
 
-  theRefereeDetectionRequest.detectReferee = false;
-
-  // On request, tell the user whether a USB drive is mounted.
-  if(theEnhancedKeyStates.hitStreak[KeyStates::headMiddle] == 3)
-  {
-    if(SystemCall::usbIsMounted())
-      SystemCall::say("USB mounted");
-    else
-      SystemCall::say("USB not mounted");
-  }
-
-  // On request, tell the user the temperature of the hottest joint.
-  if((theEnhancedKeyStates.hitStreak[KeyStates::headRear] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > 0) ||
-     (theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headRear] > 0))
-    SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.color())) + " " + std::to_string(theGameState.playerNumber) + " " +
-                     std::regex_replace(TypeRegistry::getEnumName(theRobotHealth.jointWithMaxTemperature), std::regex("([A-Z])"), " $1") + " " +
-                     std::to_string(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature])).c_str(), true);
-  else if(theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 3)
+  if(theEnhancedKeyStates.hitStreak[KeyStates::walk] == 3 && !theEnhancedKeyStates.pressed[KeyStates::stand])
   {
     // On request, tell the user the deployed configuration of this robot.
-    std::string wavName = Global::getSettings().headName.c_str();
-    wavName.append(".wav");
-    SystemCall::playSound(wavName.c_str());
-    SystemCall::say(("is wearing a " +
+    SystemCall::say((Global::getSettings().robotName +
+                     " is wearing a " +
                      std::string(TypeRegistry::getEnumName(theGameState.color())) +
                      " jersey with the number " +
                      std::to_string(theGameState.playerNumber) +
                      ". It is deployed in " +
                      std::string(TypeRegistry::getEnumName(theRobotHealth.configuration)) +
-                     " for the " +
+                     " for the scenario " +
                      theRobotHealth.scenario +
-                     " scenario at the " +
+                     " at the location " +
                      theRobotHealth.location +
-                     " location.").c_str(), true, 0.9f);
+                     ".").c_str(), true, 0.9f);
   }
 
   beginFrame(theFrameInfo.time);
-  OptionInfos::Option root = static_cast<OptionInfos::Option>(TypeRegistry::getEnumValue(typeid(OptionInfos::Option).name(), "PlaySoccer"));
-  MODIFY("module:SkillBehaviorControl:root", root);
   execute(root);
   endFrame();
+
+  theMotionRequest.shouldInterceptBall = theInterceptBallInformation.intercept && !theBehaviorStateInformation.remoteControlActive;
+  theMotionRequest.shouldWalkOutOfBallLine = theInterceptBallInformation.walkOutOfBallPath && !theBehaviorStateInformation.remoteControlActive;
 
   theLibCheck.performCheck();
 }
@@ -146,6 +125,8 @@ void SkillBehaviorControl::executeRequest()
   {
     PlayBall();
   }
+  else if(theSkillRequest.skill == SkillRequest::waitShoot)
+    GoToBallWaitAndKick();
   else
   {
     // Check if a pass is communicated
@@ -191,7 +172,7 @@ void SkillBehaviorControl::executeRequest()
       case SkillRequest::walk:
       {
         const Pose2f targetPose = theRobotPose.inverse() * theSkillRequest.target;
-        const ReduceWalkSpeedType::ReduceWalkSpeedType reduceWalkSpeedType = theGameState.isGoalkeeper() ? ReduceWalkSpeedType::distanceBased : ReduceWalkSpeedType::slow;
+        const ReduceWalkSpeedType::ReduceWalkSpeedType reduceWalkSpeedType = theGameState.isGoalkeeper() ? ReduceWalkSpeedType::distanceBased : ReduceWalkSpeedType::normal;
 
         if(theFieldBall.ballWasSeen(7000) || theTeamBallModel.isValid)
         {
@@ -229,4 +210,17 @@ void SkillBehaviorControl::executeRequest()
         FAIL("Unknown skill request.");
     }
   }
+}
+
+void SkillBehaviorControl::handleWalkSpeedAtFieldBorder()
+{
+  // TODO Special Handling for KickIns/CornerKicks
+  Vector2f robotPose = theRobotPose.translation;
+  const float clipRatio = Rangef::ZeroOneRange().limit(theFieldDimensions.clipToField(robotPose, fieldBorderOffset) / outSideFieldBorderRange);
+  Pose2f maxWalkSpeed(std::min(std::abs(maxWalkSpeedAtFieldBorder.rotation / theWalkingEngineOutput.maxSpeed.rotation), std::abs(theMotionRequest.walkSpeed.rotation)) * (std::signbit(theMotionRequest.walkSpeed.rotation) ? -1.f : 1.f),
+                      std::min(std::abs(maxWalkSpeedAtFieldBorder.translation.x() / theWalkingEngineOutput.maxSpeed.translation.x()), std::abs(theMotionRequest.walkSpeed.translation.x())) * (std::signbit(theMotionRequest.walkSpeed.translation.x()) ? -1.f : 1.f),
+                      std::min(std::abs(maxWalkSpeedAtFieldBorder.translation.y() / theWalkingEngineOutput.maxSpeed.translation.y()), std::abs(theMotionRequest.walkSpeed.translation.y())) * (std::signbit(theMotionRequest.walkSpeed.translation.y()) ? -1.f : 1.f));
+
+  theMotionRequest.walkSpeed.translation = clipRatio * maxWalkSpeed.translation + (1.f - clipRatio) * theMotionRequest.walkSpeed.translation;
+  theMotionRequest.walkSpeed.rotation = clipRatio * maxWalkSpeed.rotation + (1.f - clipRatio) * theMotionRequest.walkSpeed.rotation;
 }

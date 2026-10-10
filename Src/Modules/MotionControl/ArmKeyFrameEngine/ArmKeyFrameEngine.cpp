@@ -46,6 +46,7 @@ void ArmKeyFrameEngine::updateArm(Arm& arm, const ArmMotionRequest& armMotionReq
 
   if(!arm.isLastMotionFinished && arm.stateIndex == arm.currentMotion.states.size())
     arm.isLastMotionFinished = true;
+  bool isLeftArm = arm.firstJoint == Joints::firstArmJoint;
 
   if(!arm.isLastMotionFinished)
   {
@@ -75,6 +76,30 @@ void ArmKeyFrameEngine::updateArm(Arm& arm, const ArmMotionRequest& armMotionReq
   }
   else
     updateOutput(arm, jointRequest, arm.currentMotion.getTargetState());
+
+  if(armMotionRequest.armKeyFrameRequest.arms[arm.id].motion == ArmKeyFrameRequest::back && arm.stateIndex == 0)
+  {
+    //Calc distance between hand and knee
+    Angle armAngleMaxOffset = 35_deg;
+    float legAvoidanceFactor = clip<float>(((isLeftArm ? std::abs(theRobotModel.limbs[Limbs::tibiaLeft].translation.y()) : std::abs(theRobotModel.limbs[Limbs::tibiaRight].translation.y())) - theRobotDimensions.yHipOffset) / 150.f, 0.f, 1.f);
+    Angle targetAngle = (arm.currentMotion.states.front().angles[1/*shoulderroll*/] + (armAngleMaxOffset * legAvoidanceFactor)) * (isLeftArm ? 1.f : -1.f);
+
+    //Override shoulderroll to avoid arm-leg contact
+    jointRequest.angles[arm.firstJoint + 1/*shoulderroll*/] = targetAngle;
+
+    if(arm.time / arm.currentMotion.states[0].duration >= 0.4)
+    {
+      arm.isStuck = std::abs(jointRequest.angles[arm.firstJoint]) - std::abs(theJointAngles.angles[arm.firstJoint]) >= armStuckThreshold;
+      if(arm.isStuck)
+      {
+        ArmKeyFrameMotion stuckMotion = ArmKeyFrameMotion();
+        stuckMotion.id = ArmKeyFrameRequest::backStuck;
+        stuckMotion.states = allMotions[ArmKeyFrameRequest::backStuck].states;
+        arm.startMotion(stuckMotion, armMotionRequest.armKeyFrameRequest.arms[arm.id].fast, theJointAngles);
+        arm.isStuck = false;
+      }
+    }
+  }
 }
 
 void ArmKeyFrameEngine::createOutput(Arm& arm, const ArmKeyFrameMotion::ArmKeyFrameState& target, ArmKeyFrameMotion::ArmAngles& result) const
@@ -116,7 +141,7 @@ void ArmKeyFrameEngine::createOutput(Arm& arm, const ArmKeyFrameMotion::ArmKeyFr
 
     result.angles[i] = from.angles[i] + offset * phase;
     result.stiffness[i] = target.stiffness[i] == StiffnessData::useDefault
-                          ? theStiffnessSettings.stiffnesses[arm.firstJoint + i]
+                          ? 100
                           : target.stiffness[i];
   }
 
@@ -129,7 +154,7 @@ void ArmKeyFrameEngine::updateOutput(const Arm& arm, JointRequest& jointRequest,
   for(unsigned i = 0; i < values.angles.size(); ++i)
   {
     if(arm.id == Arms::right &&
-       Joints::canNegate(static_cast<Joints::Joint>(startJoint + i), Global::getSettings().robotType != Settings::nao))
+       Joints::canNegate(static_cast<Joints::Joint>(startJoint + i)))
       jointRequest.angles[startJoint + i] = -values.angles[i];
     else
       jointRequest.angles[startJoint + i] = values.angles[i];

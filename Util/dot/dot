@@ -1,11 +1,7 @@
 #!/bin/bash
 if [ "$(uname)" = "Darwin" ]; then
   baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
-  if [ "$(uname -m)" = arm64 ]; then
-    export GVBINDIR=$baseDir/macOSarm64
-  else
-    export GVBINDIR=$baseDir/macOS
-  fi
+  export GVBINDIR=$baseDir/macOS
   "$GVBINDIR/dot" $@
 else 
   export PATH=$PATH:/usr/local/bin

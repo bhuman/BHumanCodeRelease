@@ -17,7 +17,6 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
-#include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -37,7 +36,6 @@ MODULE(LibLookActiveProvider,
   REQUIRES(HeadLimits),
   REQUIRES(GameState),
   REQUIRES(JointAngles),
-  REQUIRES(JointRequest),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotPose),
@@ -56,7 +54,6 @@ MODULE(LibLookActiveProvider,
     (Angle) defaultTilt,
     (Angle) minTilt,
     (int) ballPositionUnknownTimeout,
-    (int) ballPositionUnknownTimeoutLowerCamera,
     (float) translationSpeedMinValue,
     (float) translationSpeedMaxValue,
     (Angle) rotationSpeedMinValue,
@@ -64,7 +61,6 @@ MODULE(LibLookActiveProvider,
     (bool) lookAtCloseObstacleWhenFollowingBall,
     (float) maxObstacleDistanceToBeLookedAt,
     (int) maxObstacleAgeToBeLookedAt,
-    (Angle) cameraChoiceHysteresis,
     (float) teamBallModelError, /**< estimation of the worst-case TeamBallModel error */
   }),
 });

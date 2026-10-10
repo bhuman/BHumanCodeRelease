@@ -7,24 +7,22 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/IMUValueState.h"
-#include "Representations/Sensing/InertialSensorData.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
 
 MODULE(IMUValueStateProvider,
 {,
   USES(FrameInfo),
-  REQUIRES(GroundContactState),
   REQUIRES(InertialSensorData),
   USES(MotionInfo),
   PROVIDES(IMUValueState),
   LOADS_PARAMETERS(
   {,
-    (Angle) thresholdGyroDeviation, // if the NAO is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
-    (Angle) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
+    (Angle) thresholdGyroDeviation, // if the robot is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
+    (Angle) thresholdZero, // if the robot is not moving, the gyros should be lower than this value
     (float) thresholdAccDeviation,
     (float) maxMeanAccDeviation, /**< Max measured variance of multiple acc measurements, to calibrate the gravity vector. */
     (unsigned) bufferSize, /**< Size of the buffers for the imu values. Should be equal to about 324 ms. */

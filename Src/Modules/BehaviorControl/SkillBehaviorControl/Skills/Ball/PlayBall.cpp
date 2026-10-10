@@ -9,10 +9,10 @@
 #include "SkillBehaviorControl.h"
 
 option((SkillBehaviorControl) PlayBall,
-       load((float)(500.f) goalPostHandlingAreaRadius,
-            (float)(1.2f) goalPostHandlingAreaHysteresisMultiplier,
-            (float)(1000.f) duelMinDistanceToClosest,
-            (Angle)(100_deg) duelMinAngleToClosest))
+       load((float) goalPostHandlingAreaRadius,
+            (float) goalPostHandlingAreaHysteresisMultiplier,
+            (float) duelMinDistanceToClosest,
+            (Angle) duelMinAngleToClosest))
 {
   const auto activateDuel = [&]
   {
@@ -44,7 +44,7 @@ option((SkillBehaviorControl) PlayBall,
     const bool obstacleClose = distanceToClosestObstacle < (duelMinDistanceToClosest * (1.f - (std::abs(angleToClosestObstacle) / duelMinAngleToClosest / 3.f)));
     const bool obstacleAngleClose = smallestAngleToCloseObstacle <= duelMinAngleToClosest;
     const bool ballSeen = theFieldBall.ballWasSeen(300);
-    const bool ballPosXClose = between<float>(theFieldBall.positionRelative.x(), 0.f, 700.f);
+    const bool ballPosXClose = between<float>(theFieldBall.positionRelative.x(), 0.f, 2000.f);
     const bool ballPosYClose = std::abs(theFieldBall.positionRelative.y()) < 500.f;
     const bool rotationToBallOk = std::abs(theFieldBall.positionRelative.angle()) < 80_deg;
 
@@ -57,7 +57,7 @@ option((SkillBehaviorControl) PlayBall,
     if((theGameState.isKickOff() || theGameState.isFreeKick()) && theGameState.isForOwnTeam())
       return true;
 
-    if(theFieldBall.positionRelative.x() > 1000.f)
+    if(theFieldBall.positionRelative.x() > 2500.f)
       return true;
 
     for(const Obstacle& omo : theObstacleModel.obstacles)
@@ -80,7 +80,7 @@ option((SkillBehaviorControl) PlayBall,
     {
       if(theGameState.isKickOff())
         goto kickOff;
-      else if((theFieldBall.positionOnField - usedGoalPost).squaredNorm() < sqr(goalPostHandlingAreaRadius))
+      else if(!theGameState.isFreeKick() && (theFieldBall.positionOnField - usedGoalPost).squaredNorm() < sqr(goalPostHandlingAreaRadius))
         goto atOwnGoalPost;
       if(activateDuel())
         goto zweikampf;

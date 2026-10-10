@@ -1,0 +1,5 @@
+call ../Includes/Normal
+call ../Includes/3vs3
+
+dr representation:SetupPoses:place
+dr debugDrawing3d:representation:GameState:playerNumber

@@ -2,6 +2,7 @@
 #define __BOOSTER_ROBOTICS_SDK_RESPONSE_HPP__
 
 #include <booster/robot/rpc/response_header.hpp>
+#include <booster/robot/rpc/error.hpp>
 
 namespace booster {
 namespace robot {
@@ -14,6 +15,10 @@ public:
         const std::string &body) :
         header_(header),
         body_(body) {
+    }
+
+    static Response OkResponse() {
+        return Response(ResponseHeader(kRpcStatusCodeSuccess), "");
     }
 
     void SetHeader(const ResponseHeader &header) {

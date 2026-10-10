@@ -155,7 +155,7 @@ public: // Passing data to the public:
     STREAMABLE(ModuleRequired,
     {
       ModuleRequired() = default;
-      ModuleRequired(const std::string& module, bool required) : module(module)COMMA required(required) {},
+      ModuleRequired(const std::string& module, bool required) : module(module) COMMA required(required) {},
 
       (std::string) module,
       (bool)(false) required,

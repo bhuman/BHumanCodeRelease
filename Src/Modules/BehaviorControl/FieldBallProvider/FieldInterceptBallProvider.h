@@ -12,42 +12,34 @@
 #include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/BallSpecification.h"
-#include "Representations/Configuration/KickInfo.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/BallModel.h"
+#include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Framework/Module.h"
 
 MODULE(FieldInterceptBallProvider,
 {,
-  REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(BehaviorParameters),
   REQUIRES(FallDownState),
-  REQUIRES(FrameInfo),
-  REQUIRES(GameState),
-  REQUIRES(KickInfo),
   REQUIRES(RobotPose),
   REQUIRES(FieldBall),
+  REQUIRES(FieldDimensions),
   PROVIDES(FieldInterceptBall),
   LOADS_PARAMETERS(
   {,
     (float) ballInterceptionWidthHysteresis, /**< When intercepting, the interception point must be this much more further away. */
     (bool) useXAxisIntersection, /**< Use x axis interception. */
-    (bool) useRiskyBallEstimate, /**< Use the risky ball estimate. */
-    (Rangef) interpolateRiskyBallEstimateRange, /**< Interpolate between normal and risky ball estimate based on the distance to the ball. */
     (Rangef) ballEndPositionX, /**< Ball needs to end beyond this value. Min is for starting intercepting, Max is for ending intercepting. */
     (Rangef) ballEndPositionY, /**< Ball needs to end beyond this value. Min is for starting intercepting, Max is for ending intercepting. */
     (Rangei) ballSeenTime, /**< if the ball was not seen recently, do not intercept. */
+    (Rangef) minBallDistance, /**< Accept intercepting only if ball is this far away. */
+    (Rangea) ballAngleRange, /**< Interpolate ball x distance for interception start based on ball angle. */
   }),
 });
 
 class FieldInterceptBallProvider : public FieldInterceptBallProviderBase
 {
-  bool useRiskyBallEstimateAllowed = false; /**< Use the risky ball estimate. */
-
   /** Computes and fills the elements of the representation
    * @param fieldBall The additional ball information for the behavior
    */

@@ -1,7 +1,7 @@
 /**
  * @file FieldFeature.h
  * Declaration of a struct that represents a field feature.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

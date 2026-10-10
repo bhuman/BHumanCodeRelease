@@ -36,7 +36,6 @@ MODULE(BallContactCheckerProvider,
   {,
     (float) footRadius,            /**< The radius of the approximated foot shape */
     (float) footMass,              /**< An assumed mass for each foot (in kg) */
-    (float) ballMass,              /**< The mass of the ball (in kg) */
     (Vector3f) leftFootOffset,     /**< Offset from left foot sole point to a "center" of the foot used for approximating the foot shape with a circle */
     (Vector2f) kickDeviation,      /**< The percentage inaccuracy of passed velocities */
     (int) timeout,                 /**< If the ball was not seen for this number of milliseconds, do not perform any collision detection */

@@ -30,8 +30,11 @@ UNUSED="$(
     | sed 's%[^(]*(\([^),]*\).*%\1%' \
     | grep -v '##'
     find Src/Modules -name "*.cpp" \
-    | xargs grep '^ALIAS' \
+    | xargs grep '^ALIAS(' \
     | sed 's%[^(]*(\([^),]*\).*%Perception\1Provider%'
+    find Src/Modules -name "*.cpp" \
+    | xargs grep '^ALIAS_FROM_THREAD(' \
+    | sed 's%[^(]*(\([^),]*\), *\([^),]*\).*%\2\1Provider%'
   ) \
   | grep -vE "^($USED)$" | sed 's/^/Unused module: /'
 )"

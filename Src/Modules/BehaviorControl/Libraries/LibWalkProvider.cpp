@@ -196,7 +196,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
         o.active = false;
     }
   }
-  /// the penalty area obstacles are added after the rough check, so that they can't be deactivated
+  // the penalty area obstacles are added after the rough check, so that they can't be deactivated
   if(theIllegalAreas.illegal & bit(IllegalAreas::ownPenaltyArea))
   {
     if(theLibPosition.isNearOwnPenaltyArea(theRobotPose.translation, penaltyAreaAvoidanceDistance, penaltyAreaAvoidanceDistance))
@@ -404,7 +404,7 @@ void LibWalkProvider::calculateAvoidanceAngleOffset(Angle& newAvoidanceAngleOffs
 
   newAvoidanceAngleOffset = ratingLeft < ratingRight ? angleOffsetLeft : angleOffsetRight;
 
-  /// Hack so the robot can always walk to the ball if it is on the goal line
+  // Hack so the robot can always walk to the ball if it is on the goal line
   if(theRobotPose.translation.x() < theFieldDimensions.xPosOwnPenaltyArea
      && targetOnField.x() < theFieldDimensions.xPosOwnGoalLine && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftGoal)
   {

@@ -3,7 +3,8 @@
  *
  * This file implements a ball search behavior.
  *
- * @author Arne Hasselbring, Sina Schreiber
+ * @author Arne Hasselbring
+ * @author Sina Schreiber
  */
 
 #include "BallSearch.h"

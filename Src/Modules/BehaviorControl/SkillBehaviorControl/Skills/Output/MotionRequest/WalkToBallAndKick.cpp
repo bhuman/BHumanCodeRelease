@@ -14,11 +14,7 @@ option((SkillBehaviorControl) WalkToBallAndKick,
             (KickPrecision) alignPrecisely,
             (float) kickLength,
             (const Pose2f&) speed,
-            (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
-            (PreStepType) preStepType,
-            (bool) turnKickAllowed,
-            (bool) shiftTurnKickPose,
-            (const Rangea&) directionPrecision),
+            (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance),
        vars((unsigned)(theMotionInfo.lastKickTimestamp) lastKickTimestamp)) /**< The value of the kick timestamp in the previous frame. */
 {
   // This code should is executed for any state
@@ -26,14 +22,9 @@ option((SkillBehaviorControl) WalkToBallAndKick,
   theMotionRequest.walkSpeed = speed;
   theMotionRequest.obstacleAvoidance = obstacleAvoidance;
   theMotionRequest.targetDirection = targetDirection;
-  theMotionRequest.directionPrecision = directionPrecision;
   theMotionRequest.kickType = kickType;
   theMotionRequest.kickLength = kickLength;
   theMotionRequest.alignPrecisely = alignPrecisely;
-  theMotionRequest.preStepType = preStepType;
-  theMotionRequest.turnKickAllowed = turnKickAllowed;
-  theMotionRequest.shiftTurnKickPose = shiftTurnKickPose;
-  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

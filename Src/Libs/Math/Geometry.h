@@ -2,7 +2,7 @@
  * @file Geometry.h
  * Declares the namespace Geometry
  *
- * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
+ * @author Matthias Jüngel
  */
 
 #pragma once

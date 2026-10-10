@@ -5,7 +5,7 @@
  * All coordinates are given in millimeters in absolute field coordinates, using B-Human's default field coordinate system.
  * Robot perspective and occlusion do not matter here, all objects on the field are included in this struct, with their exact positions and orientations.
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once

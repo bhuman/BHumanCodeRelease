@@ -104,7 +104,7 @@ void SetPlay::compileVoronoiRegions(const std::array<Tactic, Tactic::numOfTypes>
     for(const SetPlay::Position& positionOverride : positions)
       if(positionOverride.position == position.type)
       {
-        position.pose = positionOverride.pose;
+        position.translation = positionOverride.translation;
         break;
       }
   voronoiRegionSubsetsPerNumOfAgents = Tactic::generateVoronoiRegionSubsets(tacticPositions, positionSubsetsPerNumOfAgents);
@@ -143,28 +143,23 @@ void SetPlay::verify([[maybe_unused]] Type setPlay, const std::array<Tactic, Tac
   if(existingPositions[Tactic::Position::goalkeeper])
     existingPositions[Tactic::Position::goalkeeper] = 2;
 
-  int numOfWaitActions = 0;
+  bool wasIntendedStrikerDefined = false;
+  [[maybe_unused]] Tactic::Position::Type intendedStriker = Tactic::Position::none;
+
   for(const Position& position : positions)
   {
+    if(position.intendedStriker)
+    {
+      if(wasIntendedStrikerDefined)
+        FAIL("The position " << TypeRegistry::getEnumName(position.position) << " was defined as intendedStriker but the position " << TypeRegistry::getEnumName(intendedStriker) << " was already defined as intendedStriker.");
+      wasIntendedStrikerDefined = true;
+      intendedStriker = position.position;
+    }
     if(!existingPositions[position.position])
       FAIL("The position " << TypeRegistry::getEnumName(position.position) << " is overridden within set play " << TypeRegistry::getEnumName(setPlay) << " but does not exist within tactic " << TypeRegistry::getEnumName(tactic) << ".");
     else if(existingPositions[position.position] != 2)
       FAIL("The position " << TypeRegistry::getEnumName(position.position) << " is overridden multiple times within set play " << TypeRegistry::getEnumName(setPlay) << ".");
     else
       ++existingPositions[position.position];
-    for(const Action& action : position.actions)
-    {
-      if(action.type == Action::Type::numOfTypes)
-        FAIL("The position " << TypeRegistry::getEnumName(position.position) << " within set play " << TypeRegistry::getEnumName(setPlay) << " has an unspecified action.");
-      if(action.type == Action::Type::pass && action.passTarget.empty())
-        FAIL("The position " << TypeRegistry::getEnumName(position.position) << " within set play " << TypeRegistry::getEnumName(setPlay) << " has a pass action without targets.");
-      if(action.type == Action::Type::wait)
-        numOfWaitActions++;
-    }
   }
-  if(numOfWaitActions > 1)
-    FAIL("The action " << TypeRegistry::getEnumName(Action::Type::wait) << " is used by multiple positions within set play " << TypeRegistry::getEnumName(setPlay) << ", although this active action is bound to the active role of playing the ball.");
-  const bool isWaitActionAllowed = isOpponentKickOff(setPlay) || isOpponentPenaltyKick(setPlay);
-  if(numOfWaitActions > 0 && !isWaitActionAllowed)
-    FAIL("The action " << TypeRegistry::getEnumName(Action::Type::wait) << " is used in an unsupported game state within set play " << TypeRegistry::getEnumName(setPlay) << ". It should only be used in set plays for the opponent team with ready and set states.");
 }

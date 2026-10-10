@@ -61,15 +61,23 @@ echo "Creating graphs for SkillBehaviorControl..."
 mkdir -p "${basePath}/../../Build/Documentation/SkillBehaviorControl"
 cd "${basePath}/../../Build/Documentation/SkillBehaviorControl"
 
-(
-  echo "option PlaySoccer"
-  echo "initial_state selectOption"
-  grep -E "^(playingOptions|[ 	]*[A-Z][A-Za-z0-9]*)" "${basePath}/../../Config/Scenarios/$scenario/skillBehaviorControl.cfg" \
-  | sed -e "s%^[ 	]*\([A-Z][A-Za-z0-9]*\).*%call \1%" -e "s%^playingOptions.*%option HandleGameState|state playing%" \
-  | tr '|' '\n'
-) >data.tmp
+grep -R "select_option" ../../../Src/Modules/BehaviorControl/SkillBehaviorControl \
+| sed 's%:.*%%' \
+| \
+while read optionFile; do
+  option="$(sed <<<"$optionFile" -e 's%.*/%%' -e 's%\.cpp%%')"
+  if [ -f "${basePath}/../../Config/Scenarios/$scenario/option$option.cfg" ]; then
+    cfgFile="${basePath}/../../Config/Scenarios/$scenario/option$option.cfg"
+  elif [ -f "${basePath}/../../Config/Scenarios/Default/option$option.cfg" ]; then
+    cfgFile="${basePath}/../../Config/Scenarios/Default/option$option.cfg"
+  else
+    continue
+  fi
+  grep <"$cfgFile" -E "^[ 	]*[A-Z][A-Za-z0-9]*" \
+  | sed -e "s%^[ 	]*\([A-Z][A-Za-z0-9]*\).*%$option \1%"
+done >data.tmp
 
-find ../../..//Src/Modules/BehaviorControl/SkillBehaviorControl/Options ../../..//Src/Modules/BehaviorControl/SkillBehaviorControl/Skills -name "*.cpp" \
+find ../../../Src/Modules/BehaviorControl/SkillBehaviorControl/Options ../../../Src/Modules/BehaviorControl/SkillBehaviorControl/Skills -name "*.cpp" \
 | xargs "${basePath}/../../Util/CABSL/createGraphs" -a data.tmp -m SkillBehaviorControl -d "$dot" $pdf
 
 rm data.tmp

@@ -1,10 +1,10 @@
 /**
  * @file RotationMatrix.h
  * Declaration of class RotationMatrix
- * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
- * @author <a href="mailto:thomas.kindler@gmx.de">Thomas Kindler</a>
+ * @author Martin Kallnik
+ * @author Thomas Kindler
  * @author Max Risler
- * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ * @author Alexis Tsogias
  */
 
 #pragma once

@@ -13,11 +13,9 @@
 #include "Math/BHMath.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Tools/Motion/WalkUtilities.h"
-#include "Tools/Motion/Transformation.h"
+#include "Debugging/Annotation.h"
 
 MAKE_MODULE(WalkToPoseEngine);
-
-using namespace Motion::Transformation;
 
 WalkToPoseEngine::WalkToPoseEngine()
 {
@@ -53,7 +51,7 @@ void WalkToPoseEngine::update(WalkToPoseGenerator& walkToPoseGenerator)
   walkToPoseGenerator.createPhase = [this](const MotionRequest& motionRequest, const MotionPhase& lastPhase)
   {
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, motionRequest.walkTarget);
-    const Pose2f scsCognition = getTransformationToZeroStep(theTorsoMatrix, theRobotModel, theWalkStepData.yHipOffset, motionRequest.odometryData, theOdometryDataPreview, isLeftPhase);
+    const Pose2f scsCognition = theOdometryDataPreview.inverse() * motionRequest.odometryData;
     const Pose2f targetInSCS = scsCognition * motionRequest.walkTarget;
 
     std::optional<Vector2f> targetOfInterest;
@@ -120,36 +118,28 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
     {
       const Vector2f targetFocus = targetOfInterest.has_value() ? targetOfInterest.value() : (targetInSCS + Vector2f(180.f, 0.f)).translation;
 
-      // Determine, if we should side walk or walk straight
-      if(!(!theLibDemo.isOneVsOneDemoActive && theLibDemo.isDemoActive))
-      {
-        if(sideWalkingRequest == SideWalkingRequest::forced)
-          WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
-        else if(modTargetInSCS.translation.squaredNorm() > sqr(1000.f) || sideWalkingRequest == SideWalkingRequest::notAllowed)
-          WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase, obstacleAvoidanceInSCS.path.empty() && obstacleAvoidanceInSCS.avoidance == Vector2f::Zero(), useModTarget);
-        else
-        {
-          Pose2f modTargetInSCS2 = modTargetInSCS;
-          WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
-          WalkUtilities::calcDiagonal(theWalkGenerator, theWalkingEngineOutput, walkSpeed, targetInSCS, modTargetInSCS2, targetFocus,
-                                      isLeftPhase, isFastWalkAllowed, lastPhase, obstacleAvoidanceInSCS.path.empty() && obstacleAvoidanceInSCS.avoidance == Vector2f::Zero(), useModTarget);
-
-          // When near the target, use the walk type (diagonal vs side walk) that will put the robot closer to the target pose
-          const float interpolationRange = theRobotDimensions.soleToFrontEdgeLength;
-          const float interpolationOffset = theRobotDimensions.soleToFrontEdgeLength + theBallSpecification.radius + 50.f;
-          const float factor = 1.f - Rangef::ZeroOneRange().limit((targetInSCS.translation.norm() - interpolationOffset) / interpolationRange);
-          const Angle targetRotFactor = factor * targetInSCS.rotation;
-          if(std::abs(targetRotFactor - modTargetInSCS2.rotation) < std::abs(targetRotFactor - modTargetInSCS.rotation))
-            modTargetInSCS = modTargetInSCS2;
-        }
-      }
+      if(sideWalkingRequest == SideWalkingRequest::forced)
+        WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, theWalkStepData, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
+                                    isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
+      else if(modTargetInSCS.translation.squaredNorm() > sqr(1000.f) || sideWalkingRequest == SideWalkingRequest::notAllowed)
+        WalkUtilities::calcDiagonal(theWalkStepData, modTargetInSCS, targetFocus, isFastWalkAllowed);
       else
-        modTargetInSCS.rotation = targetInSCS.translation.angle();
+      {
+        Pose2f modTargetInSCS2 = modTargetInSCS;
+        WalkUtilities::calcSideWalk(theWalkGenerator, theWalkingEngineOutput, theWalkStepData, walkSpeed, targetInSCS, modTargetInSCS, targetFocus,
+                                    isLeftPhase, isFastWalkAllowed, lastPhase, useModTarget);
+        WalkUtilities::calcDiagonal(theWalkStepData, modTargetInSCS2, targetFocus, isFastWalkAllowed);
 
-      const float factor = mapToRange(targetInSCS.translation.norm(), 50.f, 100.f, 0.f, 1.f);
+        // When near the target, use the walk type (diagonal vs side walk) that will put the robot closer to the target pose
+        const float interpolationRange = theRobotDimensions.soleToFrontEdgeLength;
+        const float interpolationOffset = theRobotDimensions.soleToFrontEdgeLength + theBallSpecification.radius + 50.f;
+        const float factor = 1.f - Rangef::ZeroOneRange().limit((targetInSCS.translation.norm() - interpolationOffset) / interpolationRange);
+        const Angle targetRotFactor = factor * targetInSCS.rotation;
+        if(std::abs(targetRotFactor - modTargetInSCS2.rotation) < std::abs(targetRotFactor - modTargetInSCS.rotation))
+          modTargetInSCS = modTargetInSCS2;
+      }
+
+      const float factor = mapToRange(targetInSCS.translation.norm(), targetInterpolationRange.min, targetInterpolationRange.max, 0.f, 1.f);
       modTargetInSCS.rotation = modTargetInSCS.rotation * factor + (1.f - factor) * targetInSCS.rotation;
     }
     else
@@ -181,7 +171,7 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
     stepRotationReduction = 0.f;
   modTargetInSCS.rotation *= Rangef::ZeroOneRange().limit((1.f - stepRotationReduction));
 
-  modTargetInSCS.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeed).clamped((keepTargetRotation ? targetInSCS.rotation : modTargetInSCS.rotation));
+  modTargetInSCS.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeed, modTargetInSCS).clamped((keepTargetRotation ? targetInSCS.rotation : modTargetInSCS.rotation));
 
   const bool isFastWalk = modTargetInSCS.translation.norm() < 400.f && isFastWalkAllowed;
   Pose2f step = generateStep(isLeftPhase, lastPhase, walkSpeed, isFastWalk, targetInSCS, modTargetInSCS, obstacleAvoidanceInSCS, isObstacle);
@@ -195,21 +185,42 @@ std::unique_ptr<MotionPhase> WalkToPoseEngine::createPhase(const Pose2f& targetI
 }
 
 Pose2f WalkToPoseEngine::generateStep(const bool isLeftPhase, const MotionPhase& lastPhase, const Pose2f& walkSpeed,
-                                      const bool isFastWalk, const Pose2f& targetInSCS, const Pose2f& modTargetInSCS,
+                                      const bool isFastWalk, const Pose2f&, const Pose2f& modTargetInSCS,
                                       const MotionRequest::ObstacleAvoidance& obstacleAvoidanceInSCS, const bool isObstacle) const
 {
   Pose2f step = modTargetInSCS;
   std::vector<Vector2f> translationPolygon;
   std::vector<Vector2f> translationPolygonNoCenter;
-  theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, translationPolygon, translationPolygonNoCenter, isFastWalk, false);
-  if(Geometry::isPointInsideConvexPolygon(translationPolygonNoCenter.data(), static_cast<int>(translationPolygonNoCenter.size()), targetInSCS.translation))
-    step.translation = targetInSCS.translation;
+  theWalkGenerator.getTranslationPolygon(isLeftPhase, step.rotation, lastPhase, walkSpeed, modTargetInSCS, translationPolygon, translationPolygonNoCenter, isFastWalk, false, !isObstacle);
+
+  if(isObstacle && translationPolygon.size() >= 4)
+  {
+    Vector2f p1;
+    const Vector2f targetDirectionWithAvoidance = obstacleAvoidanceInSCS.avoidance + modTargetInSCS.translation.normalized(std::max(0.f, 1.f - obstacleAvoidanceInSCS.avoidance.norm()));
+    VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygonNoCenter, Geometry::Line(Vector2f(0.f, 0.f),
+                                                           targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1, false));
+
+    const float xRatio = step.translation.x() / p1.x();
+    const float yRatio = step.translation.y() / p1.y();
+
+    if(xRatio < 1.f && yRatio < 1.f)
+      step.translation /= (std::max(xRatio, yRatio));
+  }
+
+  if(Geometry::isPointInsideConvexPolygon(translationPolygonNoCenter.data(), static_cast<int>(translationPolygonNoCenter.size()), step.translation))
+    step.translation = step.translation;
   else
   {
     Vector2f p1;
     const Vector2f targetDirectionWithAvoidance = obstacleAvoidanceInSCS.avoidance + modTargetInSCS.translation.normalized(std::max(0.f, 1.f - obstacleAvoidanceInSCS.avoidance.norm()));
     if(Geometry::isPointInsideConvexPolygon(translationPolygonNoCenter.data(), static_cast<int>(translationPolygonNoCenter.size()), Vector2f(0.f, 0.f)))
     {
+      if(targetDirectionWithAvoidance == Vector2f::Zero())
+      {
+        ANNOTATION("WalkToPoseEngine:Avoidance", "Avoidance resulted in direction vector (0,0)");
+        return Pose2f(step.rotation, 0, 0);
+      }
+
       VERIFY(Geometry::getIntersectionOfLineAndConvexPolygon(translationPolygonNoCenter, Geometry::Line(Vector2f(0.f, 0.f),
                                                              targetDirectionWithAvoidance / targetDirectionWithAvoidance.norm()), p1, false));
       step.translation = p1;
@@ -241,15 +252,6 @@ Pose2f WalkToPoseEngine::generateStep(const bool isLeftPhase, const MotionPhase&
         step.translation.x() = translationPolygonNoCenter.back().x();
     }
   }
-  if(Global::getSettings().robotType == Settings::nao && isLeftPhase == (step.translation.y() < 0.f))
-    step.translation.y() = 0.f;
 
-  const float useReferenceMaxForwardStep = useReferenceMaxForwardSpeed * theWalkingEngineOutput.walkStepDuration;
-  // Do not stop in one step, but slow down. This results in a more stable walk
-  if(step.translation.x() / useReferenceMaxForwardStep > reduceForwardStepUpperThreshold &&
-     (targetInSCS.translation - step.translation).x() / useReferenceMaxForwardStep < reduceForwardStepLowerThreshold)
-  {
-    step.translation.x() *= reduceForwardStepUpperThreshold;
-  }
   return step;
 }

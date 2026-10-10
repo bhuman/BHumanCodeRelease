@@ -7,7 +7,6 @@
 /.vscode/*
 !/.vscode/c_cpp_properties.json
 !/.vscode/cspell.json
-!/.vscode/noArm.h
 !/.vscode/noX86.h
 *~
 \#*\#
@@ -18,7 +17,6 @@
 *.kdev4
 *.projectile
 *.iml
-*.opn
 GPATH
 GRTAGS
 GTAGS
@@ -26,6 +24,7 @@ tags
 Thumbs.db
 /Build
 /Config/Images
+/Config/NeuralNets/CoreMLCache
 /Config/Scenes/Includes/connect.con
 /Config/Scenes/Includes/replay.con
 /Make/Hooks/gitpath
@@ -42,3 +41,4 @@ Thumbs.db
 /Util/Buildchain/macOS/bin/cmake
 /Util/Buildchain/macOS/include
 /Util/Buildchain/macOS/lib
+/Util/onnxruntime/lib

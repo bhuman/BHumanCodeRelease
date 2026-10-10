@@ -1,6 +1,5 @@
 vid all horizon
 vid all representation:FieldLines:image
-vid all module:HoughLineCorrector:correctedLines
 vfd all option:AutonomousCameraCalibration:position
 
 echo dr module:GameStateProvider:calibration

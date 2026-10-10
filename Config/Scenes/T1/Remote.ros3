@@ -1,0 +1,20 @@
+<Simulation>
+
+  <Include href="../Includes/T1/T1.rsi3"/>
+  <Include href="../Includes/Field2026HSLL.rsi3"/>
+
+  <Scene name="RoboCup" controller="SimulatedRobot" stepLength="0.01" color="rgb(50%, 50%, 50%)">
+    <PointLight z="9m" intensity="8"/>
+
+    <Compound name="puppets">
+      <Body ref="T1" name="Remote">
+        <Translation z="670mm"/>
+        <Set name="TeamColor" value="skin"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+    <Compound ref="robot type"/>
+  </Scene>
+</Simulation>

@@ -25,17 +25,9 @@ STREAMABLE(HeadMotionRequest,
     targetMode,         /**< (A target relative to the center of hip.) Use \c target and \c speed. */
     targetOnGroundMode, /**< Use \c target and \c speed. */
     calibrationMode,    /**< Use \c pan, \c tilt and disable clipping to HeadLimits. */
-  });
-
-  ENUM(CameraControlMode,
-  {,
-    autoCamera,
-    lowerCamera,
-    upperCamera,
   }),
 
   (Mode)(panTiltMode) mode, /**< The active head motion mode. */
-  (CameraControlMode)(lowerCamera) cameraControlMode, /**< The active camera control mode. */
   (Angle)(0) pan,           /**< Head pan target angle in radians. */
   (Angle)(0) tilt,          /**< Head tilt target angle in radians. */
   (Angle)(1) speed,         /**< Maximum joint speed to reach target angles in radians/s. */

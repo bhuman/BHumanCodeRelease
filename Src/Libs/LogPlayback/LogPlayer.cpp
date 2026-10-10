@@ -13,7 +13,6 @@
 #include "Platform/File.h"
 #include "Streaming/Global.h"
 #include <filesystem>
-#include <snappy-c.h>
 #ifdef WINDOWS
 #include <io.h>
 #else
@@ -57,8 +56,11 @@ void LogPlayer::writeMessageIDs(Out& stream)
     stream << name;
 }
 
-void LogPlayer::updateIndices()
+void LogPlayer::updateIndices(bool force)
 {
+  if(!force && sizeWhenIndexWasComputed == size())
+    return;
+
   frameIndex.clear();
   framesHaveImage.clear();
   statsPerThread.clear();
@@ -86,6 +88,8 @@ void LogPlayer::updateIndices()
         break;
       case idCameraImage:
       case idJPEGImage:
+      case idDepthImage:
+      case idJPEGDepthImage:
         hasImage = anyFrameHasImage = true;
         break;
       case idAnnotation:
@@ -174,8 +178,7 @@ bool LogPlayer::readIndices(In& stream, size_t& usedSize)
 
 void LogPlayer::writeIndices(Out& stream) const
 {
-  if(sizeWhenIndexWasComputed != size())
-    const_cast<LogPlayer*>(this)->updateIndices();
+  const_cast<LogPlayer*>(this)->updateIndices();
 
   stream << static_cast<unsigned char>(LoggingTools::logFileIndices) << indexVersion;
 
@@ -207,8 +210,7 @@ void LogPlayer::writeIndices(Out& stream) const
 
 std::pair<size_t, size_t> LogPlayer::statOf(MessageID id, const std::string& threadName) const
 {
-  if(sizeWhenIndexWasComputed != size())
-    const_cast<LogPlayer*>(this)->updateIndices();
+  const_cast<LogPlayer*>(this)->updateIndices();
 
   const MessageID logId = mapIDToLog[id];
   if(threadName.empty())
@@ -279,24 +281,8 @@ bool LogPlayer::open(const std::string& fileName)
           typeInfo = std::make_unique<TypeInfo>(false);
           stream >> *typeInfo;
           break;
-        case LoggingTools::logFileCompressed: //compressed log file
-          while(!stream.eof())
-          {
-            unsigned compressedSize;
-            stream >> compressedSize;
-            std::vector<char> compressedBuffer;
-            compressedBuffer.resize(compressedSize);
-            stream.read(compressedBuffer.data(), compressedSize);
-            size_t uncompressedSize = 0;
-            snappy_uncompressed_length(compressedBuffer.data(), compressedSize, &uncompressedSize);
-            std::vector<char> uncompressBuffer;
-            uncompressBuffer.resize(uncompressedSize);
-            if(snappy_uncompress(compressedBuffer.data(), compressedSize, &uncompressBuffer[0], &uncompressedSize) != SNAPPY_OK)
-              break;
-            InBinaryMemory(uncompressBuffer.data(), uncompressedSize) >> *this;
-          }
-          updateIndices();
-          return true;
+        case LoggingTools::logFileCompressed: //compressed log files are not supported anymore
+          return false;
         case LoggingTools::logFileUncompressed:
         {
           QueueHeader header;
@@ -330,7 +316,7 @@ bool LogPlayer::open(const std::string& fileName)
               usedSize = remainingSize;
 
             setBuffer(file->getData() + position, usedSize);
-            updateIndices();
+            updateIndices(true);
             file = nullptr; // Close file
 
             // Append indices
@@ -361,7 +347,7 @@ bool LogPlayer::open(const std::string& fileName)
   return false;
 }
 
-bool LogPlayer::save(std::string fileName, const TypeInfo& typeInfo)
+bool LogPlayer::save(std::string fileName)
 {
   if(fileName.empty())
     fileName = path;
@@ -385,13 +371,19 @@ bool LogPlayer::save(std::string fileName, const TypeInfo& typeInfo)
     LoggingTools::writeSettings(file, Global::getSettings());
     file << LoggingTools::logFileMessageIDs;
     writeMessageIDs(file);
-    file << LoggingTools::logFileTypeInfo << (this->typeInfo ? *this->typeInfo : typeInfo);
+    file << LoggingTools::logFileTypeInfo << *typeInfo;
     file << LoggingTools::logFileUncompressed << *this;
     writeIndices(file);
     return true;
   }
   else
     return false;
+}
+
+void LogPlayer::setTypeInfo(const TypeInfo& typeInfo)
+{
+  if(!this->typeInfo)
+    this->typeInfo = std::make_unique<TypeInfo>(typeInfo);
 }
 
 MessageID LogPlayer::id(Message message) const
@@ -437,9 +429,7 @@ void LogPlayer::filterFrames(const std::function<bool(const_iterator)>& keep)
 
 const std::unordered_map<std::string, std::vector<Annotation>>& LogPlayer::annotations() const
 {
-  if(sizeWhenIndexWasComputed != size())
-    const_cast<LogPlayer*>(this)->updateIndices();
-
+  const_cast<LogPlayer*>(this)->updateIndices();
   return annotationsPerThread;
 }
 

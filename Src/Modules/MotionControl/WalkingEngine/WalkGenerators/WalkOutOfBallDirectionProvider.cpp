@@ -26,10 +26,8 @@ void WalkOutOfBallDirectionProvider::update(WalkOutOfBallDirection& theWalkOutOf
   {
     Vector2f ballVelocity = motionRequest.ballEstimate.velocity;
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, motionRequest.ballEstimate.position);
-    const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
-    const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theWalkStepData.yHipOffset : theWalkStepData.yHipOffset);
-    const Pose2f scsCognition = hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * motionRequest.odometryData;
+    const Pose2f scsCognition = theOdometryDataPreview.inverse() * motionRequest.odometryData;
+
     const Vector2f positionOfGoal(theFieldDimensions.xPosOpponentGoal, 0.f);
     const Vector2f relativePositionOfGoal = scsCognition * (theRobotPose.inverse() * positionOfGoal);
     // line that tracks robot relative the path of the ball
@@ -51,10 +49,10 @@ void WalkOutOfBallDirectionProvider::update(WalkOutOfBallDirection& theWalkOutOf
 
     const Angle orthPointDirection = Angle::normalize(orthPoint.angle() + 180_deg);
 
-    Vector2f walkOutVector = Vector2f::polar(400.f, orthPointDirection) + orthPoint;
+    Vector2f walkOutVector = Vector2f::polar(ballLineDistance, orthPointDirection) + orthPoint;
     std::vector<Vector2f> translationPolygon;
     std::vector<Vector2f> translationPolygonNoCenter;
-    theWalkGenerator.getTranslationPolygon(isLeftPhase, 0.f, lastPhase, motionRequest.walkSpeed, translationPolygon, translationPolygonNoCenter, false, false);
+    theWalkGenerator.getTranslationPolygon(isLeftPhase, 0.f, lastPhase, motionRequest.walkSpeed, walkOutVector, translationPolygon, translationPolygonNoCenter, false, false, false);
 
     if(!Geometry::isPointInsideConvexPolygon(translationPolygon.data(), static_cast<int>(translationPolygon.size()), walkOutVector))
     {

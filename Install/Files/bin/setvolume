@@ -2,16 +2,11 @@
 
 usage()
 {
-  echo "usage: $0 [<playback volume>] - Sets the sound volume."
+  echo "usage: $0 <playback volume> - Sets the sound volume."
   exit 1
 }
 
-[ $# -lt 2 ] || usage
-PLAYBACK_VOLUME=${1:-$(cat /home/nao/.config/volume)}
+[ $# -eq 1 ] || usage
 
-echo ${PLAYBACK_VOLUME} >/home/nao/.config/volume
-
-aplay -q /home/nao/Config/Sounds/empty.wav || exit 1
-amixer set PCM ${PLAYBACK_VOLUME}% unmute >/dev/null 2>&1 || exit 1
-amixer set "Analog Front" 100% unmute >/dev/null 2>&1 || exit 1
-amixer set Digital 100% unmute >/dev/null 2>&1 || ( arecord -d 1 -f FLOAT_LE -c 2 -q >/dev/null && amixer set Digital 100% unmute >/dev/null 2>&1 )
+pactl set-sink-mute @DEFAULT_SINK@ false >/dev/null 2>&1
+pactl set-sink-volume @DEFAULT_SINK@ ${1}% >/dev/null 2>&1

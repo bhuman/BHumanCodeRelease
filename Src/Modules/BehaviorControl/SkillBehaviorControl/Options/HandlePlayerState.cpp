@@ -54,7 +54,7 @@ option((SkillBehaviorControl) HandlePlayerState)
     action
     {
       LookForward();
-      Stand({.high = true});
+      Stand();
     }
   }
 }

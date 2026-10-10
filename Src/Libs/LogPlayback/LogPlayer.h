@@ -70,8 +70,10 @@ class LogPlayer : public MessageQueue
    * \c anyFrameHasImage and \c sizeWhenIndexWasComputed are updated as well.
    * If the last frame in the log is not complete, the queue is resized to
    * discard that frame.
+   * @param force Update them even \c sizeWhenIndexWasComputed matches current
+   *              size.
    */
-  void updateIndices();
+  void updateIndices(bool force = false);
 
   /**
    * Load the indices from a stream, i.e. \c frameIndex , \c framesHaveImage ,
@@ -129,15 +131,18 @@ public:
    * Save log to a file.
    * @param fileName The name of the file. If empty, the name under which the
    *                 log was opened is used instead (if available).
-   * @param typeInfo The type information is written to the log file if the log
-   *                 player does not already store such information (from a
-   *                 read log file).
    * @return Could the log file be saved? If not, it was not possible to create
    *         the file, either because the name is invalid or it was tried to
    *         overwrite the original file of this log while it was still mapped
    *         into memory.
    */
-  bool save(std::string fileName, const TypeInfo& typeInfo);
+  bool save(std::string fileName);
+
+  /**
+   * Provides a default type info that is only used if the log player does not
+   * already store such information (from a read log file).
+   */
+  void setTypeInfo(const TypeInfo& typeInfo);
 
   /**
    * Returns the message type translated to the current value in the

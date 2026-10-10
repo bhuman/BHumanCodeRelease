@@ -2,6 +2,7 @@
 # Generate CLion project or CMake caches
 
 cd "$(dirname "$(which "$0")")"
+. "../Common/libBHuman"
 
 USE_CLION=
 
@@ -11,20 +12,20 @@ elif [ $# != 0 ]; then
   echo "usage: $0 [-c]"
   echo "  options:"
   echo "    -c    generate a CLion project instead of CMake caches"
-  exit 1
+  exit
 fi
+
+../Common/pullONNXRuntime
 
 if [ -f .idea/workspace.xml -o ! -z "$USE_CLION" ]; then
   CMAKE_RUN_CONFIGURATION_MANAGER="    <generated>
       <config projectName=\"B-Human\" targetName=\"Booster\" />
-      <config projectName=\"B-Human\" targetName=\"Nao\" />
       <config projectName=\"B-Human\" targetName=\"SimRobot\" />
       <config projectName=\"B-Human\" targetName=\"Tests\" />
     </generated>"
 
   RUN_MANAGER="    <list>
       <item itemvalue=\"CMake Application.Booster\" />
-      <item itemvalue=\"CMake Application.Nao\" />
       <item itemvalue=\"CMake Application.SimRobot\" />
       <item itemvalue=\"Google Test.Tests\" />
     </list>"

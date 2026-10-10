@@ -2,12 +2,13 @@
  * Defines scan-line regions that segment a scan-line into multiple parts with an assigned color classification.
  *
  * @author Lukas Malte Monnerjahn
- * @author Felix
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Felix Thielke
+ * @author Jesse Richter-Klug
  */
 
 #pragma once
 
+#include "Debugging/ColorRGBA.h"
 #include "Streaming/AutoStreamable.h"
 #include "Streaming/Enum.h"
 
@@ -110,7 +111,7 @@ inline ScanLineRegion::ScanLineRegion(const unsigned short from, const unsigned 
   range(from, to), color(c)
 {}
 
-STREAMABLE(ColorScanLineRegionsVertical,
+STREAMABLE(ColorScanLineRegionsVerticalClipped,
 {
   STREAMABLE(ScanLine,
   {
@@ -128,27 +129,11 @@ STREAMABLE(ColorScanLineRegionsVertical,
   (unsigned)(1) lowResStep,  /**< Steps between low res scanLines. */
 });
 
-inline ColorScanLineRegionsVertical::ScanLine::ScanLine(const unsigned short x) :
+inline ColorScanLineRegionsVerticalClipped::ScanLine::ScanLine(const unsigned short x) :
   x(x), regions()
 {
   regions.reserve(32);
 }
-
-/**
- * A version of the ColorScanLineRegionsVertical that has been clipped at the FieldBoundary
- */
-STREAMABLE_WITH_BASE(ColorScanLineRegionsVerticalClipped, ColorScanLineRegionsVertical,
-{
-  void draw() const,
-});
-
-/**
- * A version of the ColorScanLineRegionsVertical which is scaled (linear interpolated?)
- */
-STREAMABLE_WITH_BASE(CompressedColorScanLineRegionsVertical, ColorScanLineRegionsVertical,
-{
-  void draw() const,
-});
 
 STREAMABLE(ColorScanLineRegionsHorizontal,
 {

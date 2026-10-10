@@ -58,7 +58,7 @@ In& operator>>(In& stream, DrawingManager& drawingManager)
   // clear() has to be called first to replace the existing data
 
   int size;
-  stream >> size;;
+  stream >> size;
   for(int i = 0; i < size; ++i)
   {
     std::string str;

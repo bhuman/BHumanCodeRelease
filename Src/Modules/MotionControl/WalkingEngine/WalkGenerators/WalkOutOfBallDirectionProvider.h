@@ -15,10 +15,7 @@
 #include "Representations/MotionControl/WalkOutOfBallDirection.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
-#include "Representations/MotionControl/WalkStepData.h"
-#include "Representations/Sensing/RobotModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Sensing/TorsoMatrix.h"
 
 MODULE(WalkOutOfBallDirectionProvider,
 {,
@@ -26,17 +23,15 @@ MODULE(WalkOutOfBallDirectionProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(OdometryDataPreview),
-  REQUIRES(RobotModel),
   REQUIRES(RobotPose),
-  REQUIRES(TorsoMatrix),
   REQUIRES(WalkGenerator),
-  REQUIRES(WalkStepData),
   PROVIDES(WalkOutOfBallDirection),
 
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (float)(180.f) robotWidthThreshold,
-    (int)(2000) annotationTime,
+    (float) robotWidthThreshold, /**< Assumed width of the robot. */
+    (int) annotationTime,
+    (float) ballLineDistance, /**< Distance to keep away from the ball roll path. */
   }),
 });
 

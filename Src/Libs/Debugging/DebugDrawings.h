@@ -268,17 +268,14 @@ inline const char* DrawingManager::getTypeName(char id) const
   do \
     COMPLEX_DRAWING(id) \
     { \
-      OutTextMemory _stream(static_cast<int>(numberOfPoints) * 12); \
+      auto _stream = Global::getDebugOut().bin(idDebugDrawing); \
+      _stream << static_cast<char>(Drawings::polygon) \
+              << Global::getDrawingManager().getDrawingId(id) \
+              << static_cast<int>(numberOfPoints); \
       for(int _i = 0; _i < static_cast<int>(numberOfPoints); ++_i) \
         _stream << static_cast<int>(points[_i].x()) << static_cast<int>(points[_i].y()); \
-      OUTPUT(idDebugDrawing, bin, \
-             static_cast<char>(Drawings::polygon) << \
-             Global::getDrawingManager().getDrawingId(id) << \
-             static_cast<int>(numberOfPoints) << \
-             _stream.data() << \
-             static_cast<char>(penWidth) << static_cast<char>(penStyle) << ColorRGBA(penColor) << \
-             static_cast<char>(brushStyle) << ColorRGBA(brushColor) \
-            );  \
+      _stream << static_cast<char>(penWidth) << static_cast<char>(penStyle) << ColorRGBA(penColor) \
+              << static_cast<char>(brushStyle) << ColorRGBA(brushColor); \
     } \
   while(false)
 
@@ -290,14 +287,14 @@ inline const char* DrawingManager::getTypeName(char id) const
  * @param penColor The color of the border of the dot (Drawings::Color)
  * @param brushColor The color of the dot (Drawings::Color)
  */
-#define DOT(id, x, y, penColor, brushColor) \
+#define DOT(id, x, y, dotSize, penColor, brushColor) \
   do \
     COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              static_cast<char>(Drawings::dot) << \
              Global::getDrawingManager().getDrawingId(id) << \
-             static_cast<int>(x) << static_cast<int>(y) << ColorRGBA(penColor) << ColorRGBA(brushColor) \
+             static_cast<int>(x) << static_cast<int>(y) << static_cast<int>(dotSize) << ColorRGBA(penColor) << ColorRGBA(brushColor) \
             ); \
     } \
   while(false)
@@ -828,7 +825,7 @@ inline const char* DrawingManager::getTypeName(char id) const
 #define ELLIPSE(id, center, radiusX, radiusY, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) static_cast<void>(0)
 #define RECTANGLE2(id, topLeft, width, height, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) static_cast<void>(0)
 #define POLYGON(id, numberOfPoints, points, penWidth, penStyle, penColor, brushStyle, brushColor) static_cast<void>(0)
-#define DOT(id, x, y, penColor, brushColor) static_cast<void>(0)
+#define DOT(id, x, y, dotSize, penColor, brushColor) static_cast<void>(0)
 #define DOT_AS_VECTOR(id, xy, penColor, brushColor) static_cast<void>(0)
 #define MID_DOT(id, x, y, penColor, brushColor) static_cast<void>(0)
 #define LARGE_DOT(id, x, y, penColor, brushColor) static_cast<void>(0)

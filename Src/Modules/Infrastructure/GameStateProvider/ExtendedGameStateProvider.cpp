@@ -23,9 +23,6 @@ void ExtendedGameStateProvider::update(ExtendedGameState& extendedGameState)
   if(theGameState.isPenalized() && !extendedGameState.wasPenalized())
     timeWhenPenalized = theGameState.timeWhenPlayerStateStarted; // Don't use theFrameInfo.time because the timestamp may have been backdated.
 
-  if(!theGroundContactState.contact)
-    lastTimeWithoutGroundContact = theFrameInfo.time;
-
   extendedGameState.returnFromGameControllerPenalty = false;
   extendedGameState.returnFromManualPenalty = false;
   if(!theGameState.isPenaltyShootout() && !theGameState.isPenalized())
@@ -38,17 +35,17 @@ void ExtendedGameStateProvider::update(ExtendedGameState& extendedGameState)
     }
     // A "normal" return from penalty requires some additional checks:
     else if(GameState::isPenalized(playerStateLastFrame) &&
-            playerStateLastFrame != GameState::penalizedIllegalMotionInSet)
+            playerStateLastFrame != GameState::penalizedMotionInSet)
     {
       // 1. The penalty must have lasted a minimum period of time. The GameController operator might have
       //    clicked the wrong robot (or made a similar mistake) and reverted the penalty. Usually, this happens
       //    after a few seconds. If more time has passed (as configured by the two parameters), we consider this as
       //    a normal return from penalty, i.e. the robot is placed at the sideline.
-      if(theFrameInfo.getTimeSince(timeWhenPenalized) > (playerStateLastFrame == GameState::penalizedIllegalPositionInSet ? minPenaltyTimeIPS : minPenaltyTime))
+      if(theFrameInfo.getTimeSince(timeWhenPenalized) > minPenaltyTime)
         extendedGameState.returnFromGameControllerPenalty = true;
       // 2. The penalty is officially aborted by the referee. Thus, it ends earlier but we still assume a minimum period of time
       //    for having been penalized. Furthermore, we check if the robot was move during the penalty, i.e. probably positioned at the sideline.
-      else if(theFrameInfo.getTimeSince(timeWhenPenalized) > minPenaltyTimeAbortedPenalty && timeWhenPenalized < lastTimeWithoutGroundContact)
+      else if(theFrameInfo.getTimeSince(timeWhenPenalized) > minPenaltyTimeAbortedPenalty)
         extendedGameState.returnFromGameControllerPenalty = true;
     }
   }

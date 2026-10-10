@@ -22,13 +22,16 @@ public:
 
   Frame iter();
 
-  std::string headName;
-  std::string bodyName;
+  /** Returns the frame at the given index (0-based). Throws std::out_of_range if index is invalid. */
+  Frame at(int index);
+
+  const TypeInfo& getTypeInfo() const { return typeInfo; }
+
+  std::string robotName;
   std::string scenario;
   std::string location;
-  std::string identifier;
   int playerNumber = -1;
-  std::string suffix;
+  int teamNumber = -1;
   int numberOfFrames = 0;
 
 private:
@@ -51,4 +54,5 @@ private:
   const std::vector<std::string>* messageIDNames = nullptr;
   std::vector<MessageID> mapLogToID; /**< Maps message ids from the log to their current values. */
   std::vector<MessageID> mapIDToLog; /**< Maps message ids from their current values to the ones found in the log. */
+  std::vector<MessageQueue::const_iterator> frameOffsets; /**< The position of each frame's idFrameBegin, for random access. */
 };

@@ -10,7 +10,6 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Math/BHMath.h"
 #include "Math/Geometry.h"
 #include "Tools/Math/Projection.h"
@@ -90,13 +89,12 @@ public:
    * @param theCameraMatrix Information about the current perspective
    * @param theCameraInfo Information about the current image
    * @param theBodyContour Information about the projection of the robot's body into the image
-   * @param theImageCoordinateSystem Well... the ImageCoordinateSystem?!
    * @param ballRadiusInImageThresholdModifiers If not specified, only balls that are completely inside the image are checked. By setting a value 0 < x < 1, balls closer to the image border are considered, too.
    * @return true, if the ball is located within the robot's current field of view
    */
   static bool ballShouldBeVisibleInCurrentImage(const Vector2f& expectedBallPositionOnField, float expectedBallRadiusOnField,
                                                 const CameraMatrix& theCameraMatrix, const CameraInfo& theCameraInfo,
-                                                const BodyContour& theBodyContour, const ImageCoordinateSystem& theImageCoordinateSystem,
+                                                const BodyContour& theBodyContour,
                                                 float ballRadiusInImageThresholdModifier = 1.f)
   {
     if(!theCameraMatrix.isValid)
@@ -106,7 +104,6 @@ public:
     Vector2f ballInImage;
     if(!Transformation::robotToImage(ballRel, theCameraMatrix, theCameraInfo, ballInImage))
       return false;
-    ballInImage = theImageCoordinateSystem.fromCorrected(ballInImage);
     const float ballDistance = (theCameraMatrix.inverse() * ballRel).norm();
     const float ballRadiusInImage = Projection::getSizeByDistance(theCameraInfo, expectedBallRadiusOnField, ballDistance);
     const float offset = std::ceil(ballRadiusInImage) * ballRadiusInImageThresholdModifier;

@@ -3,7 +3,7 @@
  *
  * This file contains some probabilistic functions
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once

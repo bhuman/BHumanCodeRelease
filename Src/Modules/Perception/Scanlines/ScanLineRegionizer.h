@@ -47,8 +47,7 @@ MODULE(ScanLineRegionizer,
     (unsigned char)(26) saturationSimilarityThreshold,  /**< Maximum saturation difference for two regions to become united */
     (unsigned char)(138) initialMinSaturation,          /**< Standard minimum field saturation for field classification */
     (float)(0.7f) saturationDiscountFactor,             /**< Reduced saturation expected of white regions compared to the field */
-    (int)(520) lowerMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the lower camera */
-    (int)(640) upperMinRegionSize,                      /**< Minimal size in covered scanline pixels for initial field regions on the upper camera */
+    (int)(520) minRegionSize,                           /**< Minimal size in covered scanline pixels for initial field regions */
     (float)(0.9f) baseLuminanceReduction,               /**< Rather underestimate the baseLuminance as it is used for noise filtering */
     (short)(2) verticalGridScanMinStep,                 /**< Minimum distance between two vertical scan steps */
     (bool)(true) prelabelAsWhite,                       /**< Label upper regions that are brighter than both neighbors as white during region building */

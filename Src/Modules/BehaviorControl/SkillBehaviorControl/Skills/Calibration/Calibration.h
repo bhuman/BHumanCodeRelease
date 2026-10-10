@@ -6,12 +6,6 @@
  * @author Thomas Röfer
  */
 
-/** Lets the robot start the IMU calibration. */
-option(AutomaticIMUCalibration);
-
-/** Lets the robot start the extrinsic camera calibration. */
-option(AutonomousCameraCalibration);
-
 /** Lets the robot start the manual camera calibration. */
 option(ManualCameraCalibration);
 

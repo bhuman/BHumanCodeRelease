@@ -9,7 +9,7 @@
 #include "Streaming/EnumIndexedArray.h"
 
 /**
- * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
+ * @author Simon Taddiken
  */
 STREAMABLE(ArmKeyFrameGenerator,
 {

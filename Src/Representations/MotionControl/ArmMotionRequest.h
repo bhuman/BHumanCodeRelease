@@ -1,7 +1,7 @@
 /**
  * @file Representations/MotionControl/ArmMotionRequest.h
  * This file declares a struct that represents the arm motions that can be requested from the robot.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

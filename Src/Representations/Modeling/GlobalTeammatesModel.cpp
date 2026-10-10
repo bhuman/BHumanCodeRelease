@@ -15,7 +15,7 @@
 #include "Debugging/DebugDrawings3D.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/RobotModel.h"
 
@@ -96,17 +96,17 @@ void GlobalTeammatesModel::draw() const
   DEBUG_DRAWING3D("representation:GlobalTeammatesModel", "robot")
   {
     if(Blackboard::getInstance().exists("GameState")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel")
        && Blackboard::getInstance().exists("RobotPose"))
     {
       const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
       const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:GlobalTeammatesModel", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:GlobalTeammatesModel", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:GlobalTeammatesModel", -orientation.x(), -orientation.y(), 0.f);
       RENDER_OPTIONS3D("representation:GlobalTeammatesModel", Drawings3D::disableOpacity | Drawings3D::disableDepth);
       ColorRGBA fieldPlayerColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.fieldPlayerColor));
       ColorRGBA goalkeeperColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.goalkeeperColor));
@@ -151,17 +151,17 @@ void GlobalTeammatesModel::draw() const
   DEBUG_DRAWING3D("representation:GlobalTeammatesModel:sectors", "robot")
   {
     if(Blackboard::getInstance().exists("GameState")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel")
        && Blackboard::getInstance().exists("RobotPose"))
     {
       const GameState theGameState = static_cast<const GameState&>(Blackboard::getInstance()["GameState"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
       const RobotPose& theRobotPose = static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:GlobalTeammatesModel:sectors", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:GlobalTeammatesModel:sectors", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:GlobalTeammatesModel:sectors", -orientation.x(), -orientation.y(), 0.f);
       const ColorRGBA fieldPlayerColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.fieldPlayerColor));
       const ColorRGBA goalkeeperColor = ColorRGBA::fromTeamColor(static_cast<int>(theGameState.ownTeam.goalkeeperColor));
       for(const TeammateEstimate& teammate : teammates)

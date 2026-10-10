@@ -4,14 +4,15 @@
  * Implementation of a class that represents a possible obstacle.
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  * @author Michelle Gusev
  */
 
 #include "GlobalOpponentsHypothesis.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Math/BHMath.h"
 #include "Math/Covariance.h"
 #include "Tools/Math/Transformation.h"
@@ -64,7 +65,6 @@ void GlobalOpponentsHypothesis::dynamic(const float odometryRotation, const Vect
   center.rotate(odometryRotation);
   left.rotate(odometryRotation);
   right.rotate(odometryRotation);
-  velocity.rotate(odometryRotation);
 
   center += odometryTranslation;
   left += odometryTranslation;
@@ -118,14 +118,11 @@ void GlobalOpponentsHypothesis::determineAndSetType(const GlobalOpponentsHypothe
 
 bool GlobalOpponentsHypothesis::isFieldBoundaryFurtherAsObstacle(const CameraInfo& theCameraInfo,
                                                           const CameraMatrix& theCameraMatrix,
-                                                          const ImageCoordinateSystem& theImageCoordinateSystem,
                                                           const FieldBoundary& theFieldBoundary)
 {
   Vector2f obstacleLeftInImage, obstacleRightInImage;
   const bool hasLeft = Transformation::robotToImage(this->left, theCameraMatrix, theCameraInfo, obstacleLeftInImage);
   const bool hasRight = Transformation::robotToImage(this->right, theCameraMatrix, theCameraInfo, obstacleRightInImage);
-  obstacleLeftInImage = theImageCoordinateSystem.fromCorrected(obstacleLeftInImage);
-  obstacleRightInImage = theImageCoordinateSystem.fromCorrected(obstacleRightInImage);
   const int boundaryYLeft = theFieldBoundary.getBoundaryY(static_cast<int>(obstacleLeftInImage.x()));
   const int boundaryYRight = theFieldBoundary.getBoundaryY(static_cast<int>(obstacleRightInImage.x()));
 

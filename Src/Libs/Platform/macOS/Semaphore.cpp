@@ -18,13 +18,13 @@ struct HandleQOSClass
   {
     VERIFY(!pthread_get_qos_class_np(pthread_self(), &theClass, &priority));
     if(theClass != QOS_CLASS_UNSPECIFIED)
-      VERIFY(!pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, priority));
+      pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, priority);
   }
 
   ~HandleQOSClass()
   {
     if(theClass != QOS_CLASS_UNSPECIFIED)
-      VERIFY(!pthread_set_qos_class_self_np(theClass, priority));
+      pthread_set_qos_class_self_np(theClass, priority);
   }
 };
 

@@ -6,7 +6,7 @@
  * The goal is that the TeamBall is the same for all players
  * Issue #1318
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  * @contributor Liam Hurwitz
  */
 

@@ -84,7 +84,7 @@ private:
             goto goalkeeperWalkToTarget;
           else if(theFieldBall.timeSinceBallWasSeen > 10000 && (std::abs(goalCenterRelativeWithOffset.translation.angle()) > 45_deg))
           {
-            initialRadius = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f)).norm();;
+            initialRadius = (theRobotPose.translation - Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f)).norm();
             goto goalkeeperAvoidBall;
           }
           else if(theFieldBall.timeSinceBallWasSeen > 10000)
@@ -93,7 +93,7 @@ private:
       }
       action
       {
-        skillRequest = SkillRequest::Builder::walkTo(agent->basePose);
+        skillRequest = SkillRequest::Builder::walkTo(Pose2f(agent->baseTranslation));
       }
     }
 

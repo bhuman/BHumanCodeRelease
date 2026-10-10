@@ -34,7 +34,7 @@ if(BUILD_BOOSTER)
   if(MACOS)
     add_dependencies(Booster DeployDialog)
   endif()
-elseif(NOT BUILD_NAO)
+else()
   if(WINDOWS)
     set(CMAKE_MSVCIDE_RUN_PATH "%systemroot%\\Sysnative")
     add_custom_target(Booster ALL bash -c "cd Linux/CMake/$<CONFIG>/Booster-prefix; stdbuf -e0 -oL cmake --build . --target Booster | stdbuf -e0 -oL sed 's@^/mnt/\\([a-z]\\)@\\U\\1:@'"

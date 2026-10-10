@@ -1,0 +1,18 @@
+# connect to a robot
+call ../Includes/connectDialog ../Includes/connect
+
+for Color vi JPEGImage
+
+# all views are defined in other scripts
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:CenterCircleWithLine:image
+vid all representation:BallPercept:image
+vid all representation:RobotPercept:image
+call ../Includes/ManualHeadMotion
+call ../Includes/FieldViews1
+call ../Includes/FieldViews2
+
+call ../Includes/DebugResponses
+
+echo mr JPEGImage off

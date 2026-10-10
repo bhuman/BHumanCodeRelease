@@ -8,13 +8,9 @@
 
 #include "SkillBehaviorControl.h"
 
-option((SkillBehaviorControl) Stand,
-       args((bool) high,
-            (bool) energySavingWalk))
+option((SkillBehaviorControl) Stand)
 {
   theMotionRequest.motion = MotionRequest::stand;
-  theMotionRequest.standHigh = high;
-  theMotionRequest.energySavingWalk = energySavingWalk;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

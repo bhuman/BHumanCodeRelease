@@ -2,7 +2,7 @@
 #include "Tools/Math/Transformation.h"
 
 option((SkillBehaviorControl) HandleStrikerLostBall,
-       defs((float)(-100.f) minBackwalk,
+       defs((float)(-200.f) minBackwalk,
             (int)(500) minBallDisappearedTime, /**< This option can become active after the ball has disappeared for this time. */
             (float)(700.f) maxDistanceToBall, /**< This option can only become active if the ball is closer than this. */
             (int)(2000) nonStrikerSearch),
@@ -50,7 +50,7 @@ option((SkillBehaviorControl) HandleStrikerLostBall,
       if(!playBall || theFieldBall.ballWasSeen())
         goto knownBallPosition;
       else if(state_time > 1000 || // don't get stuck in backwalking
-              (state_time > 500 && (lastRefOdometry.inverse() * theOdometryData).translation.x() < minBackwalk))
+              (state_time > 100 && (lastRefOdometry.inverse() * theOdometryData).translation.x() < minBackwalk))
       {
         if(turnAngle < 0.f)
           goto turnCW;
@@ -65,8 +65,8 @@ option((SkillBehaviorControl) HandleStrikerLostBall,
         turnAngle = theBallLostModel.relativeAlternateBallDirectionWhenLastSeen;
         lastRefOdometry = theOdometryData;
       }
-      LookLeftAndRight({.startLeft = turnAngle > 0});
-      WalkAtRelativeSpeed({.speed = {0.f, -1.f, 0.f}});
+      LookLeftAndRight({.startLeft = turnAngle > 0, .tilt = theHeadLimits.getTiltBound(0_deg).max});
+      WalkAtAbsoluteSpeed({.speed = {0.f, -300.f, 0.f}});
     }
   }
 
@@ -79,10 +79,11 @@ option((SkillBehaviorControl) HandleStrikerLostBall,
     }
     action
     {
-      LookForward(); // look slightly right
-      WalkAtRelativeSpeed({.speed = {-0.7f, 0.f, 0.f}});
+      LookAtAngles({.pan = 0_deg, .tilt = theHeadLimits.getTiltBound(0_deg).max}); // look slightly right
+      WalkAtRelativeSpeed({.speed = {-1.f, 0.f, 0.f}});
     }
   }
+
   state(turnCCW)
   {
     transition
@@ -92,8 +93,8 @@ option((SkillBehaviorControl) HandleStrikerLostBall,
     }
     action
     {
-      LookForward(); // look slightly left
-      WalkAtRelativeSpeed({.speed = {0.7f, 0.f, 0.f}});
+      LookAtAngles({.pan = 0_deg, .tilt = theHeadLimits.getTiltBound(0_deg).max}); // look slightly left
+      WalkAtRelativeSpeed({.speed = {1.f, 0.f, 0.f}});
     }
   }
 }

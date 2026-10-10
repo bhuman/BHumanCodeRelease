@@ -14,7 +14,7 @@
 #include "Framework/Blackboard.h"
 
 CameraMatrix::CameraMatrix(const Pose3f& pose) :
-    SE3WithCov(pose), invPos(Pose3f::inverse()), isValid(true)
+  Pose3f(pose), invPos(Pose3f::inverse()), isValid(true)
 {}
 
 void CameraMatrix::draw() const
@@ -274,52 +274,32 @@ void RobotCameraMatrix::draw() const
   } // end complex drawing
 }
 
-RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, const SE3WithCov& head, const CameraCalibration& cameraCalibration,
-                                     CameraInfo::Camera camera)
+RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration)
 {
-  computeRobotCameraMatrix(robotDimensions, head, cameraCalibration, camera);
+  computeRobotCameraMatrix(robotDimensions, headYaw, headPitch, cameraCalibration);
 }
 
-RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration,
-                                     CameraInfo::Camera camera)
-{
-  Pose3f head {};
-  head.translate(robotDimensions.hipToNeckOffset);
-  head.rotateZ(headYaw);
-  head.rotateY(headPitch);
-
-  computeRobotCameraMatrix(robotDimensions, head, cameraCalibration, camera);
-}
-
-void
-RobotCameraMatrix::computeRobotCameraMatrix(const RobotDimensions& robotDimensions, const SE3WithCov& head, const CameraCalibration& cameraCalibration,
-                                            CameraInfo::Camera camera)
+void RobotCameraMatrix::computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration)
 {
   *this = RobotCameraMatrix();
-  *this *= head;
 
-  if(camera == CameraInfo::upper)
-  {
-    translate(robotDimensions.offsetNeckToUpperCamera);
-    rotateY(robotDimensions.tiltNeckToUpperCamera + cameraCalibration.cameraRotationCorrections[camera].y());
-  }
-  else
-  {
-    translate(robotDimensions.offsetNeckToLowerCamera);
-    rotateY(robotDimensions.tiltNeckToLowerCamera + cameraCalibration.cameraRotationCorrections[camera].y());
-  }
-  rotateX(cameraCalibration.cameraRotationCorrections[camera].x());
-  rotateZ(cameraCalibration.cameraRotationCorrections[camera].z());
+  translate(robotDimensions.hipToNeckOffset);
+  rotateZ(headYaw);
+  rotateY(headPitch);
+  translate(robotDimensions.offsetNeckToCamera);
+  rotateY(cameraCalibration.cameraRotationCorrection.y());
+  rotateX(cameraCalibration.cameraRotationCorrection.x());
+  rotateZ(cameraCalibration.cameraRotationCorrection.z());
 }
 
-CameraMatrix::CameraMatrix(const SE3WithCov& torsoMatrix, const SE3WithCov& robotCameraMatrix, const CameraCalibration& cameraCalibration)
+CameraMatrix::CameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration)
 {
   computeCameraMatrix(torsoMatrix, robotCameraMatrix, cameraCalibration);
 }
 
-void CameraMatrix::computeCameraMatrix(const SE3WithCov& torsoMatrix, const SE3WithCov& robotCameraMatrix, const CameraCalibration& cameraCalibration)
+void CameraMatrix::computeCameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration)
 {
-  static_cast<SE3WithCov&>(*this) = torsoMatrix;
+  static_cast<Pose3f&>(*this) = torsoMatrix;
   rotateY(cameraCalibration.bodyRotationCorrection.y());
   rotateX(cameraCalibration.bodyRotationCorrection.x());
   conc(robotCameraMatrix);

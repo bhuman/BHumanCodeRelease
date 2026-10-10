@@ -10,10 +10,6 @@ MODULE(JointAnglesProvider,
   REQUIRES(JointCalibration),
   REQUIRES(JointSensorData),
   PROVIDES(JointAngles),
-  DEFINES_PARAMETERS(
-  {,
-    (Angle)(0.00064_deg) jointVariance, /**< Variance of a joint measurement (in deg²). */
-  }),
 });
 
 class JointAnglesProvider : public JointAnglesProviderBase

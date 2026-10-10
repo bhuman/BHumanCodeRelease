@@ -75,7 +75,7 @@ fi
 --indent-switches \
 --indent-namespaces \
 --indent-labels \
---indent-preprocessor \
+-w \
 --indent-col1-comments \
 --max-continuation-indent=60 \
 --pad-oper \

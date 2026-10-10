@@ -15,7 +15,6 @@ option((SkillBehaviorControl) WalkToPoint,
        args((const Pose2f&) target,
             (const Pose2f&) speed,
             (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType,
-            (bool) disableEnergySavingWalk,
             (bool) rough,
             (bool) disableObstacleAvoidance,
             (bool) disableAligning,
@@ -49,13 +48,10 @@ option((SkillBehaviorControl) WalkToPoint,
   const float targetDistance = target.translation.norm();
   disableObstacleAvoidance |= theGameState.isPenaltyShootout();
 
-  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, target, theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
-  const bool energySavingWalk = !disableEnergySavingWalk && reduceWalkSpeedType == ReduceWalkSpeedType::slow;
+  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, target, theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput, ActiveRole::toRole(ActiveRole::playBall) == theStrategyStatus.role);
 
   common_transition
   {
-    if(!rough && (theFrameInfo.getTimeSince(theFootBumperState.status[Legs::left].lastContact) < 400 || theFrameInfo.getTimeSince(theFootBumperState.status[Legs::right].lastContact) < 400))
-      goto footContactWalkBackwards;
     if(!rough && (theFrameInfo.getTimeSince(theArmContactModel.status[Arms::right].timeOfLastContact) < 800))
       goto armContactWalkLeft;
     if(!rough && (theFrameInfo.getTimeSince(theArmContactModel.status[Arms::left].timeOfLastContact) < 800))
@@ -87,8 +83,7 @@ option((SkillBehaviorControl) WalkToPoint,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .sideWalkingRequest = sideWalkingRequest,
-                  .energySavingWalk = energySavingWalk});
+                  .sideWalkingRequest = sideWalkingRequest});
     }
   }
 
@@ -103,14 +98,13 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = walkingSpeedRatio});
-      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * target, walkingSpeedRatio);
+      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * target, walkingSpeedRatio, /*ignoreBall*/false);
       WalkToPose({.target = target,
                   .speed = walkingSpeedRatio,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .sideWalkingRequest = sideWalkingRequest,
-                  .energySavingWalk = energySavingWalk});
+                  .sideWalkingRequest = sideWalkingRequest});
     }
   }
 
@@ -138,8 +132,7 @@ option((SkillBehaviorControl) WalkToPoint,
                   .obstacleAvoidance = obstacleAvoidance,
                   .keepTargetRotation = disableAligning,
                   .targetOfInterest = targetOfInterest,
-                  .sideWalkingRequest = sideWalkingRequest,
-                  .energySavingWalk = energySavingWalk});
+                  .sideWalkingRequest = sideWalkingRequest});
     }
   }
 
@@ -159,28 +152,7 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, 0.f}});
-      Stand({.energySavingWalk = energySavingWalk});
-    }
-  }
-
-  state(footContactWalkBackwards)
-  {
-    transition
-    {
-      if(state_time > (rough ? 1000 : 3000))
-      {
-        if(targetDistance > switchToPathPlannerDistance && !disableObstacleAvoidance)
-          goto walkFar;
-        else
-          goto walkClose;
-      }
-    }
-    action
-    {
-      PublishMotion({.target = target.translation,
-                     .speed = {0.f, 0.f, 0.f}});
-      WalkAtRelativeSpeed({.speed = {0.f, -walkingSpeedRatio.translation.x(), 0.f},
-                           .energySavingWalk = energySavingWalk});
+      Stand();
     }
   }
 
@@ -200,8 +172,7 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
-      WalkAtRelativeSpeed({.speed = {0.f, 0.f, walkingSpeedRatio.translation.y()},
-                           .energySavingWalk = energySavingWalk});
+      WalkAtRelativeSpeed({.speed = {0.f, 0.f, walkingSpeedRatio.translation.y()}});
     }
   }
 
@@ -221,8 +192,7 @@ option((SkillBehaviorControl) WalkToPoint,
     {
       PublishMotion({.target = target.translation,
                      .speed = {0.f, 0.f, 0.f}});
-      WalkAtRelativeSpeed({.speed = {0.f, 0.f, -walkingSpeedRatio.translation.y()},
-                           .energySavingWalk = energySavingWalk});
+      WalkAtRelativeSpeed({.speed = {0.f, 0.f, -walkingSpeedRatio.translation.y()}});
     }
   }
 }

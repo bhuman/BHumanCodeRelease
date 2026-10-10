@@ -15,7 +15,6 @@
 #include "Math/Pose2f.h"
 #include "Streaming/AutoStreamable.h"
 #include "Tools/Motion/KickPrecision.h"
-#include "Tools/Motion/PreStepType.h"
 #include "Tools/BehaviorControl/SideWalkingRequest.h"
 
 STREAMABLE(MotionRequest,
@@ -29,11 +28,8 @@ STREAMABLE(MotionRequest,
     walkToPose, /**< Walk to a target pose. */
     walkToBallAndKick, /**< Walk to the ball and kick it. */
     dribble, /**< Dribble the ball. */
-    dive, /**< Execute a diving motion. */
-    special, /**< Execute a special motion. */
-    replayWalk, /**< Replay a recorded walkPhase history. */
-    photoMode, /**< Photo mode, to knead the robot in custom positions. */
-    freeBallHolding, /**< Free a ball stuck between the robots legs. */
+    fallRequest, /**< Execute a fall motion. */
+    prepare, /**< A static stand, in which the robot is not allowed to do anything but hold a soft stand position. Allows to carry the robot safely. */
   });
 
   STREAMABLE(ObstacleAvoidance,
@@ -60,32 +56,9 @@ STREAMABLE(MotionRequest,
     (std::vector<PathSegment>) path, /**< The path of obstacles that should be followed. */
   });
 
-  struct Dive
-  {
-    ENUM(Request,
-    {,
-      prepare,
-      jumpLeft,
-      jumpRight,
-      squatArmsBackLeft,
-      squatArmsBackRight,
-      squatWideArmsBackLeft,
-      squatWideArmsBackRight,
-    });
-  };
-
-  struct Special
-  {
-    ENUM(Request,
-    {,
-      demoBannerWave,
-      demoBannerWaveInitial,
-    });
-  };
-
   bool isWalking() const
   {
-    return motion == walkAtAbsoluteSpeed || motion == walkAtRelativeSpeed || motion == walkToPose || motion == walkToBallAndKick || motion == dribble || motion == replayWalk;
+    return motion == walkAtAbsoluteSpeed || motion == walkAtRelativeSpeed || motion == walkToPose || motion == walkToBallAndKick || motion == dribble;
   }
 
   void draw() const;
@@ -93,9 +66,6 @@ STREAMABLE(MotionRequest,
   void verify() const,
 
   (Motion)(playDead) motion, /**< The requested motion type. */
-
-  (bool)(false) standHigh, /**< Whether the robot should stretch its knees while standing (only used if type is stand). */
-  (bool)(false) energySavingWalk, /**< If true, the robot will walk higher (if possible), to heat up leg joints slower. */
 
   (Pose2f) walkSpeed, /**< The walk speed, interpreted as (average) mm/s for walkAtAbsoluteSpeed or else as ratios of the maximum speed (only used if type is one of the walk* types or dribble). */
   (Pose2f) walkTarget, /**< The walk target (only used if type is walkToPose). */
@@ -107,16 +77,9 @@ STREAMABLE(MotionRequest,
   (bool)(false) shouldWalkOutOfBallLine, /**< If the robot should intentionally leave the ball line*/
 
   (Angle)(0_deg) targetDirection, /**< The target direction of the ball (only used if type is walkToBallAndKick or dribble). */
-  (Rangea) directionPrecision, /**< The min and max target direction difference of the ball (only used if type is walkToBallAndKick or dribble). */
-  (KickInfo::KickType)(KickInfo::forwardFastLeft) kickType, /**< The kick type (only used if type is walkToBallAndKick). */
+  (KickInfo::KickType)(KickInfo::rlKickDynamic) kickType, /**< The kick type (only used if type is walkToBallAndKick). */
   (float)(0.f) kickLength, /**< The kick length (only used if type is walkToBallAndKick) (in mm). */
-  (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
-  (PreStepType)(PreStepType::allowed) preStepType, /**< Is the InWalkKick allowed to have a preStep? */
-  (bool)(true) turnKickAllowed, /**< Can the forward InWalkKick be executed with rotation? */
-  (bool)(false) shiftTurnKickPose, /**< Should the turn kick be shifted? */
-
-  (Dive::Request)(Dive::prepare) diveRequest, /**< The specific requested diving motion (only used if type is dive). */
-  (Special::Request)(Special::demoBannerWave) specialRequest, /**< The specific requested special motion (only used if type is special). */
+  (KickPrecision)(KickPrecision::normal) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
 
   (Pose2f) odometryData, /**< The odometry data when this request was created. */
   (BallState) ballEstimate, /**< The most recent ball estimate. */

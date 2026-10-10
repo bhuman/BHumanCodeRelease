@@ -35,7 +35,6 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Framework/Module.h"
 #include "Math/RingBufferWithSum.h"
 
@@ -51,10 +50,10 @@ MODULE(BallStateEstimator,
   REQUIRES(FilteredBallPercepts),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
   REQUIRES(WorldModelPrediction),
+  USES(RobotPose),
   PROVIDES(BallModel),
   DEFINES_PARAMETERS(
   {,
@@ -64,7 +63,7 @@ MODULE(BallStateEstimator,
     (float)(1000.f) ballDisappearedMaxCheckingDistance,  /**< Balls can only "disappear" within this distance */
     (unsigned)(7) ballDisappearedThreshold,              /**< Threshold for the amount of "false negatives" before the ball is considered disappeared */
     (int)(700) lastBallPerceptTimeout,                   /**< Threshold. Consider a previously seen ball as valid for velocity computation for this amount of milliseconds. */
-    (int)(4) minNumberOfMeasurementsForRollingBalls,     /**< A internal rolling ball hypothesis can only be selected, if it incorporates at least this number of measurements. */
+    (int)(8) minNumberOfMeasurementsForRollingBalls,     /**< A internal rolling ball hypothesis can only be selected, if it incorporates at least this number of measurements. */
     (float)(80.f) minSpeed,                              /**< Minimum ball speed. Everything below this threshold will become clipped to 0. */
     (unsigned)(10) maxNumberOfHypotheses,                /**< Do not keep track of more hypothesis per mode than this */
   }),
@@ -84,7 +83,6 @@ public:
 private:
   unsigned int lastFrameTime;                               /**< The point of time at the last execution of this module */
   BallStateEstimate* bestState;                             /**< Pointer to the hypothesis that is most likely */
-  BallStateEstimate* bestMovingState;                       /**< Pointer to the moving hypothesis that is most likely */
   bool recomputeBestState;                                  /**< If true, the bestState pointer is set again. Needed, if balls are removed from a list. */
   std::vector<StationaryBallKalmanFilter> stationaryBalls;  /**< The list of hypotheses */
   std::vector<RollingBallKalmanFilter> rollingBalls;        /**< The list of hypotheses */
@@ -116,7 +114,7 @@ private:
   bool computeBallModelForPenaltyShootout(BallModel& ballModel);
 
   void motionUpdate(BallModel& ballModel);
-  void integrateCollisionWithFeet();
+  void integrateCollisionWithFeet(const BallModel& ballModel);
   void normalizeMeasurementLikelihoods();
   void findBestState();
   template <typename T> void pruneBallBuffer(std::vector<T>& balls);

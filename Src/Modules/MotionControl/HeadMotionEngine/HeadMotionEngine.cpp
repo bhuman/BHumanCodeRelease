@@ -1,7 +1,7 @@
 /**
  * @file HeadMotionEngine.cpp
  * This file implements a module that creates head joint angles from desired head motion.
- * @author <a href="allli@informatik.uni-bremen.de">Alexander Härtl</a>
+ * @author Alexander Härtl
  * @author Colin Graf
  * @author Felix Wenk
  * @author Andreas Stolpmann
@@ -31,7 +31,7 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
 {
   DECLARE_PLOT("module:HeadMotionEngine:speed");
 
-  updateHeadAngleRequest(theHeadAngleRequest, lastWasLower);
+  updateHeadAngleRequest(theHeadAngleRequest);
 
   headMotionGenerator.calcJoints = [this](bool setJoints, JointRequest& jointRequest, HeadMotionInfo& headMotionInfo,
                                           const MotionRequest& motionRequest, const OdometryData& odometry)
@@ -64,7 +64,7 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
     const Angle requestedPan = theHeadAngleRequest.pan;
     const Angle requestedTilt = theHeadAngleRequest.tilt;
 
-    const float maxAcc = theGroundContactState.contact ? maxAcceleration : maxAccelerationNoGroundContact;
+    const float maxAcc = maxAcceleration;
 
     const float pan = requestedPan == JointAngles::off ? static_cast<float>(JointAngles::off) : Rangef(theHeadLimits.minPan(), theHeadLimits.maxPan()).limit(requestedPan);
     const float tilt = requestedTilt == JointAngles::off ? JointAngles::off : theHeadLimits.getTiltBound(pan).limit(requestedTilt);
@@ -116,17 +116,16 @@ void HeadMotionEngine::update(HeadMotionGenerator& headMotionGenerator)
     // set new position
     jointRequest.angles[Joints::headYaw] = pan == JointAngles::off ? JointAngles::off : static_cast<Angle>(newPosition.x());
     jointRequest.angles[Joints::headPitch] = tilt == JointAngles::off ? JointAngles::off : static_cast<Angle>(newPosition.y());
-    headMotionInfo.moving = pan != JointAngles::off && tilt != JointAngles::off && ((newPosition - position) / deltaTime).squaredNorm() > sqr(maxAcc * deltaTime * 0.5f);
+    headMotionInfo.moving = pan != JointAngles::off && tilt != JointAngles::off && ((newPosition - position) / deltaTime).squaredNorm() > sqr(maxAccelerationIsMoving * deltaTime * 0.5f);
 
     // store some values for the next iteration
     lastSpeed = speed;
   };
 }
 
-void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest, bool& lastWasLower) const
+void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest) const
 {
-  Vector2a panTiltUpperCam;
-  Vector2a panTiltLowerCam;
+  Vector2a panTiltCam;
 
   if(theHeadMotionRequest.mode == HeadMotionRequest::calibrationMode)
   {
@@ -148,20 +147,14 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
 
   if(theHeadMotionRequest.mode == HeadMotionRequest::panTiltMode)
   {
-    panTiltUpperCam.x() = theHeadMotionRequest.pan;
-    panTiltUpperCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(false);
-    panTiltLowerCam.x() = theHeadMotionRequest.pan;
-    panTiltLowerCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(true);
+    panTiltCam.x() = theHeadMotionRequest.pan;
+    panTiltCam.y() = theHeadMotionRequest.tilt;
 
     if(theHeadMotionRequest.tilt == JointAngles::off || theHeadMotionRequest.tilt == JointAngles::ignore)
-      panTiltUpperCam.y() = theJointRequest.angles[Joints::headPitch];
-    if(theHeadMotionRequest.tilt == JointAngles::off || theHeadMotionRequest.tilt == JointAngles::ignore)
-      panTiltLowerCam.y() = theJointRequest.angles[Joints::headPitch];
+      panTiltCam.y() = theJointRequest.angles[Joints::headPitch];
 
     if(theHeadMotionRequest.pan == JointAngles::off || theHeadMotionRequest.pan == JointAngles::ignore)
-      panTiltUpperCam.x() = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
-    if(theHeadMotionRequest.pan == JointAngles::off || theHeadMotionRequest.pan == JointAngles::ignore)
-      panTiltLowerCam.x() = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
+      panTiltCam.x() = theJointRequest.angles[Joints::headYaw] - theOdometryDataPreview.odometryChange.rotation;
   }
   else
   {
@@ -172,67 +165,23 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
                                 .rotateX(theCameraCalibration.bodyRotationCorrection.x())
                                 .inverse() * theHeadMotionRequest.target;
 
-    calculatePanTiltAngles(hip2Target, CameraInfo::upper, panTiltUpperCam);
-    calculatePanTiltAngles(hip2Target, CameraInfo::lower, panTiltLowerCam);
+    calculatePanTiltAngles(hip2Target, panTiltCam);
   }
 
-  if(panTiltUpperCam.x() < panBounds.min)
-  {
-    panTiltUpperCam.x() = panBounds.min;
-    panTiltLowerCam.x() = panBounds.min;
-  }
-  else if(panTiltUpperCam.x() > panBounds.max)
-  {
-    panTiltUpperCam.x() = panBounds.max;
-    panTiltLowerCam.x() = panBounds.max;
-  }
+  if(panTiltCam.x() < panBounds.min)
+    panTiltCam.x() = panBounds.min;
+  else if(panTiltCam.x() > panBounds.max)
+    panTiltCam.x() = panBounds.max;
 
-  Rangea tiltBoundUpperCam = theHeadLimits.getTiltBound(panTiltUpperCam.x());
-  Rangea tiltBoundLowerCam = theHeadLimits.getTiltBound(panTiltLowerCam.x());
+  Rangea tiltBoundCam = theHeadLimits.getTiltBound(panTiltCam.x());
 
-  adjustTiltBoundToShoulder(panTiltUpperCam.x(), CameraInfo::upper, tiltBoundUpperCam);
-  adjustTiltBoundToShoulder(panTiltLowerCam.x(), CameraInfo::lower, tiltBoundLowerCam);
+  adjustTiltBoundToShoulder(panTiltCam.x(), tiltBoundCam);
 
-  bool lowerCam = false;
-  headAngleRequest.pan = panTiltUpperCam.x(); // Pan is the same for both cams
+  headAngleRequest.pan = panTiltCam.x(); // Pan is the same for both cams
 
-  if(theHeadMotionRequest.cameraControlMode == HeadMotionRequest::upperCamera || Global::getSettings().robotType != Settings::nao)
-  {
-    headAngleRequest.tilt = panTiltUpperCam.y();
-    lowerCam = false;
-  }
-  else if(theHeadMotionRequest.cameraControlMode == HeadMotionRequest::lowerCamera)
-  {
-    headAngleRequest.tilt = panTiltLowerCam.y();
-    lowerCam = true;
-  }
-  else
-  {
-    if(theHeadMotionRequest.mode != HeadMotionRequest::panTiltMode)
-    {
-      const Angle useLowerCamThreshold = !lastWasLower ? lowerCamThreshold.min : lowerCamThreshold.max;
-      const Angle lowerCamOffset = defaultTilt - theCameraIntrinsics.cameras[CameraInfo::lower].openingAngleHeight / 3.f + theCameraCalibration.bodyRotationCorrection.y() + theCameraCalibration.cameraRotationCorrections[CameraInfo::lower].y() + useLowerCamThreshold;
-      if(panTiltUpperCam.y() > tiltBoundUpperCam.max || panTiltLowerCam.y() > lowerCamOffset)
-      {
-        headAngleRequest.tilt = panTiltLowerCam.y();
-        lowerCam = true;
-      }
-      else
-        headAngleRequest.tilt = panTiltUpperCam.y();
-    }
-    else
-    {
-      headAngleRequest.tilt = panTiltUpperCam.y();
-      lowerCam = false;
-    }
-  }
+  headAngleRequest.tilt = panTiltCam.y();
 
-  lastWasLower = lowerCam;
-
-  if(lowerCam)
-    tiltBoundLowerCam.clamp(headAngleRequest.tilt);
-  else
-    tiltBoundUpperCam.clamp(headAngleRequest.tilt);
+  tiltBoundCam.clamp(headAngleRequest.tilt);
 
   if(theHeadMotionRequest.mode == HeadMotionRequest::panTiltMode)
   {
@@ -245,21 +194,21 @@ void HeadMotionEngine::updateHeadAngleRequest(HeadAngleRequest& headAngleRequest
   headAngleRequest.stopAndGoMode = theHeadMotionRequest.stopAndGoMode;
 }
 
-void HeadMotionEngine::calculatePanTiltAngles(const Vector3f& hip2Target, CameraInfo::Camera camera, Vector2a& panTilt) const
+void HeadMotionEngine::calculatePanTiltAngles(const Vector3f& hip2Target, Vector2a& panTilt) const
 {
-  InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, camera, panTilt, theCameraCalibration);
+  InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, panTilt, theCameraCalibration);
 }
 
-void HeadMotionEngine::adjustTiltBoundToShoulder(const Angle pan, CameraInfo::Camera camera, Range<Angle>& tiltBound) const
+void HeadMotionEngine::adjustTiltBoundToShoulder(const Angle pan, Range<Angle>& tiltBound) const
 {
   const Limbs::Limb shoulder = pan > 0_deg ? Limbs::shoulderLeft : Limbs::shoulderRight;
   const Vector3f& shoulderVector = theRobotModel.limbs[shoulder].translation;
-  const RobotCameraMatrix rcm(theRobotDimensions, pan, 0.0f, theCameraCalibration, camera);
+  const RobotCameraMatrix rcm(theRobotDimensions, pan, 0.0f, theCameraCalibration);
   Vector3f intersection = Vector3f::Zero();
   if(theHeadLimits.intersectionWithShoulderEdge(rcm, shoulderVector, intersection))
   {
     Vector2a intersectionPanTilt;
-    calculatePanTiltAngles(intersection, camera, intersectionPanTilt);
+    calculatePanTiltAngles(intersection, intersectionPanTilt);
     if(intersectionPanTilt.y() < tiltBound.max) // if(tilt smaller than upper bound)
       tiltBound.max = intersectionPanTilt.y();
   }

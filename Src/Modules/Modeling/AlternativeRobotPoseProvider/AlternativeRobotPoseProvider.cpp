@@ -4,7 +4,7 @@
  * Implementation of a module that uses recent field feature observations
  * and combines them to an alternative pose of the robot.
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  */
 
 #include "AlternativeRobotPoseProvider.h"
@@ -30,11 +30,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
 
   // Buffer new features, if possible:
   if(currentMotionAllowsAcceptanceOfNewFeatures())
-  {
     addFieldFeatureToBuffer(&theCenterCircleWithLine);
-    addFieldFeatureToBuffer(&thePenaltyMarkWithPenaltyAreaLine);
-    addFieldFeatureToBuffer(&thePenaltyAreaAndGoalArea);
-  }
 
   drawObservations();
   if(observations.empty())
@@ -59,9 +55,6 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
 
 bool AlternativeRobotPoseProvider::currentStateOrMotionRuinsOdometry()
 {
-  // The robot was manually placed:
-  if(theGameState.isSet() && !theGroundContactState.contact)
-    return true;
   // There is nothing reasonable to do before the robot finally enters READY:
   if(theGameState.isInitial())
     return true;

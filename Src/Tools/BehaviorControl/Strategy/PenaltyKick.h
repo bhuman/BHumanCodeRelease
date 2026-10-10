@@ -23,9 +23,8 @@ STREAMABLE_WITH_BASE(OwnPenaltyKick, PenaltyKick,
 {
   ENUM(Type,
   {,
-    theOneTrueOwnPenaltyKick,
-    theOneTrueOwnPenaltyKickAttacking,
-    ownPenaltyKick5v5,
+    ownPenaltyKick,
+    ownPenaltyKick11v11,
   });
 
   static SetPlay::Type toSetPlay(Type type)
@@ -38,8 +37,8 @@ STREAMABLE_WITH_BASE(OpponentPenaltyKick, PenaltyKick,
 {
   ENUM(Type,
   {,
-    theOneTrueOpponentPenaltyKick,
-    opponentPenaltyKick5v5,
+    opponentPenaltyKick,
+    opponentPenaltyKick11v11,
   });
 
   static SetPlay::Type toSetPlay(Type type)

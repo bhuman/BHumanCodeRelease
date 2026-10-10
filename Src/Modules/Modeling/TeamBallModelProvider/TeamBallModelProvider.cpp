@@ -32,8 +32,7 @@ void TeamBallModelProvider::update(TeamBallModel& teamBallModel)
   findAvailableBalls();
   clusterBalls();
   computeModel(teamBallModel);
-  DECLARE_DEBUG_DRAWING("module:TeamBallModelProvider:bufferedBalls", "drawingOnField");
-  COMPLEX_DRAWING("module:TeamBallModelProvider:bufferedBalls")
+  DEBUG_DRAWING("module:TeamBallModelProvider:bufferedBalls", "drawingOnField")
   {
     ColorRGBA bufferedBallColor(200, 200, 200, 200);
     for(unsigned int robot = 0; robot < balls.size(); ++robot)
@@ -56,25 +55,15 @@ void TeamBallModelProvider::computeModel(TeamBallModel& teamBallModel)
     teamBallModel.isValid = false;
     return;
   }
-  // Find the ball that has a) the biggest cluster and b) the highest weighting
+  // Find the ball that has the highest cluster weighting
   unsigned int bestBallIdx = 0;
-  unsigned int bestBallClusterSize = unsigned(ballsAvailableForTeamBall[0].compatibleBallsIndices.size());
-  float bestBallWeighting = ballsAvailableForTeamBall[0].weighting;
+  float bestClusterWeighting = ballsAvailableForTeamBall[0].clusterWeighting;
   for(unsigned int i = 1; i < ballsAvailableForTeamBall.size(); i++)
   {
-    if(ballsAvailableForTeamBall[i].compatibleBallsIndices.size() > bestBallClusterSize)
+    if(ballsAvailableForTeamBall[i].clusterWeighting > bestClusterWeighting)
     {
-      bestBallClusterSize = unsigned(ballsAvailableForTeamBall[i].compatibleBallsIndices.size());
-      bestBallWeighting = ballsAvailableForTeamBall[i].weighting;
+      bestClusterWeighting = ballsAvailableForTeamBall[i].clusterWeighting;
       bestBallIdx = i;
-    }
-    else if(ballsAvailableForTeamBall[i].compatibleBallsIndices.size() == bestBallClusterSize)
-    {
-      if(ballsAvailableForTeamBall[i].weighting > bestBallWeighting)
-      {
-        bestBallWeighting = ballsAvailableForTeamBall[i].weighting;
-        bestBallIdx = i;
-      }
     }
   }
 
@@ -186,7 +175,7 @@ void TeamBallModelProvider::updateInternalBallBuffers()
   {
     const auto state = theGameState.ownTeam.playerStates[index];
     if(state == GameState::penalizedLeavingTheField ||
-       state == GameState::penalizedIllegalPosition)
+       state == GameState::penalizedIllegalPositioning)
       balls[index].valid = false;
   }
 }
@@ -213,7 +202,7 @@ void TeamBallModelProvider::findAvailableBalls()
           // point of time of the kick and not at the point of time of the observation.
           // However, as the error is not big and as it would require to send one more timestamp,
           // this formula remains unchanged.
-          BallPhysics::propagateBallPositionAndVelocity(absPos, absVel, t, theBallSpecification.friction);
+          BallPhysics::propagateBallPositionAndVelocity(absPos, absVel, t, theBallSpecification);
         }
         // Final check to accept the ball:
         if(theFieldDimensions.isInsideCarpet(absPos))
@@ -223,6 +212,7 @@ void TeamBallModelProvider::findAvailableBalls()
           newActiveBall.velocity = absVel;
           newActiveBall.playerNumber = static_cast<unsigned char>(robot + Settings::lowestValidPlayerNumber);
           newActiveBall.weighting = weighting;
+          newActiveBall.clusterWeighting = weighting;
           newActiveBall.time = ball.time;
           ballsAvailableForTeamBall.push_back(newActiveBall);
         }
@@ -243,6 +233,8 @@ void TeamBallModelProvider::clusterBalls()
       {
         a.compatibleBallsIndices.push_back(j);
         b.compatibleBallsIndices.push_back(i);
+        a.clusterWeighting += b.weighting;
+        b.clusterWeighting += a.weighting;
       }
     }
   }
@@ -261,8 +253,14 @@ float TeamBallModelProvider::localizationQualityToModifier(const RobotPose::Loca
 float TeamBallModelProvider::computeWeighting(const TeamBallModelProvider::BufferedBall& ball) const
 {
   const int timeSinceBallWasSeen = theFrameInfo.getTimeSince(ball.time);
+
+  const int ballSearchThreshold = theGameState.isFreeKick()
+                                  ? ballLastSeenTimeout
+                                  : (theGlobalTeammatesModel.teammates.empty()
+                                     ? theBehaviorParameters.ballSearchThresholdNoTeam
+                                     : theBehaviorParameters.ballSearchThresholdTeam);
   // The ball has not been seen for some time -> weighting is 0
-  if(timeSinceBallWasSeen > ballLastSeenTimeout)
+  if(timeSinceBallWasSeen > ballSearchThreshold)
     return 0.f;
 
   // Computing the weighting is based on three parts:
@@ -280,7 +278,7 @@ float TeamBallModelProvider::computeWeighting(const TeamBallModelProvider::Buffe
   float ballAgeWeight = 1.f - std::tanh(ballAgeRelativeToTimeout * 2.f);
 
   // Part 2: Angular distance *****
-  const float camHeight = 550.f;
+  const float camHeight = theCameraMatrix.isValid && theCameraMatrix.translation.z() > 50.f ? theCameraMatrix.translation.z() : 800.f;
   const float angleOfCamera = std::atan(ball.pos.norm() / camHeight); // angle of camera when looking at the ball
   const float ballPositionWithPositiveDeviation = std::tan(angleOfCamera + 1_deg) * camHeight; // ball position when angle of camera is a bit different in position direction
   const float ballPositionWithNegativeDeviation = std::tan(angleOfCamera - 1_deg) * camHeight; // ball position when angle of camera is a bit different in negative direction

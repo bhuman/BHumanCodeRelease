@@ -1,6 +1,6 @@
 /**
  * Request for the key frame engine.
- * @author <a href="mailto:simont@tzi.de>Simon Taddiken</a>
+ * @author Simon Taddiken
  */
 #pragma once
 #include "RobotParts/Arms.h"
@@ -18,7 +18,8 @@ STREAMABLE(ArmKeyFrameRequest,
   {,
     // IF U TOUCH THIS MAKE SURE U TAKE CARE TO SAVE THE ARMS CORRECTLY IN A FALLING CASE
     useDefault,  /**< No explicit arm motion, so WalkingEngine's arm angles will be used */
-    back,
+    back,        /**< Moves the arms to the back to avoid contact with obstacles */
+    backStuck,   /**< Handle a stuck arm during the back motion*/
     raiseArm,    /**< Raise the arm. */
     keeperStand, /**< Arm position for the keeper when guarding the goal */
     waving1,

@@ -119,9 +119,10 @@ void ScanGridProvider::setVerticalLines(ScanGrid& scanGrid, ImageCornersOnField&
 {
   // Determine the maximum distance between scan lines at the bottom of the image not to miss the ball.
   const int xStepUpperBound = theCameraInfo.width / minNumOfLowResScanLines;
+  const float objectRadius = std::min(theBallSpecification.radius, theFieldDimensions.markRadius);
   const int maxXStep = std::min(xStepUpperBound,
-                                static_cast<int>(static_cast<float>(theCameraInfo.width) * theBallSpecification.radius * 2.f *
-                                                 ballWidthRatio / (lowerImageCornersOnField.leftOnField - lowerImageCornersOnField.rightOnField).norm()));
+                                static_cast<int>(static_cast<float>(theCameraInfo.width) * objectRadius * 2.f *
+                                                 objectWidthRatio / (lowerImageCornersOnField.leftOnField - lowerImageCornersOnField.rightOnField).norm()));
 
   // Determine the maximum distance between scan lines at the top of the image not to miss the ball. Do not go below minVerticalStepSize.
   int minXStep = minVerticalStepSize;
@@ -130,8 +131,8 @@ void ScanGridProvider::setVerticalLines(ScanGrid& scanGrid, ImageCornersOnField&
   {
     minXStep = std::max(
         minXStep,
-        static_cast<int>(static_cast<float>(theCameraInfo.width) * theBallSpecification.radius * 2.f *
-            ballWidthRatio / (upperImageCornersOnField.leftOnField - upperImageCornersOnField.rightOnField).norm()));
+        static_cast<int>(static_cast<float>(theCameraInfo.width) * objectRadius *
+            objectWidthRatio / (upperImageCornersOnField.leftOnField - upperImageCornersOnField.rightOnField).norm()));
   }
   minXStep = std::min(xStepUpperBound, minXStep);
 
@@ -144,7 +145,7 @@ void ScanGridProvider::setVerticalLines(ScanGrid& scanGrid, ImageCornersOnField&
   {
     float distance = Projection::getDistanceBySize(
         theCameraInfo,
-        theBallSpecification.radius * ballWidthRatio, static_cast<float>(maxXStep2));
+        objectRadius * objectWidthRatio, static_cast<float>(maxXStep2));
     VERIFY(Transformation::robotWithCameraRotationToImage(Vector2f(distance, 0), theCameraMatrix, theCameraInfo, pointInImage));
     yStarts.push_back(static_cast<int>(std::lround(pointInImage.y())));
     maxXStep2 *= 2;

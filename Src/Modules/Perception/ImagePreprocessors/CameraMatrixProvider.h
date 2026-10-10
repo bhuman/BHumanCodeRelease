@@ -1,7 +1,7 @@
 /**
  * @file CameraMatrixProvider.h
- * This file declares a class to calculate the position of the camera for the Nao.
- * @author <a href="mailto:allli@informatik.uni-bremen.de">Alexander Härtl</a>
+ * This file declares a class to calculate the position of the camera.
+ * @author Alexander Härtl
  */
 
 #pragma once
@@ -16,7 +16,6 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Framework/Module.h"
 
@@ -31,7 +30,6 @@ MODULE(CameraMatrixProvider,
   REQUIRES(JointAngles),
   REQUIRES(MotionInfo),
   REQUIRES(RobotCameraMatrix),
-  REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
   REQUIRES(RobotPose), // for debug drawing
   PROVIDES(CameraMatrix),
@@ -46,18 +44,4 @@ private:
   bool intersectLineWithCullPlane(const Vector3f& lineBase, const Vector3f& lineDir,
                                   Vector3f& point) const;
   void drawFieldLines(const CameraMatrix& cameraMatrix) const;
-
-  STREAMABLE(ModelPoints,
-  {,
-    (std::vector<float>) thighPoints,
-    (std::vector<int>) thighIndex,
-    (std::vector<float>) shinPoints,
-    (std::vector<int>) shinIndex,
-    (std::vector<float>) footPoints,
-    (std::vector<int>) footIndex,
-  });
-
-  ModelPoints p;
-
-  void drawRobotParts();
 };

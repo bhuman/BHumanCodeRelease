@@ -1,13 +1,12 @@
 /**
  * @file FieldLineIntersections.cpp
  * Implementation of a struct that represents the fieldline intersections.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "FieldLineIntersections.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Debugging/DebugDrawings.h"
 #include "Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Transformation.h"
@@ -17,16 +16,13 @@ void FieldLineIntersections::draw() const
 {
   CameraInfo* theCameraInfo = nullptr;
   CameraMatrix* theCameraMatrix = nullptr;
-  ImageCoordinateSystem* theImageCoordinateSystem = nullptr;
 
   if(Blackboard::getInstance().exists("CameraInfo"))
     theCameraInfo = static_cast<CameraInfo*>(&(Blackboard::getInstance()["CameraInfo"]));
   if(Blackboard::getInstance().exists("CameraMatrix"))
     theCameraMatrix = static_cast<CameraMatrix*>(&(Blackboard::getInstance()["CameraMatrix"]));
-  if(Blackboard::getInstance().exists("ImageCoordinateSystem"))
-    theImageCoordinateSystem =  static_cast<ImageCoordinateSystem*>(&(Blackboard::getInstance()["ImageCoordinateSystem"]));
 
-  if(theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr)
+  if(theCameraInfo == nullptr || theCameraMatrix == nullptr)
     return;
 
   DEBUG_DRAWING("representation:FieldLines:field", "drawingOnField")
@@ -97,21 +93,14 @@ void FieldLineIntersections::draw() const
       }
       if(transformationSuccessful)
       {
-        const Vector2f uncorrected1 = theImageCoordinateSystem->fromCorrected(p1);
-        const Vector2f uncorrected2 = theImageCoordinateSystem->fromCorrected(p2);
-        const Vector2f uncorrected3 = theImageCoordinateSystem->fromCorrected(p3);
-        const Vector2f uncorrected4 = theImageCoordinateSystem->fromCorrected(p4);
-        ARROW("representation:FieldLines:image", uncorrected1.x(), uncorrected1.y(), uncorrected2.x(), uncorrected2.y(),
+        ARROW("representation:FieldLines:image", p1.x(), p1.y(), p2.x(), p2.y(),
               3, Drawings::solidPen, ColorRGBA::red);
-        ARROW("representation:FieldLines:image", uncorrected3.x(), uncorrected3.y(), uncorrected4.x(), uncorrected4.y(),
+        ARROW("representation:FieldLines:image", p3.x(), p3.y(), p4.x(), p4.y(),
               3, Drawings::solidPen, ColorRGBA::green);
         Vector2f intersectionInImage;
         if(Transformation::robotToImage(inter->pos, *theCameraMatrix, *theCameraInfo, intersectionInImage))
-        {
-          const Vector2f uncorrectedIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
-          DRAW_TEXT("representation:FieldLines:image", uncorrectedIntersection.x(), uncorrectedIntersection.y(), 25, ColorRGBA(255, 180, 180),
+          DRAW_TEXT("representation:FieldLines:image", intersectionInImage.x(), intersectionInImage.y(), 25, ColorRGBA(255, 180, 180),
                    (inter->type == Intersection::L ? "L" : inter->type == Intersection::T ? "T" : "X"));
-        }
       }
     }
   }

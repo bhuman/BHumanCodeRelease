@@ -14,6 +14,5 @@
 STREAMABLE(InternalState,
 {,
   (float)(0.f) batteryLevel,
-  (bool)(false) batteryCharging,
   (float)(0.f) maxTemperature,
 });

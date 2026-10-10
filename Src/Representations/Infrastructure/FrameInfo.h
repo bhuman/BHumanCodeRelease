@@ -30,5 +30,3 @@ inline int FrameInfo::getTimeSince(unsigned timestamp) const
 {
   return static_cast<int>(time - timestamp);
 }
-
-STREAMABLE_WITH_BASE(CognitionFrameInfo, FrameInfo, {,});

@@ -15,22 +15,18 @@ option((SkillBehaviorControl) GoToBallAndKick,
             (bool) lookActiveWithBall,
             (KickPrecision) alignPrecisely,
             (float) length,
-            (PreStepType) preStepType,
-            (bool) turnKickAllowed,
-            (bool) shiftTurnKickPose,
             (const Pose2f&) speed,
-            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType,
-            (const Rangea&) directionPrecision),
+            (ReduceWalkSpeedType::ReduceWalkSpeedType) reduceWalkSpeedType),
        defs((float)(1000.f) switchToPathPlannerDistance, /**< If the target is further away than this distance, the path planner is used. */
             (float)(900.f) switchToLibWalkDistance, /**< If the target is closer than this distance, LibWalk is used. */
             (float)(600.f) goalkeeperDoNotIgnoreObstaclesDistance, /**< If the target is further away than this distance, the goalkeeper will not ignore obstacles. */
             (float)(500.f) goalkeeperIgnoreObstaclesDistance), /**< If the target is closer than this distance, the goalkeeper will ignore obstacles. */
        vars((Angle)(0_deg) startRotation)) /**< The value of \c theOdometryData.rotation when the \c turnAfterKick state is entered. */
 {
-  const Pose2f kickPose = Pose2f(targetDirection, theFieldInterceptBall.interceptedEndPositionRelative).rotate(theKickInfo[kickType].rotationOffset).translate(theKickInfo[kickType].ballOffset);
+  const Pose2f kickPose = Pose2f(targetDirection, theFieldBall.positionRelative).rotate(theKickInfo[kickType].rotationOffset).translate(theKickInfo[kickType].ballOffset);
 
   ASSERT(reduceWalkSpeedType != ReduceWalkSpeedType::distanceBased);
-  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, Pose2f(1.f, 1.f, 1.f), theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput);
+  const Pose2f walkingSpeedRatio = WalkSpeedConversion::convertSpeedRatio(reduceWalkSpeedType, speed, Pose2f(1.f, 1.f, 1.f), theFrameInfo, theGameState, theFieldBall, theWalkingEngineOutput, true);
 
   initial_state(walkToBallFarRange)
   {
@@ -55,24 +51,20 @@ option((SkillBehaviorControl) GoToBallAndKick,
     action
     {
       PublishMotion({.target = kickPose.translation});
-      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * kickPose, speed);
+      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * kickPose, speed, /*ignoreBall*/true);
       if(lookActiveWithBall)
         LookActive({.withBall = true,
                     .onlyOwnBall = true});
       else
         GoToBallHeadControl({.distanceToTarget = kickPose.translation.norm(),
                              .lookAtKickTarget = true,
-                             .kickTargetRelative = theFieldInterceptBall.interceptedEndPositionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
+                             .kickTargetRelative = theFieldBall.positionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
       WalkToBallAndKick({.targetDirection = targetDirection,
                          .kickType = kickType,
                          .alignPrecisely = alignPrecisely,
                          .kickLength = length,
                          .speed = walkingSpeedRatio,
-                         .obstacleAvoidance = obstacleAvoidance,
-                         .preStepType = preStepType,
-                         .turnKickAllowed = turnKickAllowed,
-                         .shiftTurnKickPose = shiftTurnKickPose,
-                         .directionPrecision = directionPrecision});
+                         .obstacleAvoidance = obstacleAvoidance});
     }
   }
 
@@ -106,17 +98,13 @@ option((SkillBehaviorControl) GoToBallAndKick,
       else
         GoToBallHeadControl({.distanceToTarget = kickPose.translation.norm(),
                              .lookAtKickTarget = false,
-                             .kickTargetRelative = theFieldInterceptBall.interceptedEndPositionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
+                             .kickTargetRelative = theFieldBall.positionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
       WalkToBallAndKick({.targetDirection = targetDirection,
                          .kickType = kickType,
                          .alignPrecisely = alignPrecisely,
                          .kickLength = length,
                          .speed = walkingSpeedRatio,
-                         .obstacleAvoidance = obstacleAvoidance,
-                         .preStepType = preStepType,
-                         .turnKickAllowed = turnKickAllowed,
-                         .shiftTurnKickPose = shiftTurnKickPose,
-                         .directionPrecision = directionPrecision});
+                         .obstacleAvoidance = obstacleAvoidance});
     }
   }
 
@@ -150,17 +138,13 @@ option((SkillBehaviorControl) GoToBallAndKick,
       else
         GoToBallHeadControl({.distanceToTarget = kickPose.translation.norm(),
                              .lookAtKickTarget = false,
-                             .kickTargetRelative = theFieldInterceptBall.interceptedEndPositionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
+                             .kickTargetRelative = theFieldBall.positionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
       WalkToBallAndKick({.targetDirection = targetDirection,
                          .kickType = kickType,
                          .alignPrecisely = alignPrecisely,
                          .kickLength = length,
                          .speed = walkingSpeedRatio,
-                         .obstacleAvoidance = obstacleAvoidance,
-                         .preStepType = preStepType,
-                         .turnKickAllowed = turnKickAllowed,
-                         .shiftTurnKickPose = shiftTurnKickPose,
-                         .directionPrecision = directionPrecision});
+                         .obstacleAvoidance = obstacleAvoidance,});
     }
   }
 
@@ -210,17 +194,13 @@ option((SkillBehaviorControl) GoToBallAndKick,
       else
         GoToBallHeadControl({.distanceToTarget = kickPose.translation.norm(),
                              .lookAtKickTarget = true,
-                             .kickTargetRelative = theFieldInterceptBall.interceptedEndPositionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
+                             .kickTargetRelative = theFieldBall.positionRelative + Vector2f(theKickInfo[kickType].range.max, 0.f).rotated(targetDirection)});
       WalkToBallAndKick({.targetDirection = targetDirection,
                          .kickType = kickType,
                          .alignPrecisely = alignPrecisely,
                          .kickLength = length,
                          .speed = walkingSpeedRatio,
-                         .obstacleAvoidance = obstacleAvoidance,
-                         .preStepType = preStepType,
-                         .turnKickAllowed = turnKickAllowed,
-                         .shiftTurnKickPose = shiftTurnKickPose,
-                         .directionPrecision = directionPrecision});
+                         .obstacleAvoidance = obstacleAvoidance});
     }
   }
 }

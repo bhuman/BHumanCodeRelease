@@ -79,7 +79,7 @@ void IMUValueStateProvider::update(IMUValueState& imuValueState)
     PLOT("module:IMUValueStateProvider:acc:deviation:z", imuValueState.accValues.deviation.z());
 
     // Calibrate gravity vector length
-    if(theMotionInfo.executedPhase == MotionPhase::stand && theGroundContactState.contact &&
+    if(theMotionInfo.executedPhase == MotionPhase::stand &&
        imuValueState.accValues.deviation.x() < maxMeanAccDeviation &&
        imuValueState.accValues.deviation.y() < maxMeanAccDeviation &&
        imuValueState.accValues.deviation.z() < maxMeanAccDeviation)

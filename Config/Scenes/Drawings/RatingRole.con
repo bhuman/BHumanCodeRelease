@@ -13,7 +13,7 @@ vfd ratingRole goalFrame
 vfd ratingRole behavior:Tactic:voronoiDiagram
 vfd ratingRole representation:TeamBallModel
 vfd ratingRole cognition:RobotPose
-vfd ratingRole representation:ObstacleModel:rectangle
+vfd ratingRole representation:ObstacleModel
 vfd ratingRole cognition:Reset
 
 vfd ratingRole behavior:RatingRole:position

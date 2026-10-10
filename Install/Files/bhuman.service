@@ -1,11 +1,12 @@
 [Unit]
 Description=B-Human service
-After=lola.service alsa-kludge.service dev-video\x2dtop.device dev-video\x2dbottom.device
-Requires=lola.service alsa-kludge.service dev-video\x2dtop.device dev-video\x2dbottom.device
+After=network.target
+Requires=pulseaudio.service
 
 [Service]
-ExecStart=/home/nao/bin/bhuman -b
-TimeoutStopSec=2s 200ms
+Environment="LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH"
+ExecStart=/home/booster/bin/bhuman -b
+TimeoutStopSec=7s
 RestartSec=1s
 
 [Install]

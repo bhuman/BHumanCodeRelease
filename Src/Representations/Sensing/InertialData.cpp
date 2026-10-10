@@ -23,10 +23,6 @@ void InertialData::draw()
   PLOT("representation:InertialData:orientation3D:y", orientation3DVec.y().toDegrees());
   PLOT("representation:InertialData:orientation3D:z", orientation3DVec.z().toDegrees());
 
-  PLOT("representation:InertialData:cov:x", orientation3DCov(0, 0));
-  PLOT("representation:InertialData:cov:y", orientation3DCov(1, 1));
-  PLOT("representation:InertialData:cov:z", orientation3DCov(2, 2));
-
   DEBUG_DRAWING3D("representation:InertialData:down", "robot")
   {
     const Vector3f zRotated = orientation3D.inverse() * Vector3f(0.f, 0.f, -1000.f);
@@ -34,5 +30,5 @@ void InertialData::draw()
   }
 
   DEBUG_RESPONSE("representation:InertialData:asRaw")
-    OUTPUT(idRawInertialSensorData, bin, static_cast<RawInertialSensorData>(*this));
+    OUTPUT(idInertialSensorData, bin, static_cast<InertialSensorData>(*this));
 }

@@ -11,8 +11,6 @@
 
 ConfigurationDataProvider::ConfigurationDataProvider()
 {
-  read(theCameraSettings);
-
   theFieldDimensions = std::make_unique<FieldDimensions>();
   theFieldDimensions->load();
 
@@ -20,18 +18,16 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theBehaviorParameters);
   read(theCameraCalibration);
   read(theCameraIntrinsics);
-  read(theDamageConfigurationBody);
-  read(theDamageConfigurationHead);
   read(theHeadLimits);
   read(theIMUCalibration);
   read(theJointCalibration);
   read(theJointLimits);
-  read(theKeyframeMotionParameters);
   read(theKickInfo);
+  read(theKickLengthPair);
   read(theMassCalibration);
+  read(theMotorParameters);
   read(theRelativeFieldColorsParameters);
   read(theRobotDimensions);
-  read(theStiffnessSettings);
   read(theStaticJointPoses);
 }
 
@@ -65,11 +61,11 @@ void ConfigurationDataProvider::update(KickInfo& kickInfo)
       const BallSpecification& ballSpecification = theBallSpecification ? *theBallSpecification : ConfigurationDataProviderBase::theBallSpecification;
 
       // Comment this in, if the velocity needs to be recalculated
-      //kick.ballVelocity.min = BallPhysics::velocityForDistance(kick.range.min, ballSpecification.friction);
-      //kick.ballVelocity.max = BallPhysics::velocityForDistance(kick.range.max, ballSpecification.friction);
+      //kick.ballVelocity.min = BallPhysics::velocityForDistance(kick.range.min, ballSpecification);
+      //kick.ballVelocity.max = BallPhysics::velocityForDistance(kick.range.max, ballSpecification);
 
-      kick.range.min = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.min, 0.f), ballSpecification.friction)).norm();
-      kick.range.max = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.max, 0.f), ballSpecification.friction)).norm();
+      kick.range.min = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.min, 0.f), ballSpecification)).norm();
+      kick.range.max = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.max, 0.f), ballSpecification)).norm();
     }
   }
 }

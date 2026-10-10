@@ -10,7 +10,7 @@
 #include "FieldBall.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Debugging/DebugDrawings.h"
@@ -55,23 +55,23 @@ Vector2f FieldBall::recentBallEndPositionRelative(const int ballSeenTimeout, con
     return endPositionRelative;
 }
 
-Vector2f FieldBall::recentBallPropagatedPositionOnField(const float t, const float friction, const int ballSeenTimeout, const int ballDisappearedTimeout) const
+Vector2f FieldBall::recentBallPropagatedPositionOnField(const float t, const BallSpecification& ballSpecs, const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
   const bool useTeamEstimate = useTeamBall(ballSeenTimeout, ballDisappearedTimeout);
 
   const Vector2f& ballPosition = useTeamEstimate ? teamPositionOnField : positionOnField;
   const Vector2f ballVelocity = useTeamEstimate ? teamVelocityOnField : velocityOnField;
-  const Vector2f propagatedBallPosition = BallPhysics::propagateBallPosition(ballPosition, ballVelocity, t, friction);
+  const Vector2f propagatedBallPosition = BallPhysics::propagateBallPosition(ballPosition, ballVelocity, t, ballSpecs);
   return propagatedBallPosition;
 }
 
-Vector2f FieldBall::recentBallPropagatedPositionRelative(const float t, const float friction, const int ballSeenTimeout, const int ballDisappearedTimeout) const
+Vector2f FieldBall::recentBallPropagatedPositionRelative(const float t, const BallSpecification& ballSpecs, const int ballSeenTimeout, const int ballDisappearedTimeout) const
 {
   const bool useTeamEstimate = useTeamBall(ballSeenTimeout, ballDisappearedTimeout);
 
   const Vector2f& ballPosition = useTeamEstimate ? teamPositionRelative : positionRelative;
   const Vector2f ballVelocity = useTeamEstimate ? teamVelocityRelative : velocityRelative;
-  const Vector2f propagatedBallPosition = BallPhysics::propagateBallPosition(ballPosition, ballVelocity, t, friction);
+  const Vector2f propagatedBallPosition = BallPhysics::propagateBallPosition(ballPosition, ballVelocity, t, ballSpecs);
   return propagatedBallPosition;
 }
 
@@ -164,15 +164,15 @@ void FieldBall::draw() const
     if(timeSinceBallWasSeen < 10000
        && timeSinceBallDisappeared < 500
        && Blackboard::getInstance().exists("BallSpecification")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel"))
     {
       const BallSpecification& theBallSpecification = static_cast<const BallSpecification&>(Blackboard::getInstance()["BallSpecification"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:FieldBall", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:FieldBall", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:FieldBall", -orientation.x(), -orientation.y(), 0.f);
       RENDER_OPTIONS3D("representation:FieldBall", Drawings3D::disableOpacity | Drawings3D::disableDepth);
       const Vector2f position = recentBallPositionRelative();
       SPHERE3D("representation:FieldBall", position.x(), position.y(), theBallSpecification.radius,
@@ -185,15 +185,15 @@ void FieldBall::draw() const
     if(timeSinceBallWasSeen < 10000
        && timeSinceBallDisappeared < 500
        && Blackboard::getInstance().exists("BallSpecification")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel"))
     {
       const BallSpecification& theBallSpecification = static_cast<const BallSpecification&>(Blackboard::getInstance()["BallSpecification"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:FieldBall:sector", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:FieldBall:sector", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:FieldBall:sector", -orientation.x(), -orientation.y(), 0.f);
       const Vector2f position = recentBallPositionRelative();
       const Angle range = std::max(1_deg, static_cast<Angle>(std::asin(std::min(1.f, theBallSpecification.radius / position.norm()))));
       const Angle angle = position.angle();

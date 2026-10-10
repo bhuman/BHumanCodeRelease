@@ -20,5 +20,4 @@ class Audio : public BHExecutionUnit
 {
 public:
   bool beforeFrame() override;
-  bool afterFrame() override;
 };

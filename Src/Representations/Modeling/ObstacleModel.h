@@ -1,7 +1,7 @@
 /**
  * @file ObstacleModel.h
  *
- * Declaration of struct ObstacleModel.
+ * Declaration of a representation that stores a list of obstacles.
  *
  * @author Florian Maaß
  */
@@ -13,13 +13,15 @@
 /**
  * @struct ObstacleModel
  *
- * A struct that represents all kind of obstacles seen by vision, detected by arm contact,
- * foot bumper contact.
+ * A struct that represents all types of obstacles.
  */
 STREAMABLE(ObstacleModel,
 {
+  /** Draw the content of this representation */
   void draw() const;
+
+  /** Verify the data consistency */
   void verify() const,
 
-  (std::vector<Obstacle>) obstacles, /**< List of obstacles (position relative to own pose) */
+  (std::vector<Obstacle>) obstacles, /**< List of obstacles (in robot-relative field coordinates) */
 });

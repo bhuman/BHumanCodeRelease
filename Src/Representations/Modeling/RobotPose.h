@@ -67,7 +67,7 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle
    */
   float getTranslationalStandardDeviation() const
   {
-    return std::sqrt(std::max(covariance(0, 0), covariance(1, 1)));;
+    return std::sqrt(std::max(covariance(0, 0), covariance(1, 1)));
   }
 
   /**

@@ -1,8 +1,8 @@
 #ifndef __BOOSTER_ROBOTICS_SDK_CHANNEL_PUBLISHER_HPP__
 #define __BOOSTER_ROBOTICS_SDK_CHANNEL_PUBLISHER_HPP__
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include <booster/robot/channel/channel_factory.hpp>
 #include <booster/robot/rpc/request.hpp>
@@ -13,12 +13,13 @@ namespace robot {
 template <typename MSG>
 class ChannelPublisher {
 public:
-    explicit ChannelPublisher(const std::string &channel_name) :
-        channel_name_(channel_name) {
+    explicit ChannelPublisher(const std::string &channel_name, bool reliable = false) :
+        channel_name_(channel_name),
+        reliable_(reliable) {
     }
 
     void InitChannel() {
-        channel_ptr_ = ChannelFactory::Instance()->CreateSendChannel<MSG>(channel_name_);
+        channel_ptr_ = ChannelFactory::Instance()->CreateSendChannel<MSG>(channel_name_, reliable_);
     }
 
     bool Write(MSG *msg) {
@@ -39,8 +40,16 @@ public:
         return channel_name_;
     }
 
+    size_t GetMatchedSubscriptionsCount() const {
+        if (channel_ptr_ == nullptr) {
+            return 0;
+        }
+        return channel_ptr_->GetMatchedSubscriptionsCount();
+    }
+
 private:
     std::string channel_name_;
+    bool reliable_{false};
     ChannelPtr<MSG> channel_ptr_;
 };
 

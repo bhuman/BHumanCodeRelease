@@ -64,11 +64,17 @@ void SetupPosesProvider::update(SetupPoses& setupPoses)
 
 bool SetupPosesProvider::updateRobotOrder()
 {
-  std::vector<int> currentRobotOrder;
+  std::deque<int> currentRobotOrder;
   for(unsigned long i=0; i<theGameState.ownTeam.playerStates.size(); i++)
   {
     if(theGameState.ownTeam.playerStates[i] != GameState::substitute)
-      currentRobotOrder.push_back(static_cast<int>(i)+1);
+    {
+      int robotNumber = static_cast<int>(i)+1;
+      if(theGameState.ownTeam.isGoalkeeper(robotNumber))
+        currentRobotOrder.push_front(robotNumber);
+      else
+        currentRobotOrder.push_back(robotNumber);
+    }
   }
   if(currentRobotOrder != robotOrderFromGC)
   {

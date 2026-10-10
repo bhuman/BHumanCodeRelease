@@ -16,7 +16,7 @@
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/ObstaclePercepts/RobotPercept.h"
 #include "Math/Geometry.h"
 
 MODULE(GlobalTeammatesTracker,
@@ -24,7 +24,7 @@ MODULE(GlobalTeammatesTracker,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(ObstaclesFieldPercept),
+  REQUIRES(RobotPercept),
   REQUIRES(RobotPose),
   REQUIRES(TeamData),
   REQUIRES(GlobalTeammatesModel),
@@ -34,6 +34,7 @@ MODULE(GlobalTeammatesTracker,
     (float)(153.f) borderThreshold,                    /**< Observations that are this close to the field border become ignored. */
     (float)(702.f) reinitThreshold,                    /**< Threshold for resetting an existing estimate to a recently communicated one, if it is farther away than this threshold */
     (float)(1337.f * 1337.f) squaredDistanceThreshold, /**< When matching percepts with estimates, anything farther away than this cannot be integrated. */
+    (bool)(true) integratePercepts,                    /**< If set to true, own percepts are fused with communicated positions. If set to false, only communication is used. */
   }),
 });
 
@@ -115,6 +116,7 @@ private:
   std::vector<Geometry::Rect> penalizedRobotZonesOwnTeam;     /**< The areas in which penalized robots of the own team are placed during the penalty */
   std::vector<Geometry::Rect> returnFromPenaltyZonesOwnTeam;  /**< The areas in which unpenalized robots of the own team are placed to return to the game */
   SelfLocator::Parameters selfLocatorParameters;              /**< Access self locator parameters to avoid duplicated configuration elements */
+  unsigned int lastFrameTime;                                 /**< The point of time at the last execution of this module */
 
   /**
    * Fills the representation provided by this module and

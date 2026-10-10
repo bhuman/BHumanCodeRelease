@@ -48,15 +48,12 @@ namespace Zweikampf
     // rating modifiers
     (float) ratingMinMaxDifference, /**< Add this much malus, the more the robot must rotate for the kick direction. */
     (float) ratingBallLandsInOwnHalf, /**< Add this malus, if the ball would land in the own half. */
-    (float) ratingPoseBlockedSmallKickAngle, /**< Add this malus, if the kick pose is blocked by an obstacle for forward kicks. */
     (float) ratingPoseBlocked, /**< Add this malus, if the kick pose is blocked by an obstacle. */
-    (float) ratingOpponentFaster, /**< Add this malus, if the opponent is faster to reach the ball that we are to reach the kick pose. */
     (float) ratingPassingToOpponent, /**< Add this malus the closer the ball is passed towards an opponent. */
 
     (float) ratingSameKick, /**< Add this bonus, if the checked kick is the same as the last best kick. */
     (float) ratingSameKickAngle, /**< Add this bonus, if the checked kick is the same as the last best kick and the direction is similar. */
     (float) ratingStealBall, /**< removes ratingBallLandsInOwnHalf and adds some bonus too. */
-    (float) goalAreaLongKickRating, /**< Near the own goal, we want to kick the ball away. */
     (float) ratingStealBallKick, /**< Add this bonus for steal ball kicks.*/
     (float) ratingStealBallKickBetterSide, /**< Add this bonus for the forwardSteal, to get the better side.*/
     (float) ratingGoalShot, /**< Add this bonus if the kick can reach the goal.*/
@@ -82,14 +79,13 @@ namespace Zweikampf
     (float) maxObstacleDistanceForWalkStealBallKick, /**< The obstacle must stand this much more away from the ball than us, to block the forwardSteal InWalkKick.*/
     (float) maxObstacleDistanceForSideStealBallKick, /**< The obstacle must stand this much more away from the ball than us, to block the forwardSteal InWalkKick.*/
     (float) obstacleDistanceForBlockingPose, /**< Calculate where the obstacle could be, when we execute the kick. This is used to decide, if one kick is worse than the mirror one. */
-    (float) obstacleBlockingRadius, /**< Range for the obstacle to check for the foot edges, to add a malus for the InWalkKick.*/
-    (float) obstacleBlockingRadiusSidewardsIncrease, /**< Increase the obstacleBlockingRadius by this amount, if the InWalkKick is a sidewards kick.*/
     (float) noKickBlockingPose, /**< distance to ball, when no kick was calculated. */
     (float) obstacleMinDistanceForBackPass, /**< The duel obstacle must be this far away to allow for a back pass from the skill request. */
     (Rangef) obstacleShiftRange, /**< Obstacles, that are this near the ball, are shifted behind the ball.*/
     (float) maxObstacleDistanceToBallForRiskyKicks,
     (float) maxObstacleDistanceToForceForwardSteal,
     (float) obstacleDistanceThreshold, /**< Towards obstacles, we want to keep a safe range to prevent passing to an opponent. Scale  */
+    (float) goalSectorShiftFactor, /**< For goal shots, shift direction by this factor times sector width towards center. */
   });
 
   STREAMABLE(StealBallParameters,
@@ -109,6 +105,19 @@ namespace Zweikampf
     (Angle) kickDirectionHysteresis, /**< Interpolate max kick length hysteresis only if the direction is similar to previous kick. */
   });
 
+  STREAMABLE(DistanceParameters,
+  {,
+    (KickInfo::KickType) mainKick,
+    (int) numberOfSubRanges,
+    (std::vector<float>) additionalRanges,
+  });
+
+  STREAMABLE(StealKickReplacementParameter,
+  {,
+    (Angle) staticShift, /**< Static direction shift for steal kick replacement. */
+    (Rangef) distanceToFieldBorderRange, /**< Reduce kick strength based on field border distance. */
+    (Rangef) interpolateDirectionGoalDistance, /**< Interpolate replacement kick direction towards opponent goal, closer to the goal. */
+  });
   /**
    * The different types of kicks. Higher ups, like goal shots, are always better than lower types, even if the rating is worse.
    * That way, a goal kick will always be done as long as it is possible.
@@ -129,9 +138,7 @@ namespace Zweikampf
     Pose2f pose; /**< Kick pose. */
     bool noKick = true; /**< Is a kick requested? */
     bool preStepAllowed = true; /**< Is a pre step allowed for the kick? */
-    bool turnKickAllowed = false; /**< Are turn kicks allowed? */
-    bool shiftTurnKickPose = false; /**< Should shift the turn kick pose? */
-    KickInfo::KickType kickType = KickInfo::walkForwardsLeft; /**< Type of the kick. */
+    KickInfo::KickType kickType = KickInfo::rlKickDynamic; /**< Type of the kick. */
     Rangea precision = Rangea(0_deg, 0_deg); /**< Precision range of the kick direction. */
     float range = -1.f; /**< Kick range. Used to calculate the kick power. */
     TargetType type = TargetType::other; /**< Type of the situation, in which the kick is used. */
@@ -253,15 +260,15 @@ option((SkillBehaviorControl) Zweikampf,
             (ObstacleHandling) obstacleHandling, /**< All parameters to handle obstacles. */
             (StealBallParameters) stealBallParameters, /**< All parameters to handle kick angles near obstacles. */
             (LastKickHysteresis) lastKickHysteresis, /**< Hysteresis parameters too make sure the last decision is kept. */
+            (DistanceParameters) distanceParameters, /**< Parameters to generate list of ranges to check. */
+            (StealKickReplacementParameter) stealKickReplacementParameter, /**< Parameters for replacing the steal kick. */
 
             (Angle) smallerKickAnglePreference, /**< Interpolate ratingLargeKickAngle to 100% over this angle range. */
             (Angle) forwardStealPreferenceRange, /**< If the kick angle for the forward steal is bigger or smaller than this value, we can be sure to use the better side. */
-            (Angle) replaceNormalToLongKickGoalShot, /**< When shooting a goal, replace straight forward kicks with the forwardLong.*/
             (float) sectorWheelObstacleBallRadiusFactor, /**< Increase obstacle with by this factor times the ball radius.*/
             (Rangea) allowPassAngle, /**< Pass request from the skill request are allowed in this field angle range. */
             (Angle) passOrientation, /**< Pass request from the skill request are allowed if the robot is orientated to the target already good enough. */
             (float) fieldBorderSafeDistance, /**< InWalkKick have some uncertainty, so the safe distance to the field border intersection is increased by up to this value.*/
-            (float) minForwardTurnRange, /**< While not near the opponent goal, the min range for the forward and turn kicks should be this length. */
 
             (Angle) sidewardsRotationCorrectionBonus, /**< If last planned kick was the sidewards kick, then add a bonus to the allowed rotation. */
 
@@ -272,7 +279,8 @@ option((SkillBehaviorControl) Zweikampf,
 
             (bool) replaceForwardWithLongGoalShot, /**< If kicking at the goal, replace this forward kick with the long version. */
 
-            (std::vector<KickInfo::KickType>) allowedKicks), /**< The allowed InWalkKicks */
+            (std::vector<KickInfo::KickType>) allowedKicks, /**< The allowed InWalkKicks */
+            (Rangef) minKickRange), /**< Use min kick range based on field position. */
        vars((DuelPose) theDuelPose, /**< All information about the "to be executed" kick */
             (Angle)(0_deg) lastKickAngle, /**< Last kick angle with odometry update */
             (Angle)(0_deg) lastRobotPoseRotation, /**< Last RobotPose rotation */
@@ -292,8 +300,8 @@ option((SkillBehaviorControl) Zweikampf,
   const Vector2f rightGoalPost(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal); // The position of the right post of the opponent's goal.
   const Vector2f leftGoalPostOwn(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal); // The position of the left post of the own goal.
   const Vector2f rightGoalPostOwn(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal); // The position of the right post of the own goal.
-  const Obstacle opponentLeftGoalPost(Matrix2f::Zero(), leftGoalPost, leftGoalPost + Vector2f(0.f, theFieldDimensions.goalPostRadius), leftGoalPost - Vector2f(0.f, theFieldDimensions.goalPostRadius), Vector2f::Zero(), 0, Obstacle::Type::unknown);
-  const Obstacle opponentRightGoalPost(Matrix2f::Zero(), rightGoalPost, rightGoalPost + Vector2f(0.f, theFieldDimensions.goalPostRadius), rightGoalPost - Vector2f(0.f, theFieldDimensions.goalPostRadius), Vector2f::Zero(), 0, Obstacle::Type::unknown);
+  const Obstacle opponentLeftGoalPost(Matrix2f::Zero(), leftGoalPost, leftGoalPost + Vector2f(0.f, theFieldDimensions.goalPostRadius), leftGoalPost - Vector2f(0.f, theFieldDimensions.goalPostRadius), 0, Obstacle::Type::unknown);
+  const Obstacle opponentRightGoalPost(Matrix2f::Zero(), rightGoalPost, rightGoalPost + Vector2f(0.f, theFieldDimensions.goalPostRadius), rightGoalPost - Vector2f(0.f, theFieldDimensions.goalPostRadius), 0, Obstacle::Type::unknown);
 
   const Vector2f penaltyBoxBackRight(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightPenaltyArea); // Back right corner of own penalty box.
   const Vector2f penaltyBoxFrontLeft(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea); // Front left corner of own penalty box.
@@ -440,7 +448,7 @@ option((SkillBehaviorControl) Zweikampf,
 
     for(const Obstacle& omo : model.obstacles)
     {
-      const float sqrNorm = omo.center.squaredNorm();
+      const float sqrNorm = (omo.center - theFieldBall.positionRelative).squaredNorm();
       if(sqrNorm < distanceToClosestObstacle)
       {
         distanceToClosestObstacle = sqrNorm;
@@ -500,7 +508,8 @@ option((SkillBehaviorControl) Zweikampf,
       if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGoalLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
         return false;
 
-      const float width = (obstacle.left - obstacle.right).norm() + sectorWheelObstacleBallRadiusFactor * theBallSpecification.radius;
+      const float widthScale = 1.f - Rangef::ZeroOneRange().limit((theFrameInfo.getTimeSince(obstacle.lastSeen) - 1000) / 4000.f);
+      const float width = widthScale * ((obstacle.left - obstacle.right).norm() + sectorWheelObstacleBallRadiusFactor * theBallSpecification.radius);
       const float distance = (obstacleOnField - useBallPositionInField).norm();
 
       // TODO make it less ugly
@@ -687,37 +696,15 @@ option((SkillBehaviorControl) Zweikampf,
                                  const Angle minMaxAngle, const bool isGoalAngle, const float maxKickRange, const float distanceToOutOfFieldSquared,
                                  const Rangea& stealBallBonusMin, const Rangea& stealBallBonusMax, const Angle angleFromBallToOpponent,
                                  RatingMapVector& ratingMapVector, const float rangeForGoal,
-                                 const Angle angleFromGoalToBall, const bool isTypeStealBall, const TargetType highestTargetType,
-                                 const float nearOwnGoalScaling, const Rangea& forbiddingKickAngle, const float dribbleRange) -> bool
+                                 const Angle angleFromGoalToBall, const TargetType highestTargetType,
+                                 const float dribbleRange) -> bool
   {
     Angle rotationOffset(theKickInfo[kickType].rotationOffset);
     Vector2f ballOffset(theKickInfo[kickType].ballOffset);
     Rangef useKickRange = theKickInfo[kickType].range;
 
     DuelPose pose;
-    // 8.4.1. Interpolate between forward kick and turnOut kick
-    if(kickType == KickInfo::KickType::walkForwardsLeft ||
-       kickType == KickInfo::KickType::walkForwardsRight)
-    {
-      const Angle useMaxKickAngle = theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset;
-      pose.turnKickAllowed = stealBallBonusMin == stealBallBonusMax;
-      const bool isLeft = kickType == KickInfo::KickType::walkForwardsLeft;
-      const Rangea angleClip(!isLeft ? 0_deg : -useMaxKickAngle, !isLeft ? useMaxKickAngle : 0_deg);
-      const float interpolation = Rangef::ZeroOneRange().limit(angleClip.limit(kickAngle) / -theKickInfo[!isLeft ? KickInfo::walkTurnRightFootToLeft : KickInfo::walkTurnLeftFootToRight].rotationOffset);
-      ballOffset = (1 - interpolation) * theKickInfo[kickType].ballOffset + interpolation * theKickInfo[!isLeft ? KickInfo::walkTurnRightFootToLeft : KickInfo::walkTurnLeftFootToRight].ballOffset;
-      rotationOffset = -angleClip.limit(kickAngle);
-      useKickRange.min = (1 - interpolation) * theKickInfo[kickType].range.min + interpolation * theKickInfo[KickInfo::walkTurnRightFootToLeft].range.min;
-      useKickRange.max = (1 - interpolation) * theKickInfo[kickType].range.max + interpolation * theKickInfo[KickInfo::walkTurnRightFootToLeft].range.max;
-    }
-
-    // 8.4.2. we need to know already at the start, if the kick is a stealBall type
-    if(isTypeStealBall || kickType == KickInfo::KickType::walkSidewardsLeftFootToLeft || kickType == KickInfo::KickType::walkSidewardsRightFootToRight)
-      pose.rating += duelRatings.ratingStealBall;
-
     // 8.4.6. Calculate kick pose
-    if(kickType == KickInfo::walkForwardsLeftLong || kickType == KickInfo::walkForwardsRightLong ||
-       kickType == KickInfo::walkForwardsLeftAlternative || kickType == KickInfo::walkForwardsRightAlternative)
-      rotationOffset = 0_deg; // to ensure the faster one is chosen
     pose.noKick = false;
     pose.kickType = kickType;
     pose.kickAngle = kickAngle;
@@ -730,7 +717,7 @@ option((SkillBehaviorControl) Zweikampf,
     if(useKickRange.min > maxKickRange)
       return false;
 
-    const float rangeHysteresis = !isGoalAngle || theDuelPose.kickType != kickType || theKickInfo[theDuelPose.kickType].walkKickType == WalkKicks::forwardSteal ? 0.f : lastKickHysteresis.kickLengthHysteresis * (1.f - Rangef::ZeroOneRange().limit(std::abs(Angle::normalize(theDuelPose.kickAngle - kickAngle)) / lastKickHysteresis.kickDirectionHysteresis));
+    const float rangeHysteresis = !isGoalAngle || theDuelPose.kickType != kickType || theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight ? 0.f : lastKickHysteresis.kickLengthHysteresis * (1.f - Rangef::ZeroOneRange().limit(std::abs(Angle::normalize(theDuelPose.kickAngle - kickAngle)) / lastKickHysteresis.kickDirectionHysteresis));
 
     // 8.4.7. The robot needs to turn too much
     // Add range minmax, to prevent robot doing stupid kick angles when chasing opponent
@@ -747,13 +734,6 @@ option((SkillBehaviorControl) Zweikampf,
       Angle maxAllowedRotation = std::max(minMaxAngle, stealBallParameters.stealBallTypeTooMuchRotationMinValue);
       maxAllowedRotation += sidewardsRotationCorrectionBonus;
       maxAllowedRotationRangeOne = Rangea(-maxAllowedRotation, maxAllowedRotation);
-      maxAllowedRotationRangeTwo = maxAllowedRotationRangeOne;
-    }
-    else if(!isStealSituation && forbiddingKickAngle.isInside(kickAngle) &&
-            (kickType == KickInfo::walkForwardsLeftLong || kickType == KickInfo::walkForwardsRightLong))
-    {
-      maxAllowedRotationRangeOne.min -= stealBallParameters.stealBallTypeTooMuchRotationMinValue * nearOwnGoalScaling;
-      maxAllowedRotationRangeOne.max += stealBallParameters.stealBallTypeTooMuchRotationMinValue * nearOwnGoalScaling;
       maxAllowedRotationRangeTwo = maxAllowedRotationRangeOne;
     }
     else if(isStealSituation)
@@ -797,16 +777,18 @@ option((SkillBehaviorControl) Zweikampf,
     // 8.4.3. Get PotentialField rating, so we know the kick range
     size_t bestIndex = static_cast<size_t>(-1);
     float bestRating = std::numeric_limits<float>::max();
-    const bool useStrongForwardKick = (kickType != KickInfo::KickType::walkForwardsLeft && kickType != KickInfo::KickType::walkForwardsRight) ||
-                                      Geometry::isPointInsideRectangle(opponentGoalArea, useBallPositionInField) ||
+    const bool useStrongForwardKick = Geometry::isPointInsideRectangle(opponentGoalArea, useBallPositionInField) ||
                                       isStealSituation;
     const float useFieldBorderSafeDistance = isStealSituation ? 0.f : fieldBorderSafeDistance;
+    const float useMinKickRange = kickType == KickInfo::walkForwardStealBallLeft || kickType == KickInfo::walkForwardStealBallRight ? 1.f : mapToRange(useBallPositionInField.x(), theFieldDimensions.centerCircleRadius, theFieldDimensions.xPosOpponentPenaltyArea, std::min(minKickRange.max, theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea * 0.5f), minKickRange.min);
 
     for(size_t index = 0; index < ratingMapVector.ratingMap.size(); index++)
     {
       if(sqr(ratingMapVector.ratingMap[index].range + useFieldBorderSafeDistance) > distanceToOutOfFieldSquared ||
          ratingMapVector.ratingMap[index].range > useKickRange.max + rangeHysteresis) // kick range is too long
         break;
+      if(ratingMapVector.ratingMap[index].range < useMinKickRange)  // skip to weak kicks
+        continue;
       if(
         ratingMapVector.ratingMap[index].range >= useKickRange.min - rangeHysteresis && // kick range executable checks
         ratingMapVector.ratingFunc(theFieldRating, ratingMapVector.ratingMap[index]) < bestRating + (useStrongForwardKick ? 0.1f : 0.f)) // a "<=" would result in using always a longer kick than a shorter one. TODO eval what is better
@@ -831,9 +813,6 @@ option((SkillBehaviorControl) Zweikampf,
        rangeForGoal < dribbleRange + useKickRange.max + (theDuelPose.type == TargetType::goalShot ? rangeHysteresis : 0.f))
     {
       pose.rating += duelRatings.ratingGoalShot;
-      // if we can hit the goal with the forwardLong without much rotation adjustment, we always prefer the forwardLong.
-      if(std::abs(pose.pose.rotation) < 5_deg && (kickType == KickInfo::walkForwardsLeftLong || kickType == KickInfo::walkForwardsRightLong))
-        pose.rating -= 0.1f;
       // kick angles with some buffer zone to goal posts and obstacles are better
       Angle smallestAngleDiff = std::numeric_limits<float>::max();
       for(const Rangea& goalSector : goalAngleWithBuffer)
@@ -843,7 +822,8 @@ option((SkillBehaviorControl) Zweikampf,
       pose.type = rangeForGoal > useKickRange.max + (theDuelPose.type == TargetType::goalShot ? rangeHysteresis : 0.f) ? TargetType::goalDribbleShot : TargetType::goalShot;
     }
 
-    if(!theIndirectKick.allowDirectKick && (pose.type == TargetType::goalShot || pose.type == TargetType::goalDribbleShot))
+    // rlKickStrong is only used for goal shots
+    if(pose.type != TargetType::goalShot && kickType == KickInfo::rlKickStrong)
       return false;
 
     if((highestTargetType == TargetType::goalShot || highestTargetType == TargetType::goalDribbleShot) && pose.type > highestTargetType)
@@ -891,9 +871,6 @@ option((SkillBehaviorControl) Zweikampf,
     if(pose.type > highestTargetType)
       return false;
 
-    if(kickType == KickInfo::walkForwardsRightLong || kickType == KickInfo::walkForwardsLeftLong)
-      pose.rating += nearOwnGoalScaling * duelRatings.goalAreaLongKickRating;
-
     /////////////////////////////
     // 8.4.13. Fall Prevention //
     // //////////////////////////
@@ -901,122 +878,20 @@ option((SkillBehaviorControl) Zweikampf,
     // the kicks rating gets worsens in case an obstacle is only on one side
     switch(kickType)
     {
-      case KickInfo::walkForwardsRight:
-      case KickInfo::walkForwardsLeft:
-      case KickInfo::walkForwardsRightLong:
-      case KickInfo::walkForwardsLeftLong:
-      case KickInfo::walkForwardsRightAlternative:
-      case KickInfo::walkForwardsLeftAlternative:
-      {
-        if(std::abs(kickAngle) > 25_deg) // otherwise execute default code
-          break;
-      }
+      // Check first to prevent fall through below
+      case KickInfo::walkForwardStealBallLeft:
+      case KickInfo::walkForwardStealBallRight:
+      case KickInfo::rlKickDynamic:
+      case KickInfo::rlKickDynamicOld:
+      case KickInfo::rlKickStrong:
+        break;
       default:
-      {
-        // For the other walk kicks, simply check if the duel obstacle is blocking the pose. If so, the rating should be greatly worsen
-        // In case this kick is still the only executable one, the worse rating does not matter
-        Vector2f intersection1(0.f, 0.f);
-        Vector2f intersection2(0.f, 0.f);
-        const float distance = pose.pose.translation.norm();
-        const float squaredDistance = sqr(distance + (kickType == KickInfo::walkSidewardsLeftFootToLeft || kickType == KickInfo::walkSidewardsRightFootToRight ? obstacleHandling.obstacleBlockingRadiusSidewardsIncrease : 0.f));
-        const int intersections = Geometry::getIntersectionOfLineAndCircle(Geometry::Line(Vector2f(0.f, 0.f), pose.pose.translation / distance),
-                                  Geometry::Circle(duelObstacle.center, obstacleHandling.obstacleBlockingRadius), intersection1, intersection2);
-        if(intersections > 0 &&
-           (intersection1.squaredNorm() < squaredDistance
-            || (intersections == 2 && intersection2.squaredNorm() < squaredDistance)))
-        {
-          pose.preStepAllowed = false;
-          pose.rating += duelRatings.ratingPoseBlocked;
-        }
-      }
+        FAIL("Unknown rl kick");
     }
-
-    if(pose.preStepAllowed && pose.type != TargetType::goalShot && pose.type != TargetType::pass)
-    {
-      // feet edge positions at target pose
-      const Vector2f leftPoint = obstacleHandling.leftFootEdge.rotated(pose.pose.rotation) + pose.pose.translation;
-      const Vector2f rightPoint = obstacleHandling.rightFootEdge.rotated(pose.pose.rotation) + pose.pose.translation;
-
-      // feet edge positions during the kick
-      const Vector2f leftKickPoint = obstacleHandling.leftFootKickEdge.rotated(pose.pose.rotation) + pose.pose.translation;
-      const Vector2f rightKickPoint = obstacleHandling.rightFootKickEdge.rotated(pose.pose.rotation) + pose.pose.translation;
-
-      // current feet edge positions
-      const Vector2f leftPointNear = obstacleHandling.leftFootEdge;
-      const Vector2f rightPointNear = obstacleHandling.rightFootEdge;
-
-      bool leftBlocked = false;
-      bool rightBlocked = false;
-
-      auto checkBlocked = [](const Obstacle& ob, bool& leftBlocked, bool& rightBlocked,
-                             const Pose2f& kickPose, const Vector2f& leftPoint, const Vector2f& rightPoint,
-                             const Vector2f& leftPointNear, const Vector2f& rightPointNear,
-                             const Vector2f& leftKickPoint, const Vector2f& rightKickPoint,
-                             const float obstacleBlockingRadiusSqr, const float obstacleBlockingRadiusSafeSqr)
-      {
-        const Vector2f obCenter = kickPose.inverse() * ob.center;
-        if(obCenter.squaredNorm() > obstacleBlockingRadiusSafeSqr)
-          return;
-        bool& useBlocked = obCenter.y() > 0.f ? leftBlocked : rightBlocked;
-        const Vector2f& offset = obCenter.y() > 0.f ? leftPoint : rightPoint;
-        const Vector2f& offsetNear = obCenter.y() > 0.f ? leftPointNear : rightPointNear;
-        const Vector2f& offsetKick = obCenter.y() > 0.f ? leftKickPoint : rightKickPoint;
-        useBlocked |= (obCenter - offset).squaredNorm() < obstacleBlockingRadiusSqr ||
-                      (obCenter - offsetNear).squaredNorm() < obstacleBlockingRadiusSqr ||
-                      (obCenter - offsetKick).squaredNorm() < obstacleBlockingRadiusSqr;
-      };
-
-      const auto addBlockedRating = [&](bool& leftBlocked, bool& rightBlocked,
-                                        const bool isLeftForward, const bool isRightForward, DuelPose& pose)
-      {
-        // this must be higher than the bonus for using the same kick again
-        if((rightBlocked && !leftBlocked && isLeftForward) ||
-           (leftBlocked && !rightBlocked && isRightForward))
-        {
-          pose.preStepAllowed = false;
-          pose.rating += duelRatings.ratingPoseBlockedSmallKickAngle;
-          return true;
-        }
-        else if((rightBlocked && !leftBlocked && isRightForward) || (leftBlocked && !rightBlocked && isLeftForward))
-          pose.shiftTurnKickPose = true;
-
-        // Reset booleans
-        rightBlocked = false;
-        leftBlocked = false;
-        return false;
-      };
-
-      const bool isForwardLeftKick = kickType == KickInfo::walkForwardsLeft || kickType == KickInfo::walkForwardsLeftLong || kickType == KickInfo::walkForwardsLeftAlternative;
-      const bool isForwardRightKick = kickType == KickInfo::walkForwardsRight || kickType == KickInfo::walkForwardsRightLong || kickType == KickInfo::walkForwardsRightAlternative;
-
-      const float obstacleBlockingRadiusSqr = sqr((theDuelPose.shiftTurnKickPose ? 200.f : 0.f) + obstacleHandling.obstacleBlockingRadius);
-
-      const float obstacleBlockingRadiusSafeSqr = sqr(obstacleHandling.obstacleBlockingRadius + 300.f); // obstacle is so far away, there will be no collision, 200 = distance to kickPoint + 100 safe distance
-
-      checkBlocked(duelObstacleMovedNearBall, leftBlocked, rightBlocked, pose.pose, leftPoint, rightPoint, leftPointNear, rightPointNear, leftKickPoint, rightKickPoint, obstacleBlockingRadiusSqr, obstacleBlockingRadiusSafeSqr);
-      if(!addBlockedRating(leftBlocked, rightBlocked, isForwardLeftKick, isForwardRightKick, pose))
-      {
-        pose.shiftTurnKickPose = false;
-        for(const Obstacle& ob : theObstacleModel.obstacles)
-        {
-          checkBlocked(ob, leftBlocked, rightBlocked, pose.pose, leftPoint, rightPoint, leftPointNear, rightPointNear, leftKickPoint, rightKickPoint, obstacleBlockingRadiusSqr, obstacleBlockingRadiusSafeSqr);
-          if(addBlockedRating(leftBlocked, rightBlocked, isForwardLeftKick, isForwardRightKick, pose))
-            break;
-        }
-      }
-    }
-
-    // 8.4.14. Calculate time to reach position and worsen rating accordingly
-    const float minTime = std::abs(pose.pose.translation.x() / theWalkingEngineOutput.maxSpeed.translation.x()) +
-                          std::abs(pose.pose.translation.y() / theWalkingEngineOutput.maxSpeed.translation.y()) +
-                          std::abs(pose.pose.rotation / theWalkingEngineOutput.maxSpeed.rotation * 0.25f);
-
-    pose.rating += std::max(0.f, minTime / 1000.f) * duelRatings.ratingOpponentFaster;
 
     // 8.4.15. Bonus for same kick, but smaller rotation
     if(!theDuelPose.noKick &&
-       ((theDuelPose.kickType == kickType) && theDuelPose.type == pose.type &&
-        kickType != KickInfo::walkForwardStealBallLeft && kickType != KickInfo::walkForwardStealBallRight))
+       ((theDuelPose.kickType == kickType) && theDuelPose.type == pose.type))
     {
       pose.rating += duelRatings.ratingSameKick;
       pose.rating += duelRatings.ratingSameKickAngle * (1.f - std::min((std::abs(Angle::normalize(theDuelPose.kickAngle - kickAngle))) / smallerKickAnglePreference, 1.f));
@@ -1079,190 +954,6 @@ option((SkillBehaviorControl) Zweikampf,
                          pose.lastFieldEndPoint.x() + 30.f, pose.lastFieldEndPoint.y() + 30.f,
                          1, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, color);
       }
-    }
-  };
-
-  /**
-   * Calculate the precision range based on the field border
-   */
-  const auto calculateSectorUntilFieldBorder = [&](Rangea& precision, const Angle kickAngle, const float range,
-                                                   const Vector2f& fieldPoint, const std::vector<Rangea>& goalSectors)
-  {
-    // Prevent precisions directed at own goal if ball would land behind own penalty area
-    const float xFieldMin = fieldPoint.x() > theFieldDimensions.xPosOwnPenaltyArea ? theFieldDimensions.xPosOwnPenaltyArea : theFieldDimensions.xPosOwnGoalLine + fieldBorderSafeDistance;
-    float xFieldMax = theFieldDimensions.xPosOpponentGoalLine;
-    float yFieldMax = theFieldDimensions.yPosLeftTouchline;
-
-    // Also Reduce usable field to prevent kicking the ball out
-    const Vector2f ballEndPosition = fieldPoint + Vector2f::polar(range, kickAngle + theRobotPose.rotation);
-
-    auto checkFieldBorderDistance = [&](const Vector2f& point)
-    {
-      std::vector<float> distances = { fieldBorderSafeDistance, point.x() - xFieldMin, xFieldMax - point.x(),  point.y() + yFieldMax, yFieldMax - point.y() };
-      return *(std::min_element(distances.begin(), distances.end()));
-    };
-
-    const float safeDistanceToFieldBorder = std::max(200.f, std::min(checkFieldBorderDistance(ballEndPosition), checkFieldBorderDistance(fieldPoint)) - 200.f);
-    xFieldMax -= safeDistanceToFieldBorder;
-    yFieldMax -= safeDistanceToFieldBorder;
-
-    const Vector2f ownHalfBackRight(xFieldMin, -yFieldMax);
-    const Vector2f opponentHalfFrontLeft(xFieldMax, yFieldMax);
-
-    // Clip field point inside reduce field.
-    Vector2f fieldPointClipped = fieldPoint;
-    fieldPointClipped.x() = Rangef(ownHalfBackRight.x() + 1.f, opponentHalfFrontLeft.x() - 1.f).limit(fieldPointClipped.x());
-    fieldPointClipped.y() = Rangef(ownHalfBackRight.y() + 1.f, opponentHalfFrontLeft.y() - 1.f).limit(fieldPointClipped.y());
-
-    // Get precision angles in field coordinates
-    Angle min = Angle::normalize(kickAngle + precision.min + theRobotPose.rotation);
-    Angle max = Angle::normalize(kickAngle + precision.max + theRobotPose.rotation);
-
-    const std::vector<Vector2f> edges = { {xFieldMax, 0.f}, {0.f, -yFieldMax}, {xFieldMin, 0.f}, {0.f, yFieldMax} };
-    Vector2f i1(0.f, 0.f);
-    Vector2f i2(0.f, 0.f);
-
-    auto clipPrecisionRange = [&](const Angle kickAngleToCheck, const Angle mainAngle, const bool isBaseSearch, const bool isMinSearch)
-    {
-      Angle changeableMin = min;
-      Angle changeableMax = max;
-      VERIFY(Geometry::getIntersectionPointsOfLineAndRectangle(ownHalfBackRight, opponentHalfFrontLeft, Geometry::Line(fieldPointClipped, Vector2f(1.f, 0.f).rotated(kickAngleToCheck)), i1, i2));
-      const Vector2f ballToIntersection2 = i2 - fieldPointClipped;
-      Vector2f& intersection = i1;
-      // the 5_deg is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding errors.
-      if(std::abs(ballToIntersection2.angle() - Angle::normalize(kickAngleToCheck)) < 5_deg)
-        intersection = i2;
-      // Find intersecting edge
-      auto it = edges.end();
-      for(auto otherIt = edges.begin(); otherIt != edges.end(); otherIt++)
-      {
-        if(otherIt->x() == intersection.x() || otherIt->y() == intersection.y())
-        {
-          it = otherIt;
-          break;
-        }
-      }
-      if(it == edges.end())
-        return;
-
-      auto getIntersectionAngle = [mainAngle](const Vector2f& theFieldPoint, const auto& it, Angle& angle, const float length, const bool isMax)
-      {
-        if(Approx::isEqual(mainAngle, angle, 0.1_deg))
-          return false;
-
-        const float adjacent = it->x() != 0.f ?
-                               (it->x() > 0.f ? it->x() - theFieldPoint.x() : theFieldPoint.x() - it->x()) :
-                               (it->y() > 0.f ? it->y() - theFieldPoint.y() : theFieldPoint.y() - it->y());
-
-        Vector2f fieldEdge = *it;
-        if(fieldEdge.x() == 0.f)
-          fieldEdge.x() = theFieldPoint.x();
-        if(fieldEdge.y() == 0.f)
-          fieldEdge.y() = theFieldPoint.y();
-
-        const Angle offset = (fieldEdge - theFieldPoint).angle();
-
-        if((!isMax && offset > mainAngle) || (isMax && offset < mainAngle))
-          return true;
-
-        if(adjacent > length)
-          return !((angle >= mainAngle && angle < offset) || (angle <= mainAngle && angle > offset));
-
-        // Clip for closer to mainAngle
-        Angle cosA = 0_deg;
-        if(offset > mainAngle && isMax)
-          cosA = offset - std::acos(adjacent / length);
-        else if(isMax)
-          cosA = offset + std::asin(adjacent / length);
-        else if(offset < mainAngle && !isMax)
-          cosA = offset + std::acos(adjacent / length);
-        else
-          cosA = offset - std::asin(adjacent / length);
-
-        if(isMax)
-          angle = std::min(angle, cosA);
-        else
-          angle = std::max(angle, cosA);
-
-        angle = Angle::normalize(angle);
-        return false;
-      };
-
-      if(precision.min < 0 && (isBaseSearch || isMinSearch))
-      {
-        bool isGoalAngle = false;
-        for(const auto& sec : goalSectors)
-        {
-          isGoalAngle |= sec.isInside(precision.min + kickAngle);
-        }
-
-        if(!isGoalAngle)
-        {
-          unsigned counter = 0;
-          auto itCopy = it;
-          bool searching = true;
-          while(searching && counter < edges.size())
-          {
-            searching = getIntersectionAngle(fieldPointClipped, itCopy, changeableMin, range, false);
-            itCopy++;
-            if(itCopy == edges.end())
-              itCopy = edges.begin();
-            counter++;
-          }
-        }
-      }
-      if(precision.max > 0 && (isBaseSearch || !isMinSearch))
-      {
-        bool isGoalAngle = false;
-        for(const auto& sec : goalSectors)
-        {
-          isGoalAngle |= sec.isInside(precision.max + kickAngle);
-        }
-        if(!isGoalAngle)
-        {
-          unsigned counter = 0;
-          auto itCopy = it;
-          bool searching = true;
-          while(searching && counter < edges.size())
-          {
-            searching = getIntersectionAngle(fieldPointClipped, itCopy, changeableMax, range, true);
-            if(itCopy == edges.begin())
-              itCopy = --(edges.end());
-            else
-              itCopy--;
-            counter++;
-          }
-        }
-      }
-
-      precision.min = std::max(precision.min, std::min(0_deg, Angle(Angle::normalize(changeableMin - kickAngle - theRobotPose.rotation))));
-      precision.max = std::min(precision.max, std::max(0_deg, Angle(Angle::normalize(changeableMax - kickAngle - theRobotPose.rotation))));
-    };
-
-    const Angle kickAngleInField = Angle::normalize(kickAngle + theRobotPose.rotation);
-
-    // Check based on original field line that we intersect whether the precision angles must be reduced
-    clipPrecisionRange(kickAngleInField, kickAngleInField, true, false);
-
-    // Check for min direction again
-    min = Angle::normalize(kickAngle + precision.min + theRobotPose.rotation);
-    max = Angle::normalize(kickAngle + precision.max + theRobotPose.rotation);
-    clipPrecisionRange(min, kickAngleInField, false, true);
-
-    // Check for max direction again too
-    min = Angle::normalize(kickAngle + precision.min + theRobotPose.rotation);
-    max = Angle::normalize(kickAngle + precision.max + theRobotPose.rotation);
-    clipPrecisionRange(max, kickAngleInField, false, false);
-
-    // Prevent precisions directed at own goal if ball would land behind own penalty area
-    // Cant be done before if the ball is already behind the penalty area, as the checks before would not work
-    // (Because the ball would be outside the rectangle, so directions directed to the opponent goal would be wrong otherwise
-    if(useBallPositionInField.x() <= theFieldDimensions.xPosOwnPenaltyArea)
-    {
-      const Angle minAllowedPrecision = std::min(kickAngleInField, -90_deg) - kickAngleInField;
-      const Angle maxAllowedPrecision = std::max(kickAngleInField, 90_deg) - kickAngleInField;
-      precision.min = std::max(precision.min, minAllowedPrecision);
-      precision.max = std::min(precision.max, maxAllowedPrecision);
     }
   };
 
@@ -1435,16 +1126,16 @@ option((SkillBehaviorControl) Zweikampf,
       directionPossibilities.push_back(Angle::normalize((forbiddingKickAngle.min + forbiddingKickAngle.max) * 0.5f));
     else
       directionPossibilities.push_back(-theRobotPose.rotation);
-    directionPossibilities.push_back(Angle::normalize(theKickInfo[KickInfo::walkSidewardsLeftFootToLeft].rotationOffset + theRobotPose.rotation));
-    directionPossibilities.push_back(Angle::normalize(theKickInfo[KickInfo::walkSidewardsRightFootToRight].rotationOffset + theRobotPose.rotation));
+    directionPossibilities.push_back(Angle::normalize(90_deg + theRobotPose.rotation));
+    directionPossibilities.push_back(Angle::normalize(-90_deg + theRobotPose.rotation));
 
     // forward steal angles
     directionPossibilities.push_back(Angle::normalize(bestForwardStealRange.max - theRobotPose.rotation));
     directionPossibilities.push_back(Angle::normalize(bestForwardStealRange.min - theRobotPose.rotation));
 
     // minMaxAngle directions
-    directionPossibilities.push_back(Angle::normalize(minMaxAngle + theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset));
-    directionPossibilities.push_back(Angle::normalize(-minMaxAngle + theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset));
+    directionPossibilities.push_back(Angle::normalize(minMaxAngle + 45_deg));
+    directionPossibilities.push_back(Angle::normalize(-minMaxAngle - 45_deg));
 
     if(theSkillRequestPose.skill != SkillRequest::pass)
     {
@@ -1562,9 +1253,7 @@ option((SkillBehaviorControl) Zweikampf,
     }
 
     TargetType highestPriority = TargetType::numOfTargetTypes;
-    const float nearOwnGoalScaling = (1.f - Rangef::ZeroOneRange().limit((useBallPositionInField.x() - theFieldDimensions.xPosOwnGoalArea) / (theFieldDimensions.xPosOwnPenaltyArea + 500.f - theFieldDimensions.xPosOwnGoalArea)));
-
-    const Angle dribbleAngle = theDribbleTarget.calculateDribbleAngle(theFieldInterceptBall.interceptedEndPositionOnField);
+    const Angle dribbleAngle = theDribbleTarget.calculateDribbleAngle(theFieldBall.positionOnField);
     const float extraGoalRange = (std::abs(dribbleAngle) < 45_deg + (shouldDribble ? 10_deg : 0_deg)) ? 1000.f : 0.f;
 
     // 8. Check every kick angle with every kick
@@ -1639,12 +1328,6 @@ option((SkillBehaviorControl) Zweikampf,
       // 8.4. check every InWalkKick
       for(KickInfo::KickType kickType : allowedKicks)
       {
-        // side kick is not allowed
-        if((kickType == KickInfo::walkSidewardsLeftFootToLeft || kickType == KickInfo::walkSidewardsRightFootToRight) &&
-           ((opponentAndSelfDistanceToBallDiff < 100.f) ||
-            !(forbiddingKickAngle.isInside(kickAngle) || forbiddingKickAngleExtra.isInside(kickAngle))))
-          continue;
-
         // forward steal is not allowed
         if((kickType == KickInfo::walkForwardStealBallLeft || kickType == KickInfo::walkForwardStealBallRight) &&
            (stealBallMin != stealBallMax || // we are not on front of the opponent, therefore the walkSteal kick would not work in time
@@ -1660,8 +1343,8 @@ option((SkillBehaviorControl) Zweikampf,
                                             stealBallMin, stealBallMax,
                                             angleFromBallToOpponent,
                                             rangeRatingVector, rangeForGoal,
-                                            angleFromGoalToBall, isTypeStealBall, highestPriority,
-                                            nearOwnGoalScaling, forbiddingKickAngle, extraGoalRange);
+                                            angleFromGoalToBall, highestPriority,
+                                            extraGoalRange);
         if(!possible)
           continue;
         duelPoses[pose.type].push_back(pose);
@@ -1714,96 +1397,35 @@ option((SkillBehaviorControl) Zweikampf,
       // in case of a goal kick, always use the forwardLong
       if(replaceForwardWithLongGoalShot && theDuelPose.type == TargetType::goalShot)
       {
-        if(std::abs(theDuelPose.kickAngle) < replaceNormalToLongKickGoalShot && (theDuelPose.kickType == KickInfo::walkForwardsLeft || theDuelPose.kickType == KickInfo::walkForwardsRight))
-          theDuelPose.kickType = theDuelPose.kickType == KickInfo::walkForwardsLeft ? KickInfo::walkForwardsLeftLong : KickInfo::walkForwardsRightLong;
-        else if((theDuelPose.kickType == KickInfo::walkForwardsLeftAlternative || theDuelPose.kickType == KickInfo::walkForwardsRightAlternative))
-          theDuelPose.kickType = theDuelPose.kickType == KickInfo::walkForwardsLeftAlternative ? KickInfo::walkForwardsLeftLong : KickInfo::walkForwardsRightLong;
+        if(theDuelPose.kickType == KickInfo::rlKickDynamic)
+          theDuelPose.kickType = KickInfo::rlKickStrong;
       }
-      else if(theDuelPose.type == TargetType::goalDribbleShot)
+
+      if(theDuelPose.type == TargetType::goalShot)
       {
-        if((theDuelPose.kickType == KickInfo::walkForwardsLeftAlternative || theDuelPose.kickType == KickInfo::walkForwardsRightLong))
-          theDuelPose.kickType = KickInfo::walkForwardsLeft;
-        else if((theDuelPose.kickType == KickInfo::walkForwardsRightAlternative || theDuelPose.kickType == KickInfo::walkForwardsRightLong))
-          theDuelPose.kickType = KickInfo::walkForwardsRight;
+        for(const auto& sector : kickAngles)
+        {
+          if(sector.type == SectorWheel::Sector::goal && sector.angleRange.isInside(theDuelPose.kickAngle))
+          {
+            const Angle mostOptimalGoalDirectionRelative = (Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f) - theFieldBall.positionOnField).angle() - theRobotPose.rotation;
+            const Angle sectorShiftValue = sector.angleRange.getSize() * obstacleHandling.goalSectorShiftFactor;
+            const Rangea searchRange(sector.angleRange.min + sectorShiftValue, sector.angleRange.max - sectorShiftValue);
+            theDuelPose.kickAngle = searchRange.limit(mostOptimalGoalDirectionRelative);
+          }
+        }
       }
+
       theDuelPose.precision = Rangea(0_deg, 0_deg);
 
       timeSinceDoingNothing = theFrameInfo.time;
-      if(theKickInfo[theDuelPose.kickType].walkKickType == WalkKicks::forwardSteal)
+      if(theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight)
         lastForwardSteal = theFrameInfo.time;
-
-      // 11.2 filter the sector wheel and ignore all obstacles, that are further away than the kick range
-      const SectorWheel::Sector* sectorRef = nullptr;
-      SectorWheel filteredWheel;
-      filteredWheel.begin(useBallPositionInField);
-      std::vector<Rangea> goalSectors;
-      Vector2f intersectionPoint;
-      VERIFY(Geometry::getIntersectionOfLines(Geometry::Line(useBallPositionInField, Vector2f::polar(1.f, (Vector2f(theFieldDimensions.xPosOpponentGoal, 0.f) - useBallPositionInField).angle())), Geometry::Line(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightGoal), Vector2f(0.f, 1.f)), intersectionPoint));
-      const float rangeForGoal = (intersectionPoint - useBallPositionInField).norm() + 0.01f;
-      for(const SectorWheel::Sector& sector : kickAngles)
-      {
-        if((sector.type == SectorWheel::Sector::obstacle && sector.distance - 500.f < theDuelPose.range) ||
-           (sector.type == SectorWheel::Sector::goal && theDuelPose.type == TargetType::goalShot) || // only add goal sector if we have a goalShot. Otherwise the goal sector does not matter
-           (sector.type == SectorWheel::Sector::goal && !theIndirectKick.allowDirectKick && theDuelPose.range + 1000.f > rangeForGoal))
-          filteredWheel.addSector(sector.angleRange, sector.distance, sector.type);
-        if(sector.type == SectorWheel::Sector::goal)
-          goalSectors.push_back(sector.angleRange);
-      }
-      std::list<SectorWheel::Sector> filteredSectors = filteredWheel.finish();
-
-      for(const SectorWheel::Sector& sector : filteredSectors)
-      {
-        if(sector.angleRange.isInside(theDuelPose.kickAngle))
-        {
-          sectorRef = &sector;
-          break;
-        }
-      }
-      Rangea precision(0_deg, 0_deg);
-      // 11.3. Calculate the precision range
-      if(sectorRef != nullptr)
-      {
-        precision = sectorRef->angleRange;
-        Rangea borderToMinMax = precision;
-
-        borderToMinMax.min = borderToMinMax.min + 5_deg;
-        borderToMinMax.max = borderToMinMax.max - 5_deg;
-
-        if(precision.max < precision.min)
-        {
-          if(theDuelPose.kickAngle > precision.min)
-            borderToMinMax.max = 180_deg;
-          else
-            borderToMinMax.min = -180_deg;
-        }
-        borderToMinMax = Rangea(std::min(theDuelPose.kickAngle, borderToMinMax.min),
-                                std::max(theDuelPose.kickAngle, borderToMinMax.max));
-        const Angle searchOffset = theKickInfo[theDuelPose.kickType].walkKickType != WalkKicks::forwardSteal && soonCloseRangeDuel ? 90_deg : 5_deg;
-        precision.max = std::max(0.f, borderToMinMax.limit(theDuelPose.kickAngle + searchOffset) - theDuelPose.kickAngle);
-        precision.min = std::min(0.f, borderToMinMax.limit(theDuelPose.kickAngle - searchOffset) - theDuelPose.kickAngle);
-      }
-
-      if(bonusForStealBall)
-      {
-        if((duelObstacle.center - useBallPositionRelative).angle() < 0)
-        {
-          const Angle minAngle = 90_deg - theRobotPose.rotation;
-          precision.min = std::min(Angle(minAngle - theDuelPose.kickAngle), precision.min);
-        }
-        else
-        {
-          const Angle maxAngle = -90_deg - theRobotPose.rotation;
-          precision.max = std::max(Angle(maxAngle - theDuelPose.kickAngle), precision.max);
-        }
-      }
-      calculateSectorUntilFieldBorder(precision, theDuelPose.kickAngle, theDuelPose.range, useBallPositionInField, goalSectors);
-      theDuelPose.precision = precision;
     }
     else
     {
       // 12. no kick was calculated for a longer period of time. Therefore just stand between the ball and the own goal, to make the life for the opponent hard
-      if((theKickInfo[theDuelPose.kickType].walkKickType == WalkKicks::forwardSteal && theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.noKickStealMinTime) ||
-         (theKickInfo[theDuelPose.kickType].walkKickType != WalkKicks::forwardSteal && theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.noKickMinTime))
+      if(((theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight) && theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.noKickStealMinTime) ||
+         (!(theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight) && theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.noKickMinTime))
       {
         DuelPose noPose;
         const Angle rotation = (theFieldBall.positionOnField - Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.f)).angle();
@@ -1815,8 +1437,9 @@ option((SkillBehaviorControl) Zweikampf,
     }
 
     // 13.1. The perception of the obstacle might just be bad, so keep the forwardSteal as long as the new decision is not a goal kick or pass
-    if(theKickInfo[lastDuelPose.kickType].walkKickType == WalkKicks::forwardSteal && theKickInfo[theDuelPose.kickType].walkKickType != WalkKicks::forwardSteal &&
-       theFrameInfo.getTimeSince(lastForwardSteal) < 500 && theDuelPose.type != TargetType::goalShot && forceForwardSteal)
+    if((lastDuelPose.kickType == KickInfo::walkForwardStealBallLeft || lastDuelPose.kickType == KickInfo::walkForwardStealBallRight)
+       && (theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight)
+       && theFrameInfo.getTimeSince(lastForwardSteal) < 500 && theDuelPose.type != TargetType::goalShot && forceForwardSteal)
     {
       theDuelPose = lastDuelPose;  // use the steal kick that matches the new kick angle the most
       theDuelPose.kickAngle = lastKickAngle;
@@ -1826,10 +1449,10 @@ option((SkillBehaviorControl) Zweikampf,
         theDuelPose.kickAngle = Angle::normalize(theDuelPose.kickAngle + 180_deg);
       theDuelPose.precision = Rangea(-5_deg, 5_deg);
     }
-    if(theKickInfo[theDuelPose.kickType].walkKickType == WalkKicks::forwardSteal && (useBallPositionRelative - duelObstacle.center).squaredNorm() < sqr(obstacleHandling.maxObstacleDistanceToForceForwardSteal))
+    if((theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight) && (useBallPositionRelative - duelObstacle.center).squaredNorm() < sqr(obstacleHandling.maxObstacleDistanceToForceForwardSteal))
       forceForwardSteal = true;
 
-    if(theKickInfo[theDuelPose.kickType].walkKickType != WalkKicks::forwardSteal)
+    if(!(theDuelPose.kickType == KickInfo::walkForwardStealBallLeft || theDuelPose.kickType == KickInfo::walkForwardStealBallRight))
       forceForwardSteal = false;
   };
 
@@ -1842,17 +1465,17 @@ option((SkillBehaviorControl) Zweikampf,
     {
       const Rangef ttrbRange(0.f, 1.f);
       const float ballVelocityFactor = mapToRange(theFieldBall.positionRelative.norm(), ballPositionInterpolationRange.min, ballPositionInterpolationRange.max, 0.f, 1.f);
-      useBallPositionRelative = (1.f - ballVelocityFactor) * theFieldBall.positionRelative + ballVelocityFactor * theFieldInterceptBall.interceptedEndPositionRelative;
+      useBallPositionRelative = (1.f - ballVelocityFactor) * theFieldBall.positionRelative + ballVelocityFactor * theFieldBall.positionRelative;
       useBallPositionInField = theRobotPose * useBallPositionRelative;
       useBallPositionInField.x() = ballClipX.limit(useBallPositionInField.x());
       useBallPositionInField.y() = ballClipY.limit(useBallPositionInField.y());
     }
     else
     {
-      useBallPositionInField = theFieldInterceptBall.interceptedEndPositionOnField;
+      useBallPositionInField = theFieldBall.positionOnField;
       useBallPositionInField.x() = ballClipX.limit(useBallPositionInField.x());
       useBallPositionInField.y() = ballClipY.limit(useBallPositionInField.y());
-      useBallPositionRelative = theFieldInterceptBall.interceptedEndPositionRelative;
+      useBallPositionRelative = theFieldBall.positionRelative;
     }
   };
 
@@ -1876,22 +1499,19 @@ option((SkillBehaviorControl) Zweikampf,
     // to reduce computation time later, we want to get a list of all kick ranges, we want to precompute later
     // these ranges are the min and max ranges of all allowed kicks, and an interpolation between the forward and turn kick
     // 1. get interpolation ranges for forward and turn kick
-    std::vector<float> distances;
-    distances.push_back((theKickInfo[KickInfo::walkForwardsLeft].range.max + theKickInfo[KickInfo::walkTurnLeftFootToRight].range.max) / 2.f);
+    std::vector<float> distances = distanceParameters.additionalRanges;
+    const float rangeStepSize = (theKickInfo[distanceParameters.mainKick].range.max - theKickInfo[distanceParameters.mainKick].range.min) / distanceParameters.numberOfSubRanges;
+    for(int i = 1; i < distanceParameters.numberOfSubRanges; i++)
+      distances.push_back(theKickInfo[distanceParameters.mainKick].range.min + rangeStepSize * i);
 
     // 2. get ranges for all kicks
     for(KickInfo::KickType kick : allowedKicks)
     {
-      if(((kick == KickInfo::walkForwardsLeft ||
-           kick == KickInfo::walkTurnLeftFootToRight ||
-           kick == KickInfo::walkTurnLeftFootToRightShifted) && theKickInfo[kick].range.min <= minForwardTurnRange) ||
-         theKickInfo[kick].kickLeg != Legs::right) // skip clones
+      if(theKickInfo[kick].kickLeg == Legs::left) // skip clones
         continue;
       distances.push_back(theKickInfo[kick].range.min);
       distances.push_back(theKickInfo[kick].range.max);
     }
-
-    distances.push_back(minForwardTurnRange);
 
     // sort them
     std::sort(distances.begin(), distances.end(), [](const float& d1, const float& d2) { return d1 < d2; });
@@ -1900,10 +1520,55 @@ option((SkillBehaviorControl) Zweikampf,
     float lastRange = -1.f;
     for(float dis : distances)
     {
-      if(!Approx::isEqual(dis, lastRange, 0.1f))
+      if(std::abs(dis - lastRange) > 0.1f)
         checkKickDistancesForFR.push_back(dis);
       lastRange = dis;
     }
+  };
+
+  const auto convertKick = [&](KickInfo::KickType& kickType, Angle& kickDirection, float& kickRange)
+  {
+    if(kickType != KickInfo::walkForwardStealBallLeft && kickType != KickInfo::walkForwardStealBallRight)
+      return;
+
+    if(allowedKicks.end() == std::find_if(allowedKicks.begin(), allowedKicks.end(), [](const auto& kickType) {return kickType == KickInfo::rlKickDynamic;}))
+    {
+      FAIL("No rlKickDynamic available!");
+    }
+
+    if(theFieldBall.positionOnField.x() > theFieldDimensions.xPosOpponentGoalLine - stealKickReplacementParameter.interpolateDirectionGoalDistance.max)
+    {
+      const float minBallGoalPostOffsetSquared = theFieldDimensions.goalPostRadius + theBallSpecification.radius;
+      const Angle leftAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffsetSquared / (leftGoalPost - useBallPositionInField).norm()));
+      const Angle rightAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffsetSquared / (rightGoalPost - useBallPositionInField).norm()));
+      const Angle angleToLeftPost = Angle::normalize((leftGoalPost - useBallPositionInField).angle() - leftAngleOffset - theRobotPose.rotation - 2_deg);
+      const Angle angleToRightPost = Angle::normalize((rightGoalPost - useBallPositionInField).angle() + rightAngleOffset - theRobotPose.rotation + 2_deg);
+
+      const Rangea goalDirection(angleToLeftPost, angleToRightPost);
+      const Angle replacementDirection = Angle::normalize(theRobotPose.rotation + kickDirection + (kickType == KickInfo::walkForwardStealBallLeft ? 1.f : -1.f) * stealKickReplacementParameter.staticShift);
+      const Angle clippedDirection = goalDirection.limit(replacementDirection);
+      const Angle interpolatedKickAngle = mapToRange(theFieldBall.positionOnField.x(), theFieldDimensions.xPosOpponentGoalLine - stealKickReplacementParameter.interpolateDirectionGoalDistance.max, theFieldDimensions.xPosOpponentGoalLine - stealKickReplacementParameter.interpolateDirectionGoalDistance.min, static_cast<float>(replacementDirection), static_cast<float>(clippedDirection));
+      kickDirection = interpolatedKickAngle;
+    }
+    else
+      kickDirection += (kickType == KickInfo::walkForwardStealBallLeft ? 1.f : -1.f) * stealKickReplacementParameter.staticShift;
+
+    kickType = KickInfo::rlKickDynamic;
+
+    Vector2f i1(0.f, 0.f);
+    Vector2f i2(0.f, 0.f);
+    VERIFY(Geometry::getIntersectionPointsOfLineAndRectangle(-opponentHalfFrontLeft, opponentHalfFrontLeft, Geometry::Line(useBallPositionInField, Vector2f(1.f, 0.f).rotated(kickDirection + theRobotPose.rotation)), i1, i2));
+    const Vector2f ballToIntersection1 = i1 - useBallPositionInField;
+    const Vector2f ballToIntersection2 = i2 - useBallPositionInField;
+    // the 5_deg is just a arbitrary number, because the angle to the intersection point is only for a small fraction different to the original kickAngle, resulting from rounding errors.
+    float distanceToFieldBorder = 0.f;
+    if(std::abs(ballToIntersection1.angle() - (kickDirection + theRobotPose.rotation)) < 5_deg)
+      distanceToFieldBorder = ballToIntersection1.squaredNorm() - sqr(100.f); // 100.f safe distance
+    else if(std::abs(ballToIntersection2.angle() - (kickDirection + theRobotPose.rotation)) < 5_deg)
+      distanceToFieldBorder = ballToIntersection2.squaredNorm() - sqr(100.f); // 100.f safe distance
+    distanceToFieldBorder = std::max(stealKickReplacementParameter.distanceToFieldBorderRange.min, std::sqrt(distanceToFieldBorder) - stealKickReplacementParameter.distanceToFieldBorderRange.max);
+
+    kickRange = std::min(distanceToFieldBorder, mapToRange(useBallPositionInField.x(), theFieldDimensions.centerCircleRadius, theFieldDimensions.xPosOpponentPenaltyArea, std::min(minKickRange.max, theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea * 0.5f), minKickRange.min));
   };
 
   initial_state(execute)
@@ -1933,8 +1598,8 @@ option((SkillBehaviorControl) Zweikampf,
         updateSkillRequest();
         if(forcedInactive)
         {
-          forcedInactive = theFrameInfo.getTimeSince(timeSinceDoingNothing) < duelTimings.inactiveAfterDoingNothing && Geometry::isPointInsideRectangle(opponentHalf, useBallPositionInField);
-          DribbleToGoal();
+          forcedInactive = theFrameInfo.getTimeSince(timeSinceDoingNothing) < duelTimings.inactiveAfterDoingNothing;
+          DribbleToGoal({.alignPrecisely = KickPrecision::justHitTheBall});
         }
         else
         {
@@ -1942,27 +1607,26 @@ option((SkillBehaviorControl) Zweikampf,
           if(!theDuelPose.noKick)
           {
             float kickRange = theDuelPose.type == TargetType::goalShot ? 10000.f : theDuelPose.range; // Goal shots shall take the strongest version
-            GoToBallAndKick({.targetDirection = Angle::normalize(theDuelPose.kickAngle),
-                             .kickType = theDuelPose.kickType,
+            KickInfo::KickType kickType = theDuelPose.kickType;
+            Angle kickDirection = theDuelPose.kickAngle;
+            convertKick(kickType, kickDirection, kickRange);
+            GoToBallAndKick({.targetDirection = Angle::normalize(kickDirection),
+                             .kickType = kickType,
                              .lookActiveWithBall = theFieldBall.positionRelative.squaredNorm() > sqr(lookActiveMinBallDistance), // intentionally the current position!
                              .alignPrecisely = KickPrecision::justHitTheBall,
-                             .length = kickRange,
-                             .preStepType = theDuelPose.preStepAllowed ? PreStepType::allowed : PreStepType::notAllowed,
-                             .turnKickAllowed = theDuelPose.turnKickAllowed,
-                             .shiftTurnKickPose = theDuelPose.shiftTurnKickPose,
-                             .directionPrecision = theDuelPose.precision});
+                             .length = kickRange});
           }
           else
           {
             WalkToPoint({.target = theDuelPose.pose,
-                         .reduceWalkSpeedType = ReduceWalkSpeedType::normal, // TODO no idea if normal or none would be better
+                         .reduceWalkSpeedType = ReduceWalkSpeedType::noChange, // TODO no idea if normal or none would be better
                          .rough = true,
                          .disableStanding = true});
             LookActive({.withBall = true});
           }
 
           // check of opponent half is needed to prevent stupid stuff near the own goal, gets used in the next computation frame
-          forcedInactive = theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.maxTimeDoingNothing && Geometry::isPointInsideRectangle(opponentHalf, useBallPositionInField);
+          forcedInactive = theFrameInfo.getTimeSince(timeSinceDoingNothing) > duelTimings.maxTimeDoingNothing;
         }
       }
     }

@@ -11,7 +11,6 @@
 #include "Framework/LoggingTools.h"
 #include "Platform/File.h"
 #include "Streaming/InStreams.h"
-#include <snappy-c.h>
 #include <stdexcept>
 
 Log::Log(const std::string& path, bool keepGoing) :
@@ -24,13 +23,25 @@ Log::Log(const std::string& path, bool keepGoing) :
 
   InBinaryMemory stream(file->getData(), file->getSize());
 
-  LoggingTools::parseName(path.substr(path.find_last_of("/\\") + 1), &headName, &bodyName, &scenario, &location, &identifier, &playerNumber, &suffix);
-
   LoggingTools::LogFileFormat magicByte;
   stream >> magicByte;
   if(magicByte == LoggingTools::logFileSettings)
   {
-    LoggingTools::skipSettings(stream);
+    unsigned version;
+    stream >> version;
+    if(version < 1 || version > 3)
+      throw std::runtime_error("Unknown settings version.");
+    stream >> robotName;
+    if(version < 3)
+    {
+      std::string bodyName;
+      stream >> bodyName;
+    }
+    stream >> playerNumber;
+    stream >> location;
+    stream >> scenario;
+    if(version >= 2)
+      stream >> teamNumber;
     stream >> magicByte;
   }
   if(magicByte != LoggingTools::logFileMessageIDs)
@@ -63,33 +74,26 @@ Log::Log(const std::string& path, bool keepGoing) :
       break;
     }
     case LoggingTools::logFileCompressed:
-      reserve(0xfffffffffull);
-      while(!stream.eof())
-      {
-        unsigned compressedSize;
-        stream >> compressedSize;
-        if(!compressedSize)
-          throw std::runtime_error("Corrupt compressed log file.");
-        std::vector<char> compressedBuffer(compressedSize);
-        stream.read(compressedBuffer.data(), compressedSize);
-
-        std::size_t uncompressedSize = 0;
-        snappy_uncompressed_length(compressedBuffer.data(), compressedSize, &uncompressedSize);
-        std::vector<char> uncompressedBuffer(uncompressedSize);
-        if(snappy_uncompress(compressedBuffer.data(), compressedSize, uncompressedBuffer.data(), &uncompressedSize) != SNAPPY_OK)
-          break;
-        InBinaryMemory(uncompressedBuffer.data(), uncompressedSize) >> *this;
-      }
-      break;
+      throw std::runtime_error("Compressed logs are not supported anymore!");
     default:
       throw std::runtime_error("Unknown magic byte!");
   }
 
-  // Calc numberOfFrames
-  numberOfFrames = 0;
-  for(Message message : *this)
-    if(id(message) == idFrameBegin)
-      ++numberOfFrames;
+  // Index frame offsets (also gives us numberOfFrames).
+  frameOffsets.clear();
+  for(auto it = begin(); it != end(); ++it)
+    if(id(*it) == idFrameBegin)
+      frameOffsets.push_back(it);
+  numberOfFrames = static_cast<int>(frameOffsets.size());
+}
+
+Frame Log::at(int index)
+{
+  if(index < 0 || static_cast<size_t>(index) >= frameOffsets.size())
+    throw std::out_of_range("Frame index out of range.");
+  Frame frame(*this, frameOffsets[static_cast<size_t>(index)]);
+  frame.readFrame();
+  return frame;
 }
 
 MessageID Log::id(Message message) const

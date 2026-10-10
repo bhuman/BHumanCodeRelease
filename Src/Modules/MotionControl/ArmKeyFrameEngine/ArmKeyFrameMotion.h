@@ -3,7 +3,7 @@
  * angle+stiffness settings to command consecutively to an arm. This class
  * is used by the ArmKeyFrameEngine to read definitions of arm motions from
  * a configuration file.
- * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
+ * @author Simon Taddiken
  */
 
 #pragma once

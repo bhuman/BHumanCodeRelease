@@ -1,0 +1,286 @@
+#!/bin/bash
+# install [-d] <name> [<timezone>]
+
+# Make script path the current directory
+cd "$(dirname "$(which "$0")")"
+
+DELETE=
+DELETE_ALL=
+
+if [ "$1" = "-d" ]; then
+  DELETE=1
+  shift
+elif [ "$1" = "-D" ]; then
+  DELETE=1
+  DELETE_ALL=1
+  shift
+fi
+
+patchRemoteController() {
+  # Create backup of libremote_controller.so if it does not exist yet
+  if sudo test ! -f /opt/booster/lib/libremote_controller.bak; then
+    sudo cp /opt/booster/lib/libremote_controller.so /opt/booster/lib/libremote_controller.bak
+  elif [ -n "$DELETE" ]; then
+    sudo mv /opt/booster/lib/libremote_controller.bak /opt/booster/lib/libremote_controller.so
+  fi
+
+  if [ -z "$DELETE" ]; then
+    # Patch libremote_controller.so to publish "rt/remote_controller_stat2" instead of "rt/remote_controller_state"
+    sudo bash -c "xxd </opt/booster/lib/libremote_controller.so -p \
+                  | tr -d '\n' \
+                  | sed 's%72742f72656d6f74655f636f6e74726f6c6c65725f7374617465%72742f72656d6f74655f636f6e74726f6c6c65725f7374617432%g' \
+                  | xxd -r -p >/tmp/libremote_controller.so \
+                  && mv /tmp/libremote_controller.so /opt/booster/lib/libremote_controller.so"
+  fi
+}
+
+configureServices() {
+  if [ -z "$DELETE" ]; then
+    SERVICES='ros.booster.video_stream|ros.booster.vision_detection|ros.booster.auto_handeye_calib|server.perception|ros.camera|lui|audio|battery_daemon|booster_camera'
+    sudo sed -i -E "/name: ($SERVICES)/{n; s/enable:.*/enable: false/;}" /opt/booster/config/containerd/config.yaml
+  fi
+}
+
+setPassword() {
+  if [ -z "$DELETE" ]; then
+    echo "$1:\$6\$yoHR/vLF\$I8DTr3sRt1XIDbB0LdWgfuBl57jQk3K7CUtnhMqS7OJ3C.NHybfH48OAqTgvEf57dMUhHOhO6cKnbnoAGSDtM." | sudo chpasswd -e
+  else
+    echo "$1:\$y\$j9T\$q7nQb4jB2Pj.FttLFhlj01\$0gYTAUxWzcbiDodqjcG/GQCdYi9eoVPpOQN5mvRx/L." | sudo chpasswd -e
+  fi
+}
+
+# Stop bhuman service if it exists
+systemctl --user list-unit-files bhuman.service >/dev/null && systemctl --user stop bhuman.service
+
+# Set timezone
+if [ -n "$2" ]; then
+  echo "Setting timezone to $2"
+  # This is a hack that does not work everywhere. Daylight saving times are
+  # not always accepted, so try again without the "S".
+  sudo timedatectl set-timezone "$2"
+fi
+
+# Handle Motion PC
+if [ $USER == master ]; then
+  if [ -z "$DELETE" ]; then
+    # Install connectinternet script
+    mkdir -p /home/master/bin
+    cp bin/connectinternet /home/master/bin
+    chmod +x /home/master/bin/connectinternet
+  fi
+
+  # Stop daemon and thereby booster-remote-controller
+  sudo systemctl stop booster-daemon
+
+  # Disable/enable Booster services
+  configureServices
+
+  # Change remote controller topic name
+  patchRemoteController
+
+  # Start daemon again
+  sudo systemctl start booster-daemon
+
+  # Set or remove B-Human password
+  setPassword master
+
+  # Make sure everything is written to disk before a reboot
+  sync
+  echo "Please reboot the robot!"
+
+  exit 0
+fi
+
+# Set hostname to $1
+if [ -n "$1" ]; then
+  echo "Setting hostname to $1"
+  sudo sed -i "s%$(hostname)%$1%g" /etc/hosts
+  sudo hostnamectl set-hostname "$1"
+fi
+
+# Create directory for status information in ram
+if [ ! -f /etc/tmpfiles.d/00-create-volatile.conf ]; then
+  echo "Creating directory for status information in ram"
+  sudo bash -c "cat >/etc/tmpfiles.d/00-create-volatile.conf <<EOF
+d       /var/volatile/log 1777  - - -
+d       /var/volatile/tmp 1777  - - -
+L+      /var/log          1777  - - - volatile/log
+L+      /var/tmp          1777  - - - volatile/tmp
+EOF"
+fi
+
+# Extend rights of user booster
+if [ -z "$(grep "booster" /etc/security/limits.conf)" ]; then
+  echo "Extending rights for user booster"
+  sudo bash -c 'echo "booster - rtprio 65" >>/etc/security/limits.conf'
+  sudo bash -c 'echo "booster - nice -10" >>/etc/security/limits.conf'
+  sudo bash -c 'echo "booster - memlock 40000" >>/etc/security/limits.conf'
+fi
+
+# Deactivate automatic suspend for USB
+if [ -z "$(grep "usbcore.autosuspend=-1" /boot/extlinux/extlinux.conf)" ]; then
+  echo "Disabling automatic suspend for USB"
+  sudo sed -i 's%\(APPEND.*\)%\1 usbcore.autosuspend=-1%' /boot/extlinux/extlinux.conf
+fi
+
+# setvolume should not ask for password
+if [ -z "$(sudo grep "/home/booster/bin/setprofile" /etc/sudoers)" ]; then
+  echo "Allowing setvolume to change volume without password"
+  sudo bash -c 'echo "%sudo ALL=(ALL) NOPASSWD: /home/booster/bin/setprofile" >>/etc/sudoers'
+fi
+
+# sudo nmcli should not ask for password
+if [ -z "$(sudo grep "/usr/bin/nmcli" /etc/sudoers)" ]; then
+  echo "Allowing nmcli to activate connection without password"
+  sudo bash -c 'echo "%sudo ALL=(ALL) NOPASSWD: /usr/bin/nmcli" >>/etc/sudoers'
+fi
+
+# sudo systemctl should not ask for password
+if [ -z "$(sudo grep "/bin/systemctl" /etc/sudoers)" ]; then
+  echo "Allowing to shutdown computer without password"
+  sudo bash -c 'echo "%sudo ALL=(ALL) NOPASSWD: /bin/systemctl" >>/etc/sudoers'
+fi
+
+# Create backup of config.yaml if it does not exist yet
+if sudo test ! -f /opt/booster/config/containerd/config.bak; then
+  sudo cp /opt/booster/config/containerd/config.yaml /opt/booster/config/containerd/config.bak
+elif [ -n "$DELETE" ]; then
+  sudo mv /opt/booster/config/containerd/config.bak /opt/booster/config/containerd/config.yaml
+fi
+
+# Disable/enable Booster services
+configureServices
+
+# Allow user access to /dev/input/event*
+sudo bash -c 'cat >/etc/udev/rules.d/99-input.rules <<EOF
+KERNEL=="event*", SUBSYSTEM=="input", OWNER="booster", MODE="0600"
+EOF'
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# Create directory for scripts, logs, and network profiles
+mkdir -p /home/booster/bin /home/booster/logs /home/booster/Profiles
+
+# Copy scripts and make them executable
+cp bin/bhuman bin/connectinternet bin/setprofile bin/setvolume /home/booster/bin
+chmod +x /home/booster/bin/bhuman bin/connectinternet /home/booster/bin/setprofile /home/booster/bin/setvolume
+
+(
+  # Add macvlan interface with unique MAC and LAN IP
+  LAN_IP="$(grep "^lan *=" network.cfg | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+  LAN_DEVICE="$(nmcli device show | tr '\n' '|' | sed 's%||%!%g' | tr '!' '\n' | grep 192.168.10.102 | tr '|' '\n' | grep GENERAL.CONNECTION | sed 's%GENERAL.CONNECTION: *%%')"
+  PHYS_DEV="$(nmcli device show | tr '\n' '|' | sed 's%||%!%g' | tr '!' '\n' | grep 192.168.10.102 | tr '|' '\n' | grep GENERAL.DEVICE | sed 's%GENERAL.DEVICE: *%%')"
+
+  # LAN_IP already exists on PHYS_DEV
+  if ip -4 addr show dev "$PHYS_DEV" | grep -q " ${LAN_IP}/"; then
+    echo "IP ${LAN_IP} already present on ${PHYS_DEV}"
+    exit 0
+  fi
+
+  # macvlan connection already exists
+  if nmcli -t -f NAME,TYPE connection show | grep -q '^B-Human-Eth:macvlan$'; then
+    echo "macvlan connection B-Human-Eth already exists"
+    sudo nmcli connection modify "B-Human-Eth" "connection.autoconnect-retries" 0
+    exit 0
+  fi
+
+  # Generate MAC
+  MAC="02:4a:a0:37:19:$(printf "%02x" $(echo "$LAN_IP" | cut -d. -f4))"
+
+  # Create macvlan
+  sudo nmcli connection add type macvlan ifname macvlan0 dev "$PHYS_DEV" mode bridge con-name B-Human-Eth ethernet.cloned-mac-address "$MAC" ipv4.method manual ipv4.addresses "$LAN_IP/24"
+
+  sudo nmcli connection modify "B-Human-Eth" "connection.autoconnect-retries" 0
+  sudo nmcli connection up B-Human-Eth
+)
+
+# Setup wireless network connection
+WLAN_IP="$(grep "^wlan *=" network.cfg | sed -e 's%[^"]*"%%' -e 's%".*%%')"
+WLAN_DEVICE="$(nmcli device | grep " wifi " | head -1 | sed 's% .*%%')"
+sudo cp B-Human.nmconnection /etc/NetworkManager/system-connections
+sudo chmod 600 /etc/NetworkManager/system-connections/B-Human.nmconnection
+sudo nmcli connection reload
+sudo nmcli connection modify "B-Human" connection.interface-name "$WLAN_DEVICE"
+sudo nmcli connection modify "B-Human" ipv4.address "$WLAN_IP/16"
+sudo nmcli radio wifi off
+
+# Setup bhuman service
+mkdir -p /home/booster/.config/systemd/user
+cp bhuman.service /home/booster/.config/systemd/user
+systemctl --user daemon-reload
+if [ -z "$DELETE" ]; then
+  systemctl --user enable bhuman
+else
+  systemctl --user disable bhuman
+fi
+
+# Special handling for K1
+if [ -f /opt/booster/robot_info.txt ]; then
+  if [ ! -z "$(grep 'Booster K1' /opt/booster/robot_info.txt)" ]; then
+    # Stop daemon and thereby device-gateway and booster-remote-controller
+    sudo systemctl stop booster-daemon
+
+    # Disable GUI
+    sudo systemctl set-default multi-user.target
+
+    # Create backup of device_gateway if it does not exist yet
+    if sudo test ! -f /opt/booster/bin/container/device_gateway.bak; then
+      sudo cp /opt/booster/bin/container/device_gateway /opt/booster/bin/container/device_gateway.bak
+    elif [ -n "$DELETE" ]; then
+      sudo mv /opt/booster/bin/container/device_gateway.bak /opt/booster/bin/container/device_gateway
+    fi
+
+    if [ -z "$DELETE" ]; then
+      # Patch device_gateway to publish "rt/button_even2" instead of "rt/button_event"
+      sudo bash -c "xxd </opt/booster/bin/container/device_gateway -p \
+                    | tr -d '\n' \
+                    | sed 's%72742f627574746f6e5f6576656e74%72742f627574746f6e5f6576656e32%g' \
+                    | xxd -r -p >/tmp/device_gateway \
+                    && mv /tmp/device_gateway /opt/booster/bin/container/device_gateway \
+                    && chmod +x /opt/booster/bin/container/device_gateway"
+    fi
+
+    # Change remote controller topic name
+    patchRemoteController
+
+    # Install cam_stream service on head
+    if [ -z "$DELETE" ]; then
+      chmod +x update_x5
+      sudo ./update_x5
+
+      # Delete this file, because it limits the maximum priority too much
+      sudo rm /etc/security/limits.d/99-cam-rt.conf
+    else
+      sshpass -p br123456 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 root@192.168.127.10 '
+        systemctl stop cam_stream.service
+        systemctl disable cam_stream.service
+        systemctl unmask start_camera.service
+        systemctl enable start_camera.service
+        systemctl start start_camera.service
+        systemctl unmask start_stereo.service
+        systemctl enable start_stereo.service
+        systemctl start start_stereo.service
+      '
+    fi
+
+    # Configure microphones
+    sudo bash -c "grep -v "^Audio:" </opt/booster/perception_info.yaml >/opt/booster/perception_info.tmp
+                  mv /opt/booster/perception_info.tmp /opt/booster/perception_info.yaml
+                  echo 'Audio: BoosterAEC' >>/opt/booster/perception_info.yaml"
+
+    # Start daemon again
+    sudo systemctl start booster-daemon
+  fi
+fi
+
+# Set or remove B-Human password
+setPassword booster
+
+if [ -n "$DELETE_ALL" ]; then
+  echo "Removing B-Human directories"
+  rm -rf /home/booster/Config /home/booster/bin /home/booster/logs /home/booster/Profiles
+fi
+
+# Make sure everything is written to disk before a reboot
+sync
+echo "Please reboot the robot!"

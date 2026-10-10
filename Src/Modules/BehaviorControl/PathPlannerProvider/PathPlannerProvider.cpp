@@ -66,9 +66,9 @@ static const float epsilon = 0.1f; /**< Small offset in mm. */
 
 PathPlannerProvider::PathPlannerProvider()
   : borders({{theFieldDimensions.xPosOpponentGoalLine + fieldBorderLimit, 0.f, 0.f, -1.f},
-             {theFieldDimensions.xPosOwnGoalLine - fieldBorderLimit, 0.f, 0.f, 1.f},
-             {0.f, theFieldDimensions.yPosLeftTouchline + fieldBorderLimit, 1.f, 0.f},
-             {0.f, theFieldDimensions.yPosRightTouchline - fieldBorderLimit, -1.f, 0.f}})
+  {theFieldDimensions.xPosOwnGoalLine - fieldBorderLimit, 0.f, 0.f, 1.f},
+  {0.f, theFieldDimensions.yPosLeftTouchline + fieldBorderLimit, 1.f, 0.f},
+  {0.f, theFieldDimensions.yPosRightTouchline - fieldBorderLimit, -1.f, 0.f}})
 {
 }
 
@@ -83,17 +83,17 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
   DECLARE_DEBUG_DRAWING3D("module:PathPlannerProvider:expanded", "field");
   DECLARE_DEBUG_DRAWING3D("module:PathPlannerProvider:path", "field");
 
-  pathPlanner.plan = [this](const Pose2f& target, const Pose2f& speed) -> MotionRequest::ObstacleAvoidance
+  pathPlanner.plan = [this](const Pose2f& target, const Pose2f& speed, const bool ignoreBall) -> MotionRequest::ObstacleAvoidance
   {
     const bool excludeOwnPenaltyArea = theIllegalAreas.illegal & bit(IllegalAreas::ownPenaltyArea);
     const bool excludeOpponentPenaltyArea = theIllegalAreas.illegal & bit(IllegalAreas::opponentPenaltyArea);
     const bool excludeCenterCircle = (theGameState.isReady() && theIllegalAreas.anticipatedTimestamp && -theFrameInfo.getTimeSince(theIllegalAreas.anticipatedTimestamp) < static_cast<int>((theGameState.timeWhenStateEnds - theGameState.timeWhenStateStarted) / 2))
-                                     ? theIllegalAreas.anticipatedIllegal & bit(IllegalAreas::centerCircle)
-                                     : theIllegalAreas.illegal & bit(IllegalAreas::centerCircle);
+    ? theIllegalAreas.anticipatedIllegal & bit(IllegalAreas::centerCircle)
+    : theIllegalAreas.illegal & bit(IllegalAreas::centerCircle);
 
-    pathPlannerWasActive = true;
-    createBarriers(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea);
-    createNodes(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea, excludeCenterCircle);
+    timeWhenPathPlannerWasActive = theFrameInfo.time;
+    createBarriers(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea, ignoreBall);
+    createNodes(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea, excludeCenterCircle, ignoreBall);
     plan(nodes[0], nodes[1], speed.translation.x() / speed.rotation);
 
     bool foundPath = false;
@@ -134,13 +134,11 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
     return obstacleAvoidance;
   };
 
-  if(!pathPlannerWasActive)
+  if(theFrameInfo.getTimeSince(timeWhenPathPlannerWasActive) >= forgetDelay)
     lastDir = numOfRotations;
-  else
-    pathPlannerWasActive = false;
 }
 
-void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea)
+void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, const bool ignoreBall)
 {
   barriers.clear();
   barriers.reserve(20);
@@ -154,18 +152,6 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
                         theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftGoal);
   barriers.emplace_back(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal,
                         theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightGoal);
-
-  if(useFastestWalkLeaderboardBarriers)
-  {
-    barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea,
-                          theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftPenaltyArea);
-    barriers.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea,
-                          theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightGoalArea);
-    barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyMark, 0.f,
-                          theFieldDimensions.xPosOwnFieldBorder, 0.f);
-    barriers.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea,
-                          theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftGoalArea);
-  }
 
   if(excludeOwnPenaltyArea)
   {
@@ -188,7 +174,7 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
   {
     float left = theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaRadius - radiusControlOffset;
     float right = theFieldDimensions.yPosRightPenaltyArea - penaltyAreaRadius + radiusControlOffset;
-    float front = theFieldDimensions.xPosOpponentPenaltyArea + penaltyAreaRadius - radiusControlOffset;
+    float front = theFieldDimensions.xPosOpponentPenaltyArea - penaltyAreaRadius + radiusControlOffset;
 
     clipPenaltyArea(theRobotPose.translation, left, right, front);
     clipPenaltyArea(target.translation, left, right, front);
@@ -201,7 +187,7 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
                           front, theFieldDimensions.yPosRightPenaltyArea);
   }
 
-  if(theGameState.isPlaying() && wrongBallSideCostFactor > 0.f)
+  if(!ignoreBall && theGameState.isPlaying() && wrongBallSideCostFactor > 0.f)
   {
     const Vector2f& ballPosition = theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall) ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
     if((ballPosition - target.translation).norm() >= 1.f)
@@ -214,22 +200,23 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPe
 
 void PathPlannerProvider::clipPenaltyArea(const Vector2f& position, float& left, float& right, float& front) const
 {
-  if(position.x() <= front && position.y() >= right && position.y() <= left)
+  const bool ownHalf = front < 0;
+  if(((ownHalf && position.x() <= front) || (!ownHalf && position.x() >= front)) && position.y() >= right && position.y() <= left)
   {
     // If the robot is inside the penalty area, move the closest barrier so the robot is still outside
     const float distanceLeft = left - position.y();
     const float distanceRight = position.y() - right;
-    const float distanceFront = front - position.x();
+    const float distanceFront = std::abs(front - position.x());
     if(distanceLeft < std::min(distanceRight, distanceFront))
       left = position.y() - epsilon;
     else if(distanceRight < std::min(distanceLeft, distanceFront))
       right = position.y() + epsilon;
     else
-      front = position.x() - epsilon;
+      front = position.x() + (ownHalf ? -epsilon : epsilon);
   }
 }
 
-void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle)
+void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle, const bool ignoreBall)
 {
   nodes.clear();
 
@@ -283,7 +270,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenal
     addObstacle(theRobotPose * obstacle.center, getRadius(obstacle.type));
 
   // Add ball in playing if it is not the target
-  if(theGameState.isPlaying())
+  if(!ignoreBall && theGameState.isPlaying())
   {
     const Vector2f& ballPosition = theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall) ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
     if(theGameState.isFreeKick() && !theGameState.isForOwnTeam())

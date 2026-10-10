@@ -10,30 +10,15 @@
 #include "Log.h"
 #include "Frame.h"
 #include "Types.h"
-#include "Framework/LoggingTools.h"
 #include "Platform/SystemCall.h"
 #include "Streaming/FunctionList.h"
+#include "Streaming/TypeInfo.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
 #include <vector>
 
 namespace py = pybind11;
-
-/** Wrap LoggingTools::parseName. */
-static py::tuple parseLogName(const std::string& path)
-{
-  std::string headName;
-  std::string bodyName;
-  std::string scenario;
-  std::string location;
-  std::string identifier;
-  int playerNumber = -1;
-  std::string suffix;
-
-  LoggingTools::parseName(path.substr(path.find_last_of("/\\") + 1), &headName, &bodyName, &scenario, &location, &identifier, &playerNumber, &suffix);
-  return py::make_tuple(headName, bodyName, scenario, location, identifier, playerNumber, suffix);
-}
 
 SystemCall::Mode SystemCall::getMode()
 {
@@ -70,15 +55,6 @@ Python bindings to go through B-Human log files.
 
   FunctionList::execute();
 
-  m.def("parse_log_name", &parseLogName, R"bhdoc(Parses a log file name into its components.
-
-Args:
-    path: The file name to parse.
-
-Returns:
-    headName, bodyName, scenario, location, identifier, playerNumber, suffix of the log.
-)bhdoc", py::arg("path"));
-
   py::class_<Log>(m, "Log")
     .def(py::init<const std::string&, bool>(), R"bhdoc(This class represents an log File.
 
@@ -88,16 +64,37 @@ Args:
     path: The file path.
     keep_going: Whether corrupt frames should be ignored as much as possible.
 )bhdoc", py::arg("path"), py::arg("keep_going") = false)
-    .def_readonly("headName", &Log::headName, "The head name of the log.")
-    .def_readonly("bodyName", &Log::bodyName, "The body name of the log.")
+    .def_readonly("robotName", &Log::robotName, "The name of the robot that recorded the log.")
     .def_readonly("scenario", &Log::scenario, "The scenario of the log.")
     .def_readonly("location", &Log::location, "The location of the log.")
-    .def_readonly("identifier", &Log::identifier, "The identifier of the log.")
     .def_readonly("playerNumber", &Log::playerNumber, "The player number of the log.")
-    .def_readonly("suffix", &Log::suffix, "The suffix of the log.")
+    .def_readonly("teamNumber", &Log::teamNumber, "The team number of the log.")
+    .def_property_readonly("type_info", &Log::getTypeInfo, py::return_value_policy::reference_internal, "The TypeInfo schema embedded in this log.")
     .def("__len__", [](const Log& log) { return log.numberOfFrames; })
     // The log is alive as long as a reference to a frame exists.
-    .def("__iter__", &Log::iter, py::keep_alive<0, 1>()); // loop
+    .def("__iter__", &Log::iter, py::keep_alive<0, 1>()) // loop
+    .def("__getitem__", [](Log& log, int index)
+    {
+      if(index < 0)
+        index += log.numberOfFrames;
+      return log.at(index);
+    }, py::arg("index"), py::keep_alive<0, 1>(), "Returns the frame at the given index (supports negative indices). O(1) after the log's one-time open cost.");
+
+  py::class_<TypeInfo>(m, "TypeInfo", "The schema (primitive types, enums, classes) embedded in a log file.")
+    .def_readonly("primitives", &TypeInfo::primitives, "The names of all primitive data types.")
+    .def_readonly("enums", &TypeInfo::enums, "Maps an enum type name to its list of constant names.")
+    .def_property_readonly("classes", [](const TypeInfo& info)
+    {
+      py::dict classes;
+      for(const auto& [name, attributes] : info.classes)
+      {
+        py::list attributeList;
+        for(const auto& attribute : attributes)
+          attributeList.append(py::make_tuple(attribute.type, attribute.name));
+        classes[py::str(name)] = attributeList;
+      }
+      return classes;
+    }, "Maps a class type name to a list of (type, name) tuples for its attributes.");
 
   py::class_<Frame>(m, "Frame", "Represents the data of a single frame in the log.")
     .def_readonly("thread", &Frame::thread, "The thread of this frame.")

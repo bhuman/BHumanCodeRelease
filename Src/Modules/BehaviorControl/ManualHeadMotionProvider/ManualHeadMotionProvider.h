@@ -14,7 +14,6 @@ MODULE(ManualHeadMotionProvider,
   {,
     (int)(0) xImg,
     (int)(0) yImg,
-    (CameraInfo::Camera)(CameraInfo::lower) camera,
   }),
 });
 

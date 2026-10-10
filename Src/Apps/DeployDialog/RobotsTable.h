@@ -5,7 +5,7 @@
  * robot per row with status information. The table is split in a static part and a
  * dynamic part. The static part always has the same number of rows and
  * represents the different player numbers that exist in a team. Robots in this
- * part will be deployed. The dynamic part contains robot thats were not assigned
+ * part will be deployed. The dynamic part contains robots that were not assigned
  * to a player number yet. It grows and shrinks with the number of robots placed
  * into it. Each preset has its own static part. These rows are hidden if the
  * corresponding preset is not currently selected.

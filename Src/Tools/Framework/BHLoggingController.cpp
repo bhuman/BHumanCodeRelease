@@ -35,7 +35,7 @@ bool BHLoggingController::shouldLog(bool wasLogging) const
   // We want to log in most states, but there are exceptions:
   // - The INITIAL state is excluded.
   // - The FINISHED state is excluded, except for the first 10s if we have been logging before.
-  return !(gameState.isInitial(/* orStandby: */ false)
+  return !(gameState.isInitial()
            || (gameState.isFinished() && !(wasLogging && Time::getTimeSince(gameState.timeWhenStateStarted) < 10000)));
 }
 
@@ -45,9 +45,28 @@ std::string BHLoggingController::getDescription() const
   {
     auto team = teams.find(static_cast<std::uint8_t>(gameState.opponentTeam.number));
     if(team != teams.end())
-      return team->second + "_"
-             + (gameState.phase == GameState::penaltyShootout ? "ShootOut"
-                : gameState.phase == GameState::firstHalf ? "1stHalf" : "2ndHalf");
+    {
+      std::string gamePhase;
+      switch(gameState.phase)
+      {
+        case GameState::firstHalf:
+          gamePhase = "1stHalf";
+          break;
+        case GameState::secondHalf:
+          gamePhase = "2ndHalf";
+          break;
+        case GameState::firstExtraHalf:
+          gamePhase = "1stExtraHalf";
+          break;
+        case GameState::secondExtraHalf:
+          gamePhase = "2ndExtraHalf";
+          break;
+        case GameState::penaltyShootout:
+          gamePhase = "ShootOut";
+          break;
+      }
+      return team->second + "_" + gamePhase;
+    }
   }
   return "Testing";
 }

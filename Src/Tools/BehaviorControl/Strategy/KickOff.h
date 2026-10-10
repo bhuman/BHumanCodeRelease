@@ -23,8 +23,8 @@ STREAMABLE_WITH_BASE(OwnKickOff, KickOff,
 {
   ENUM(Type,
   {,
-    directKickOff,
-    directKickOff5v5,
+    ownKickOff,
+    ownKickOff11v11,
   });
 
   static SetPlay::Type toSetPlay(Type type)
@@ -37,9 +37,8 @@ STREAMABLE_WITH_BASE(OpponentKickOff, KickOff,
 {
   ENUM(Type,
   {,
-    kiteKickOff,
-    diamondKickOff5v5,
-    arrowKickOff5v5,
+    opponentKickOff,
+    opponentKickOff11v11,
   });
 
   static SetPlay::Type toSetPlay(Type type)

@@ -1,14 +1,14 @@
 /**
  * @file BallSpecification.h
  *
- * Description of the ball size and rolling behavior
+ * Description of the properties of a ball
  *
  * @author Tim Laue
  */
 
 #pragma once
 
-#include "Tools/Modeling/BallPhysics.h"
+#include "Platform/BHAssert.h"
 #include "Streaming/AutoStreamable.h"
 
 /**
@@ -17,19 +17,19 @@
  */
 STREAMABLE(BallSpecification,
 {
-public:
-  /** Computes a maximum ball speed that is above any actual possible speed occurring in a real
-   *  SPL game. The computation is based on the configured kickDistanceUpperBound. An alternative
-   *  would have been to configure the speed and to perform no computation. However, the velocity
-   *  is more difficult to observe and configure than any distance. Thus, this way is more foolproof.
-   * @return What is described above
-   */
-  float ballSpeedUpperBound() const
+  /** Verifies that all elements contain valid values */
+  void verify() const
   {
-    return BallPhysics::velocityForDistance(kickDistanceUpperBound, friction);
+    ASSERT(radius > 0.f);
+    ASSERT(staticFriction < 0.0f);
+    ASSERT(linearFriction <= 0.f);
+    ASSERT(ballSpeedUpperBound > 0.f);
+    ASSERT(mass > 0.f);
   },
 
-  (float)(50.f)    radius,                 //!< The size of the ball (in mm).
-  (float)(-0.13f)  friction,               //!< The friction (negative acceleration) when moving ( in m/(s*s) ).
-  (float)(20000.f) kickDistanceUpperBound, //!< A distance (in mm) that is larger (but within the same order of magnitude) than the longest possible kick of any NAO robot.
+  (float)(50.f)    radius,                //!< The size of the ball (in mm).
+  (float)(-0.13f)  staticFriction,        //!< Constant friction (negative acceleration) when moving ( in m/(s*s) ).
+  (float)(0.f)     linearFriction,        //!< Linear friction (negative acceleration depending on current velocity) when moving ( in 1/s ).
+  (float)(35000.f) ballSpeedUpperBound,   //!< A speed (in mm/s). Default value is above Booster T2 in 2026.
+  (float)(0.3f)    mass,                  //!< The mass of the ball (in kg)
 });

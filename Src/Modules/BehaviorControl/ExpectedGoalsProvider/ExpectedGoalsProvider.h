@@ -13,6 +13,7 @@
 #include "Representations/BehaviorControl/ExpectedGoals.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Tools/BehaviorControl/SectorWheel.h"
 
@@ -21,17 +22,21 @@ MODULE(ExpectedGoalsProvider,
   REQUIRES(BallSpecification),
   REQUIRES(FieldDimensions),
   REQUIRES(GlobalOpponentsModel),
+  REQUIRES(RobotDimensions),
   PROVIDES(ExpectedGoals),
   DEFINES_PARAMETERS(
   {,
     (float)(0.01f) minValue, /**< Minimum probability of a successful goal shot in the worst situation possible. */
     (Angle)(0_deg) minOpeningAngle, /**< Opening angle for the goal shot line to be considered blocked */
+    (Angle)(10_deg) minOpponentOpeningAngle, /**< Opening angle for the goal shot line to be considered blocked for opponents */
     (Angle)(20_deg) maxOpeningAngle, /**< Opening angle for the goal shot line to be considered free */
+    (Angle)(5_deg) smallMaxOpeningAngle, /**< Smaller opening angle for the goal shot line to be considered free */
     (Angle)(40_deg) maxOpeningAngleOpponent, /**< Opening angle for the goal shot line to be considered free */
     (float)(100.f) cellSize, /**< Size of each grid cell in mm on the field, lower number results in higher resolution for the heatmap */
     (unsigned char)(255) heatmapAlpha, /**< Transparency of the heatmap between 0 (invisible) and 255 (opaque) */
     (ColorRGBA)(213, 17, 48) worstRatingColor, /**< Red color in RGB corresponding to a pass rating value of 0 in the heatmap */
     (ColorRGBA)(0, 104, 180) bestRatingColor, /**< Blue color in RGB corresponding to a pass rating value of 1 in the heatmap */
+    (float)(0.5f) reduceDistanceToGoalFactor, /**< Workaround to make rating better on large fields. */
   }),
 });
 
@@ -73,9 +78,11 @@ private:
    * Estimates the probability that a given position has a wide enough opening angle on the opponent's goal to score a goal, taking into account the known obstacles.
    * @param pointOnField The position to shoot from.
    * @param isPositioning Is the rating for the positioning role?
+   * @param calcShootDistance Rating based on distance to goal?
+   * @param useSmallOpeningAngle Allow smaller opening angle for higher rating
    * @return The estimated probability of scoring a goal.
    */
-  float getRating(const Vector2f& pointOnField, const bool isPositioning) const;
+  float getRating(const Vector2f& pointOnField, const bool isPositioning, const bool calcShootDistance, const bool useSmallOpeningAngle) const;
 
   /**
    * Estimates the probability that a given position does not have a wide enough opening angle on the own goal for an opponent to score a goal against, not taking into account the known obstacles.

@@ -1,0 +1,69 @@
+#!/bin/bash
+# connectinternet [-d] [<team> [<motion id>]]
+
+DELETE=
+if [ "$1" == "-d" ]; then
+  DELETE=1
+  shift
+fi
+
+# Determine team number. The default is 5.
+if [ -n "$1" ]; then
+  TEAM=$1
+  shift
+elif [ -f ~/Config/settings.cfg ]; then
+  TEAM=$(grep <~/Config/settings.cfg "teamNumber" | sed "s%[^=]*= *\([0-9]*\).*%\1%")
+else
+  TEAM=5
+fi
+
+# Check whether to delete route instead of adding it
+OPERATION=+
+if [ -n "$DELETE" ]; then
+  OPERATION=-
+
+  # Identify device before additional IP is removed
+  if [ "$(whoami)" == master ]; then
+    DEVICE="$(ifconfig | tr '\n' '|' | sed 's%||%\&%g' | tr '&' '\n' | grep "192\.168\.10\." | sed 's%:.*%%')"
+  else
+    DEVICE=macvlan0
+  fi
+
+  # Remove route and DNS
+  sudo route del -net 0.0.0.0 gw 192.168.$TEAM.1 dev "$DEVICE"
+  sudo resolvectl revert "$DEVICE"
+fi
+
+# On the motion PC, we need a temporary ip address
+if [ "$(whoami)" == master ]; then
+
+  # Determine host id for Motion PC. The default is 9.
+  if [ -n "$1" ]; then
+    MOTION=$1
+  else
+    MOTION=9
+  fi
+
+  CONNECTION="$(nmcli device show \
+  | tr '\n' '|' \
+  | sed 's%||%!%g' \
+  | tr '!' '\n' \
+  | grep '192\.168\.10\.' \
+  | tr '|' '\n' \
+  | grep GENERAL.CONNECTION \
+  | sed 's%GENERAL.CONNECTION: *%%')"
+  sudo nmcli connection modify "$CONNECTION" ${OPERATION}ipv4.address "192.168.$TEAM.$MOTION/24"
+  sudo nmcli connection reload "$CONNECTION"
+  sudo nmcli connection up "$CONNECTION"
+fi
+
+# Add route and DNS
+if [ $OPERATION == + ]; then
+  if [ "$(whoami)" == master ]; then
+    DEVICE="$(ifconfig | tr '\n' '|' | sed 's%||%\&%g' | tr '&' '\n' | grep "192\.168\.10\." | sed 's%:.*%%')"
+  else
+    DEVICE=macvlan0
+  fi
+  sudo route add -net 0.0.0.0 gw 192.168.$TEAM.1 dev "$DEVICE"
+  sudo resolvectl dns "$DEVICE" 8.8.8.8 8.8.4.4
+fi

@@ -82,7 +82,7 @@ void DribbleTargetProvider::calculateSectorWheel()
     if(obstacleOnField.x() > (theFieldDimensions.xPosOpponentGoalLine + theFieldDimensions.xPosOpponentGoal) * 0.5f)
       continue;
 
-    const float ballFactor = 3.f;
+    const float ballFactor = 2.f;
 
     const float width = (obstacle.left - obstacle.right).norm() + ballFactor * theBallSpecification.radius;
     const float distance = (obstacleOnField - theFieldBall.positionOnField).norm();
@@ -199,8 +199,8 @@ Angle DribbleTargetProvider::calculateDribbleAngle(Vector2f position)
 
   COMPLEX_DRAWING("option:DribbleTargetProvider:direction")
   {
-    const Vector2f pos2 = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
-    ARROW("option:DribbleTargetProvider:direction", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::cyan);
+    const Vector2f pos2 = theFieldBall.positionOnField + Vector2f::polar(300.f, dribbleAngleInField);
+    ARROW("option:DribbleTargetProvider:direction", theFieldBall.positionOnField.x(), theFieldBall.positionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::cyan);
   }
 
   const float distanceToFieldBorderThresholdSquared = sqr(dribbleRange + safeDistanceToFieldBoarder);
@@ -288,8 +288,8 @@ Angle DribbleTargetProvider::calculateDribbleAngle(Vector2f position)
   }
   COMPLEX_DRAWING("option:DribbleTargetProvider:direction")
   {
-    Vector2f pos2 = theFieldInterceptBall.interceptedEndPositionOnField + Vector2f::polar(300.f, dribbleAngleInField);
-    ARROW("option:DribbleTargetProvider:direction", theFieldInterceptBall.interceptedEndPositionOnField.x(), theFieldInterceptBall.interceptedEndPositionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::red);
+    Vector2f pos2 = theFieldBall.positionOnField + Vector2f::polar(300.f, dribbleAngleInField);
+    ARROW("option:DribbleTargetProvider:direction", theFieldBall.positionOnField.x(), theFieldBall.positionOnField.y(), pos2.x(), pos2.y(), searchStepDrawWidth, Drawings::solidPen, ColorRGBA::red);
   }
   lastDribbleAngle = dribbleAngleInField;
   return dribbleAngleInField;

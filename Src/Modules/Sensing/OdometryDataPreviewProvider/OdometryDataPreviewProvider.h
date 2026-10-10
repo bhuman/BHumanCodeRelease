@@ -6,40 +6,33 @@
 #pragma once
 
 #include "Framework/Module.h"
-#include "Representations/Configuration/MassCalibration.h"
-#include "Representations/Configuration/RobotDimensions.h"
+#include "Framework/Settings.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Representations/Sensing/JointPlay.h"
 #include "Representations/Sensing/RobotModel.h"
+#include "Representations/Sensing/SoleHeightDifference.h"
 #include "Representations/Sensing/TorsoMatrix.h"
+
+#include "Platform/File.h"
+#include <CompiledNN2ONNX/CompiledNN.h>
 
 MODULE(OdometryDataPreviewProvider,
 {,
   USES(OdometryData),
   USES(MotionInfo),
   REQUIRES(FallDownState),
-  REQUIRES(FootSupport),
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
-  REQUIRES(JointPlay),
-  REQUIRES(MassCalibration),
-  REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
+  REQUIRES(SoleHeightDifference),
   REQUIRES(TorsoMatrix),
   PROVIDES(OdometryDataPreview),
-  REQUIRES(OdometryDataPreview),
-  PROVIDES(OdometryTranslationRequest),
   LOADS_PARAMETERS(
   {,
-    (float) useMeasuredSwingAfterStepStartedTime, /**< Use the measured swing foot and not the planned one when a new walk phase started for this time. */
-    (unsigned int) usePlannedIsLeftPhaseAfterThisSwitchTime, /**< If last support foot switch took more than this time, use the planned left phase flag. */
     (Vector2f) odometryWalkScaling, /**< While walking scale the odometry with these factors. */
-    (bool) filterSupportSwitch, /**< When switching the support foot, filter which sole to use as supporting one. */
   }),
 });
 
@@ -52,15 +45,15 @@ private:
    */
   void update(OdometryDataPreview& odometryDataPreview) override;
 
-  void update(OdometryTranslationRequest& theOdometryTranslationRequest) override { theOdometryTranslationRequest = internalOdometryTranslationRequest; };
+  Pose2f getOdometryOffset(OdometryDataPreview& odometryDataPreview, const RobotModel& theRobotModel, const Pose2f& lastOdometry, const bool overrideRotation, Vector2f& lastLeftSole, Vector2f& lastRightSole);
 
-  Pose2f getOdometryOffset(const RobotModel& theRobotModel, const Pose2f& lastOdometry, const bool overrideRotation, Pose2f& lastLeftSole, Pose2f& lastRightSole);
+  Vector2f lastSoleLeft = Vector2f::Zero(); /**< Last frame left sole in last frame torso. */
+  Vector2f lastSoleRight = Vector2f::Zero(); /**< Last frame right sole in last frame torso. */
 
-  Pose2f lastSoleLeft; /**< Last frame left sole in last frame torso. */
-  Pose2f lastSoleRight; /**< Last frame right sole in last frame torso. */
+  Vector2f lastRequestedSoleLeft = Vector2f::Zero(); /**< Last frame left sole in last frame torso. */
+  Vector2f lastRequestedSoleRight = Vector2f::Zero(); /**< Last frame right sole in last frame torso. */
 
-  Pose2f lastRequestedSoleLeft; /**< Last frame left sole in last frame torso. */
-  Pose2f lastRequestedSoleRight; /**< Last frame right sole in last frame torso. */
+  bool receivedFirstData = false;
 
-  OdometryTranslationRequest internalOdometryTranslationRequest;
+  const int motionCycleTimeMS = static_cast<int>(Global::getSettings().motionCycleTime * 1000.f);
 };

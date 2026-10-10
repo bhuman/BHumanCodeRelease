@@ -23,13 +23,9 @@ struct MotionPhase
     playDead,
     stand,
     walk,
-    kick,
     fall,
     getUp,
-    keyframeMotion,
-    replayWalk,
-    photoMode,
-    freeze,
+    prepare,
   });
 
   ENUM(Limb,

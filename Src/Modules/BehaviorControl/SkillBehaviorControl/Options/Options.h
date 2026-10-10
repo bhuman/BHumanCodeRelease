@@ -9,26 +9,19 @@
 // @todo Add descriptions
 
 option(HandleAnyPlaceDemo);
-option(HandleBallControlLeaderboard);
-option(HandleBallHolding);
-option(HandleBestKickLeaderboard);
-option(HandleFastestWalkLeaderboard);
+option(HandleBallOutOfField);
 option(HandleGameState);
-option(HandleGoalkeeperCatchBall);
 option(HandleIllegalAreas);
-option(HandleMostPassesLeaderboard);
+option(HandleJoystick);
+option(HandleJoystickWalk, args((const JoystickState&) joystickState, (bool) isOmnidirectionalWalk));
+option(HandleJoystickHead, args((const JoystickState&) joystickState, (bool) isOmnidirectionalWalk, (bool) isLookDown, (bool) isKicking));
 option(HandlePenaltyKick);
 option(HandlePenaltyShootout);
-option(HandlePhotoMode);
 option(HandlePhysicalRobot);
 option(HandlePlayerState);
 option(HandlePlayingOptions);
-option(HandleRefereeDatasetGeneration);
-option(HandleRefereeSignal);
-option(HandleReplayWalk);
 option(HandleReturnFromTouchline);
-option(HandleRollingBallChallenge);
-option(HandleHeadInRollingBallChallenge);
+option(HandleStoppedState);
 option(HandleStrikerLostBall);
 option(PenaltyKeeper);
 option(PenaltyTaker);

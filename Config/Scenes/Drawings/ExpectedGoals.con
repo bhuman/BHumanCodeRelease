@@ -10,7 +10,7 @@ vfd expectedGoals fieldLines
 vfd expectedGoals goalFrame
 vfd expectedGoals representation:TeamBallModel
 vfd expectedGoals cognition:RobotPose
-vfd expectedGoals representation:ObstacleModel:rectangle
+vfd expectedGoals representation:ObstacleModel
 vfd expectedGoals cognition:Reset
 
 echo set module:ExpectedGoalsProvider:drawHeatmap true

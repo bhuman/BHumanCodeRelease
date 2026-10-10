@@ -30,7 +30,7 @@ public:
 private:
   std::unique_ptr<TcpComm> tcpComm; /**< The TCP/IP connection. */
   bool ack = false;
-  bool client = false;;
+  bool client = false;
   Handshake handshake = noHandshake; /**< The handshake mode. */
 
 public:

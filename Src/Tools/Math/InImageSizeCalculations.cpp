@@ -3,7 +3,7 @@
  *
  * A namespace with methods to help validate perception.
  *
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 #include "InImageSizeCalculations.h"
 #include "Debugging/DebugDrawings.h"
@@ -62,8 +62,8 @@ float IISC::getImageLineDiameterByLowestPoint(const Vector2f& start, const Camer
 
 bool IISC::calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)
 {
-  height = getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.penaltyMarkSize, center, theCameraInfo, theCameraMatrix);
-  length = getHorizontalImageDiameterByMiddlePointAndFieldDiameter(theFieldDimensions.penaltyMarkSize, center, theCameraInfo, theCameraMatrix);
+  height = getImageDiameterByLowestPointAndFieldDiameter(2.f * theFieldDimensions.markRadius, center, theCameraInfo, theCameraMatrix);
+  length = getHorizontalImageDiameterByMiddlePointAndFieldDiameter(2.f * theFieldDimensions.markRadius, center, theCameraInfo, theCameraMatrix);
   return height >= 0.f && length >= 0.f;
 }
 

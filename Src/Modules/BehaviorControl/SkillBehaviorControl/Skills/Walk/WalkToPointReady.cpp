@@ -151,7 +151,7 @@ option((SkillBehaviorControl) WalkToPointReady,
     action
     {
       LookActive({.ignoreBall = true});
-      Stand({.high = true});
+      Stand();
     }
   }
 

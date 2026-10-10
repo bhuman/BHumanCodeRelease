@@ -17,11 +17,9 @@ list(APPEND BHUMAN_OPTIMIZED_SOURCES
 if(NOT WINDOWS)
   list(APPEND BHUMAN_OPTIMIZED_SOURCES
       "${BHUMAN_ROOT_DIR}/Modules/MotionControl/HeadMotionEngine/HeadMotionEngine.cpp" "${BHUMAN_ROOT_DIR}/Modules/MotionControl/HeadMotionEngine/HeadMotionEngine.h"
-      "${BHUMAN_ROOT_DIR}/Modules/MotionControl/WalkingEngine/WalkingEngine.cpp" "${BHUMAN_ROOT_DIR}/Modules/MotionControl/WalkingEngine/WalkingEngine.h"
       "${BHUMAN_ROOT_DIR}/Modules/Perception/FieldPerceptors/LinePerceptor.cpp" "${BHUMAN_ROOT_DIR}/Modules/Perception/FieldPerceptors/LinePerceptor.h"
       "${BHUMAN_ROOT_DIR}/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Perception/ImagePreprocessors/ECImageProvider.h"
       "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.h"
-      "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/BoosterFallDownStateProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Sensing/FallDownStateDetector/BoosterFallDownStateProvider.h"
       "${BHUMAN_ROOT_DIR}/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp" "${BHUMAN_ROOT_DIR}/Modules/Sensing/InertialDataProvider/InertialDataProvider.h"
       "${BHUMAN_ROOT_DIR}/Tools/Modeling/UKFPose2D.cpp" "${BHUMAN_ROOT_DIR}/Tools/Modeling/UKFPose2D.h")
 endif()
@@ -68,6 +66,17 @@ if(BUILD_DESKTOP)
   if(MACOS)
     target_sources(B-Human${TARGET_SUFFIX} INTERFACE $<TARGET_OBJECTS:B-Human-Optimized${TARGET_SUFFIX}>)
     target_link_libraries(B-Human${TARGET_SUFFIX} PUBLIC B-Human-Optimized${TARGET_SUFFIX})
+
+    file(GLOB_RECURSE BHUMAN_ONNX_NETWORKS CONFIGURE_DEPENDS "${BHUMAN_PREFIX}/Config/NeuralNets/*.onnx")
+    set(BHUMAN_COREML_CACHE "${BHUMAN_PREFIX}/Config/NeuralNets/CoreMLCache")
+    add_custom_command(OUTPUT "${BHUMAN_COREML_CACHE}/.stamp"
+        COMMAND ${CMAKE_COMMAND} -E rm -rf "${BHUMAN_COREML_CACHE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${BHUMAN_COREML_CACHE}"
+        COMMAND ${CMAKE_COMMAND} -E touch "${BHUMAN_COREML_CACHE}/.stamp"
+        DEPENDS "${BHUMAN_ONNX_NETWORKS}")
+    add_custom_target(B-HumanCoreMLCache DEPENDS "${BHUMAN_COREML_CACHE}/.stamp")
+    set_property(TARGET B-HumanCoreMLCache PROPERTY FOLDER "Libs")
+    add_dependencies(B-Human${TARGET_SUFFIX} B-HumanCoreMLCache)
   else()
     set_property(SOURCE ${BHUMAN_OPTIMIZED_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
         $<${_is_msvc}:$<$<CONFIG:Develop>:/Ox>>
@@ -93,10 +102,6 @@ if(BUILD_DESKTOP)
   set_property(TARGET B-Human${TARGET_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE ON)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE FFTW::FFTW FFTW::FFTWF)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE libjpeg::libjpeg)
-  if(OPENSSL_FOUND)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE OpenSSL::SSL)
-    target_compile_definitions(B-Human${TARGET_SUFFIX} PRIVATE HAVE_OPENSSL)
-  endif()
   if(X86)
     if(NOT MACOS)
       target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE asmjit${TARGET_SUFFIX})
@@ -106,25 +111,17 @@ if(BUILD_DESKTOP)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE CompiledNN::ONNX)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Flags::DebugInDevelop)
 else()
-  if(X86)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE CompiledNN${TARGET_SUFFIX})
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Nao::FFTW::FFTW Nao::FFTW::FFTWF)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Nao::libjpeg::libjpeg)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Nao::ALSA::ALSA)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Nao::CompiledNN::ONNX)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Nao::OpenSSL::SSL)
-    target_compile_definitions(B-Human${TARGET_SUFFIX} PRIVATE HAVE_OPENSSL)
-  else()
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FFTW::FFTW Booster::FFTW::FFTWF)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::libjpeg::libjpeg)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::CompiledNN::ONNX)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::realsense2::realsense2)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::Booster::SDK)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FastCDR::FastCDR)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FastRTPS::FastRTPS)
-    target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FooNathan::Memory)
-  endif()
-  target_include_directories(B-Human${TARGET_SUFFIX} SYSTEM PRIVATE "${BHUMAN_PREFIX}/Util/MD5")
+  target_include_directories(B-Human${TARGET_SUFFIX} SYSTEM PRIVATE "${BHUMAN_PREFIX}/Util/X5Camera/include")
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::DuerWen::DuerWen)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FFTW::FFTW Booster::FFTW::FFTWF)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::libjpeg::libjpeg)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::CompiledNN::ONNX)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::realsense2::realsense2)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::Booster::SDK)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FastCDR::FastCDR)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FastRTPS::FastRTPS)
+  target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Booster::FooNathan::Memory)
+  target_compile_definitions(B-Human${TARGET_SUFFIX} PRIVATE HAVE_OPENSSL)
   target_compile_definitions(B-Human${TARGET_SUFFIX} PUBLIC TARGET_ROBOT)
   target_compile_options(B-Human${TARGET_SUFFIX} PRIVATE $<$<CONFIG:Develop>:-UNDEBUG> $<$<CONFIG:Release>:-Wno-unused>)
   target_link_libraries(B-Human${TARGET_SUFFIX} PRIVATE Flags::Default)

@@ -29,7 +29,6 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Framework/Module.h"
 #include "Tools/Communication/GameControllerRBS.h"
 #include "Tools/Communication/CompressedTeamCommunicationStreams.h"
@@ -52,7 +51,6 @@ MODULE(TeamMessageHandler,
 
   // extract data to send
   REQUIRES(FallDownState),
-  REQUIRES(GroundContactState),
   USES(RobotHealth),
 
   // send directly
@@ -62,7 +60,6 @@ MODULE(TeamMessageHandler,
   USES(StrategyStatus),
   USES(Whistle),
   USES(IndirectKick),
-  USES(RefereeSignal),
 
   PROVIDES(BHumanMessageOutputGenerator),
   PROVIDES(ReceivedTeamMessages),
@@ -72,12 +69,22 @@ MODULE(TeamMessageHandler,
   REQUIRES(BallSpecification),
 
   LOADS_PARAMETERS(
-  {,
-    (int) minSendInterval, /**< Minimum time in ms between two messages that are sent to the teammates */
+  {
+    ENUM(SendMode,
+    {,
+      onDemand, /**< Only send if information changed sufficiently. */
+      always, /**< Always send if enough time has passed since the last message sent. */
+      whenTimeIsCountingDown,  /**< As \c always, but only when game time is counting down. */
+    }),
+
+    (int) minSendInterval, /**< Minimum time in ms between two messages that are sent to the teammates. */
+    (int) readySendInterval, /**< Minimum time in ms between two messages that are sent to the teammates in ready state. */
     (float) minTeamSendIntervalFactor, /**< When the team is currently over its budget, the whole team can only send with the normal expected send rate times this factor. */
     (float) reduceBudgetMalusTime, /**< Start reducing the send interval further, if we can not reach the normal limit after this time in s. */
     (int) durationOfHalf, /**< Duration of a half in ms. */
+    (int) durationOfExtraHalf, /**< Duration of an extra half in ms. */
     (unsigned) overallMessageBudget, /**< The message budget available for the whole game. */
+    (unsigned) overallExtraMessageBudget, /**< The message budget available if the game proceeds to extra time. */
     (unsigned) normalMessageReserve, /**< A reserve kept from the budget by normal messages, i.e. at the end of the game, this number of messages should be unused. */
     (unsigned) priorityMessageReserve, /**< A (smaller) reserve kept from the budget by priority messages to allow sending priority messages if normal messages cannot be sent. */
     (int) lookahead, /**< A time in ms in the future in which the message budget has to be kept. */
@@ -91,7 +98,6 @@ MODULE(TeamMessageHandler,
     (int) disappearedThreshold, /**< Threshold between disappeared and not disappeared (in ms). Crossing it initiates sending. */
     (int) ignoreWhistleBeforeEndOfHalf, /**< Time before the end of a half after which the whistle is not sent anymore (in ms). */
     (int) maxWhistleSendDelay, /**< The time after which whistle messages are not sent anymore (in ms). */
-    (int) maxRefereeSendDelay, /**< The time after which referee signals are not sent anymore (in ms). */
     (int) minTimeBetween2RejectSounds, /**< Time in ms after which another sound output is allowed */
     (int) minTimeBallIsNotNearTeamBall, /**< Only send based on differences between own ball and team ball, if this difference remains for this time (in ms). */
     (float) teamBallMaxPositionThreshold, /**< Max position threshold for own ball distance to the team ball. */
@@ -101,8 +107,7 @@ MODULE(TeamMessageHandler,
     (Rangei) ballDistanceRangeForDelay, /**< Interpolate the delay of sending messages based on the distance to the ball. */
     (bool) sendMirroredRobotPose, /**< Whether to send the robot pose mirrored (useful for one vs one demos such that keeper and striker can share their ball positions). */
     (bool) dropUnsynchronizedMessages, /**< Whether messages in which timestamps cannot be converted should be dropped. */
-    (bool) alwaysSend, /**< Send every second. */
-    (bool) alwaysSendInPlaying, /**< Send every second. */
+    (SendMode) sendMode, /**< When to send messages? */
   }),
 });
 
@@ -221,6 +226,7 @@ private:
   unsigned ownModeledBudget = 0; /**< Budget based on our own send and received messages. */
 
   bool wasPenalized = false; /**< Was the robot penalized? */
+  bool kickOffSetupFromTouchlines = false; /**< Are we setting up a kick-off from the touchlines? */
 
   void update(ReceivedTeamMessages& receivedTeamMessages) override;
   void update(SentTeamMessage& theSentTeamMessage) override {theSentTeamMessage = lastSent;}
@@ -316,6 +322,18 @@ private:
   int remainingTime(const int timeOffset) const;
 
   /**
+   * Returns the overall message budget, depending on game phase
+   * @return the overall message budget
+   */
+  unsigned overallMessageBudgetAvailable() const;
+
+  /**
+   * Returns the duration of the current half, depending on game phase
+   * @return the duration of the current half
+   */
+  unsigned durationOfCurrentHalf() const;
+
+  /**
    * Checks whether a priority message could be sent without violating
    * the message budget. This check targets to keep the
    * "priorityMessageReserve" at the end of the game.
@@ -326,21 +344,14 @@ private:
   /** Was a whistle detected since the last message was sent? */
   bool whistleDetected() const;
 
-  /** Was a relevant referee signal detected since the last message was sent? */
-  bool refereeSignalDetected() const;
+  /** Was a whistle detected recently? */
+  bool whistleDetectedRecently() const;
 
   /** Is the robot freshly unpenalized, finished localisating itself and should give the team this information instantly? */
   bool returnFromPenaltyRobotPoseCommunication() const;
 
   /** Is the robot unpenalized long enough? */
   bool allowCommunicationAfterPenalty() const;
-
-  /**
-   * Did teammates detect a specific referee signal?
-   * @param signal The referee signal in question.
-   * @return Was it detected by a teammate?
-   */
-  bool teammatesDetectedRefereeSignal(const RefereeSignal::Signal signal) const;
 
   /** Did the behavior status change since the last message was sent? */
   bool behaviorStatusChanged() const;

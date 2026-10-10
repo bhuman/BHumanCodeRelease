@@ -14,7 +14,7 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Infrastructure/SensorData/RawInertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Math/Projection.h"
@@ -123,7 +123,7 @@ void RobotPose::draw() const
         const RobotPose& theRobotPose = *this;
         std::vector<Vector2f> p;
         Projection::computeFieldOfViewInFieldCoordinates(theRobotPose, theCameraMatrix, theCameraInfo, theFieldDimensions, p);
-        THREAD("representation:RobotPose:fieldOfView", theCameraInfo.getThreadName());
+        THREAD("representation:RobotPose:fieldOfView", "Color");
         POLYGON("representation:RobotPose:fieldOfView", 4, p, 20, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, ColorRGBA(255, 255, 255, 25));
       }
     }
@@ -131,21 +131,13 @@ void RobotPose::draw() const
 
   DEBUG_DRAWING("perception:RobotPose", "drawingOnField") // Set the origin to the robot's current position
   {
-    if(Blackboard::getInstance().exists("CameraInfo"))
-    {
-      const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
-      THREAD("perception:RobotPose", theCameraInfo.getThreadName());
-    }
+    THREAD("perception:RobotPose", "Color");
     ORIGIN("perception:RobotPose", translation.x(), translation.y(), rotation);
   }
 
   DEBUG_DRAWING("perception:RobotPose:up", "drawingOnField") // Set the origin to the robot's current position
   {
-    if(Blackboard::getInstance().exists("CameraInfo"))
-    {
-      const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
-      THREAD("perception:RobotPose:up", theCameraInfo.getThreadName());
-    }
+    THREAD("perception:RobotPose:up", "Color");
     ORIGIN("perception:RobotPose:up", -translation.y(), translation.x(), rotation + 90_deg);
   }
 
@@ -184,16 +176,18 @@ void RobotPose::draw() const
   DEBUG_DRAWING3D("representation:FieldDimensions", "robot")
   {
     if(Blackboard::getInstance().exists("FieldDimensions")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel"))
     {
       const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
+      Vector3f angles = theInertialSensorData.angle.cast<float>();
+      angles.z() = 0.f;
       const Pose3f offset = (Pose3f(RotationMatrix::fromEulerAngles({0.f, 0.f, rotation}),
                                    Vector3f(translation.x(), translation.y(),
                                             -std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z())))
-                             * RotationMatrix::fromEulerAngles(theRawInertialSensorData.angle.cast<float>())).inverse();
+                             * RotationMatrix::fromEulerAngles(angles)).inverse();
       const Vector3f orientation = Rotation::Euler::getAngles(Quaternionf(offset.rotation));
       TRANSLATE3D("representation:FieldDimensions", offset.translation.x(), offset.translation.y(), offset.translation.z());
       ROTATE3D("representation:FieldDimensions", orientation.x(), orientation.y(), orientation.z());
@@ -205,15 +199,15 @@ void RobotPose::draw() const
   DEBUG_DRAWING3D("representation:RobotPose:goalSectors", "robot")
   {
     if(Blackboard::getInstance().exists("FieldDimensions")
-       && Blackboard::getInstance().exists("RawInertialSensorData")
+       && Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel"))
     {
       const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:RobotPose:goalSectors", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:RobotPose:goalSectors", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:RobotPose:goalSectors", -orientation.x(), -orientation.y(), 0.f);
       const auto drawSector = [&](const Vector2f& leftPost, const Vector2f& rightPost, const ColorRGBA& color)
       {
         const Rangea angles((inversePose * rightPost).angle(), (inversePose * leftPost).angle());
@@ -235,14 +229,14 @@ void RobotPose::draw() const
 
   DEBUG_DRAWING3D("representation:RobotPose:ring", "robot")
   {
-    if(Blackboard::getInstance().exists("RawInertialSensorData")
+    if(Blackboard::getInstance().exists("InertialSensorData")
        && Blackboard::getInstance().exists("RobotModel"))
     {
-      const RawInertialSensorData& theRawInertialSensorData = static_cast<const RawInertialSensorData&>(Blackboard::getInstance()["RawInertialSensorData"]);
+      const InertialSensorData& theInertialSensorData = static_cast<const InertialSensorData&>(Blackboard::getInstance()["InertialSensorData"]);
       const RobotModel& theRobotModel = static_cast<const RobotModel&>(Blackboard::getInstance()["RobotModel"]);
-      const Vector3f orientation = theRawInertialSensorData.angle.cast<float>();
+      const Vector3f orientation = theInertialSensorData.angle.cast<float>();
       TRANSLATE3D("representation:RobotPose:ring", 0.f, 0.f, std::min(theRobotModel.soleLeft.translation.z(), theRobotModel.soleRight.translation.z()));
-      ROTATE3D("representation:RobotPose:ring", -orientation.x(), -orientation.y(), -orientation.z());
+      ROTATE3D("representation:RobotPose:ring", -orientation.x(), -orientation.y(), 0.f);
       RENDER_OPTIONS3D("representation:RobotPose:ring", Drawings3D::disableTransparency);
       RING_SECTOR3D("representation:RobotPose:ring", Vector3f(0, 0, 2.f), 0.f, pi2, 140.f, 160.f, ColorRGBA(255, 255, 255, 32));
     }

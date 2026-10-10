@@ -69,67 +69,67 @@ void OutText::writeData(const void* p, size_t size, PhysicalOutStream& stream)
 
 void OutText::writeChar(char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %d", int(d));
+  snprintf(buf, sizeof(buf), " %d", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeSChar(signed char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %u", int(d));
+  snprintf(buf, sizeof(buf), " %u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeUChar(unsigned char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %u", int(d));
+  snprintf(buf, sizeof(buf), " %u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeShort(short d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %d", int(d));
+  snprintf(buf, sizeof(buf), " %d", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeUShort(unsigned short d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %u", int(d));
+  snprintf(buf, sizeof(buf), " %u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeInt(int d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %d", d);
+  snprintf(buf, sizeof(buf), " %d", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeUInt(unsigned int d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %u", d);
+  snprintf(buf, sizeof(buf), " %u", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeFloat(float d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %g", double(d));
+  snprintf(buf, sizeof(buf), " %g", double(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeDouble(double d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %g", d);
+  snprintf(buf, sizeof(buf), " %g", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeAngle(const Angle& d, PhysicalOutStream& stream)
 {
-  sprintf(buf, " %gdeg", d.toDegrees());
+  snprintf(buf, sizeof(buf), " %gdeg", d.toDegrees());
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutText::writeEndL(PhysicalOutStream& stream)
 {
-  sprintf(buf, "\n");
+  snprintf(buf, sizeof(buf), "\n");
   stream.writeToStream(buf, strlen(buf));
 }
 
@@ -154,70 +154,70 @@ void OutTextRaw::writeData(const void* p, size_t size, PhysicalOutStream& stream
 
 void OutTextRaw::writeChar(char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%d", int(d));
+  snprintf(buf, sizeof(buf), "%d", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeSChar(signed char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%u", int(d));
+  snprintf(buf, sizeof(buf), "%u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeUChar(unsigned char d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%u", int(d));
+  snprintf(buf, sizeof(buf), "%u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeShort(short d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%d", int(d));
+  snprintf(buf, sizeof(buf), "%d", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeUShort(unsigned short d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%u", int(d));
+  snprintf(buf, sizeof(buf), "%u", int(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeInt(int d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%d", d);
+  snprintf(buf, sizeof(buf), "%d", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeUInt(unsigned int d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%u", d);
+  snprintf(buf, sizeof(buf), "%u", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeFloat(float d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%g", double(d));
+  snprintf(buf, sizeof(buf), "%g", double(d));
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeDouble(double d, PhysicalOutStream& stream)
 {
-  sprintf(buf, "%g", d);
+  snprintf(buf, sizeof(buf), "%g", d);
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeAngle(const Angle& d, PhysicalOutStream& stream)
 {
   if(d == Angle(10000.f) || d == Angle(20000.f) /* SensorData::off || SensorData::ignore */)
-    sprintf(buf, "%g", static_cast<float>(d));
+    snprintf(buf, sizeof(buf), "%g", static_cast<float>(d));
   else
-    sprintf(buf, "%gdeg", d.toDegrees());
+    snprintf(buf, sizeof(buf), "%gdeg", d.toDegrees());
   stream.writeToStream(buf, strlen(buf));
 }
 
 void OutTextRaw::writeEndL(PhysicalOutStream& stream)
 {
-  sprintf(buf, "\n");
+  snprintf(buf, sizeof(buf), "\n");
   stream.writeToStream(buf, strlen(buf));
 }
 

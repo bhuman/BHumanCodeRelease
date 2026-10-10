@@ -13,21 +13,15 @@ option((SkillBehaviorControl) Dribble,
             (const Pose2f&) speed,
             (const MotionRequest::ObstacleAvoidance&) obstacleAvoidance,
             (KickPrecision) alignPrecisely,
-            (float) kickLength,
-            (PreStepType) preStepType,
-            (bool) turnKickAllowed,
-            (const Rangea&) directionPrecision))
+            (float) kickLength))
 {
   theMotionRequest.motion = MotionRequest::dribble;
   theMotionRequest.walkSpeed = speed;
   theMotionRequest.obstacleAvoidance = obstacleAvoidance;
   theMotionRequest.targetDirection = targetDirection;
-  theMotionRequest.directionPrecision = directionPrecision;
   theMotionRequest.alignPrecisely = alignPrecisely;
+  theMotionRequest.kickType = KickInfo::rlKickDynamic; // Dummy kick type to ensure soft kick
   theMotionRequest.kickLength = kickLength;
-  theMotionRequest.turnKickAllowed = turnKickAllowed;
-  theMotionRequest.preStepType = preStepType;
-  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

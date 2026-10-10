@@ -17,21 +17,18 @@
 #include "SkillBehaviorControl.h"
 
 option((SkillBehaviorControl) HandleReturnFromTouchline,
-       load((Angle) maxAngle, /**< The outermost pan angle of the head sweep. */
-            (Angle) maxSpeed, /**< The maximum speed (per s) of the head during the sweep. */
-            (int) minTimeLeftInReady)) /**< The minimum time (in ms) that must be left in the ready state to enter the option. */
+       load((Angle) maxAngle,  /**< The outermost pan angle of the head sweep. */
+            (Angle) maxSpeed)) /**< The maximum speed (per s) of the head during the sweep. */
 {
   initial_state(initialized)
   {
     transition
     {
-      if((theExtendedGameState.wasPenalized() &&
+      // Only look around when returning from a penalty.
+      // When a half begins -> just run.
+      if(theExtendedGameState.wasPenalized() &&
           theGameState.isPlaying() &&
-          theExtendedGameState.playerStateLastFrame != GameState::penalizedIllegalMotionInSet) ||
-         (theExtendedGameState.wasInitial() &&
-          theGameState.isReady() &&
-          theGameState.kickOffSetupFromTouchlines &&
-          -theFrameInfo.getTimeSince(theGameState.timeWhenStateEnds) > minTimeLeftInReady))
+          theExtendedGameState.playerStateLastFrame != GameState::penalizedMotionInSet)
         goto lookAround;
     }
   }

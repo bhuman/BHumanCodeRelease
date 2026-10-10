@@ -3,7 +3,7 @@
  *
  * Implements a class that performs self-localization
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #include "SelfLocator.h"
@@ -261,23 +261,14 @@ bool SelfLocator::sampleSetIsUnimodal(const RobotPose& robotPose)
     if((robotPose.translation - p.translation).squaredNorm() > sqrMaxDistanceDeviation)
       return false;
     if(robotPoseRotation.diffAbs(Angle(p.rotation)) > maxRotationDeviation)
-      return false;;
+      return false;
   }
   return true;
 }
 
 void SelfLocator::motionUpdate()
 {
-  // This is a nasty workaround but should help us in cases of bad/slow assistant referees:
-  // If the robot returns from a penalty and is not walking, any rotation (that might come from
-  // the z-axis gyro as the robot is turned too late!) is ignored!
-  // As of 2024, this workaround should not be necessary anymore as the updated rules require the assistant
-  // referees to place the robots "facing towards the field of play" for the whole time.
-  // TODO: Observe, if this always happens correctly in 2024. If yes, remove this workaround.
-  float odometryRotation = theOdometer.odometryOffset.rotation;
-  if(theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 10000 && theMotionInfo.executedPhase != MotionPhase::walk)
-    odometryRotation = 0.f;
-
+  const float& odometryRotation = theOdometer.odometryOffset.rotation;
   const float transX = theOdometer.odometryOffset.translation.x();
   const float transY = theOdometer.odometryOffset.translation.y();
   const float dist = theOdometer.odometryOffset.translation.norm();
@@ -563,19 +554,8 @@ void SelfLocator::handleGameStateChanges()
     }
   }
   // If the robot has been lifted during SET in a 1v1 demo (and not just been unpenalized), reset samples to custom positions
-  else if(theLibDemo.isOneVsOneDemoActive && theGameState.isSet() &&
-          theGameState.playerState == GameState::active && theFrameInfo.getTimeSince(theExtendedGameState.timeWhenPlayerStateStarted[GameState::active]) > 5000 &&
-          theFallDownState.state == FallDownState::pickedUp)
-  {
-    for(int i = 0; i < samples->size(); ++i)
-    {
-      samples->at(i).init(getNewPoseAtManualPlacementPosition(), manualPlacementPoseDeviation, nextSampleNumber++, 0.5f);
-    }
-    sampleSetHasBeenReset = true;
-    timeOfLastReturnFromPenalty = theFrameInfo.time;
-  }
   // If a penalty is over, reset samples to reenter positions
-  else if(theExtendedGameState.returnFromGameControllerPenalty || theExtendedGameState.returnFromManualPenalty ||
+  if(theExtendedGameState.returnFromGameControllerPenalty || theExtendedGameState.returnFromManualPenalty ||
           (theGameState.playerState == GameState::calibration && theGameState.playerState != theExtendedGameState.playerStateLastFrame))
   {
     int startOfSecondHalfOfSampleSet = samples->size() / 2;
@@ -690,7 +670,7 @@ void SelfLocator::draw(const RobotPose& robotPose)
 
   DEBUG_DRAWING("module:SelfLocator:perceptRegistrationWorld", "drawingOnField")
   {
-    THREAD("module:SelfLocator:perceptRegistrationWorld", theCameraInfo.getThreadName());
+    THREAD("module:SelfLocator:perceptRegistrationWorld", "Color");
     for(const auto& line : lines)
     {
       const ColorRGBA col = line.partOfCenterCircle ? ColorRGBA(128, 255, 0, 180) : ColorRGBA(128, 0, 255, 180);
@@ -723,7 +703,7 @@ void SelfLocator::draw(const RobotPose& robotPose)
   }
   DEBUG_DRAWING("module:SelfLocator:perceptRegistrationRobot", "drawingOnField")
   {
-    THREAD("module:SelfLocator:perceptRegistrationRobot", theCameraInfo.getThreadName());
+    THREAD("module:SelfLocator:perceptRegistrationRobot", "Color");
     for(const auto& line : lines)
     {
       // Covariance of center of field line (has to be drawn relative to the robot)
@@ -786,12 +766,6 @@ Pose2f SelfLocator::getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal)
   if(theStaticInitialPose.isActive)
   {
     return theStaticInitialPose.staticPoseOnField;
-  }
-  // If the penalty was "Illegal Motion in Standby", the robots are placed at their normal
-  // walk-in positions (or are still standing there anyway) and not at the normal spots for returning from a penalty:
-  if(theExtendedGameState.playerStateLastFrame == GameState::penalizedIllegalMotionInStandby)
-  {
-    return getNewPoseAtWalkInPosition();
   }
   // Normal stuff:
   float xPosition = Random::triangular(theFieldDimensions.xPosReturnFromPenalty - returnFromPenaltyMaxXOffset,

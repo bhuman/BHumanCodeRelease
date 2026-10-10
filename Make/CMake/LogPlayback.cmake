@@ -15,7 +15,6 @@ target_link_libraries(LogPlayback PRIVATE Debugging)
 target_link_libraries(LogPlayback PRIVATE Framework)
 target_link_libraries(LogPlayback PRIVATE Platform)
 target_link_libraries(LogPlayback PRIVATE Streaming)
-target_link_libraries(LogPlayback PRIVATE snappy::snappy)
 target_link_libraries(LogPlayback PRIVATE Flags::Default)
 target_link_options(LogPlayback PRIVATE $<${_is_msvc}:$<$<CONFIG:Develop>:/DEBUG>>)
 

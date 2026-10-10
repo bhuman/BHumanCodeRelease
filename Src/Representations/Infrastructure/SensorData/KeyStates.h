@@ -3,7 +3,6 @@
  *
  * Declaration of struct KeyStates
  *
- * @author unknown
  * @author Jesse Richter-Klug
  */
 
@@ -19,23 +18,9 @@ STREAMABLE(KeyStates,
 {
   ENUM(Key,
   {,
-    // touch sensors:
-    headFront,
-    headMiddle,
-    headRear,
-    lHandBack,
-    lHandLeft,
-    lHandRight,
-    rHandBack,
-    rHandLeft,
-    rHandRight,
-
-    // bumpers:
-    lFootLeft,
-    lFootRight,
-    rFootLeft,
-    rFootRight,
-    chest,
+    walk,
+    stand,
+    f1,
   });
 
   KeyStates(),

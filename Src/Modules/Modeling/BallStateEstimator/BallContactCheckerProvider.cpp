@@ -106,9 +106,9 @@ bool BallContactCheckerProvider::handleCollisionWithFeet(const Vector2f& leftFoo
       if(passedMomentum > 0.f)
       {
         Vector2f tmp = collisionPoint - lastFootCenter;
-        ballVelocity = tmp.normalize(passedMomentum) / ballMass;
+        ballVelocity = tmp.normalize(passedMomentum) / theBallSpecification.mass;
         const float ballSpeed = ballVelocity.norm();
-        const float upperSpeedBound = theBallSpecification.ballSpeedUpperBound();
+        const float upperSpeedBound = theBallSpecification.ballSpeedUpperBound;
         if(ballSpeed > upperSpeedBound)
         {
           ballVelocity.normalize(upperSpeedBound);

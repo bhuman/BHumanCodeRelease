@@ -9,12 +9,10 @@
 #include "SkillBehaviorControl.h"
 
 option((SkillBehaviorControl) WalkAtRelativeSpeed,
-       args((const Pose2f&) speed,
-            (bool) energySavingWalk))
+       args((const Pose2f&) speed))
 {
   theMotionRequest.motion = MotionRequest::walkAtRelativeSpeed;
   theMotionRequest.walkSpeed = speed;
-  theMotionRequest.energySavingWalk = energySavingWalk;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

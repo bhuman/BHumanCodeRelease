@@ -3,7 +3,6 @@ dr representation:BodyContour
 dr representation:CameraImage
 dr representation:CameraInfo
 dr representation:CameraMatrix
-dr representation:ImageCoordinateSystem
 dr representation:OdometryData
 echo log start
 echo log stop

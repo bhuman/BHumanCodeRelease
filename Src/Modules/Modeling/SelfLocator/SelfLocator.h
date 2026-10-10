@@ -3,15 +3,13 @@
  *
  * Declares a class that performs self-localization
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #pragma once
 
 #include "UKFRobotPoseHypothesis.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
@@ -42,9 +40,7 @@ MODULE(SelfLocator,
   REQUIRES(IMUValueState),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(LibDemo),
   REQUIRES(MotionInfo),
-  REQUIRES(CameraInfo),
   REQUIRES(RobotPose),
   REQUIRES(SideInformation),
   REQUIRES(PerceptRegistration),

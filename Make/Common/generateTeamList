@@ -7,10 +7,10 @@
 cd "$(dirname "$(which "$0")")"
 
 teamList=../../Config/teamList.cfg
-gameController=../../Util/GameController/config
+gameController=../../Util/GameControllerTools/config
 
 echo "teams = [" >${teamList}
-sed <${gameController}/spl/teams.cfg \
+sed <${gameController}/teams.cfg \
   -e "s%ä%ae%g" \
   -e "s%ö%oe%g" \
   -e "s%ü%ue%g" \

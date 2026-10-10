@@ -8,7 +8,7 @@ MAKE_MODULE(ManualHeadMotionProvider);
 void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
 {
   bool parametersChanged = xImg != currentX || yImg != currentY;
-  if(parametersChanged && camera == theCameraInfo.camera)
+  if(parametersChanged )
   {
     currentX = xImg;
     currentY = yImg;
@@ -20,20 +20,6 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
       headMotionRequest.target.y() = targetOnField.y();
       headMotionRequest.target.z() = 0;
       headMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
-
-      //Use the camera that the user is seeing right now.
-      switch(camera)
-      {
-        case CameraInfo::lower:
-          headMotionRequest.cameraControlMode = HeadMotionRequest::lowerCamera;
-          break;
-        case CameraInfo::upper:
-          headMotionRequest.cameraControlMode = HeadMotionRequest::upperCamera;
-          break;
-        default:
-          FAIL("Unknown camera.");
-      }
-
       headMotionRequest.speed = 150_deg;
     }
   }

@@ -1,8 +1,7 @@
 /**
- * File:   TimingManager.h
- * Author: arne
+ * @file TimingManager.h
  *
- * Created on May 9, 2013, 1:37 PM
+ * @author Arne Böckmann
  */
 
 #pragma once

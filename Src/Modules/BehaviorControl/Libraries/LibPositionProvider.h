@@ -5,7 +5,7 @@
  *
  * @author Martin Kroker
  * @author Andreas Stolpmann
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "Framework/Module.h"

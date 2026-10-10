@@ -17,22 +17,27 @@ class PlayBall : public ActiveRole
 {
   STREAMABLE(Parameters,
   {,
-    (bool)(false) alwaysShoot, /**< Whether or not passing should be deactivated entirely */
-    (float)(0.8f) shootThreshold, /**< Threshold for the own goal shot rating above which no pass targets are considered */
-    (float)(300.f) passDistanceSameTargetHysteresis, /**< The teammate for which a pass was planned last execution cycle is allowed to stand a bit closer or further away. */
-    (float)(1000.f) minPassDistanceIndirectKick, /**< As long as the indirect kick rule still applies, we also allow shorter passes. */
-    (float)(1500.f) minPassDistance, /**< In playing, consider teammates as pass targets that are further away from the current player */
-    (float)(4500.f) maxPassDistance, /**< In playing, consider teammates as pass targets that are within this radius from the current player */
-    (float)(6000.f) maxFreeKickDistance, /**< During free kicks, increase maximum pass distance to this */
-    (float)(9000.f) maxGoalKickDistance, /**< During goal kicks, increase maximum pass distance to this */
-    (int)(1) maxSearchDepth, /**< The maximum number of passes before a goal shot */
-    (float)(0.9f) discountFactor, /**< For each subsequent pass, the rating is made a bit worse to discourage long pass chains */
-    (float)(0.1f) minPenalty, /**< Changing the decision to shoot or pass from the previous frame, results in this penalty to the rating */
-    (float)(0.8f) maxPenalty, /**< Minimum decision penalty is scaled up to this maximum penalty with decreasing distance to the ball */
-    (float)(300.f) ballDistMinPenalty, /**< Apply only the default penalty if the ball is further away than this */
-    (float)(200.f) ballDistMaxPenalty, /**< Maximize the penalty if the ball is closer than this */
-    (float)(0.01f) minRating,
-    (float)(0.05f) clearDribbleHysteresisValue, /* added value to clearRating when clear ball has been added in the last update*/
+    (bool) alwaysShoot, /**< Whether or not passing should be deactivated entirely */
+    (float) shootThreshold, /**< Threshold for the own goal shot rating above which no pass targets are considered */
+    (float) shootGoalKickThreshold, /**< Threshold for the own goal shot rating above which no pass targets are considered during goal kicks */
+    (float) passShotRatio, /**< Passing must be this much greater than shoting. */
+    (float) riskyShootThreshold, /**< Threshold for a shoot attempt if no pass targets are available */
+    (float) passDistanceSameTargetHysteresis, /**< The teammate for which a pass was planned last execution cycle is allowed to stand a bit closer or further away. */
+    (float) minPassDistance, /**< In playing, consider teammates as pass targets that are further away from the current player */
+    (float) minFreeKickPassDistance, /**< In free kicks, consider teammates as pass targets that are further away from the current player */
+    (float) maxPassDistance, /**< In playing, consider teammates as pass targets that are within this radius from the current player */
+    (float) maxFreeKickDistance, /**< During free kicks, increase maximum pass distance to this */
+    (float) maxGoalKickDistance, /**< During goal kicks, increase maximum pass distance to this */
+    (int) maxSearchDepth, /**< The maximum number of passes before a goal shot */
+    (float) discountFactor, /**< For each subsequent pass, the rating is made a bit worse to discourage long pass chains */
+    (float) minPenalty, /**< Changing the decision to shoot or pass from the previous frame, results in this penalty to the rating */
+    (float) maxPenalty, /**< Minimum decision penalty is scaled up to this maximum penalty with decreasing distance to the ball */
+    (float) ballDistMinPenalty, /**< Apply only the default penalty if the ball is further away than this */
+    (float) ballDistMaxPenalty, /**< Maximize the penalty if the ball is closer than this */
+    (float) minRating,
+    (float) clearDribbleHysteresisValue, /**< added value to clearRating when clear ball has been added in the last update */
+    (float) rememberPassTargetTime, /**< Keep passing for this duration even if no pass is planned anymore. */
+    (int) waitForPassTargetEndTime,
   });
 
   /**
@@ -59,6 +64,14 @@ class PlayBall : public ActiveRole
    */
   SkillRequest smashOrPass(const Agent& self, const Agents& teammates);
 
+  struct SmashOrPassInfo
+  {
+    SkillRequest request;
+    int passTarget = -1;
+  };
+
+  SmashOrPassInfo getSmashOrPassInfo(const Agent& self, const Agents& teammates);
+
   void reset() override;
   void preProcess() override;
   void draw(const Vector2f& passBasePosition, const Vector2f& agentPosition, const float value, const float penalty, const bool applyPenalty);
@@ -66,12 +79,16 @@ class PlayBall : public ActiveRole
   /**
    * TODO: Add documentation
    */
-  float findPassTarget(const Vector2f& ballPosition, const Agents& teammates, const float maxPassDistance, int remainingSearchDepth, const Agent*& passTarget, float& maxValue, const float decisionPenalty, const std::vector<int>& test);
+  float findPassTarget(const Vector2f& ballPosition, const Agents& teammates, const float minPassDistance, const float maxPassDistance, int remainingSearchDepth, const Agent*& passTarget, float& maxValue, const float decisionPenalty, const std::vector<int>& test);
 
   Parameters p;
   int lastPassTarget = 0; /**< Number of the last passed-to player from the previous frame, -1 for a goal shot, 0 if the role started this frame */
-  Eigen::Vector2f dribbleTarget = { -1.f, -1.f };
-  const Eigen::Vector2f goalPosition = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f);
+  unsigned lastPassTargetTimestamp = 0; /**< Timestamp when last time a pass was planned. Used to keep passing for a short time. */
+  std::optional<Vector2f> dribbleTarget;
+  const Vector2f goalPosition = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f);
   float decisionPenalty = 0.f;
   float clearDribbleHysteresis = 0.f;
+
+public:
+  PlayBall();
 };

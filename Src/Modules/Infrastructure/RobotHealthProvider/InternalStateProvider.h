@@ -14,13 +14,11 @@
 #include "Platform/Thread.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/InternalState.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 
 MODULE(InternalStateProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(JointSensorData),
   REQUIRES(SystemSensorData),
   USES(InternalState),
   PROVIDES(InternalState),

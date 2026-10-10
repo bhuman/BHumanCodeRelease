@@ -15,7 +15,6 @@
 #include "Representations/BehaviorControl/IndirectKick.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Communication/SentTeamMessage.h"
 #include "Representations/Configuration/BehaviorParameters.h"
@@ -24,20 +23,18 @@
 #include "Representations/Configuration/SetupPoses.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
-#include "Representations/Modeling/BallDropInModel.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Tools/BehaviorControl/Strategy/Agent.h"
 #include "Framework/Module.h"
 #include <vector>
 
 MODULE(StrategyBehaviorControl,
 {,
-  REQUIRES(BallDropInModel),
   REQUIRES(BallModel),
   REQUIRES(BallSearchParticles),
   REQUIRES(BallSpecification),
@@ -50,18 +47,17 @@ MODULE(StrategyBehaviorControl,
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
   REQUIRES(IndirectKick),
-  REQUIRES(GroundContactState),
   REQUIRES(MotionInfo),
   REQUIRES(ReceivedTeamMessages),
   REQUIRES(RobotPose),
   REQUIRES(SentTeamMessage),
   REQUIRES(SetupPoses),
   REQUIRES(TeamBallModel),
+  REQUIRES(WalkingEngineOutput),
   PROVIDES(SkillRequest),
   REQUIRES(SkillRequest),
   PROVIDES(StrategyStatus),
   PROVIDES(AgentStates),
-  REQUIRES(LibDemo),
   LOADS_PARAMETERS(
   {,
     (Strategy::Type) strategy, /**< The strategy to play. */

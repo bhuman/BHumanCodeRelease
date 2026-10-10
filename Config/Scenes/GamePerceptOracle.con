@@ -1,4 +1,0 @@
-call Includes/PerceptOracle
-call Includes/7vs7
-
-dr representation:SetupPoses:place

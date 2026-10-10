@@ -4,7 +4,6 @@
  * This file implements an implementation for the WalkPotentialField skill.
  *
  * @author Andreas Stolpmann
- * @author somebody unknown
  * @author Arne Hasselbring
  * @author Jo Lienhoop
  * @author Sina Schreiber
@@ -31,12 +30,15 @@ option((SkillBehaviorControl) WalkPotentialField,
             (const std::optional<Vector2f>&) targetOfInterest),
        defs((float)(250.f) alignDistance, /**< If the target is closer than this distance, the robot is completely aligned to the ball or the target rotation. */
             (Angle)(45_deg) maxBallAngleOffset, /**< If not walking straight, the ball should have at most this angle relative to the robot's orientation. */
-            (float)(600.f) maxRejection,
-            (float)(400.f) maxDistance,
-            (float)(750.f) freeKickClearAreaRadius, /**< The radius of the area that has to be cleared by the defending team during a free kick. */
+            (float)(300.f) maxRejectionOffset,
+            (float)(100.f) maxDistanceOffset,
             (float)(350.f) gridOffset, /**< Spacing for the origins of the arrows in the debug drawing of the potential field */
-            (int)(15) arrowWidth)) /**< Pen width for the arrow lines in the debug drawing of the potential field */
+            (int)(15) arrowWidth), /**< Pen width for the arrow lines in the debug drawing of the potential field */
+       vars((float)(0.f) maxRejection,
+            (float)(0.f) maxDistance))
 {
+  maxRejection = maxRejectionOffset + theBehaviorParameters.illegalAreasLargeDistance;
+  maxDistance = maxDistanceOffset + theBehaviorParameters.illegalAreasLargeDistance;
   static_cast<void>(arrowWidth); // Unused in Release
   const Vector2f opponentGoalPosition(theFieldDimensions.xPosOpponentGoalLine, 0.f);
   const Vector2f ownGoalPosition(theFieldDimensions.xPosOwnGoalLine, 0.f);
@@ -98,6 +100,58 @@ option((SkillBehaviorControl) WalkPotentialField,
     return direction.normalized(rejection);
   };
 
+  const auto computeVectorPotentialFieldPenaltyMarkArea = [&](const Vector2f& position, const bool ownPenaltyArea) -> Vector2f
+  {
+    Vector2f forward = ownPenaltyArea ? position - ownPenaltyAreaCenter : position - opponentPenaltyAreaCenter;
+    forward.y() = 0;
+    Vector2f side = Vector2f(0.f, position.y());
+    const Vector2f direction = forward.normalized() + mapToRange(theFieldDimensions.yPosLeftTouchline - std::abs(position.y()), 0.f, theFieldDimensions.yPosLeftTouchline, 0.f, 1.f) * side.normalized();
+    float rejection;
+    const Vector2f penaltyMark = Vector2f((ownPenaltyArea ? theFieldDimensions.xPosOwnPenaltyMark : theFieldDimensions.xPosOpponentPenaltyMark), 0.f);
+    bool isInPenaltyMarkRadius = ((position - penaltyMark).squaredNorm() < sqr(std::abs(theFieldDimensions.centerCircleRadius)))
+        && ((ownPenaltyArea && position.x() >= theFieldDimensions.xPosOwnPenaltyMark) || (!ownPenaltyArea && position.x() <= theFieldDimensions.xPosOpponentPenaltyMark));
+    bool isBetweenGoalLineAndPenaltyMark = position.y() <= theFieldDimensions.yPosLeftTouchline && position.y() >= theFieldDimensions.yPosRightTouchline
+        && ((ownPenaltyArea && position.x() <= theFieldDimensions.xPosOwnPenaltyMark) || (!ownPenaltyArea && position.x() >= theFieldDimensions.xPosOpponentPenaltyMark));
+    bool isInPenaltyMarkArea = position.y() <= theFieldDimensions.yPosLeftPenaltyArea && position.y() >= theFieldDimensions.yPosRightPenaltyArea
+        && ((ownPenaltyArea && position.x() <= theFieldDimensions.xPosOwnPenaltyArea) || (!ownPenaltyArea && position.x() >= theFieldDimensions.xPosOpponentPenaltyArea));
+
+    if(isInPenaltyMarkRadius || isBetweenGoalLineAndPenaltyMark || isInPenaltyMarkArea)
+    {
+      rejection = maxRejection;
+    }
+    else
+    {
+      const Vector2f ownLeftTouchlinePenaltyMark = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, theFieldDimensions.yPosLeftTouchline);
+      const Vector2f ownLeftPenaltyAreaPenaltyMark = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, theFieldDimensions.yPosLeftPenaltyArea);
+      const Vector2f ownRightPenaltyAreaCorner = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+      const Vector2f ownRightPenaltyAreaPenaltyMark = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, theFieldDimensions.yPosRightPenaltyArea);
+      const Vector2f ownRightTouchlinePenaltyMark = Vector2f(theFieldDimensions.xPosOwnPenaltyMark, theFieldDimensions.yPosRightTouchline);
+
+      const Vector2f opponentLeftTouchlinePenaltyMark = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, theFieldDimensions.yPosLeftTouchline);
+      const Vector2f opponentLeftPenaltyAreaPenaltyMark = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, theFieldDimensions.yPosLeftPenaltyArea);
+      const Vector2f opponentRightPenaltyAreaCorner = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+      const Vector2f opponentRightPenaltyAreaPenaltyMark = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, theFieldDimensions.yPosRightPenaltyArea);
+      const Vector2f opponentRightTouchlinePenaltyMark = Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, theFieldDimensions.yPosRightTouchline);
+
+      const Vector2f& leftTouchlinePenaltyMark = ownPenaltyArea ? ownLeftTouchlinePenaltyMark : opponentLeftTouchlinePenaltyMark;
+      const Vector2f& leftPenaltyAreaPenaltyMark = ownPenaltyArea ? ownLeftPenaltyAreaPenaltyMark : opponentLeftPenaltyAreaPenaltyMark;
+      const Vector2f& leftPenaltyAreaCorner = ownPenaltyArea ? ownLeftPenaltyAreaL : opponentLeftPenaltyAreaL;
+      const Vector2f& rightPenaltyAreaCorner = ownPenaltyArea ? ownRightPenaltyAreaCorner : opponentRightPenaltyAreaCorner;
+      const Vector2f& rightPenaltyAreaPenaltyMark = ownPenaltyArea ? ownRightPenaltyAreaPenaltyMark : opponentRightPenaltyAreaPenaltyMark;
+      const Vector2f& rightTouchlinePenaltyMark = ownPenaltyArea ? ownRightTouchlinePenaltyMark : opponentRightTouchlinePenaltyMark;
+
+      const float distanceToPenaltyMarkBorderLeft = Geometry::getDistanceToLine(Geometry::Line(leftTouchlinePenaltyMark, leftPenaltyAreaPenaltyMark - leftTouchlinePenaltyMark), position);
+      const float distanceToPenaltyAreaPenaltyMarkLeft = Geometry::getDistanceToLine(Geometry::Line(leftPenaltyAreaPenaltyMark, leftPenaltyAreaCorner - leftPenaltyAreaPenaltyMark), position);
+      const float distanceToPenaltyAreaFront = Geometry::getDistanceToLine(Geometry::Line(leftPenaltyAreaCorner, rightPenaltyAreaCorner - leftPenaltyAreaCorner), position);
+      const float distanceToPenaltyAreaPenaltyMarkRight = Geometry::getDistanceToLine(Geometry::Line(rightPenaltyAreaCorner, rightPenaltyAreaPenaltyMark - rightPenaltyAreaCorner), position);
+      const float distanceToPenaltyMarkBorderRight = Geometry::getDistanceToLine(Geometry::Line(rightPenaltyAreaPenaltyMark, rightTouchlinePenaltyMark - rightPenaltyAreaPenaltyMark), position);
+      const float distanceToPenaltyMark = (position - penaltyMark).squaredNorm() - sqr(std::abs(theFieldDimensions.centerCircleRadius));
+      const float minDistance = std::min(std::min(std::min(std::min(std::min(distanceToPenaltyMarkBorderLeft, distanceToPenaltyAreaPenaltyMarkLeft), distanceToPenaltyAreaFront), distanceToPenaltyAreaPenaltyMarkRight), distanceToPenaltyMarkBorderRight), distanceToPenaltyMark);
+      rejection = mapToRange(minDistance, 0.0f, maxDistance, maxRejection, 0.0f);
+    }
+    return direction.normalized(rejection);
+  };
+
   const auto computeVectorPotentialFieldBorderStrip = [&](const Vector2f& position) -> Vector2f
   {
     if(reducedRect.isInside(position))
@@ -152,9 +206,24 @@ option((SkillBehaviorControl) WalkPotentialField,
 
   const auto computeVectorPotentialFieldBallArea = [&](const Vector2f& position) -> Vector2f
   {
-    return computeVectorPotentialFieldCircle(position, theFieldBall.recentBallPositionOnField(), freeKickClearAreaRadius, Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.0f));
+    return computeVectorPotentialFieldCircle(position, theFieldBall.recentBallPositionOnField(), theFieldDimensions.centerCircleRadius, Vector2f(theFieldDimensions.xPosOwnGoalLine, 0.0f));
   };
-
+  const auto computeVectorPotentialFieldCornerKickLeftBallArea = [&](const Vector2f& position) -> Vector2f
+  {
+    return computeVectorPotentialFieldCircle(position, Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline), theFieldDimensions.centerCircleRadius);
+  };
+  const auto computeVectorPotentialFieldCornerKickRightBallArea = [&](const Vector2f& position) -> Vector2f
+  {
+    return computeVectorPotentialFieldCircle(position, Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline), theFieldDimensions.centerCircleRadius);
+  };
+  const auto computeVectorPotentialFieldGoalKickLeftBallArea = [&](const Vector2f& position) -> Vector2f
+  {
+    return computeVectorPotentialFieldCircle(position, Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea), theFieldDimensions.centerCircleRadius);
+  };
+  const auto computeVectorPotentialFieldGoalKickRightBallArea = [&](const Vector2f& position) -> Vector2f
+  {
+    return computeVectorPotentialFieldCircle(position, Vector2f(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea), theFieldDimensions.centerCircleRadius);
+  };
   const auto computeVectorPotentialFieldNotOwnGoalLine = [&](const Vector2f& position) -> Vector2f
   {
     const Vector2f targetPoint(theFieldDimensions.xPosOwnGoalLine, 0);
@@ -189,6 +258,10 @@ option((SkillBehaviorControl) WalkPotentialField,
       result += computeVectorPotentialFieldPenaltyArea(position, true);
     if(illegal & bit(IllegalAreas::opponentPenaltyArea))
       result += computeVectorPotentialFieldPenaltyArea(position, false);
+    if(illegal & bit(IllegalAreas::ownPenaltyMarkArea))
+      result += computeVectorPotentialFieldPenaltyMarkArea(position, true);
+    if(illegal & bit(IllegalAreas::opponentPenaltyMarkArea))
+      result += computeVectorPotentialFieldPenaltyMarkArea(position, false);
     if(illegal & bit(IllegalAreas::borderStrip))
       result += computeVectorPotentialFieldBorderStrip(position);
     if(illegal & bit(IllegalAreas::opponentHalf))
@@ -196,13 +269,17 @@ option((SkillBehaviorControl) WalkPotentialField,
     if(illegal & bit(IllegalAreas::centerCircle))
     {
       Vector2f p = computeVectorPotentialFieldCenterCircle(position);
-      // If we have to leave the opponent half, we don't wont the center circle field to push us into it (local minimum). ~ German Open 2024
+      // If we have to leave the opponent half, we don't want the center circle field to push us into it (local minimum). ~ German Open 2024
       if((illegal & bit(IllegalAreas::opponentHalf)) && p.x() > 0.f)
         p.x() = 0.f;
       result += p;
     }
     if(illegal & bit(IllegalAreas::ballArea))
       result += computeVectorPotentialFieldBallArea(position);
+    if((illegal & bit(IllegalAreas::ballArea)) && (theGameState.isGoalKick()) && theGameState.isForOpponentTeam())
+      result += computeVectorPotentialFieldGoalKickLeftBallArea(position) + computeVectorPotentialFieldGoalKickRightBallArea(position);
+    if((illegal & bit(IllegalAreas::ballArea)) && (theGameState.isCornerKick()) && theGameState.isForOpponentTeam())
+      result += computeVectorPotentialFieldCornerKickLeftBallArea(position) + computeVectorPotentialFieldCornerKickRightBallArea(position);
     if(illegal & bit(IllegalAreas::notOwnGoalLine))
       result += computeVectorPotentialFieldNotOwnGoalLine(position);
     if(illegal & bit(IllegalAreas::fieldBorder))
@@ -263,8 +340,12 @@ option((SkillBehaviorControl) WalkPotentialField,
   {
     action
     {
-      WalkToPoint({.target = {0.f, potentialTargetRel},
+      Angle rotTarget = (theRobotPose.inverse() * Vector2f::Zero()).angle();
+      if(theFieldBall.ballWasSeen(7000) || theTeamBallModel.isValid)
+        rotTarget = theFieldBall.recentBallPositionRelative().angle();
+      WalkToPoint({.target = {rotTarget, potentialTargetRel},
                    .reduceWalkSpeedType = ReduceWalkSpeedType::noChange,
+                   .disableAvoidFieldBorder = true,
                    .targetOfInterest = targetOfInterest,
                    .sideWalkingRequest = sideWalkingRequest});
       if(targetOfInterest)
@@ -293,6 +374,7 @@ option((SkillBehaviorControl) WalkPotentialField,
       WalkToPoint({.target = {walkAngle, potentialTargetRel},
                    .reduceWalkSpeedType = ReduceWalkSpeedType::noChange,
                    .disableAligning = std::abs(walkAngle) > 10_deg || useRotation,
+                   .disableAvoidFieldBorder = true,
                    .targetOfInterest = targetOfInterest,
                    .sideWalkingRequest = sideWalkingRequest });
 

@@ -4,7 +4,7 @@
  * Declaration of a module that uses recent field feature observations
  * and combines them to an alternative pose of the robot.
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  */
 
 #pragma once
@@ -17,9 +17,6 @@
 #include "Representations/Modeling/SideInformation.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/FieldFeatures/CenterCircleWithLine.h"
-#include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
-#include "Representations/Perception/FieldFeatures/PenaltyAreaAndGoalArea.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 #include "Math/RingBuffer.h"
@@ -31,12 +28,9 @@ MODULE(AlternativeRobotPoseProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(GroundContactState),
   REQUIRES(IMUValueState),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
-  REQUIRES(PenaltyAreaAndGoalArea),
-  REQUIRES(PenaltyMarkWithPenaltyAreaLine),
   REQUIRES(SideInformation),
   PROVIDES(AlternativeRobotPoseHypothesis),
   DEFINES_PARAMETERS(

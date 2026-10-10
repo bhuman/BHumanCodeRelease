@@ -114,61 +114,12 @@ STREAMABLE(SetPlay,
    */
   void verify(Type setPlay, const std::array<Tactic, Tactic::numOfTypes>& tactics) const;
 
-  STREAMABLE(Action,
-  {
-    ENUM(Type,
-    {,
-      // The following actions are bound to the active role of playing the ball:
-      shot,
-      pass,
-      wait,
-      // The following actions can never be used by the active role of playing the ball:
-      mark,
-      position,
-    });
-
-    class Implementation : public BehaviorBase
-    {
-    public:
-      /**
-       * Checks whether a set play action is done.
-       * @param action The action to check (to access arguments).
-       * @param agent The agent on which the action is checked.
-       * @param otherAgents The other agents (excluding \c agent).
-       * @return Whether the action is done.
-       */
-      virtual bool isDone([[maybe_unused]] const Action& action, [[maybe_unused]] const Agent& agent, [[maybe_unused]] const Agents& otherAgents) const
-      {
-        return false;
-      }
-
-      /**
-       * Executes the set play action.
-       * @param action The action to execute (to access arguments).
-       * @param agent The agent on which the action is executed.
-       * @param otherAgents The other agents (excluding \c agent).
-       * @return The skill request to execute.
-       */
-      virtual SkillRequest execute([[maybe_unused]] const Action& action, [[maybe_unused]] const Agent& agent, [[maybe_unused]] const Agents& otherAgents) = 0;
-    };
-
-    bool isActive() const
-    {
-      return type == shot || type == pass || type == wait;
-    },
-
-    (Type)(numOfTypes) type, /**< The type of action to be performed. */
-    (std::vector<Tactic::Position::Type>) passTarget, /**< The potential pass targets for the \c pass action. */
-    (Boundaryf)(Rangef(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()), Rangef(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max())) markZone, /**< The zone from which to select an opponent to mark for the \c mark action. */
-    (Pose2f) pose, /**< The target pose. */
-  });
-
   STREAMABLE(Position,
   {,
     (Tactic::Position::Type)(Tactic::Position::none) position, /**< The position that is overridden by this entry. */
-    (Pose2f) pose, /**< The pose that is used instead. */
-    (std::vector<Action>) actions, /**< The actions to be executed as part of the set play. */
+    (Vector2f) translation, /**< The pose that is used instead. */
     (bool)(false) relativeToTeamBall, /**< Whether the pose is relative to the team ball. */
+    (bool)(false) intendedStriker, /**< Whether this position is supposed to be the intended striker. */
   });
 
   /**

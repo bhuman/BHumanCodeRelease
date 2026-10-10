@@ -1,7 +1,7 @@
 /**
  * @file PointAtEngine.cpp
  * This file implements a module that points with arms at specified points.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "PointAtEngine.h"
@@ -25,9 +25,9 @@ void PointAtEngine::update(PointAtGenerator& pointAtGenerator)
 
 void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest& jointRequest)
 {
-  const Angle shoulderPitchOffset = Global::getSettings().robotType != Settings::nao ? -90_deg : 0_deg;
-  const Angle shoulderRollOffset = Global::getSettings().robotType != Settings::nao ? (arm == Arms::left ? -90_deg : 90_deg) : 0_deg;
-  const Angle elbowYawOffset = Global::getSettings().robotType != Settings::nao ? 90_deg : 0_deg;
+  const Angle shoulderPitchOffset = -90_deg;
+  const Angle shoulderRollOffset = arm == Arms::left ? -90_deg : 90_deg;
+  const Angle elbowYawOffset = 90_deg;
 
   const Angle oldShoulderPitchValue = (!theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderPitch)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderPitch)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)]) - shoulderPitchOffset;
   const Angle oldShoulderRollValue = (!theJointRequest.stiffnessData.stiffnesses[Joints::combine(arm, Joints::shoulderRoll)] ? theJointAngles.angles[Joints::combine(arm, Joints::shoulderRoll)] : theJointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)]) - shoulderRollOffset;
@@ -45,10 +45,8 @@ void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest&
   else
     calcShoulderJoints(arm, point, theRobotDimensions, jointRequest);
 
-  jointRequest.angles[Joints::combine(arm, Joints::elbowRoll)] = 0;
+  jointRequest.angles[Joints::combine(arm, Joints::elbowPitch)] = 0;
   jointRequest.angles[Joints::combine(arm, Joints::elbowYaw)] = elbowYawOffset;
-  jointRequest.angles[Joints::combine(arm, Joints::wristYaw)] = arm == Arms::left ? -90_deg : 90_deg;
-  jointRequest.angles[Joints::combine(arm, Joints::hand)] = 0;
 
   COMPLEX_DRAWING3D("module:PointAtEngine:robot")
   {
@@ -77,7 +75,7 @@ void PointAtEngine::update(Arms::Arm arm, const Vector3f& pointTo, JointRequest&
   jointRequest.angles[Joints::combine(arm, Joints::shoulderPitch)] += shoulderPitchOffset;
   jointRequest.angles[Joints::combine(arm, Joints::shoulderRoll)] += shoulderRollOffset;
 
-  for(size_t i = Joints::combine(arm, Joints::shoulderPitch); i <= Joints::combine(arm, Joints::hand); ++i)
+  for(size_t i = Joints::combine(arm, Joints::shoulderPitch); i <= Joints::combine(arm, Joints::elbowPitch); ++i)
     jointRequest.stiffnessData.stiffnesses[i] = stiffness;
 }
 

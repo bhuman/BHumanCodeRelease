@@ -3,8 +3,8 @@
  *
  * Very simple representation of a seen ball
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
- * @author Jesse
+ * @author Tim Laue
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

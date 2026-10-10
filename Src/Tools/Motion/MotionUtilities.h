@@ -25,7 +25,6 @@ namespace MotionUtilities
    * @param endJoint last joint (excludes)
    */
   void copy(const JointRequest& source, JointRequest& target,
-            const StiffnessSettings& theStiffnessSettings,
             const Joints::Joint startJoint, const Joints::Joint endJoint);
 
   /**
@@ -58,8 +57,8 @@ namespace MotionUtilities
    * @param startJoint first joint (includes)
    * @param endJoint last joint (excludes)
    */
-  void interpolate(const JointRequest& from, const JointRequest& to, const float fromRatio, JointRequest& target, bool interpolateStiffness,
-                   const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
+  void interpolate(const JointRequest& from, const JointRequest& to, const float fromRatio, JointRequest& target,
+                   bool interpolateStiffness, const JointAngles& lastJointAngles,
                    const Joints::Joint startJoint, const Joints::Joint endJoint);
 
   /**

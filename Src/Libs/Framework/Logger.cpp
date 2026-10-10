@@ -125,7 +125,7 @@ void Logger::update(const LoggingController& controller)
       {
         MessageQueue* buffer = buffersAvailable.top();
         buffersAvailable.pop();
-        buffer->bin(undefined) << (path + LoggingTools::createName(Global::getSettings().headName, Global::getSettings().bodyName,
+        buffer->bin(undefined) << (path + LoggingTools::createName(Global::getSettings().robotName,
                                                                    Global::getSettings().scenario, Global::getSettings().location,
                                                                    controller.getDescription(), Global::getSettings().playerNumber));
         buffersToWrite.push_back(buffer);

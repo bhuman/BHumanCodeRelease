@@ -24,6 +24,7 @@
 
 #include <vector>
 #include "Framework/Module.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Infrastructure/DummyRepresentation.h"
@@ -32,15 +33,16 @@
 
 MODULE(FrictionLearner,
 {,
-  REQUIRES(BallPercept),
   REQUIRES(BallModel),
+  REQUIRES(BallPercept),
+  REQUIRES(BallSpecification),
   REQUIRES(FrameInfo),
   PROVIDES(DummyRepresentation),
   DEFINES_PARAMETERS(
   {,
     (int)(1000) timeout,                 /**< Time in ms. If there has not been observed any ball for timeout ms, the data collection phase ends. */
-    (unsigned int)(20) minObservations,  /**< Minimum number of ball observations that is required for optimization */
-    (unsigned int)(8) offset,            /**< Buffer index offset between two observations that are used as a pair for optimization*/
+    (unsigned int)(30) minObservations,  /**< Minimum number of ball observations that is required for optimization */
+    (unsigned int)(10) offset,            /**< Buffer index offset between two observations that are used as a pair for optimization*/
     (bool)(false) acceptGuessedBalls,    /**< Incorporate guessed balls in friction estimation, if set to true */
   }),
 });
@@ -78,4 +80,6 @@ private:
    * The output is printed to the console window.
    */
   void determineFrictionCoefficient();
+
+  void determineFrictionCoefficient2(int start, int end);
 };

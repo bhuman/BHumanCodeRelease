@@ -46,10 +46,7 @@ inline void LinesPercept::draw() const
     ColorRGBA::green, ColorRGBA::magenta, ColorRGBA::orange, ColorRGBA::gray
   };
 
-  DECLARE_DEBUG_DRAWING("representation:LinesPercept:image", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("representation:LinesPercept:field", "drawingOnField");
-
-  COMPLEX_DRAWING("representation:LinesPercept:field")
+  DEBUG_DRAWING("representation:LinesPercept:field", "drawingOnField")
   {
     int colorIndex = 0;
     for(const Line& line : lines)
@@ -68,7 +65,7 @@ inline void LinesPercept::draw() const
     }
   }
 
-  COMPLEX_DRAWING("representation:LinesPercept:image")
+  DEBUG_DRAWING("representation:LinesPercept:image", "drawingOnImage")
   {
     int colorIndex = 0;
     for(const Line& line : lines)

@@ -9,7 +9,6 @@ set(OPTIONS_AND_SKILLS_PCHS
 
 add_library(OptionsAndSkills${TARGET_SUFFIX} OBJECT ${OPTIONS_AND_SKILLS_SOURCES})
 set_property(TARGET OptionsAndSkills${TARGET_SUFFIX} PROPERTY FOLDER "Libs/${TARGET_SUFFIX}")
-set_property(TARGET OptionsAndSkills${TARGET_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(OptionsAndSkills${TARGET_SUFFIX} PRIVATE "${BHUMAN_PREFIX}/Src")
 target_include_directories(OptionsAndSkills${TARGET_SUFFIX} PRIVATE "${OPTIONS_AND_SKILLS_ROOT_DIR}")
 target_link_libraries(OptionsAndSkills${TARGET_SUFFIX} PRIVATE Platform${TARGET_SUFFIX})

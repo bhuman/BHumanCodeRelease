@@ -44,8 +44,7 @@ option((SkillBehaviorControl) PanAndTiltGrid,
   {
     LookAtAngles({.pan = h.pan,
                   .tilt = h.tilt,
-                  .speed = speed,
-                  .camera = HeadMotionRequest::upperCamera});
+                  .speed = speed});
   };
 
   initial_state(initial)

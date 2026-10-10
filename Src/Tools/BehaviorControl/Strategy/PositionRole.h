@@ -19,7 +19,6 @@ public:
   ENUM(Type,
   {,
     goalkeeper,
-    attackingGoalkeeper,
     defender,
     midfielder,
     forward,

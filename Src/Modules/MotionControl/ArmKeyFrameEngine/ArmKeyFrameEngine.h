@@ -3,19 +3,24 @@
 #include "ArmKeyFrameMotion.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/StiffnessData.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/MotionControl/ArmKeyFrameGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/Sensing/RobotModel.h"
 #include "Framework/Module.h"
+#include "Framework/Settings.h"
 
 MODULE(ArmKeyFrameEngine,
 {,
   REQUIRES(JointAngles),
-  REQUIRES(StiffnessSettings),
+  REQUIRES(RobotDimensions),
+  REQUIRES(RobotModel),
   PROVIDES(ArmKeyFrameGenerator),
   LOADS_PARAMETERS(
   {,
     (std::vector<ArmKeyFrameMotion>) allMotions, /**< contains the existing arm motions */
+    (Angle) armStuckThreshold, /**< contains the angle difference that determines Joint as stuck */
   }),
 });
 
@@ -24,8 +29,8 @@ MODULE(ArmKeyFrameEngine,
  * dynamically configured using the configuration file belonging to this
  * module. Please see B-Human's 2013 code release for details on how this
  * module works and how to use it.
- * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Simon Taddiken
+ * @author Jesse Richter-Klug
  */
 class ArmKeyFrameEngine : public ArmKeyFrameEngineBase
 {
@@ -46,6 +51,7 @@ private:
     bool isLastMotionFinished = true; /**< Whether this arm currently performs a motion */
     bool fast = false;                /**< If set to true, current motion will be performed without interpolation */
     bool wasActive = false;           /**< If the arm key frame engine was active last frame */
+    bool isStuck = false;             /**< True if the arm is detected as stuck*/
     ArmKeyFrameMotion::ArmAngles interpolationStart; /**< Set of angles at which interpolation towards the next state began */
     ArmKeyFrameMotion currentMotion;  /**< The motion which is currently performed by this arm. Contains the actual target states in order they should be reached */
     Arm(Arms::Arm id) :
@@ -68,10 +74,7 @@ private:
         {
           interpolationStart.angles[i] = currentJoints.angles[firstJoint + i];
           if(id == Arms::right &&
-             (i + Joints::rShoulderPitch == Joints::rShoulderRoll ||
-              i + Joints::rShoulderPitch == Joints::rElbowYaw ||
-              i + Joints::rShoulderPitch == Joints::rElbowRoll ||
-              i + Joints::rShoulderPitch == Joints::rWristYaw))
+             Joints::canNegate(static_cast<Joints::Joint>(i + Joints::rShoulderPitch)))
             interpolationStart.angles[i] *= -1.f;
         }
 

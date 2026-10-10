@@ -202,11 +202,11 @@ public:
       T* prev = buffer;
       buffer = reinterpret_cast<T*>(Memory::alignedMalloc(capacity * sizeof(T)));
       if(head >= entries)
-        std::memcpy(buffer, prev + head - entries, entries * sizeof(T));
+        std::memcpy(static_cast<void*>(buffer), static_cast<void*>(prev + head - entries), entries * sizeof(T));
       else
       {
-        std::memcpy(buffer, prev + allocated - (entries - head), (entries - head) * sizeof(T));
-        std::memcpy(buffer + entries - head, prev, head * sizeof(T));
+        std::memcpy(static_cast<void*>(buffer), static_cast<void*>(prev + allocated - (entries - head)), (entries - head) * sizeof(T));
+        std::memcpy(static_cast<void*>(buffer + entries - head), static_cast<void*>(prev), head * sizeof(T));
       }
       allocated = capacity;
       head = allocated > entries ? entries : 0;

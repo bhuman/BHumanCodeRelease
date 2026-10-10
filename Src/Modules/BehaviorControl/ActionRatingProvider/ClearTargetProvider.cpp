@@ -13,41 +13,24 @@ MAKE_MODULE(ClearTargetProvider);
 
 void ClearTargetProvider::update(ClearTarget& theClearTarget)
 {
-  theClearTarget.reset = [this]() -> void
+  theClearTarget.isValid = false;
+
+  theClearTarget.reset = [this, &theClearTarget]() -> void
   {
     lastKickType = KickInfo::numOfKickTypes;
     lastSector = {};
-    timeWhenBestKickWasUpdated = 0;
+    theClearTarget.isValid = false;
+    theClearTarget.kickAngle = 0_deg;
+    theClearTarget.kickLength = 20000.f;
+    theClearTarget.kickType = KickInfo::numOfKickTypes;
   };
 
-  theClearTarget.getAngle = [this]() -> Angle
+  theClearTarget.update = [this, &theClearTarget]() -> void
   {
-    return Angle::normalize(bestKickPoseRelative.rotation - theKickInfo[bestKick].rotationOffset);
-  };
-
-  theClearTarget.getKickType = [this]() -> KickInfo::KickType
-  {
-    if(theFrameInfo.time != timeWhenBestKickWasUpdated)
+    if(!theClearTarget.isValid)
     {
-      calcBestKick();
-      timeWhenBestKickWasUpdated = theFrameInfo.time;
+      calcBestKick(theClearTarget);
     }
-    return bestKick;
-  };
-
-  theClearTarget.getTarget = [this]() -> Vector2f
-  {
-    return theRobotPose.translation + Vector2f::polar(theKickInfo[bestKick].range.max, bestSector.angleRange.getCenter());
-  };
-  theClearTarget.getRating = [&]() -> float
-  {
-    if(theFrameInfo.time != timeWhenBestKickWasUpdated)
-      static_cast<void>(theClearTarget.getKickType());
-    if(bestKick != KickInfo::numOfKickTypes)
-    {
-      return getAngleRating(bestSector.angleRange.getCenter(), theFieldBall.positionOnField, theKickInfo[bestKick].range.max);
-    }
-    return -1.0f;
   };
 }
 
@@ -60,10 +43,10 @@ bool ClearTargetProvider::isNotNearLine(const Vector2f targetPosition)
     LINE("option:ClearBall:borders", theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine, theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine, 20, Drawings::PenStyle::solidPen, ColorRGBA::blue);
     LINE("option:ClearBall:borders", theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine, theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine, 20, Drawings::PenStyle::solidPen, ColorRGBA::yellow);
   }
-  return targetPosition.x() > theFieldDimensions.xPosOwnGoalLine + minDistanceToXLine
-         && targetPosition.x() < theFieldDimensions.xPosOpponentGoalLine - minDistanceToXLine
-         && targetPosition.y() < theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine
-         && targetPosition.y() > theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine;
+  return targetPosition.x() > std::min(theFieldDimensions.xPosOwnGoalLine + minDistanceToXLine, theFieldBall.positionOnField.x())
+         && targetPosition.x() < std::max(theFieldDimensions.xPosOpponentGoalLine - minDistanceToXLine, theFieldBall.positionOnField.x())
+         && targetPosition.y() < std::max(theFieldDimensions.yPosLeftFieldBorder - minDistanceToYLine, theFieldBall.positionOnField.y())
+         && targetPosition.y() > std::min(theFieldDimensions.yPosRightFieldBorder + minDistanceToYLine, theFieldBall.positionOnField.y());
 }
 
 float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vector2f basePosition, const float targetDistance,
@@ -75,7 +58,7 @@ float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vect
   {
     return -1.f;
   }
-  const float goalRating = theExpectedGoals.getRating(targetPosition, false);
+  const float goalRating = theExpectedGoals.getRating(targetPosition, false, true, true);
 
   //calculate field factor of current position
   //the factor is 1 in ownPenaltyArea, 1...0 between ownPenaltyArea and HalfwayLine and 0 in oppositeHalf
@@ -86,6 +69,9 @@ float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vect
     fieldFactor = 1.f;
   }
 
+  const float maxHysteresisBonus = mapToRange(theFieldBall.recentBallPositionRelative().norm(), ballDistanceRatingInterpolation.min, ballDistanceRatingInterpolation.max, lastKickRatingBonus.max, lastKickRatingBonus.min);
+  const float bonusRating = lastKickType == KickInfo::numOfKickTypes ? 0.f : mapToRange(std::abs(candidateAngle - bestKickDirection), static_cast<float>(kickDirectionHystersisRange.min), static_cast<float>(kickDirectionHystersisRange.max), maxHysteresisBonus, 0.f);
+
   COMPLEX_DRAWING("option:ClearBall:evaluation")
   {
     std::string closer = "";
@@ -93,12 +79,13 @@ float ClearTargetProvider::getAngleRating(const Angle candidateAngle, const Vect
     {
       closer = "*";
     }
-    const Vector2f& ballPositionOnField = theFieldInterceptBall.interceptedEndPositionOnField;
+    const Vector2f& ballPositionOnField = theFieldBall.positionOnField;
     LINE("option:ClearBall:evaluation", ballPositionOnField.x(), ballPositionOnField.y(), targetPosition.x(), targetPosition.y(), 20, Drawings::PenStyle::solidPen, ColorRGBA::violet);
-    DRAW_TEXT("option:ClearBall:evaluation", targetPosition.x(), targetPosition.y() - 250, 200, ColorRGBA::violet, number << ": " << goalRating * fieldFactor << closer);
+    DRAW_TEXT("option:ClearBall:evaluation", targetPosition.x(), targetPosition.y() - 250, 200, ColorRGBA::violet, number << ": " << goalRating * fieldFactor + bonusRating << closer);
   }
-  //return xG-value of the target position times field factor of the current position
-  return goalRating * fieldFactor;
+
+  //return xG-value of the target position times field factor of the current position + hystersis
+  return goalRating * fieldFactor + bonusRating;
 }
 
 bool ClearTargetProvider::isTeammateCloseToBall(const Angle candidateAngle, const Vector2f basePosition, const float targetDistance)
@@ -136,8 +123,9 @@ void ClearTargetProvider::createSmallSectors(Angle& var, Angle end, std::list<Se
   }
 }
 
-void ClearTargetProvider::calcBestKick()
+void ClearTargetProvider::calcBestKick(ClearTarget& theClearTarget)
 {
+  // Avoid own goal
   const Vector2f leftGoalPost(std::min(theFieldDimensions.xPosOwnGoalPost, theFieldBall.positionOnField.x() - theFieldDimensions.goalPostRadius), theFieldDimensions.yPosLeftGoal);
   const Vector2f rightGoalPost(std::min(theFieldDimensions.xPosOwnGoalPost, theFieldBall.positionOnField.x() - theFieldDimensions.goalPostRadius), theFieldDimensions.yPosRightGoal);
   const Vector2f ballInLeftGoalPost = theFieldBall.positionOnField - leftGoalPost;
@@ -156,6 +144,21 @@ void ClearTargetProvider::calcBestKick()
   blueprintWheel.begin(theFieldBall.positionOnField);
   blueprintWheel.addSector(Rangea(ballLeftGoalPostTangentAngle, ballRightGoalPostTangentAngle), 0.f, SectorWheel::Sector::erased);
 
+  // Avoid opponent goal if scoring is not allowed
+  if(!theIndirectKick.allowDirectKick)
+  {
+    const Vector2f leftGoalPost(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal);
+    const Vector2f rightGoalPost(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal);
+    const float minBallGoalPostOffset = theFieldDimensions.goalPostRadius + theBallSpecification.radius + ballGoalPostTangentOffset;
+    const Angle leftAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (leftGoalPost - theFieldBall.positionOnField).norm()));
+    const Angle rightAngleOffset = std::asin(std::min(1.f, minBallGoalPostOffset / (rightGoalPost - theFieldBall.positionOnField).norm()));
+    const Angle angleToLeftPost = (leftGoalPost - theFieldBall.positionOnField).angle() + leftAngleOffset;
+    const Angle angleToRightPost = (rightGoalPost - theFieldBall.positionOnField).angle() - rightAngleOffset;
+    ASSERT(!std::isnan(float(angleToLeftPost)));
+    ASSERT(!std::isnan(float(angleToRightPost)));
+    blueprintWheel.addSector(Rangea(angleToRightPost, angleToLeftPost), 0.f, SectorWheel::Sector::erased);
+  }
+
   for(const Obstacle& obstacle : theObstacleModel.obstacles)
   {
     const Vector2f obstacleOnField = theRobotPose * obstacle.center;
@@ -164,13 +167,13 @@ void ClearTargetProvider::calcBestKick()
     if(obstacleOnField.x() < theFieldDimensions.xPosOwnGoalLine + 300.f)
       continue;
 
-    const float width = (obstacle.left - obstacle.right).norm() + 4.f * theBallSpecification.radius;
-    const float distance = std::sqrt(std::max((obstacleOnField - theFieldInterceptBall.interceptedEndPositionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
+    const float width = (obstacle.left - obstacle.right).norm() + 2.f * theBallSpecification.radius + additionalObstacleWidth;
+    const float distance = std::sqrt(std::max((obstacleOnField - theFieldBall.positionOnField).squaredNorm() - sqr(width / 2.f), 1.f));
     if(distance < theBallSpecification.radius)
       continue;
 
     const float radius = std::atan(width / (2.f * distance));
-    const Angle direction = (obstacleOnField - theFieldInterceptBall.interceptedEndPositionOnField).angle();
+    const Angle direction = (obstacleOnField - theFieldBall.positionOnField).angle();
     const Rangea angleRange(direction - radius, direction + radius);
 
     if(!angleRange.contains(ballLeftGoalPostTangentAngle) && !angleRange.contains(ballRightGoalPostTangentAngle))
@@ -190,12 +193,9 @@ void ClearTargetProvider::calcBestKick()
   auto sectors = wheel.finish();
   std::list<SectorWheel::Sector> newSmallSectors;
   std::vector<KickInfo::KickType> kickTypes = availableKicks;
-  //add extra kicks since it is a set piece
-  if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
-  {
-    kickTypes.reserve(kickTypes.size() + extraKicksSetPieces.size());
-    kickTypes.insert(kickTypes.end(), extraKicksSetPieces.begin(), extraKicksSetPieces.end());
-  }
+  //In Free kicks use other kicks
+  if(!extraKicksSetPieces.empty() && theGameState.isFreeKick() && theGameState.isForOwnTeam())
+    kickTypes = extraKicksSetPieces;
   for(const SectorWheel::Sector& sector : sectors)
   {
     //divide this large free sector in smaller ones
@@ -223,8 +223,8 @@ void ClearTargetProvider::calcBestKick()
       {
         //we add values to reach pi
         var = sector.angleRange.min;
-        createSmallSectors(var, (Angle)pi, newSmallSectors, newSmallSector);
-        if(pi - var > smallSector)
+        createSmallSectors(var, pi, newSmallSectors, newSmallSector);
+        if(!newSmallSectors.empty())
         {
           newSmallSector.angleRange.min = var;
           newSmallSector.angleRange.max = pi;
@@ -233,7 +233,7 @@ void ClearTargetProvider::calcBestKick()
         //we add values to get away from -pi
         var = -pi;
         createSmallSectors(var, end, newSmallSectors, newSmallSector);
-        if(end - var > smallSector)
+        if(!newSmallSectors.empty())
         {
           newSmallSector.angleRange.min = var;
           newSmallSector.angleRange.max = end;
@@ -253,14 +253,15 @@ void ClearTargetProvider::calcBestKick()
   float goalRating = 0.f;//xG of current sector and shot type
   KickInfo::KickType lastBestKick = KickInfo::numOfKickTypes; //kick type of last sector
   SectorWheel::Sector lastBestSector; //last sector
-  Pose2f lastBestKickPoseRelative;//pose of last sector
+  float lastBestKickLength = 20000.f; // last kick length
+  Angle lastBestKickDirection;//pose of last sector
   float bestXGOfSector = 0.0f;//best XG of last sector
   std::map<int, float> mapOfRatings;//needed for debug drawings
-  COMPLEX_DRAWING("option:ClearBall:Zero")
+  COMPLEX_DRAWING("option:ClearBall:zero")
   {
     const Vector2f targetPosition = theFieldBall.positionOnField + Vector2f::polar(10000, -pi);
-    const Vector2f& ballPositionOnField = theFieldInterceptBall.interceptedEndPositionOnField;
-    LINE("option:ClearBall:Zero", ballPositionOnField.x(), ballPositionOnField.y(), targetPosition.x(), targetPosition.y(), 40, Drawings::PenStyle::dottedPen, ColorRGBA::yellow);
+    const Vector2f& ballPositionOnField = theFieldBall.positionOnField;
+    LINE("option:ClearBall:zero", ballPositionOnField.x(), ballPositionOnField.y(), targetPosition.x(), targetPosition.y(), 40, Drawings::PenStyle::dottedPen, ColorRGBA::yellow);
   }
   int i = 0;
   //skip big sectors
@@ -270,50 +271,55 @@ void ClearTargetProvider::calcBestKick()
     i++;
     if(sector.type == SectorWheel::Sector::free)
     {
-      bool close = false;
       bestXGOfSector = 0.0f;
-      //sectors with range < 10_deg are too small to pass into
-      if(sector.angleRange.getSize() > smallSector)
-      {
-        //check best kick for the current sector
-        for(KickInfo::KickType kickType : kickTypes)
-        {
-          const Angle center = sector.angleRange.getCenter();
-          goalRating = getAngleRating(center, theFieldBall.positionOnField, theKickInfo[kickType].range.max, i);
-          if(goalRating < 0.f)
-          {
-            continue;
-          }
-          if(sector.angleRange.contains(lastSector.angleRange.getCenter()))
-            goalRating += hysteresisSector;
-          if(kickType == lastKickType)
-            goalRating += hysteresisShotType;
-          //add/sub bonus of the sector before this one
-          goalRating += leftTeammateBonus;
-          const Pose2f kickPoseRelativeSize = theRobotPose.inverse() * KickSelection::calcOptimalKickPoseForTargetAngleRange(sector.angleRange, theRobotPose, theFieldBall.positionOnField, theKickInfo[kickType].ballOffset, theKickInfo[kickType].rotationOffset);
-          //save best rating of this sector
-          if(goalRating > bestXGOfSector)
-          {
-            bestXGOfSector = goalRating;
-          }
-          //check if clearTarget is useful
-          close = isTeammateCloseToBall(sector.angleRange.getCenter(), theFieldBall.positionOnField, theKickInfo[kickType].range.max);
-          if(goalRating > bestXG && close)
-          {
-            bestXG = goalRating;
-            bestSector = sector;
-            bestKickPoseRelative = kickPoseRelativeSize;
-            bestKick = kickType;
-            lastBestSector = sector;
-            lastBestKickPoseRelative = kickPoseRelativeSize;
-            lastBestKick = kickType;
-          }
-        }
-      }
       //reset teammate bonus since this one is a free sector
       leftTeammateBonus = 0.f;
       applyRightTeamMateBonus = true;
 
+      //sectors with range < 10_deg are too small to pass into
+      if(sector.angleRange.getSize() > smallSector)
+      {
+        const float minKickStrength = minKickDistance.min;// mapToRange(std::abs(sector.angleRange.getCenter()), static_cast<float>(scaleKickDistanceAngleRange.min), static_cast<float>(scaleKickDistanceAngleRange.max), minKickDistance.min, minKickDistance.max);
+        //check best kick for the current sector
+        for(KickInfo::KickType kickType : kickTypes)
+        {
+          for(float kickRange = theKickInfo[kickType].range.max; kickRange > minKickStrength && kickRange > theKickInfo[kickType].range.min; kickRange = (kickRange > minKickStrength && kickRange - kickDistanceStepSize < minKickStrength) ? minKickStrength : kickRange - kickDistanceStepSize)
+          {
+            const Angle center = sector.angleRange.getCenter();
+            goalRating = getAngleRating(center, theFieldBall.positionOnField, kickRange, i);
+            if(goalRating < 0.f)
+            {
+              continue;
+            }
+            if(sector.angleRange.contains(lastSector.angleRange.getCenter()))
+              goalRating += hysteresisSector;
+            if(kickType == lastKickType)
+              goalRating += hysteresisShotType;
+            //add/sub bonus of the sector before this one
+            goalRating += leftTeammateBonus;
+            //save best rating of this sector
+            if(goalRating > bestXGOfSector)
+            {
+              bestXGOfSector = goalRating;
+            }
+            //check if clearTarget is useful
+            if(isTeammateCloseToBall(sector.angleRange.getCenter(), theFieldBall.positionOnField, kickRange))
+              goalRating += teammateSummand;
+            if(goalRating > bestXG)
+            {
+              bestXG = goalRating;
+              bestSector = sector;
+              bestKickDirection = center;
+              bestKick = kickType;
+              bestKickLength = kickRange;
+              lastBestKickLength = kickRange;
+              lastBestSector = sector;
+              lastBestKickDirection = center;
+              lastBestKick = kickType;
+            }
+          }
+        }
+      }
       mapOfRatings.emplace(i, bestXGOfSector);
     }
     //add bonus to last sector
@@ -331,8 +337,9 @@ void ClearTargetProvider::calcBestKick()
       {
         bestXG = bestXGOfSector;
         bestSector = lastBestSector;
-        bestKickPoseRelative = lastBestKickPoseRelative;
+        bestKickDirection = lastBestKickDirection;
         bestKick = lastBestKick;
+        bestKickLength = lastBestKickLength;
       }
       applyRightTeamMateBonus = false;
     }
@@ -351,8 +358,9 @@ void ClearTargetProvider::calcBestKick()
       {
         bestXG = bestXGOfSector;
         bestSector = lastBestSector;
-        bestKickPoseRelative = lastBestKickPoseRelative;
+        bestKickDirection = lastBestKickDirection;
         bestKick = lastBestKick;
+        lastBestKickLength = bestKickLength;
       }
       applyRightTeamMateBonus = false;
     }
@@ -365,6 +373,20 @@ void ClearTargetProvider::calcBestKick()
   //save last sector and kick type for hysteresis
   lastKickType = bestKick;
   lastSector = bestSector;
+  lastKickLength = bestKickLength;
+
+  if(bestKick != KickInfo::numOfKickTypes)
+  {
+    theClearTarget.kickAngle = Angle::normalize(bestKickDirection - theRobotPose.rotation);
+    theClearTarget.kickTarget = theRobotPose.translation + Vector2f::polar(bestKickLength, bestSector.angleRange.getCenter());
+    theClearTarget.rating = getAngleRating(bestSector.angleRange.getCenter(), theFieldBall.positionOnField, bestKickLength);
+    theClearTarget.kickType = bestKick;
+    theClearTarget.kickLength = bestKickLength;
+    theClearTarget.isValid = true;
+  }
+  else
+    theClearTarget.reset();
+
   //print calculated best value of each free sector
   for(const auto& [index, xG] : mapOfRatings)
   {

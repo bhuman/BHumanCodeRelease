@@ -21,7 +21,7 @@ void ModuleGraphRunner::destroy()
     if(m.moduleState->instance)
     {
       delete m.moduleState->instance;
-      m.moduleState->instance = 0;
+      m.moduleState->instance = nullptr;
     }
   providers.clear();
   sent.clear();

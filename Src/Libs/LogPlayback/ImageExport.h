@@ -22,7 +22,7 @@ namespace ImageExport
   inline std::string expandImageFileName(const std::string& fileName, int imageNumber)
   {
     std::string name = fileName;
-    std::string ext = ".png";
+    std::string ext = ".jpg";
     const std::string::size_type p = name.rfind('.');
     const size_t lastDirectorySeparatorIndex = static_cast<int>(name.find_last_of("\\/"));
     if(static_cast<int>(p) > static_cast<int>(lastDirectorySeparatorIndex))
@@ -34,7 +34,7 @@ namespace ImageExport
     if(imageNumber >= 0)
     {
       char num[12];
-      sprintf(num, "%06d", imageNumber);
+      snprintf(num, sizeof(num), "%06d", imageNumber);
       if(name != "" && lastDirectorySeparatorIndex != fileName.length() - 1)   // only if nonempty base name supplied
         name += "_";
       name += num + ext;
@@ -106,10 +106,10 @@ namespace ImageExport
   inline bool exportImage(const Image<Pixel>& image, const std::string& fileName, const int imageNumber = -1, const ExportMode mode = raw)
   {
     QFile file(expandImageFileName(fileName, imageNumber).c_str());
-    file.open(QIODevice::WriteOnly);
 
     // QFile is closed upon destruction, so close() is not necessary here
-    return exportImage(image, file, file.fileName().last(3).toUpper().toStdString().c_str(), mode);
+    return file.open(QIODevice::WriteOnly)
+           && exportImage(image, file, file.fileName().last(3).toUpper().toStdString().c_str(), mode);
   }
 
   /**

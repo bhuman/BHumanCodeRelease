@@ -12,11 +12,12 @@
 
 /*
  * TODO:
- * - Current implementation considers elements twice, if they are part of a FieldFeature.
+ * - Current implementation considers some elements twice, if they are part of a FieldFeature.
  *   Think about handling this in a reasonable way
  */
 
 #include "PerceptRegistrationProvider.h"
+#include "Tools/Math/Projection.h"
 
 MAKE_MODULE(PerceptRegistrationProvider);
 
@@ -36,17 +37,14 @@ PerceptRegistrationProvider::PerceptRegistrationProvider()
   auto const& listOfLines = goalFrameIsPerceivedAsLines ? theFieldDimensions.fieldLinesWithGoalFrame.lines : theFieldDimensions.fieldLines.lines;
   for(auto const& fieldLine : listOfLines)
   {
-    if(!fieldLine.isPartOfCircle) // TODO: Create list for circle matching later
+    if(fieldLine.partOf == FieldDimensions::LinesTable::Line::nothing) // TODO: Create list for circle matching later
     {
-      WorldModelFieldLine newLine(fieldLine.from, fieldLine.to);
-      if(newLine.length > theFieldDimensions.penaltyMarkSize) // Penalty mark is not a line here
-      {
-        const bool isVertical = std::abs(newLine.dir.x()) > std::abs(newLine.dir.y());
-        if(isVertical)
-          verticalLinesWorldModel.push_back(newLine);
-        else
-          horizontalLinesWorldModel.push_back(newLine);
-      }
+      const WorldModelFieldLine newLine(fieldLine.from, fieldLine.to);
+      const bool isVertical = std::abs(newLine.dir.x()) > std::abs(newLine.dir.y());
+      if(isVertical)
+        verticalLinesWorldModel.push_back(newLine);
+      else
+        horizontalLinesWorldModel.push_back(newLine);
     }
   }
 
@@ -54,6 +52,12 @@ PerceptRegistrationProvider::PerceptRegistrationProvider()
   // X
   xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, theFieldDimensions.centerCircleRadius));
   xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, -theFieldDimensions.centerCircleRadius));
+  if(theFieldDimensions.marksAreCrosses)
+  {
+    xIntersectionsWorld.push_back(Vector2f(0.f, 0.f));
+    xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f));
+    xIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f));
+  }
   // T
   tIntersectionsWorld = xIntersectionsWorld;
   tIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosHalfwayLine, theFieldDimensions.yPosRightTouchline));
@@ -87,6 +91,11 @@ PerceptRegistrationProvider::PerceptRegistrationProvider()
     lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoal, theFieldDimensions.yPosLeftGoal));
     lIntersectionsWorld.push_back(Vector2f(theFieldDimensions.xPosOpponentGoal, theFieldDimensions.yPosRightGoal));
   }
+  // Field corners
+  fieldCorners.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline));
+  fieldCorners.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline));
+  fieldCorners.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline));
+  fieldCorners.push_back(Vector2f(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftTouchline));
 
   // Compute deviations
   // If we see false positive center circles, they are sometimes seen in large corners.
@@ -118,7 +127,7 @@ void PerceptRegistrationProvider::update(PerceptRegistration& perceptRegistratio
     if(perceptRegistration.totalNumberOfAvailableLines > 0)
     {
       perceptRegistration.totalNumberOfIgnoredLines = 0;
-      registerLines(pose, lines, perceptRegistration.totalNumberOfIgnoredLines);
+      registerLines(pose, lines, perceptRegistration.totalNumberOfAvailableLines, perceptRegistration.totalNumberOfIgnoredLines);
       ASSERT(perceptRegistration.totalNumberOfIgnoredLines <= perceptRegistration.totalNumberOfAvailableLines);
     }
   };
@@ -131,29 +140,41 @@ void PerceptRegistrationProvider::preprocessMeasurements(PerceptRegistration& pe
   perceptRegistration.totalNumberOfAvailableLandmarks = 0;
   perceptRegistration.totalNumberOfAvailableLines = 0;
 
+  // Standing inside the center circle and computing a center circle center point might lead to the
+  // generation of a problematic landmark. This is why some additional checks are necessary.
+  // Furthermore, when having a CenterCircleWithLine, the normal center circle should not be used.
+  centerCircleCanBeUsed = false;
+  if(theCirclePercept.wasSeen && !theCenterCircleWithLine.isValid)
+  {
+    Vector2f dummyImg;
+    if(theCirclePercept.pos.norm() > theFieldDimensions.centerCircleRadius ||
+       Projection::pointIsInImage(theCameraMatrix, theCameraInfo, theCirclePercept.pos, dummyImg))
+      centerCircleCanBeUsed = true;
+  }
+
   // Count the number of perceived field elements (needed for computing the validity):
   // --- Field Features:
-  if(thePenaltyMarkWithPenaltyAreaLine.isValid)
-    perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
   if(theCenterCircleWithLine.isValid)
-    perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
-  if(thePenaltyAreaAndGoalArea.isValid)
     perceptRegistration.totalNumberOfAvailableAbsolutePoseMeasurements++;
   // --- Landmarks:
   if(thePenaltyMarkPercept.wasSeen)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
-  if(theCirclePercept.wasSeen)
+  if(centerCircleCanBeUsed)
     perceptRegistration.totalNumberOfAvailableLandmarks++;
   perceptRegistration.totalNumberOfAvailableLandmarks += static_cast<int>(theFieldLineIntersections.intersections.size());
   // --- Lines:
-  perceptRegistration.totalNumberOfAvailableLines = static_cast<int>(theFieldLines.lines.size());
+  for(const auto& line : theFieldLines.lines)
+  {
+    if(line.length >= minimumLineLength)
+      perceptRegistration.totalNumberOfAvailableLines++;
+    else
+      break;
+  }
 }
 
 void PerceptRegistrationProvider::registerAbsolutePoseMeasurements(const Pose2f& pose, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements)
 {
-  registerSingleAbsolutePoseMeasurement(pose, thePenaltyMarkWithPenaltyAreaLine, absolutePoseMeasurements);
   registerSingleAbsolutePoseMeasurement(pose, theCenterCircleWithLine, absolutePoseMeasurements);
-  registerSingleAbsolutePoseMeasurement(pose, thePenaltyAreaAndGoalArea, absolutePoseMeasurements);
 }
 
 void PerceptRegistrationProvider::registerSingleAbsolutePoseMeasurement(const Pose2f& pose, const FieldFeature& measurement, std::vector<RegisteredAbsolutePoseMeasurement>& absolutePoseMeasurements)
@@ -217,7 +238,7 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
     }
   }
   // Register the center circle: ooooooooooooooooooooooooooooooooooooooooooooooooooooo
-  if(theCirclePercept.wasSeen)
+  if(centerCircleCanBeUsed)
   {
     const Vector2f circleInWorld = pose * theCirclePercept.pos;
     if(circleInWorld.norm() <= maxCenterCircleDeviation) // We assume that the CENTER circle is always at (0,0)
@@ -230,9 +251,8 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
     }
   }
   // Register the intersections / crossings of field lines: TXL TXL TXL TXL TXL TXL TXL TXL TXL TXL TXL
-  for(unsigned int i = 0; i < theFieldLineIntersections.intersections.size(); ++i)
+  for(const auto& intersection : theFieldLineIntersections.intersections)
   {
-    const auto& intersection = theFieldLineIntersections.intersections[i];
     Vector2f intersectionInWorldModel;
     bool intersectionFound = useIntersectionDirections ? getCorrespondingIntersection(pose, intersection, intersectionInWorldModel)
                              : getCorrespondingIntersectionNoDirections(pose, intersection, intersectionInWorldModel);
@@ -247,16 +267,18 @@ void PerceptRegistrationProvider::registerLandmarks(const Pose2f& pose, std::vec
   }
 }
 
-void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<RegisteredLine>& lines, int& numberOfIgnoredLines)
+void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<RegisteredLine>& lines,
+                                                int numberOfAvailableLines, int& numberOfIgnoredLines)
 {
   numberOfIgnoredLines = 0;
   // Iterate over all observed lines and try to match each line:
-  for(unsigned int i = 0; i < theFieldLines.lines.size(); ++i)
+  for(unsigned int i = 0; i < static_cast<unsigned int>(numberOfAvailableLines); ++i)
   {
     const auto& line = theFieldLines.lines[i];
     bool lineIsOnCenterCircle;
-    const WorldModelFieldLine* fieldLineWorld = getPointerToCorrespondingLineInWorldModel(pose, line.first, line.last, line.length, lineIsOnCenterCircle);
-    if(fieldLineWorld != nullptr || lineIsOnCenterCircle)
+    bool lineIsOnCornerArc;
+    const WorldModelFieldLine* fieldLineWorld = getPointerToCorrespondingLineInWorldModel(pose, line.first, line.last, line.length, lineIsOnCenterCircle, lineIsOnCornerArc);
+    if(fieldLineWorld != nullptr || lineIsOnCenterCircle || lineIsOnCornerArc)
     {
       // Normal case: Line in the world model was found and pointer references it:
       if(fieldLineWorld != nullptr)
@@ -265,7 +287,7 @@ void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<
         lines.push_back(newLine);
       }
       // Alternative case: Line appears to be a part of the center circle:
-      else if(registerLinesOnCenterCircle) // the condition if(lineIsOnCenterCircle) must be true here
+      else if(registerLinesOnCenterCircle && lineIsOnCenterCircle)
       {
         // The world model is just used for drawing, create a fake line from the center
         // of the perceived line to the center circle.
@@ -274,7 +296,7 @@ void PerceptRegistrationProvider::registerLines(const Pose2f& pose, std::vector<
         RegisteredLine newLine(line.first, line.last, fakeLineStartInWorld, fakeLineEndInWorld, line.cov, true);
         lines.push_back(newLine);
       }
-      // Remaining case: line appears to be on the center circle but should be ignored
+      // Remaining case: line appears to be on the center circle or on a corner arc and should be ignored
       else
       {
         numberOfIgnoredLines++;
@@ -437,7 +459,7 @@ int PerceptRegistrationProvider::intersectionDirectionTo90DegreeSection(const Po
 }
 
 const PerceptRegistrationProvider::WorldModelFieldLine*
-PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pose2f& pose, const Vector2f& start, const Vector2f& end, float lineLength, bool& isPartOfCenterCircle) const
+PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pose2f& pose, const Vector2f& start, const Vector2f& end, float lineLength, bool& isPartOfCenterCircle, bool& isOnCornerArc) const
 {
   const Vector2f startOnField = pose * start;
   const Vector2f endOnField = pose * end;
@@ -445,6 +467,23 @@ PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pos
   dirOnField.normalize();
   const bool isVertical = std::abs(dirOnField.x()) > std::abs(dirOnField.y());
   const float sqrLineAssociationCorridor = sqr(lineAssociationCorridor);
+
+  // Check for corner arc
+  isOnCornerArc = false;
+  if(theFieldDimensions.hasCornerArcs && discardLinesOnCornerArcs && lineLength < theFieldDimensions.cornerArcRadius * 0.5f * M_PI)
+  {
+    // Check, if start and end appear to be close to a corner:
+    for(const auto& c : fieldCorners)
+    {
+      const float distA = (c-startOnField).norm();
+      const float distB = (c-endOnField).norm();
+      if(distA < theFieldDimensions.cornerArcRadius * 1.3f && distB < theFieldDimensions.cornerArcRadius * 1.3f)
+      {
+        isOnCornerArc = true;
+        return nullptr;
+      }
+    }
+  }
 
   // Lines that are detected on the center circle are a bit special:
   if(lineShouldBeMatchedWithCenterCircle(startOnField, endOnField, dirOnField, lineLength))
@@ -463,12 +502,19 @@ PerceptRegistrationProvider::getPointerToCorrespondingLineInWorldModel(const Pos
     // A perceived line cannot be longer than the original line:
     if(lineLength > 1.25f * worldModelLine.length)
       continue;
-    // The begin as well as the end of the perceived line should not be too far away from the model:
-    if(getSqrDistanceToLineSegment(worldModelLine.start, worldModelLine.dir, worldModelLine.length, startOnField) > sqrLineAssociationCorridor ||
-       getSqrDistanceToLineSegment(worldModelLine.start, worldModelLine.dir, worldModelLine.length, endOnField) > sqrLineAssociationCorridor)
+
+    const float sqrDistStart = getSqrDistanceToLineSegment(worldModelLine.start, worldModelLine.dir, worldModelLine.length, startOnField);
+    const float sqrDistEnd = getSqrDistanceToLineSegment(worldModelLine.start, worldModelLine.dir, worldModelLine.length, endOnField);
+    const Angle angularDeviation = std::acos(dirOnField.dot(worldModelLine.dir));
+    // There are two possible configurations for accepting a line:
+    // 1. The start as well as the end of the perceived line are both close to model:
+    const bool bothCloseToModel = sqrDistStart < sqrLineAssociationCorridor && sqrDistEnd < sqrLineAssociationCorridor;
+    // 2. At least one point is close enough to the line and the directions of the perceived and the original line are similar:
+    const bool oneClose = sqrDistStart < sqrLineAssociationCorridor || sqrDistEnd < sqrLineAssociationCorridor;
+    const bool directionSimilar = angularDeviation < lineMaxAngularDeviation || angularDeviation > 180_deg - lineMaxAngularDeviation;
+    if(!bothCloseToModel || !(oneClose && directionSimilar))
       continue;
-    // Not other conditions implemented yet. Some more might be added later (see old implementation).
-    // ...
+
     // Check association of perceived line to halfway line. Often, short segments of the center circle
     // become falsely associated to the halfway line, causing a translational error in the self-localization.
     // Thus, any perceived halfway line must be longer than the center circle diameter, if it was perceived

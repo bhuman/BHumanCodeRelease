@@ -121,7 +121,7 @@ public:
 
   /**
    * The function returns the current BH directory,
-   * e.g. /home/nao or <..>/B-Human
+   * e.g. /home/booster or <..>/B-Human
    * @return The current BHDir
    */
   static const char* getBHDir();

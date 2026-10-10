@@ -19,6 +19,7 @@
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
 #include "Streaming/Global.h"
+#include "Tools/Modeling/BallPhysics.h"
 #include <algorithm>
 
 //#define SITTING_TEST
@@ -34,8 +35,7 @@ MAKE_MODULE(TeamMessageHandler);
   _(Whistle); \
   _(BehaviorStatus); \
   _(StrategyStatus); \
-  _(IndirectKick); \
-  _(RefereeSignal);
+  _(IndirectKick);
 
 struct TeamMessage
 {};
@@ -80,9 +80,9 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
   DEBUG_RESPONSE("module:TeamMessageHandler:budgetLimit")
   {
     const int remainingTime = TeamMessageHandler::remainingTime(0);
-    const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfHalf + maxOvertime) * 2.f));
+    const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfCurrentHalf() + maxOvertime) * 2.f));
 
-    PLOT("module:TeamMessageHandler:budgetLimit", overallMessageBudget * ratio + normalMessageReserve * (1.f - ratio));
+    PLOT("module:TeamMessageHandler:budgetLimit", overallMessageBudgetAvailable() * ratio + normalMessageReserve * (1.f - ratio));
   }
 
   PLOT("module:TeamMessageHandler:previewMessageBudget", ownModeledBudget);
@@ -98,7 +98,7 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
     auto it = std::find_if(theAgentStates.agents.begin(), theAgentStates.agents.end(), [&](const Agent& agent) {return agent.number == theGameState.playerNumber; });
     if(it != theAgentStates.agents.end())
     {
-      lastSent.theRobotPose.translation = it->basePose.translation;
+      lastSent.theRobotPose.translation = it->baseTranslation;
       lastSent.theBehaviorStatus.walkingTo = Vector2f::Zero();
       lastSent.theBehaviorStatus.speed = 0.f;
     }
@@ -107,29 +107,34 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
   // Update ball constraint to send based on differences between the own ball and the team ball
   const Vector2f ballEndPosition = BallPhysics::getEndPosition(theBallModel.estimate.position,
                                    theBallModel.estimate.velocity,
-                                   theBallSpecification.friction);
+                                   theBallSpecification);
   const Vector2f teamBallEndPosition = theRobotPose.inverse() * BallPhysics::getEndPosition(theTeamBallModel.position,
                                        theTeamBallModel.velocity,
-                                       theBallSpecification.friction);
+                                       theBallSpecification);
 
   if(!globalBearingsChanged(theRobotPose, ballEndPosition, theRobotPose, teamBallEndPosition, mapToRange(ballEndPosition.norm(), teamBallDistanceInterpolationRange.min, teamBallDistanceInterpolationRange.max, positionThreshold, teamBallMaxPositionThreshold)))
     timeWhenBallWasNearTeamBall = theFrameInfo.time;
 
   outputGenerator.sendThisFrame = [this]
   {
-    bool alwaysSend = this->alwaysSend;
+    if(!theGameState.isSet()) // keep the state during set phase
+      kickOffSetupFromTouchlines = theGameState.kickOffSetupFromTouchlines;
+    SendMode sendMode = this->sendMode;
     DEBUG_RESPONSE("module:TeamMessageHandler:alwaysSend")
-      alwaysSend = true;
+      sendMode = always;
     const bool stateAllowsSending = notInPlayDead() && !theGameState.isPenaltyShootout() && !theGameState.isPenalized() && allowCommunicationAfterPenalty();
-    const bool alwaysSendAllowed = alwaysSend && enoughTimePassed();
-    const bool alwaysSendPlaying = alwaysSendInPlaying && enoughTimePassed() && theGameState.isPlaying() && withinPriorityBudget();
-    const bool signalDetectedSend = refereeSignalDetected() && withinPriorityBudget();
-    const bool returnFromPenalty = returnFromPenaltyRobotPoseCommunication();
-    const bool whistleDetectedSend = (theGameState.isReady() || theGameState.isSet() || theGameState.isPlaying()) && withinPriorityBudget() && whistleDetected();
-    const bool indirectKickChangedSend = theGameState.isPlaying() && withinPriorityBudget() && indirectKickChanged();
-    const bool canSendPriorityMessage = stateAllowsSending && (alwaysSendAllowed || alwaysSendPlaying || signalDetectedSend || whistleDetectedSend || indirectKickChangedSend || returnFromPenalty);
-    const bool normalChangeDetected = stateAllowsSending && enoughTimePassed() && theGameState.isPlaying() && robotPoseValid() && withinOverallBudget() &&
-    (behaviorStatusChanged() || robotStatusChanged() || strategyStatusChanged() || robotPoseChanged() || ballModelChanged() || teamBallOld());
+    const bool timeCountingDown = !kickOffSetupFromTouchlines;
+    const bool alwaysSendAllowed = sendMode == always && enoughTimePassed();
+    const bool returnFromPenalty = returnFromPenaltyRobotPoseCommunication() && timeCountingDown;
+    const bool whistleDetectedSend = (theGameState.isSet() || theGameState.isPlaying()) && withinPriorityBudget() &&
+                                     (whistleDetected() || (!timeCountingDown && whistleDetectedRecently() && enoughTimePassed()));
+    const bool indirectKickChangedSend = theGameState.isPlaying() && withinPriorityBudget() && indirectKickChanged() && timeCountingDown;
+    const bool canSendPriorityMessage = stateAllowsSending && (alwaysSendAllowed || whistleDetectedSend || indirectKickChangedSend || returnFromPenalty);
+    const bool normalChangeDetected = stateAllowsSending && robotPoseValid() &&
+                                      (alwaysSendAllowed ||
+                                       (timeCountingDown && enoughTimePassed() && withinOverallBudget() &&
+                                        (sendMode == whenTimeIsCountingDown || behaviorStatusChanged() || robotStatusChanged() || strategyStatusChanged() ||
+                                         robotPoseChanged() || ballModelChanged() || teamBallOld())));
 
     if(!canSendPriorityMessage && !normalChangeDetected)
       setTimeDelay();
@@ -138,10 +143,10 @@ void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
   };
 
   // Make sure we can not exceed 615 messages in first half and 30 messages in second half
-  ASSERT(!withinSlowedBudget() || ownModeledBudget > (theGameState.phase == GameState::firstHalf ? overallMessageBudget - (overallMessageBudget - normalMessageReserve) / 2.f : normalMessageReserve));
+  ASSERT(!withinSlowedBudget() || ownModeledBudget > ((theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::firstExtraHalf) ? overallMessageBudgetAvailable() - (overallMessageBudgetAvailable() - normalMessageReserve) / 2.f : normalMessageReserve));
 
   theRobotStatus.isUpright = (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting) &&
-                             (theGroundContactState.contact && theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall);
+                             (theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall);
   if(theRobotStatus.isUpright)
     theRobotStatus.timeWhenLastUpright = theFrameInfo.time;
 
@@ -411,7 +416,9 @@ bool TeamMessageHandler::teammateBearingsChanged(const Vector2f& position, const
 
 bool TeamMessageHandler::enoughTimePassed() const
 {
-  return theFrameInfo.getTimeSince(timeWhenLastSent) >= minSendInterval || theFrameInfo.time < timeWhenLastSent;
+  const int sendInterval = theGameState.isReady() ? readySendInterval : minSendInterval;
+  const int activePlayers = static_cast<int>(theGameState.ownTeam.numOfActivePlayers());
+  return theFrameInfo.getTimeSince(timeWhenLastSent) >= sendInterval * activePlayers || theFrameInfo.time < timeWhenLastSent;
 }
 
 bool TeamMessageHandler::notInPlayDead() const
@@ -439,26 +446,26 @@ bool TeamMessageHandler::checkTimeDelay() const
 
 float TeamMessageHandler::calcTeamSendInterval() const
 {
-  const int trueMessageBudget = (overallMessageBudget - normalMessageReserve);
-  const unsigned messageBudgetLimitThisHalf = theGameState.phase == GameState::firstHalf ? overallMessageBudget - trueMessageBudget / 2 : normalMessageReserve;
-  const float messageFactor = (durationOfHalf + maxOvertime) * 2.f / trueMessageBudget;
+  const int trueMessageBudget = (overallMessageBudgetAvailable() - normalMessageReserve);
+  const unsigned messageBudgetLimitThisHalf = (theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::firstExtraHalf) ? overallMessageBudgetAvailable() - trueMessageBudget / 2 : normalMessageReserve;
+  const float messageFactor = (durationOfCurrentHalf() + maxOvertime) * 2.f / trueMessageBudget;
   const float minTeamSendInterval = minTeamSendIntervalFactor * messageFactor;
-  const float timeLeftInHalf = TeamMessageHandler::remainingTime(0) - (theGameState.phase == GameState::firstHalf ? durationOfHalf + maxOvertime : 0.f);
+  const float timeLeftInHalf = TeamMessageHandler::remainingTime(0) - ((theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::firstExtraHalf) ? durationOfCurrentHalf() + maxOvertime : 0.f);
   const float minMessageSendInterval = ownModeledBudget > messageBudgetLimitThisHalf ? timeLeftInHalf / (ownModeledBudget - messageBudgetLimitThisHalf) : std::numeric_limits<float>::max();
-  const float scalingWaittime = minTeamSendIntervalFactor * messageFactor * (calcCurrentBudgetLimit(theFrameInfo.getTimeSince(timeWhenLastTeamSent)) - ownModeledBudget) / reduceBudgetMalusTime;
+  const float scalingWaitTime = minTeamSendIntervalFactor * messageFactor * (calcCurrentBudgetLimit(theFrameInfo.getTimeSince(timeWhenLastTeamSent)) - ownModeledBudget) / reduceBudgetMalusTime;
   // If within budget, just return minTeamSendInterval
   // Otherwise return the max rate of
   // - the configured one,
   // - the rate to reach the limit within 30sec
   // - the rate at which we can still communicate to not surpass normalMessageReserve
-  return withinNormalBudget() ? minTeamSendInterval : std::max({minTeamSendInterval, minMessageSendInterval, scalingWaittime});
+  return withinNormalBudget() ? minTeamSendInterval : std::max({minTeamSendInterval, minMessageSendInterval, scalingWaitTime});
 }
 
 float TeamMessageHandler::calcCurrentBudgetLimit(const int timeOffset) const
 {
   const int remainingTime = TeamMessageHandler::remainingTime(timeOffset);
-  const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfHalf + maxOvertime) * 2.f));
-  return overallMessageBudget * ratio + normalMessageReserve * (1.f - ratio);
+  const float ratio = Rangef::ZeroOneRange().limit(remainingTime / ((durationOfCurrentHalf() + maxOvertime) * 2.f));
+  return overallMessageBudgetAvailable() * ratio + normalMessageReserve * (1.f - ratio);
 }
 
 void TeamMessageHandler::setTimeDelay()
@@ -484,8 +491,24 @@ bool TeamMessageHandler::withinOverallBudget() const
 int TeamMessageHandler::remainingTime(const int timeOffset) const
 {
   const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds) + maxOvertime + timeOffset);
-  const int timeInNextHalf = (theGameState.phase == GameState::firstHalf ? durationOfHalf + maxOvertime : 0);
+  const int timeInNextHalf = ((theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::firstExtraHalf) ? durationOfCurrentHalf() + maxOvertime : 0);
   return std::max(0, timeRemainingInCurrentHalf - lookahead) + timeInNextHalf;
+}
+
+unsigned TeamMessageHandler::overallMessageBudgetAvailable() const
+{
+  if(theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::secondHalf)
+    return overallMessageBudget;
+  else
+    return overallExtraMessageBudget;
+}
+
+unsigned TeamMessageHandler::durationOfCurrentHalf() const
+{
+  if(theGameState.phase == GameState::firstHalf || theGameState.phase == GameState::secondHalf)
+    return durationOfHalf;
+  else
+    return durationOfExtraHalf;
 }
 
 bool TeamMessageHandler::withinPriorityBudget() const
@@ -495,26 +518,15 @@ bool TeamMessageHandler::withinPriorityBudget() const
 
 bool TeamMessageHandler::whistleDetected() const
 {
-  const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
   return theWhistle.lastTimeWhistleDetected > lastSent.theWhistle.lastTimeWhistleDetected + minSendInterval &&
-         timeRemainingInCurrentHalf >= ignoreWhistleBeforeEndOfHalf &&
-         theFrameInfo.getTimeSince(theWhistle.lastTimeWhistleDetected) <= maxWhistleSendDelay;
+         whistleDetectedRecently();
 }
 
-bool TeamMessageHandler::refereeSignalDetected() const
+bool TeamMessageHandler::whistleDetectedRecently() const
 {
-  return theFrameInfo.getTimeSince(theRefereeSignal.timeWhenDetected) < maxRefereeSendDelay &&
-         theRefereeSignal.timeWhenDetected > lastSent.theRefereeSignal.timeWhenDetected + minSendInterval &&
-         // If this robot detected the referee signal, we are already in ready state. We switched because of
-         // another robot, the previous state is not standby anymore, so we do not waste a packet.
-         ((theExtendedGameState.stateLastFrame == GameState::standby &&
-           theRefereeSignal.signal == RefereeSignal::ready &&
-           !teammatesDetectedRefereeSignal(RefereeSignal::ready)) ||
-          (theGameState.isKickIn() &&
-           (theRefereeSignal.signal == RefereeSignal::kickInLeft ||
-            theRefereeSignal.signal == RefereeSignal::kickInRight) &&
-           !teammatesDetectedRefereeSignal(RefereeSignal::kickInLeft) &&
-           !teammatesDetectedRefereeSignal(RefereeSignal::kickInRight)));
+  const int timeRemainingInCurrentHalf = std::max(0, -theFrameInfo.getTimeSince(theGameState.timeWhenPhaseEnds));
+  return timeRemainingInCurrentHalf >= ignoreWhistleBeforeEndOfHalf &&
+         theFrameInfo.getTimeSince(theWhistle.lastTimeWhistleDetected) <= maxWhistleSendDelay;
 }
 
 bool TeamMessageHandler::returnFromPenaltyRobotPoseCommunication() const
@@ -525,14 +537,6 @@ bool TeamMessageHandler::returnFromPenaltyRobotPoseCommunication() const
 bool TeamMessageHandler::allowCommunicationAfterPenalty() const
 {
   return theFrameInfo.getTimeSince(theGameState.timeWhenPlayerStateStarted) > theBehaviorParameters.noCommunicationAfterUnpenalizedTime;
-}
-
-bool TeamMessageHandler::teammatesDetectedRefereeSignal(const RefereeSignal::Signal signal) const
-{
-  for(const Teammate& teammate : theTeamData.teammates)
-    if(teammate.theRefereeSignal.signal == signal && teammate.theRefereeSignal.timeWhenDetected >= theGameState.timeWhenStateStarted)
-      return true;
-  return false;
 }
 
 bool TeamMessageHandler::behaviorStatusChanged() const
@@ -599,10 +603,10 @@ bool TeamMessageHandler::ballModelChanged() const
   {
     const Vector2f ballEndPosition = BallPhysics::getEndPosition(theBallModel.estimate.position,
                                                                  theBallModel.estimate.velocity,
-                                                                 theBallSpecification.friction);
+                                                                 theBallSpecification);
     const Vector2f oldBallEndPosition = BallPhysics::getEndPosition(lastSent.theBallModel.estimate.position,
                                                                     lastSent.theBallModel.estimate.velocity,
-                                                                    theBallSpecification.friction);
+                                                                    theBallSpecification);
 
     return globalBearingsChanged(theRobotPose, ballEndPosition, lastSent.theRobotPose, oldBallEndPosition) &&
            teammateBearingsChanged(theRobotPose * ballEndPosition, lastSent.theRobotPose * oldBallEndPosition) &&
@@ -629,5 +633,5 @@ bool TeamMessageHandler::teamBallOld() const
 
 bool TeamMessageHandler::indirectKickChanged() const
 {
-  return theIndirectKick.lastKickTimestamp > lastSent.theIndirectKick.lastKickTimestamp && !theIndirectKick.allowDirectKick && lastSent.theIndirectKick.lastKickTimestamp < theIndirectKick.lastSetPlayTime; // lastSetPlayTime checks every GameState change
+  return theIndirectKick.lastKickTimestamp > lastSent.theIndirectKick.lastKickTimestamp && !theIndirectKick.oldAllowDirectKick && lastSent.theIndirectKick.lastKickTimestamp < theIndirectKick.lastSetPlayTime; // lastSetPlayTime checks every GameState change
 }

@@ -9,42 +9,31 @@
 
 #pragma once
 
+#include "Framework/Module.h"
+#include "Math/GaussNewtonOptimizer.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Configuration/CameraCalibrationStatus.h"
 #include "Representations/Configuration/CameraResolutionRequest.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Configuration/LineCorrector.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/LEDRequest.h"
-#include "Representations/Perception/FieldPercepts/LinesPercept.h"
-#include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
+#include "Representations/Perception/FieldPercepts/CustomCalibrationLines.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Representations/Modeling/CustomCalibrationLines.h"
-#include "Framework/Module.h"
-#include "Math/GaussNewtonOptimizer.h"
 
 MODULE(AutomaticCameraCalibrator,
 {,
   REQUIRES(CameraInfo),
-  REQUIRES(CameraMatrix),
+  USES(CameraMatrix),
   USES(CustomCalibrationLines),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(ImageCoordinateSystem),
-  REQUIRES(LineCorrector),
-  REQUIRES(LinesPercept),
-  REQUIRES(OptionalECImage),
-  REQUIRES(PenaltyMarkPercept),
+  REQUIRES(JointAngles),
   REQUIRES(RobotDimensions),
-  REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
 
   PROVIDES(CameraCalibration),
@@ -56,7 +45,6 @@ MODULE(AutomaticCameraCalibrator,
 
   DEFINES_PARAMETERS(
   {,
-    (ENUM_INDEXED_ARRAY(CameraResolutionRequest::Resolutions, CameraInfo::Camera))({CameraResolutionRequest::CameraResolutionRequest::Resolutions::w1280h960, CameraResolutionRequest::CameraResolutionRequest::Resolutions::w1280h960}) resRequest, /**< Last camera resolution requested. */
     (float)(0.00005f) terminationCriterion, /**< If the norm of the parameter vector update is less than this in an optimization step, it is counted as termination step. */
     (unsigned int)(3) minSuccessiveConvergences, /**< The number of successive steps the termination criterion must be fulfilled. */
     (float)(10000.f) notValidError, /**< The error that results from parameters that result in a sample that cannot be projected. */
@@ -80,26 +68,30 @@ private:
   /** This enumeration maps entries in the parameter vector of the optimizer to members of the CameraCalibration representation. */
   ENUM(ParameterTranslation,
   {,
-    lowerCameraRollCorrection,
-    lowerCameraTiltCorrection,
-
-    upperCameraRollCorrection,
-    upperCameraTiltCorrection,
-
-    bodyRollCorrection,
+    cameraRollCorrection,
+    cameraTiltCorrection,
+    firstBodyCorrection,
+    bodyRollCorrection = firstBodyCorrection,
     bodyTiltCorrection,
   });
+
+  struct Line
+  {
+    Vector2f aInImage COMMA bInImage; /**< The first and last point of the line in the image. */
+    Vector2f aOnField COMMA bOnField; /**< The first and last point of the line on the field. */
+    float offset = 0.f; /**< The offset of the found line edge from the mid of the line (in mm). Usually +/- half of the fieldlines width */
+  };
 
   /** This struct is the base class for a sample (measurement). */
   struct Sample
   {
     /** Constructor. */
-    Sample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel, const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys) :
+    Sample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, float headYaw, float headPitch, const CameraInfo& cameraInfo) :
       calibrator(calibrator),
       torsoMatrix(torsoMatrix),
-      robotModel(robotModel),
-      cameraInfo(cameraInfo),
-      coordSys(coordSys)
+      headYaw(headYaw),
+      headPitch(headPitch),
+      cameraInfo(cameraInfo)
     {}
 
     /** Virtual destructor for polymorphism. */
@@ -121,15 +113,14 @@ private:
 
     const AutomaticCameraCalibrator& calibrator; /**< The owning module. */
     TorsoMatrix torsoMatrix; /**< The torso matrix at the time this sample has been recorded. */
-    RobotModel robotModel; /**< The robot model at the time this sample has been recorded. */
+    float headYaw; /**< The head yaw angle at the time this sample has been recorded. */
+    float headPitch; /**< The head pitch angle at the time this sample has been recorded. */
     CameraInfo cameraInfo; /**< The camera info at the time this sample has been recorded (from the camera which recorded this sample). */
-    ImageCoordinateSystem coordSys; /**< The image coordinate system at the time this sample has been recorded. */
   };
 
   /** This struct defines a configuration (combination of camera and head angles) in which to record samples. */
   struct SampleConfiguration
   {
-    CameraInfo::Camera camera; /**< The camera with which the sample(s) should be taken. */
     Angle headPan; /**< The head pan that should be set while the sample is taken. */
     Angle headTilt; /**< The head tilt that should be set while the sample is taken. */
     unsigned sampleTypes; /**< A bitfield which describes what types of samples should be taken in this configuration. */
@@ -161,58 +152,38 @@ private:
 
   struct CornerAngleSample : Sample
   {
-    CornerAngleSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                      const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const LineCorrector::Line& cLine1, const LineCorrector::Line& cLine2) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
+    CornerAngleSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, float headYaw, float headPitch,
+                      const CameraInfo& cameraInfo, const Line& cLine1, const Line& cLine2) :
+      Sample(calibrator, torsoMatrix, headYaw, headPitch, cameraInfo), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable LineCorrector::Line cLine1, cLine2; /**< The corrected goal line or front goal area line & corrected short connecting line. */
+    mutable Line cLine1, cLine2; /**< The corrected goal line or front goal area line & corrected short connecting line. */
   };
 
   struct ParallelAngleSample : Sample
   {
-    ParallelAngleSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                        const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const LineCorrector::Line& cLine1, const LineCorrector::Line& cLine2) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
+    ParallelAngleSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, float headYaw, float headPitch,
+                        const CameraInfo& cameraInfo, const Line& cLine1, const Line& cLine2) :
+      Sample(calibrator, torsoMatrix, headYaw, headPitch, cameraInfo), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable LineCorrector::Line cLine1, cLine2; /**< The close goal area connecting line and the far away goal area connecting line. */
+    mutable Line cLine1, cLine2; /**< The close goal area connecting line and the far away goal area connecting line. */
   };
 
   struct ParallelLinesDistanceSample : Sample
   {
-    ParallelLinesDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                                const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const LineCorrector::Line& cLine1, const LineCorrector::Line& cLine2) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
+    ParallelLinesDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, float headYaw, float headPitch,
+                                const CameraInfo& cameraInfo, const Line& cLine1, const Line& cLine2) :
+      Sample(calibrator, torsoMatrix, headYaw, headPitch, cameraInfo), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable LineCorrector::Line cLine1, cLine2; /**< The corrected goal line and front goal area line. */
+    mutable Line cLine1, cLine2; /**< The corrected goal line and front goal area line. */
   };
 
   struct ParallelLinesDistanceShortSample : Sample
   {
-    ParallelLinesDistanceShortSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                                     const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const LineCorrector::Line& cLine1, const LineCorrector::Line& cLine2) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), cLine1(cLine1), cLine2(cLine2) {}
+    ParallelLinesDistanceShortSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, float headYaw, float headPitch,
+                                     const CameraInfo& cameraInfo, const Line& cLine1, const Line& cLine2) :
+      Sample(calibrator, torsoMatrix, headYaw, headPitch, cameraInfo), cLine1(cLine1), cLine2(cLine2) {}
     float computeError(const CameraMatrix& cameraMatrix) const override;
-    mutable LineCorrector::Line cLine1, cLine2; /**< The corrected goal line and front goal area line. */
-  };
-
-  struct GoalAreaDistanceSample : Sample
-  {
-    GoalAreaDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                           const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const Vector2i& penaltyMarkInImage, const LineCorrector::Line& cLine) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), penaltyMarkInImage(penaltyMarkInImage), cLine(cLine) {}
-    float computeError(const CameraMatrix& cameraMatrix) const override;
-    Vector2i penaltyMarkInImage; /**< The penalty mark in the image. */
-    mutable LineCorrector::Line cLine; /**< The corrected front goal area line. */
-  };
-
-  struct GoalLineDistanceSample : Sample
-  {
-    GoalLineDistanceSample(const AutomaticCameraCalibrator& calibrator, const TorsoMatrix& torsoMatrix, const RobotModel& robotModel,
-                           const CameraInfo& cameraInfo, const ImageCoordinateSystem& coordSys, const Vector2i& penaltyMarkInImage, const LineCorrector::Line& cLine) :
-      Sample(calibrator, torsoMatrix, robotModel, cameraInfo, coordSys), penaltyMarkInImage(penaltyMarkInImage), cLine(cLine) {}
-    float computeError(const CameraMatrix& cameraMatrix) const override;
-    Vector2i penaltyMarkInImage; /**< The penalty mark in the image. */
-    mutable LineCorrector::Line cLine; /**< The corrected goal line. */
+    mutable Line cLine1, cLine2; /**< The corrected goal line and front goal area line. */
   };
 
   using Parameters = GaussNewtonOptimizer<numOfParameterTranslations>::Vector;
@@ -324,7 +295,7 @@ private:
   bool allRequiredFeaturesVisible = true; /**< Whether all currently required features are seen. */
 
   int numOfDiscardedParallelLines = 0, numOfDiscardedGoalAreaLines = 0, numOfDiscardedGoalLines = 0; /**< How many potential samples have been discarded yet. */
-  Rangef parallelDisRangeLower, parallelDisRangeUpper, goalAreaDisRangeLower, goalLineDisRangeLower, goalAreaDisRangeUpper, goalLineDisRangeUpper; /**< The currently allowed min/max distances for the different features. */
+  Rangef parallelDistRange; /**< The currently allowed min/max distances for the different features. */
 
   float lowestDelta = std::numeric_limits<float>::max(); /**< The lowest delta value so far achieved in optimization step. */
   Parameters lowestDeltaParameters; /**< The parameters which should be set if the optimization is stopped manually through the converge debug response. */

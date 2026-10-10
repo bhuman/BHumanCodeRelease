@@ -1,6 +1,6 @@
 /**
  * @file FieldFeature.cpp
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #include "FieldFeature.h"
@@ -12,9 +12,7 @@ void FieldFeature::draw() const
 {
   if(Blackboard::getInstance().exists("CameraInfo"))
   {
-    const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
-    DEBUG_DRAWING("representation:FieldFeature:field", "drawingOnField")
-      THREAD("representation:FieldFeature:field", theCameraInfo.getThreadName());
+    DECLARE_DEBUG_DRAWING("representation:FieldFeature:field", "drawingOnField");
 
     if(!isValid)
       return;

@@ -4,7 +4,8 @@
  * Declaration of a class that represents a possible obstacle.
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  * @author Michelle Gusev
  */
 #pragma once
@@ -15,7 +16,6 @@
 struct CameraInfo;
 struct CameraMatrix;
 struct FieldBoundary;
-struct ImageCoordinateSystem;
 
 /**
  * @class GlobalOpponentsHypothesis
@@ -86,7 +86,6 @@ class GlobalOpponentsHypothesis : public Obstacle
    */
   bool isFieldBoundaryFurtherAsObstacle(const CameraInfo& theCameraInfo,
                                         const CameraMatrix& theCameraMatrix,
-                                        const ImageCoordinateSystem& theImageCoordinateSystem,
                                         const FieldBoundary& theFieldBoundary);
 
   /** Calculates the squared Mahalanobis distances to the other obstacle. */

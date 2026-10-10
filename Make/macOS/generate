@@ -4,39 +4,17 @@
 # on Intel and ARM Macs.
 
 cd "$(dirname "$(which "$0")")"
+. "../Common/libBHuman"
 
 CMAKE=../../Util/Buildchain/macOS/bin/cmake
 PROJECTDIR=../../Build/macOS
 PROJECTPATH=B-Human.xcodeproj
 PROJECTSRC=$PROJECTDIR/B-Human.xcodeproj
 PLIST="/usr/libexec/PlistBuddy -c"
-TEMPPATH=/tmp/generate.tmp
-TEMPPATH2=/tmp/generate2.tmp
+TEMPPATH="$BH_TMPDIR/generate.tmp"
+TEMPPATH2="$BH_TMPDIR/generate2.tmp"
 
-# Set default value for using Rosetta 2. On Intel Macs, it must be empty. Otherwise,
-# CMake will complain about an unused definition.
-if [ "$(uname -m)" = arm64 ]; then
-  ROSETTA=-DROSETTA=0
-  HAD_ROSETTA=0
-  if [ -f "$PROJECTPATH/project.pbxproj" -a -z "$(grep /macOSarm64/ "$PROJECTPATH/project.pbxproj")" ]; then
-    HAD_ROSETTA=1
-  fi
-else
-  ROSETTA=
-fi
-
-# Parameter -r activates Rosetta 2 on ARM Macs.
-if [ ! -z "$ROSETTA" -a "$1" = "-r" ]; then
-  ROSETTA=-DROSETTA=1
-elif [ ! -z "$ROSETTA" -a "$1" = "-k" ]; then
-  ROSETTA=-DROSETTA=$HAD_ROSETTA
-elif [ $# != 0 ]; then
-  echo "usage: $0 [-k|-r]"
-  echo "  options:"
-  echo "    -k    Keep previous choice regarding the use of Rosetta 2 on an ARM Mac"
-  echo "    -r    Xcode project generates code for use with Rosetta 2 on an ARM Mac"
-  exit 1
-fi
+../Common/pullONNXRuntime
 
 # Create a symbolic link to cmake.
 if [ ! -e "$CMAKE" ]; then
@@ -58,8 +36,7 @@ if [ ! -e "$CMAKE" ]; then
   if [ -e "$CMAKE" ]; then
     echo "Found."
   else
-    echo "Not found."
-    exit 1
+    error_and_exit 1 "CMake not found."
   fi
 fi
 
@@ -97,14 +74,6 @@ if [ -d "$PROJECTPATH" ]; then
   fi
 fi
 
-# When switching between ARM and Intel code, copied frameworks will not be updated
-# by default. Therefore, app folders are deleted to force copying frameworks again.
-if [ ! -z "$ROSETTA" -a -f "$PROJECTPATH/project.pbxproj" ]; then
-  if [ "$ROSETTA" != "-DROSETTA=$HAD_ROSETTA" -a -d ../../Build/macOS ]; then
-    find ../../Build/macOS -name "*.app" -type d | xargs rm -r
-  fi
-fi
-
 # Prevent cmake from considering this to be a duplicate.
 rm -f ../../Util/Buildchain/macOS/include
 
@@ -122,7 +91,7 @@ if [ -d "$PROJECTPATH/CMakeFiles" ]; then
 fi
 
 # Create project.
-"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA
+"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR
 ../../Util/SimRobot/Make/macOS/pbxgen pbxgen.cfg $PROJECTSRC/project.pbxproj
 xattr -w com.apple.xcode.CreatedByBuildSystem true "$PROJECTDIR"
 
@@ -223,9 +192,9 @@ else
   sed <"$SCHEMEDIR/SimRobot - Debug.xcscheme" >$TEMPPATH 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%'
   mv $TEMPPATH "$SCHEMEDIR/SimRobot - Release.xcscheme"
 
-  # Create three schemes for Nao from the one CMake created.
+  # Create three schemes for Booster from the one CMake created.
   # Set the deployDialog as runnable target. Deactivate some building targets.
-  for ROBOT in Nao Booster; do
+  for ROBOT in Booster; do
     SCHEMETEMPLATE=$SCHEMESRC/$ROBOT.xcscheme
     sed <$SCHEMETEMPLATE >$TEMPPATH \
     -e "$SEDOPTION" \
@@ -281,11 +250,6 @@ mkdir -p ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 cp ../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/Info.plist ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 sed <../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/document.wflow >~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/document.wflow "s%PWD%`pwd`%"
 
-# Install Replay with TeamCommunicationMonitor service.
-mkdir -p ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
-cp ../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/Info.plist ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
-sed <../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow >~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow "s%PWD%`pwd`%"
-
 # Install Replay Log with SimRobot service.
 mkdir -p ~/Library/Services/Replay\ Log\ with\ SimRobot.workflow/Contents/
 cp ../../Util/Buildchain/macOS/Replay\ Log\ with\ SimRobot.workflow/Contents/Info.plist ~/Library/Services/Replay\ Log\ with\ SimRobot.workflow/Contents/
@@ -315,4 +279,3 @@ rsync -u ../../Util/BuildChain/macOS/snippets/*.codesnippet ~/Library/Developer/
 
 # Cleanup.
 rm -r $PROJECTSRC
-rm -f $TEMPPATH $TEMPPATH2

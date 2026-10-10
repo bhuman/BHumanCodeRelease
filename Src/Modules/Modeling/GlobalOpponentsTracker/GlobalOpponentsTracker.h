@@ -4,7 +4,8 @@
  * Declaration of a module that aims to track all opponent robots on the pitch
  *
  * @author Florian Maaß
- * @author Jan Fiedler & Nicole Schrader
+ * @author Jan Fiedler
+ * @author Nicole Schrader
  * @author Tim Laue
  * @author Michelle Gusev
  */
@@ -15,6 +16,7 @@
 
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/RobotDimensions.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/GlobalOpponentsModel.h"
@@ -23,11 +25,9 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/ObstaclePercepts/RobotPercept.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Math/BHMath.h"
@@ -42,12 +42,10 @@ MODULE(GlobalOpponentsTracker,
   REQUIRES(FallDownState),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
-  REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
-  REQUIRES(ObstaclesFieldPercept),
+  REQUIRES(RobotPercept),
   REQUIRES(Odometer),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
@@ -60,7 +58,7 @@ MODULE(GlobalOpponentsTracker,
     (unsigned) minPercepts,                    /**< Minimal amount of percepts to become an obstacle. */
     // deleteObstacles()
     (unsigned) notSeenThreshold,               /**< How many times an obstacle should be seen. If that threshold is reached an obstacle will be removed. */
-    (int)deleteAfter,                         /**< Delete obstacles that are not seen for deleteAfter amount of milliseconds. */
+    (int) deleteAfter,                          /**< Delete obstacles that are not seen for deleteAfter amount of milliseconds. */
     // dynamic()
     (float) pNp,                               /**< Process noise for position vector. */
     (Vector2f) odoDeviation,                   /**< Percentage inaccuracy of the odometry. */
@@ -68,11 +66,6 @@ MODULE(GlobalOpponentsTracker,
     (bool) useArmContactModel,
     (Matrix2f) armCov,                         /**< 50mm standard deviation. */
     (int) maxContactTime,                      /**< Maximum time of a body contact. */
-    // addFootContacts()
-    (bool) useFootBumperState,
-    (Matrix2f) feetCov,                        /**< 30mm standard deviation and 80mm standard deviation. */
-    (float) distJointToToe,                    /**< The distance from the joint to the toe. */
-    (float) distToeToBumper,                   /**< The distance between the bumper and the toe. */
     // addPlayerPercepts()
     // tryToMerge()
     (float) modelWidthWeighting,               /**< Factor for weighted sum for calculating the width of an obstacle. Currently modeled width is weighted by this factor, measured width is weighted with 1. */

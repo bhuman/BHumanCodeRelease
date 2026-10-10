@@ -12,7 +12,6 @@
 #include "Math/Pose3f.h"
 #include "Math/Rotation.h"
 #include "Platform/SystemCall.h"
-#include "RobotParts/FsrSensors.h"
 #include "Streaming/Global.h"
 
 MAKE_MODULE(FallDownStateProvider);
@@ -59,15 +58,17 @@ void FallDownStateProvider::update(FallDownState& fallDownState)
     resetFilter = false;
   }
   const Vector3f& comInOrigin = ukf.mean.head<3>();
-  torsoUpright = (comInOrigin.head<2>() - supportFootCenter.head<2>()).norm() <= 0.7f * (-supportFootCenter.head<2>()).norm();
+  torsoUpright = (comInOrigin.head<2>() - supportFootCenter.head<2>()).norm() <= torsoUprightRatio * (-supportFootCenter.head<2>()).norm() || (torsoUpright && std::abs(theInertialData.angle.x()) < boosterMinAngleKeepUpright && std::abs(theInertialData.angle.y()) < boosterMinAngleKeepUpright);
   torsoAboveGround = comInOrigin.z();
-  falling = isFalling();
-
+  forcePickUpFallTransition = !falling && theMotionInfo.isMotion(MotionPhase::fall);
+  const bool boosterSafety = !theMotionInfo.isMotion(MotionPhase::getUp)
+                             && (theMotionInfo.isMotion(MotionPhase::stand) || theMotionInfo.isMotion(MotionPhase::walk) || theMotionInfo.isMotion(MotionPhase::fall))
+                             && (fallDownState.state == FallDownState::staggering || fallDownState.state == FallDownState::upright || fallDownState.state == FallDownState::falling || fallDownState.state == FallDownState::fallen);
+  falling = isFalling() || (!falling && theMotionInfo.isMotion(MotionPhase::fall)) || (boosterSafety && (std::abs(theInertialData.angle.x()) > 45_deg || std::abs(theInertialData.angle.y()) > 45_deg));
   stable = std::abs(theSensorData->gyro.x()) <= maxGyroToRegainStableState
            && std::abs(theSensorData->gyro.y()) <= maxGyroToRegainStableState;
-  toUpright = torsoUpright && torsoAboveGround >= maxTorsoHeightToKeepSquatting && theGroundContactState.contact;
-  toSquatting = torsoUpright && torsoAboveGround < minTorsoHeightToKeepUpright && theGroundContactState.contact;
-  isPickedUp = torsoUpright && torsoAboveGround >= maxTorsoHeightToKeepSquatting && !theGroundContactState.contact;
+  toUpright = !falling && torsoUpright && torsoAboveGround >= maxTorsoHeightToKeepSquatting;
+  isPickedUp = !falling && theMotionInfo.isMotion(MotionPhase::prepare);
   useTorsoOrientation = std::abs(theSensorData->angle.x()) >= minTorsoOrientationToDetermineDirection.x()
                         || std::abs(theSensorData->angle.y()) >= minTorsoOrientationToDetermineDirection.y();
   direction = getFallDirection();
@@ -95,52 +96,10 @@ bool FallDownStateProvider::isFalling() const
   Vector3f comSigma(std::sqrt(ukf.cov(0, 0)) * sigmaArea, std::sqrt(ukf.cov(1, 1)) * sigmaArea, 0.01f);
   Vector3f bestCaseCom = (Vector3f() << com.head<2>() - (comSigma.x() * direction), 0.f).finished();
 
-  // robot is falling, if the com is not in the support polygon
   if(!isPointInsidePolygon(bestCaseCom, supportPolygon)
-     && ((direction.dot(vel) > minFallVectorScalar && direction.dot(vel.normalized()) > minNormalizedFallVectorScalar)
-         || bestCaseCom.norm() > minComDistanceToDetectFall))
-  {
+     && direction.dot(vel) > minFallVectorScalar && direction.dot(vel.normalized()) > minNormalizedFallVectorScalar
+     && bestCaseCom.squaredNorm() > sqr(minComDistanceToDetectFall))
     return true;
-  }
-  //if the robot is not falling and not stable, predict the next positions of the com
-  if(theFallDownState->state == FallDownState::upright || theFallDownState->state == FallDownState::staggering)
-  {
-    Vector2f v = ukf.mean.tail<2>();
-    v = v.norm() > maxVelForPrediction ? maxVelForPrediction * v.normalized() : v;
-    UKF<5> ukfPredict = UKF<5>((Vector5f() << ukf.mean.head<3>(), v).finished());
-    ukfPredict.cov = Matrix5f(ukf.cov);
-    for(float timePast = 0.f; timePast < forwardingTime; timePast += Global::getSettings().motionCycleTime)
-    {
-      const Matrix3f I = calcInertiaTensor(tiltingEdge);
-      auto dynamic = [&](Vector5f& state)
-      {
-        dynamicModel(tiltingEdge, I, state);
-      };
-      ukfPredict.predict(dynamic, dynamicNoise.asDiagonal());
-      ukfPredict.mean.tail<2>() = velocityDiscountFactor * ukfPredict.mean.tail<2>();
-      vel << ukfPredict.mean.tail<2>().y(), -ukfPredict.mean.tail<2>().x();
-      direction << (ukfPredict.mean.head<2>() - supportFootCenter.head<2>()).normalized();
-
-      if(direction.dot(vel) < minPredictFallVectorScalar || direction.dot(vel.normalized()) < minPredictNormalizedFallVectorScalar)
-        return false;
-      const Vector2f& futureCom = ukfPredict.mean.head<2>();
-      comSigma << std::sqrt(ukfPredict.cov(0, 0)) * sigmaArea, std::sqrt(ukfPredict.cov(1, 1))* sigmaArea, 0.01f;
-      bestCaseCom << futureCom - (comSigma.x() * direction), 0.f;
-
-      DEBUG_DRAWING3D("module:FallDownStateProvider:fall", "field")
-      {
-        Vector3f drawCom = tiltingEdge.translation + Vector3f(futureCom.x(), futureCom.y(), 0.f);
-        drawCom.z() = 0.f;
-        Vector3f drawBestCom = tiltingEdge.translation + bestCaseCom;
-        POINT3D("module:FallDownStateProvider:fall", drawBestCom.x(), drawBestCom.y(), 0.f, 5.f, ColorRGBA::blue);
-        ELLIPSOID3D("module:FallDownStateProvider:fall", Pose3f(drawCom), Vector3f(comSigma), ColorRGBA(100, 100, 255, 50));
-      }
-      if(!isPointInsidePolygon(bestCaseCom, supportPolygon))
-      {
-        return true;
-      }
-    }
-  }
   return false;
 }
 
@@ -210,7 +169,7 @@ void FallDownStateProvider::convertToNewOrigin(const Pose3f& originToTorso, cons
 void FallDownStateProvider::getSupportPolygon()
 {
   supportPolygon.clear();
-  supportFoot = theSolePressureState.legInfo[Legs::left].totals > theSolePressureState.legInfo[Legs::right].totals ? Legs::left : Legs::right;
+  supportFoot = theSoleHeightDifference.difference > 0.f ? Legs::left : Legs::right;
   const Pose3f& leftSoleToTorso = theRobotModel.soleLeft;
   const Pose3f& rightSoleToTorso = theRobotModel.soleRight;
   const Pose3f& supportedFootSoleToTorso = supportFoot == Legs::left ? leftSoleToTorso : rightSoleToTorso;
@@ -219,7 +178,7 @@ void FallDownStateProvider::getSupportPolygon()
 
   const bool useSupportFootOnly = std::abs(com.y()) > std::abs(supportedFootSoleToTorso.translation.y()) - minComDistanceToFootCenter
                                   && sgn(com.y()) == sgn(supportedFootSoleToTorso.translation.y())
-                                  && std::abs(theSolePressureState.legInfo[Legs::left].totals - theSolePressureState.legInfo[Legs::right].totals) > 0.3f
+                                  && std::abs(theSoleHeightDifference.difference) > 0.05f
                                   && !((supportedFootSoleToTorso.translation.x() < com.x() && supportedFootSoleToTorso.translation.x() < otherSupportedFootSoleToTorso.translation.x())
                                        || (supportedFootSoleToTorso.translation.x() > com.x() && supportedFootSoleToTorso.translation.x() > otherSupportedFootSoleToTorso.translation.x()));
 

@@ -318,8 +318,14 @@ void PatchUtilities::extractInput(const YUYVImage& cameraImage, const Vector2i& 
 {
   const unsigned int yStep = cameraImage.height / patchSize(1);
   const unsigned int xStep = cameraImage.width / patchSize(0);
-  for(unsigned int i = yStep / 2; i < cameraImage.height; i += yStep)
-    for(unsigned int j = xStep / 2; j < cameraImage.width; j += xStep)
+  const unsigned int yBase = cameraImage.height % patchSize(1) + yStep;
+  const unsigned int xBase = cameraImage.width % patchSize(0) + xStep;
+  const unsigned int yBase2 = yBase / 2;
+  const unsigned int xBase2 = xBase / 2;
+  const unsigned int yEnd = cameraImage.height - yBase + yBase2;
+  const unsigned int xEnd = cameraImage.width - xBase + xBase2;
+  for(unsigned int i = yBase2; i <= yEnd; i += yStep)
+    for(unsigned int j = xBase2; j <= xEnd; j += xStep)
     {
       if constexpr(grayscale)
         *(input++) = cameraImage[i][j].y0;

@@ -1,12 +1,11 @@
 /**
  * KeyStateEnhancer.h
  *
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once
 
-#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Math/RingBuffer.h"

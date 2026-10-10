@@ -5,8 +5,8 @@ type: software
 authors:
   - name: "B-Human Team"
     website: "https://b-human.de/team-en.html"
-repository-code: "https://github.com/bhuman/BHumanCodeRelease/releases/tag/coderelease2025"
-url: "https://docs.b-human.de/coderelease2025/"
-license-url: "https://raw.githubusercontent.com/bhuman/BHumanCodeRelease/coderelease2025/License.md"
-version: "2025"
-date-released: "2025-10-15"
+repository-code: "https://github.com/bhuman/BHumanCodeRelease/releases/tag/coderelease2026"
+url: "https://docs.b-human.de/coderelease2026/"
+license-url: "https://raw.githubusercontent.com/bhuman/BHumanCodeRelease/coderelease2026/License.md"
+version: "2026"
+date-released: "2026-10-15"

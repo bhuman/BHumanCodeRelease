@@ -22,9 +22,8 @@ STREAMABLE(Strategy,
   ENUM(Type,
   {,
     none,
-    s7v7,
-    attacking7v7,
     s5v5,
+    s11v11,
   });
 
   template<typename SetPlayType>

@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Representations/Configuration/CameraCalibrationStatus.h"
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "Streaming/AutoStreamable.h"
 #include "Streaming/Enum.h"
 
@@ -20,15 +19,12 @@ ENUM(SampleType,
   parallelAngle, /**< An angle in the penalty area that must be 180 degrees. */
   parallelLinesDistance, /**< The (known) distance between the goal line and the front goal area line. */
   parallelLinesDistanceShort, /**< The (known) distance between the goal line and the front goal area line. */
-  goalAreaDistance, /**< The (known) distance between the penalty mark and the front goal area line. */
-  goalLineDistance, /**< The (known) distance between the penalty mark and the goal line. */
 });
 
 STREAMABLE(SampleConfigurationRequest,
 {,
   (bool)(false) doRecord, /**< Actually record seen samples? */
   (unsigned)(0) index,
-  (CameraInfo::Camera)(CameraInfo::Camera::upper) camera,
   (Angle)(0) headPan,
   (Angle)(0) orgHeadPan, /**< Original pan angle before adjusting head when not seeing lines. */
   (Angle)(0) headTilt,

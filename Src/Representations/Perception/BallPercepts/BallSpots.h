@@ -1,8 +1,8 @@
 /**
  * @file BallSpots.h
  * Declaration of a struct that represents spots that might be an indication of a ball.
- * @author <a href="mailto:jworch@informatik.uni-bremen.de">Jan-Hendrik Worch</a>
- * @author <a href="mailto:ingsie@informatik.uni-bremen.de">Ingo Sieverdingbeck</a>
+ * @author Jan-Hendrik Worch
+ * @author Ingo Sieverdingbeck
  *
  */
 

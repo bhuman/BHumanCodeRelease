@@ -11,12 +11,34 @@
 #include "Midfielder.h"
 #include "Math/Geometry.h"
 
+Midfielder::Midfielder()
+{
+  InMapFile stream("roleMidfielder.cfg");
+  ASSERT(stream.exists());
+  stream >> p;
+}
+
 void Midfielder::preProcess()
 {
   RatingRole::preProcess();
   DECLARE_DEBUG_DRAWING("behavior:Midfielder:shiftedPosition", "drawingOnField");
   DECLARE_DEBUG_DRAWING("behavior:Midfielder:communicatedPosition", "drawingOnField");
   MODIFY("behavior:Midfielder", p);
+
+  MODIFY("behavior:Midfielder:calcBall", calcBall);
+  MODIFY("behavior:Midfielder:calcBase", calcBase);
+  MODIFY("behavior:Midfielder:calcPass", calcPass);
+  MODIFY("behavior:Midfielder:cellBorderRating", calcCellBorder);
+
+  robotLeftOfLine = Geometry::isPointLeftOfLine(
+                      theFieldBall.recentBallPositionOnField(),
+                      Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+                      theRobotPose.translation);
+
+  maxBallDistanceToBorderPoints = 0.f;
+  for(const auto& point : region)
+    maxBallDistanceToBorderPoints = std::max(maxBallDistanceToBorderPoints, (point - theFieldBall.recentBallPositionOnField()).squaredNorm());
+  maxBallDistanceToBorderPoints = std::sqrt(maxBallDistanceToBorderPoints);
 
   //override parameters of the base class
   RatingRole::p.startThreshold = p.startThreshold;
@@ -44,10 +66,16 @@ float Midfielder::rating(const Vector2f& pos) const
   }
 
   //normal distribution around the shifted base pose
-  const float baseRating = std::exp(-0.5f * (pos - shiftedBase).squaredNorm() / sqr(p.sigmaBase));
+  const float baseRating = !calcBase ? 1.f : std::exp(-0.5f * (pos - shiftedBase).squaredNorm() / sqr(p.sigmaBase));
+
+  //rating how good the robot is standing to allow for a pass
+  const float passRating = !calcPass ? 1.f : thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true);
 
   //min value with a compressed normal distribution on top
-  const float ballRating = std::exp(-0.5f * sqr((pos - ball).norm() - p.ballDistance) / sqr(p.sigmaBall)) * (1.f - p.minBallRating) + p.minBallRating;
+  const float useMinBallDistance = std::min(maxBallDistanceToBorderPoints * p.ballBorderDistanceRatio, p.minNotAllowedBallDistance);
+  const float ballDistance = (pos - ball).norm();
+  const float ballRatio = useMinBallDistance < 1.f ? 1.f : mapToRange(ballDistance, useMinBallDistance * 0.5f, useMinBallDistance, p.minBallNotAllowedDistance, 1.f);
+  const float ballRating = !calcBall ? 1.f : ballRatio * (std::exp(-0.5f * sqr(ballDistance - p.ballDistance) / sqr(p.sigmaBall)) * (1.f - p.minBallRating) + p.minBallRating);
 
   //get distance to next field border
   const float borderDistance = std::min(std::max(0.f, theFieldDimensions.xPosOpponentGoalLine - std::abs(pos.x())),
@@ -60,7 +88,7 @@ float Midfielder::rating(const Vector2f& pos) const
   float cellBorderRating = 1.f;
   Vector2f intersectionPoint;
   Geometry::Line intersectionLine;
-  if(Geometry::getIntersectionOfLineAndConvexPolygon(region, Geometry::Line(base, (pos - base).normalized()), intersectionPoint, true, &intersectionLine))
+  if(calcCellBorder && Geometry::getIntersectionOfLineAndConvexPolygon(region, Geometry::Line(base, (pos - base).normalized()), intersectionPoint, true, &intersectionLine))
   {
     const float distanceToCellBorder = Geometry::getDistanceToLine(intersectionLine, pos);
     cellBorderRating = 1.f - std::exp(-0.5f * sqr(distanceToCellBorder) / sqr(p.sigmaCellBorder));
@@ -74,10 +102,24 @@ float Midfielder::rating(const Vector2f& pos) const
     teammateRating = 1.f - std::exp(-0.5f * getClosestTeammateSquaredDistance(pos) / sqr(p.sigmaTeam));
   }
 
+  //do not walk between the ball and the goal
+  float ballToGoalRating = 1.f;
+  if(pos.x() < theFieldBall.recentBallPositionOnField().x())
+    ballToGoalRating = 1.f;
+  else
+  {
+    bool posLeftOfLine = Geometry::isPointLeftOfLine(
+                           theFieldBall.recentBallPositionOnField(),
+                           Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+                           pos);
+    if(robotLeftOfLine != posLeftOfLine)
+      ballToGoalRating = 0.f;
+  }
+
   //in case of a free kick we know that we are the attacking team so we can play offensively
   //search for free spaces to receive a pass
   if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
-    return cellBorderRating * baseRating * thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true) * (p.minGoalRating + (1.f - p.minGoalRating) * theExpectedGoals.getRating(pos, true));
+    return ballRating * cellBorderRating * baseRating * thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true) * (p.minGoalRating + (1.f - p.minGoalRating) * theExpectedGoals.getRating(pos, true, true, false)) * ballToGoalRating;
 
   // Positions near the last communicated target pose are better
   const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
@@ -86,5 +128,5 @@ float Midfielder::rating(const Vector2f& pos) const
   CROSS("behavior:Midfielder:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
   //combine the ratings
-  return ballRating * teammateRating * baseRating * fieldBorderRating * cellBorderRating * communicationRating;
+  return ballRating * teammateRating * baseRating * fieldBorderRating * cellBorderRating * communicationRating * passRating * ballToGoalRating;
 }

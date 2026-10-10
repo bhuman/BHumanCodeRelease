@@ -2,7 +2,7 @@
  * @file FieldFeatureCheck.h
  *
  * This file declares a macro to declare the verify method for a field feature.
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  * @author Tim Laue
  */
 

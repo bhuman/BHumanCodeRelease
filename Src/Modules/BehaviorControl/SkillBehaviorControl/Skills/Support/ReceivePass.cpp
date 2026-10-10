@@ -12,9 +12,8 @@
 #include <algorithm>
 
 option((SkillBehaviorControl) ReceivePass, args((int) playerNumber),
-       defs((Angle)(30_deg) maxAngle)) /**< maximum angle to the ball that it can still be received in the front */
+       defs((float)(4000.f) minPassDistance)) /**< Prefer to stay this far away to receive the pass. */
 {
-  const Vector2f opponentGoal = Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0.f);
   const auto teammate = std::find_if(theTeamData.teammates.begin(), theTeamData.teammates.end(),
                                      [&](const Teammate& t) {return t.number == playerNumber;});
 
@@ -32,8 +31,12 @@ option((SkillBehaviorControl) ReceivePass, args((int) playerNumber),
     {
       const Vector2f passBase = theFieldBall.recentBallPositionOnField();
       // Set the target position to where the passing teammate communicated kicking the ball to, or our current position
-      const Vector2f passTarget = teammate->theBehaviorStatus.shootingTo.has_value() ? teammate->theRobotPose * teammate->theBehaviorStatus.shootingTo.value() : theRobotPose.translation;
-      const Angle targetAngle = Angle::normalize(KickSelection::calculateTargetRotation(passBase, passTarget, opponentGoal, maxAngle) - theRobotPose.rotation);
+      Vector2f passTarget = teammate->theBehaviorStatus.shootingTo.has_value() ? teammate->theRobotPose * teammate->theBehaviorStatus.shootingTo.value() : theRobotPose.translation;
+      const Angle targetAngle = (theRobotPose.inverse() * passBase).angle();
+      const float passDistance = (passBase - passTarget).norm();
+      if(passDistance < minPassDistance && teammate->theBehaviorStatus.shootingTo.has_value())
+        passTarget = (passTarget - passBase).normalized(minPassDistance) + passBase;
+      static_cast<void>(theFieldDimensions.clipToField(passTarget));
 
       // Walk to the target position and look towards the ball to receive it when it arrives
       const Pose2f passTargetRelative(targetAngle, theRobotPose.inverse() * passTarget);

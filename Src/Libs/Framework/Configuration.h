@@ -20,7 +20,7 @@ STREAMABLE(Configuration,
   {
     RepresentationProvider() = default;
     RepresentationProvider(const std::string& representation, const std::string& provider) :
-      representation(representation)COMMA provider(provider) {};
+      representation(representation) COMMA provider(provider) {};
 
     /**
      * Comparison operator. Uses the representation name for comparison.

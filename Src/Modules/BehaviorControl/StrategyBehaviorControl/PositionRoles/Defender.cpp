@@ -13,11 +13,23 @@
 #include "Defender.h"
 #include "Math/Geometry.h"
 
+Defender::Defender()
+{
+  InMapFile stream("roleDefender.cfg");
+  ASSERT(stream.exists());
+  stream >> p;
+}
+
 void Defender::preProcess()
 {
   RatingRole::preProcess();
   DECLARE_DEBUG_DRAWING("behavior:Defender:communicatedPosition", "drawingOnField");
   MODIFY("behavior:Defender", p);
+
+  robotLeftOfLine = Geometry::isPointLeftOfLine(
+      theFieldBall.recentBallPositionOnField(),
+      Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+      theRobotPose.translation);
 
   //override parameters of the base class
   RatingRole::p.startThreshold = p.startThreshold;
@@ -58,6 +70,12 @@ float Defender::rating(const Vector2f& pos) const
   // rating based on the distance to the base pose. Closer to base pose is better
   const float baseRating = std::exp(-0.5f * (pos - base).squaredNorm() / sqr(p.sigmaBase));
 
+  // defenders should move away from the ball to not block free kicks
+  float ballRating = 1.f;
+  if(theGameState.isFreeKick() && theGameState.isForOwnTeam())
+    // min value with a compressed normal distribution on top
+    ballRating = std::exp(-0.5f * sqr((pos - ball).norm() - p.ballDistance) / sqr(p.sigmaBall)) * (1.f - p.minBallRating) + p.minBallRating;
+
   // get the rating based on potentially marked opponents
   float markRating = p.minMarkRating;
   for(const auto& opponent : theGlobalOpponentsModel.opponents)
@@ -90,6 +108,20 @@ float Defender::rating(const Vector2f& pos) const
     goalLineRating += (1 - p.minGoalLineRating) * std::exp(-0.5f * sqr(distanceBallToGoalLine) / sqr(p.sigmaBallLine));
   }
 
+  // don't walk between the ball and the opponent goal
+  float ballToGoalRating = 1.f;
+  if(pos.x() < theFieldBall.recentBallPositionOnField().x())
+    ballToGoalRating = 1.f;
+  else
+  {
+    bool posLeftOfLine = Geometry::isPointLeftOfLine(
+        theFieldBall.recentBallPositionOnField(),
+        Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+        pos);
+    if(robotLeftOfLine != posLeftOfLine)
+      ballToGoalRating = 0.f;
+  }
+
   // Positions near the last communicated target pose are better
   const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
   const float communicationRating = p.minCommunicationRating +
@@ -97,5 +129,5 @@ float Defender::rating(const Vector2f& pos) const
   CROSS("behavior:Defender:communicatedPosition", lastTargetInWorld.x(), lastTargetInWorld.y(), 100, 20, Drawings::solidPen, ColorRGBA::violet);
 
   //combine the ratings
-  return teammatesRating * baseRating * borderRating * markRating * goalLineRating * communicationRating;
+  return teammatesRating * baseRating * ballRating * borderRating * markRating * goalLineRating * communicationRating * ballToGoalRating;
 }

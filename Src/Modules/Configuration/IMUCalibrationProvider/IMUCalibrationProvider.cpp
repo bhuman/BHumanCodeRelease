@@ -28,14 +28,14 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
   if((theCalibrationRequest.serialNumberIMUCalibration > imuCalibration.serialNumberIMUCalibration && isStandingStill()))
   {
     const Vector3f accValues = imuCalibration.rotation.inverse() * theIMUValueState.accValues.mean;
-    const Quaternionf imuAngles = Rotation::Euler::fromAngles(theRawInertialSensorData.angle.x(), theRawInertialSensorData.angle.y(), 0.f);
+    const Quaternionf imuAngles = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
     const Quaternionf accQuat = Rotation::removeZRotation(Quaternionf::FromTwoVectors(accValues.normalized(), Vector3f(0.f, 0.f, 1.f)));
     imuCalibration.rotation = imuAngles.inverse() * accQuat;
 
     imuCalibration.serialNumberIMUCalibration = theCalibrationRequest.serialNumberIMUCalibration;
     imuCalibration.isCalibrated = true;
     //save the calibration
-    const std::string path = std::string(File::getBHDir()) + "/Config/Robots/" + Global::getSettings().bodyName + "/Body";
+    const std::string path = std::string(File::getBHDir()) + "/Config/Robots/" + Global::getSettings().robotName;
     std::filesystem::create_directories(path);
     OutMapFile stream(path + "/imuCalibration.cfg", true);
     ASSERT(stream.exists());
@@ -56,7 +56,7 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
       calibrationStarted = theFrameInfo.time;
       tempIMUCalibration = imuCalibration;
       const Vector3f accValues = imuCalibration.rotation.inverse() * theIMUValueState.accValues.mean;
-      const Quaternionf imuAngles = Rotation::Euler::fromAngles(theRawInertialSensorData.angle.x(), theRawInertialSensorData.angle.y(), 0.f);
+      const Quaternionf imuAngles = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
       const Quaternionf accQuat = Rotation::removeZRotation(Quaternionf::FromTwoVectors(accValues.normalized(), Vector3f(0.f, 0.f, 1.f)));
       tempIMUCalibration.rotation = imuAngles.inverse() * accQuat;
     }
@@ -68,6 +68,5 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
 bool IMUCalibrationProvider::isStandingStill()
 {
   return theFrameInfo.getTimeSince(theIMUValueState.notMovingSinceTimestamp) > minStandStillTime &&
-         theGroundContactState.contact &&
-         std::abs(theRawInertialSensorData.angle.x()) < maxtorsoAngles.x() && std::abs(theRawInertialSensorData.angle.y()) < maxtorsoAngles.y();
+         std::abs(theInertialSensorData.angle.x()) < maxtorsoAngles.x() && std::abs(theInertialSensorData.angle.y()) < maxtorsoAngles.y();
 }

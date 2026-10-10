@@ -1,7 +1,7 @@
 /**
  * @file Rotation.h
  * Rotation related functionality
- * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ * @author Alexis Tsogias
  */
 
 #pragma once

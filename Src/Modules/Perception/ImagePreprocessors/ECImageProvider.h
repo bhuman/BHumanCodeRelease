@@ -1,12 +1,11 @@
 /**
  * @file ECImageProvider.h
  * @author Felix Thielke
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once
 
-#include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
@@ -14,12 +13,10 @@
 
 MODULE(ECImageProvider,
 {,
-  REQUIRES(CalibrationRequest),
   REQUIRES(CameraInfo),
   REQUIRES(CameraImage),
   REQUIRES(ECImage),
   PROVIDES(ECImage),
-  PROVIDES(OptionalECImage),
   LOADS_PARAMETERS(
   {,
     (bool) disableColor,
@@ -40,7 +37,6 @@ private:
   EFunc eFunc = nullptr;
 
   void update(ECImage& ecImage) override;
-  void update(OptionalECImage& theOptionalECImage) override;
   void compileE();
   void compileEC();
   /**

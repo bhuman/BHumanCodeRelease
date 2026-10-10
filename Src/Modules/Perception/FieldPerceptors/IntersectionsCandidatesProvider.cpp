@@ -4,7 +4,7 @@
  * This file implements a module that detects and prepares intersections candidates for classifying.
  *
  * @author Arne Böckmann
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  * @author Felix Thielke
  * @author Laurens Schiefelbein
  * @author Kevin Dehmlow
@@ -231,12 +231,11 @@ void IntersectionsCandidatesProvider::savePatchOnDisk(const Image<PixelTypes::Gr
     baseDir = std::filesystem::current_path() / baseDir;
 
   const std::string frameTime = std::to_string(theFrameInfo.time);
-  const std::string camera = theCameraInfo.camera == CameraInfo::lower ? "lower" : "upper";
 
   const std::filesystem::path targetDir = baseDir / type;
   std::filesystem::create_directories(targetDir);
 
-  const std::string fileName = logFileName + "-" + frameTime + "-" + camera + "-" + std::to_string(static_cast<int>(normFactor)) + "-" + std::to_string(distance);
+  const std::string fileName = logFileName + "-" + frameTime + "-" + std::to_string(static_cast<int>(normFactor)) + "-" + std::to_string(distance);
   const std::filesystem::path file = targetDir / (fileName + ".bin");
 
   OutBinaryFile stream(file.string());

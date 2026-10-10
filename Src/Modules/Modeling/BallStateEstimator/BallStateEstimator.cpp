@@ -53,7 +53,6 @@ void BallStateEstimator::reset()
   stationaryBalls.reserve(maxNumberOfHypotheses * 2);
   rollingBalls.reserve(maxNumberOfHypotheses * 2);
   bestState = nullptr;
-  bestMovingState = nullptr;
 }
 
 void BallStateEstimator::update(BallModel& ballModel)
@@ -90,7 +89,7 @@ void BallStateEstimator::update(BallModel& ballModel)
   motionUpdate(ballModel);
   // handle collision with feet, if robot is currently upright:
   if(theMotionInfo.isMotionStable)
-    integrateCollisionWithFeet();
+    integrateCollisionWithFeet(ballModel);
   if(recomputeBestState)
     findBestState();
   // sensor update step
@@ -211,7 +210,7 @@ void BallStateEstimator::motionUpdate(BallModel& ballModel)
     {
       state.motionUpdate(movingA, movingATransposed, movingOdometryTranslation,
                          squaredProcessCov, odometryTranslationCov, movingOdometryRotationDeviationRotation,
-                         theBallSpecification.friction, deltaTime);
+                         theBallSpecification, deltaTime);
     }
   }
 
@@ -267,16 +266,12 @@ void BallStateEstimator::normalizeMeasurementLikelihoods()
 void BallStateEstimator::findBestState()
 {
   bestState = nullptr;
-  bestMovingState = nullptr;
-  float bestWeighting = std::numeric_limits<float>::max();
+  BallStateEstimate* bestMovingState = nullptr;
+  BallStateEstimate* bestStationaryState = nullptr;
+  float bestStationaryWeighting = std::numeric_limits<float>::max();
   float bestMovingWeighting = std::numeric_limits<float>::max();
   for(auto& state : rollingBalls)
   {
-    if(bestState == nullptr || state.nllWeighting < bestWeighting)
-    {
-      bestState = &state;
-      bestWeighting = state.nllWeighting;
-    }
     if(bestMovingState == nullptr || state.nllWeighting < bestMovingWeighting)
     {
       bestMovingState = &state;
@@ -284,11 +279,17 @@ void BallStateEstimator::findBestState()
     }
   }
   for(auto& state : stationaryBalls)
-    if(bestState == nullptr || state.nllWeighting < bestWeighting)
+  {
+    if(bestStationaryState == nullptr || state.nllWeighting < bestStationaryWeighting)
     {
-      bestState = &state;
-      bestWeighting = state.nllWeighting;
+      bestStationaryState = &state;
+      bestStationaryWeighting = state.nllWeighting;
     }
+  }
+  if(bestMovingState != nullptr && bestMovingWeighting < bestStationaryWeighting && bestMovingState->numOfMeasurements >= minNumberOfMeasurementsForRollingBalls)
+    bestState = bestMovingState;
+  else
+    bestState = bestStationaryState;
 }
 
 template <typename T> void BallStateEstimator::pruneBallBuffer(std::vector<T>& balls)
@@ -320,9 +321,9 @@ void BallStateEstimator::createNewFilters(const Vector2f& ballPercept, const flo
     const float deltaTime = static_cast<float>(theFrameInfo.getTimeSince(lastBallPercept.timeWhenSeen)) * 0.001f; // in seconds
     if(deltaTime <= 0.f) // Not sure, if all equations make sense, when time is running backwards...
       return;
-    Vector2f ballVelocity = BallPhysics::velocityAfterDistanceForTime(lastBallPercept.positionOnField, ballPercept, deltaTime, theBallSpecification.friction);
+    Vector2f ballVelocity = BallPhysics::velocityAfterDistanceForTime(lastBallPercept.positionOnField, ballPercept, deltaTime, theBallSpecification);
     const float ballSpeed = ballVelocity.norm();
-    if(ballSpeed > minSpeed && ballSpeed < theBallSpecification.ballSpeedUpperBound()) // Do not generate slow or very fast balls
+    if(ballSpeed > minSpeed && ballSpeed < theBallSpecification.ballSpeedUpperBound) // Do not generate slow or very fast balls
     {
       const Matrix2f positionVelocityCov = ballPerceptCov / deltaTime;
       const Matrix2f velocityCov = (ballPerceptCov + lastBallPercept.covOnField) / (deltaTime*deltaTime);
@@ -347,35 +348,10 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     ballModel.estimate.position = bestState->getPosition();
     if(bestState->timeOfLastCollision > ballModel.timeOfLastCollision)
       ballModel.timeOfLastCollision = bestState->timeOfLastCollision;
-    // <hack>
-    if(bestState->numOfMeasurements < minNumberOfMeasurementsForRollingBalls)
-      ballModel.estimate.velocity = Vector2f::Zero();
-    else
-      ballModel.estimate.velocity = bestState->getVelocity();
-    // <hack-description>This seems to be the best temporary
-    // solution to avoid the generation of quite high velocities due to noise between two measurements.
-    // T.L.
-    // </hack-description>
-    // </hack>
+    ballModel.estimate.velocity = bestState->getVelocity();
     ballModel.estimate.covariance = bestState->getPositionCovariance();
     ballModel.estimate.radius = bestState->radius;
     Covariance::fixCovariance<2>(ballModel.estimate.covariance);
-  }
-  if(bestMovingState != nullptr &&
-     bestMovingState != bestState &&
-     bestMovingState->numOfMeasurements >= minNumberOfMeasurementsForRollingBalls &&
-     bestMovingState->getVelocity().norm() > minSpeed)
-  {
-    ballModel.riskyMovingEstimateIsValid = true;
-    ballModel.riskyMovingEstimate.position = bestMovingState->getPosition();
-    ballModel.riskyMovingEstimate.velocity = bestMovingState->getVelocity();
-    ballModel.riskyMovingEstimate.covariance = bestMovingState->getPositionCovariance();
-    ballModel.riskyMovingEstimate.radius = bestMovingState->radius;
-    Covariance::fixCovariance<2>(ballModel.riskyMovingEstimate.covariance);
-  }
-  else
-  {
-    ballModel.riskyMovingEstimateIsValid = false;
   }
   if(ballWasSeenInThisFrame)
   {
@@ -383,12 +359,44 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     ballModel.lastPerception = theFilteredBallPercepts.percepts[0].positionOnField;
   }
 
+
+  // HACK HACK HACK >>> --------------------------------------------
+  if(theRobotPose.quality == RobotPose::superb)
+  {
+    Vector2f clippedBall = theWorldModelPrediction.robotPose * ballModel.estimate.position;
+    // Not in the field of play ...
+    if(!theFieldDimensions.isInsideField(clippedBall))
+    {
+      const float distanceFromFieldBorder = theFieldDimensions.clipToField(clippedBall);
+      // ... and too far away!
+      if(distanceFromFieldBorder > 666.f)
+      {
+        if(clippedBall.x() == theFieldDimensions.xPosOpponentGoalLine)
+          clippedBall.x() = theFieldDimensions.xPosOpponentGoalLine + 500.f;
+        else if(clippedBall.x() == theFieldDimensions.xPosOwnGoalLine)
+          clippedBall.x() = theFieldDimensions.xPosOwnGoalLine - 500.f;
+
+        if(clippedBall.y() == theFieldDimensions.yPosLeftTouchline)
+          clippedBall.y() = theFieldDimensions.yPosLeftTouchline + 500.f;
+        else if(clippedBall.y() == theFieldDimensions.yPosRightTouchline)
+          clippedBall.y() = theFieldDimensions.yPosRightTouchline - 500.f;
+
+        clippedBall = theWorldModelPrediction.robotPose.inverse() * clippedBall;
+        ballModel.lastPerception = clippedBall;
+        ballModel.estimate.position = clippedBall;
+        ballModel.estimate.velocity = Vector2f::Zero();
+      }
+    }
+  }
+  // -------------------------------------------- <<< HACK HACK HACK
+
+
   // update timeWhenDisappeared
   {
     bool ballWasSeen = ballModel.timeWhenLastSeen == theFrameInfo.time && theFrameInfo.time != 0;
     bool ballShouldBeVisible = ballModel.estimate.position.norm() < ballDisappearedMaxCheckingDistance &&
                                BallLocatorTools::ballShouldBeVisibleInCurrentImage(ballModel.estimate.position, ballModel.estimate.radius,
-                                   theCameraMatrix, theCameraInfo, theBodyContour, theImageCoordinateSystem);
+                                   theCameraMatrix, theCameraInfo, theBodyContour);
     if(ballWasSeen)
     {
       timeWhenBallFirstDisappeared = theFrameInfo.time;
@@ -412,8 +420,7 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
 bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel)
 {
   if(!theFilteredBallPercepts.percepts.empty() &&
-     theGameState.isPlaying() && !theGameState.isPenalized() &&
-     theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
+     theGameState.isPlaying() && !theGameState.isPenalized())
   {
     const Vector2f relativeBall        = theFilteredBallPercepts.percepts[0].positionOnField;
     const Vector2f globalBall          = theWorldModelPrediction.robotPose * relativeBall;
@@ -436,7 +443,7 @@ bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel
     }
 
     // Ball has been seen close to own penalty area!!!
-    if(globalBall.x() < theFieldDimensions.xPosOwnPenaltyMark - 200.f)
+    if(globalBall.x() < theFieldDimensions.xPosOwnPenaltyMark - 4 * theBallSpecification.radius)
     {
       Vector2f velocity = relativeBall - (useAveragePenaltyBallPosition ? averagePenaltyBallPosition : relativePenaltyMark);
       velocity.normalize(2000.f);
@@ -457,8 +464,11 @@ bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel
   return false;
 }
 
-void BallStateEstimator::integrateCollisionWithFeet()
+void BallStateEstimator::integrateCollisionWithFeet(const BallModel& ballModel)
 {
+  // Do not handle collions as long as we see the ball:
+  if(theFrameInfo.getTimeSince(ballModel.timeWhenLastSeen) < 50)
+    return;
   BallContactInformation contactInfo;
   for(auto& state : rollingBalls)
   {

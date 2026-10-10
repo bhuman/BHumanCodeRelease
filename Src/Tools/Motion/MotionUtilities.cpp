@@ -7,7 +7,6 @@
 #include "MotionUtilities.h"
 
 void MotionUtilities::copy(const JointRequest& source, JointRequest& target,
-                           const StiffnessSettings& theStiffnessSettings,
                            const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i < endJoint; ++i)
@@ -16,8 +15,10 @@ void MotionUtilities::copy(const JointRequest& source, JointRequest& target,
       target.angles[i] = source.angles[i];
     target.stiffnessData.stiffnesses[i] = target.angles[i] != JointAngles::off ? (source.angles[i] != JointAngles::ignore ? source.stiffnessData.stiffnesses[i] : target.stiffnessData.stiffnesses[i]) : 0;
     if(target.stiffnessData.stiffnesses[i] == StiffnessData::useDefault)
-      target.stiffnessData.stiffnesses[i] = theStiffnessSettings.stiffnesses[i];
+      target.stiffnessData.stiffnesses[i] = 100;
   }
+  target.isTorqueControl = source.isTorqueControl;
+  target.jointStiffnessMapping = source.jointStiffnessMapping;
 }
 
 void MotionUtilities::copy(const JointAngles& source, JointAngles& target,
@@ -35,8 +36,8 @@ void MotionUtilities::copy(const std::array<Angle, Joints::numOfJoints>& source,
 }
 
 void MotionUtilities::interpolate(const JointRequest& from, const JointRequest& to,
-                                  float fromRatio, JointRequest& target, bool interpolateStiffness,
-                                  const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
+                                  float fromRatio, JointRequest& target,
+                                  bool interpolateStiffness, const JointAngles& lastJointAngles,
                                   const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i < endJoint; ++i)
@@ -55,9 +56,9 @@ void MotionUtilities::interpolate(const JointRequest& from, const JointRequest& 
     int fStiffness = f != JointAngles::off ? from.stiffnessData.stiffnesses[i] : 0;
     int tStiffness = t != JointAngles::off ? to.stiffnessData.stiffnesses[i] : 0;
     if(fStiffness == StiffnessData::useDefault)
-      fStiffness = theStiffnessSettings.stiffnesses[i];
+      fStiffness = 100;
     if(tStiffness == StiffnessData::useDefault)
-      tStiffness = theStiffnessSettings.stiffnesses[i];
+      tStiffness = 100;
 
     if(t == JointAngles::off || t == JointAngles::ignore)
       t = lastJointAngles.angles[i];
@@ -76,6 +77,8 @@ void MotionUtilities::interpolate(const JointRequest& from, const JointRequest& 
     else
       target.stiffnessData.stiffnesses[i] = tStiffness;
   }
+  target.isTorqueControl = to.isTorqueControl;
+  target.jointStiffnessMapping = to.jointStiffnessMapping;
 }
 
 bool MotionUtilities::interpolate(JointRequest& joints, const float alpha, const float threshold, const JointRequest& theJointRequest, const JointAngles& theJointAngles,
@@ -99,6 +102,8 @@ bool MotionUtilities::interpolate(JointRequest& joints, const float alpha, const
     joints.stiffnessData.stiffnesses[j] = 100;
   }
   diff /= static_cast<float>(Joints::numOfJoints);
+  joints.isTorqueControl = theStandLegRequest.isTorqueControl;
+  joints.jointStiffnessMapping = theStandLegRequest.jointStiffnessMapping;
   return diff < threshold;
 }
 
@@ -125,6 +130,8 @@ void MotionUtilities::interpolate(const JointAngles& from, const JointRequest& t
     target.angles[i] = ratio * (t - f) + f;
 
     target.stiffnessData.stiffnesses[i] = to.stiffnessData.stiffnesses[i];
+    target.isTorqueControl = to.isTorqueControl;
+    target.jointStiffnessMapping = to.jointStiffnessMapping;
   }
 }
 
@@ -135,10 +142,8 @@ void MotionUtilities::walkStand(JointRequest& output, const RobotDimensions& dim
   output.angles[Joints::lShoulderPitch] = 90_deg;
   output.angles[Joints::rShoulderRoll] = -7_deg;
   output.angles[Joints::lShoulderRoll] = 7_deg;
-  output.angles[Joints::rElbowYaw] = 0_deg;
+  output.angles[Joints::rElbowPitch] = 0_deg;
+  output.angles[Joints::lElbowPitch] = 0_deg;
   output.angles[Joints::lElbowYaw] = 0_deg;
-  output.angles[Joints::lElbowRoll] = 0_deg;
-  output.angles[Joints::rElbowRoll] = 0_deg;
-  output.angles[Joints::rWristYaw] = 90_deg;
-  output.angles[Joints::lWristYaw] = -90_deg;
+  output.angles[Joints::rElbowYaw] = 0_deg;
 }

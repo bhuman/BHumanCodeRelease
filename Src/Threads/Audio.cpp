@@ -9,16 +9,10 @@
 
 #include "Audio.h"
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
-#include "Platform/Thread.h"
 
 REGISTER_EXECUTION_UNIT(Audio)
 
 bool Audio::beforeFrame()
 {
   return LogDataProvider::isFrameDataComplete();
-}
-
-bool Audio::afterFrame()
-{
-  return BHExecutionUnit::afterFrame();
 }

@@ -10,11 +10,23 @@
 #include "Forward.h"
 #include "Math/Geometry.h"
 
+Forward::Forward()
+{
+  InMapFile stream("roleForward.cfg");
+  ASSERT(stream.exists());
+  stream >> p;
+}
+
 void Forward::preProcess()
 {
   RatingRole::preProcess();
   DECLARE_DEBUG_DRAWING("behavior:Forward:communicatedPosition", "drawingOnField");
   MODIFY("behavior:Forward", p);
+
+  robotLeftOfLine = Geometry::isPointLeftOfLine(
+                      theFieldBall.recentBallPositionOnField(),
+                      Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+                      theRobotPose.translation);
 
   //override parameters of the base class
   RatingRole::p.startThreshold = p.startThreshold;
@@ -30,7 +42,7 @@ float Forward::rating(const Vector2f& pos) const
   //normal distribution around the base pose
   const float baseRating = std::exp(-0.5f * (pos - base).squaredNorm() / sqr(p.sigmaBase));
   const float passRating = thePassEvaluation.getRating(theFieldBall.recentBallPositionOnField(), pos, true);
-  const float goalRating = theExpectedGoals.getRating(pos, true);
+  const float goalRating = theExpectedGoals.getRating(pos, true, true, false);
 
   //get distance to next field border
   const float borderDistance = std::min(std::max(0.f, theFieldDimensions.xPosOpponentGoalLine - std::abs(pos.x())),
@@ -60,6 +72,20 @@ float Forward::rating(const Vector2f& pos) const
   //do not stand directly near the ball as position role
   const float ballRating = 1.f - std::exp(-0.5f * (pos - theFieldBall.recentBallPositionOnField()).squaredNorm() / sqr(p.sigmaBall));
 
+  //do not walk between the ball and the opponent goal
+  float ballToGoalRating = 1.f;
+  if(pos.x() < theFieldBall.recentBallPositionOnField().x())
+    ballToGoalRating = 1.f;
+  else
+  {
+    bool posLeftOfLine = Geometry::isPointLeftOfLine(
+                           theFieldBall.recentBallPositionOnField(),
+                           Vector2f(theFieldDimensions.xPosOpponentGoalLine, 0),
+                           pos);
+    if(robotLeftOfLine != posLeftOfLine)
+      ballToGoalRating = 0.f;
+  }
+
   // Positions near the last communicated target pose are better
   const Vector2f lastTargetInWorld = agent.lastKnownPose * agent.lastKnownTarget; // Transform from relative to global Coordinates
   const float communicationRating = p.minCommunicationRating +
@@ -68,6 +94,6 @@ float Forward::rating(const Vector2f& pos) const
 
   //the focus is on the multiplication term because all ratings need to be good at the same time.
   // The additive term is for avoid getting stuck in large 0 areas where just one of the factors is 0. Should be deleted
-  return communicationRating * cellBorderRating * borderRating * ballRating * passRating * goalRating * baseRating * teammateRating * (1.f - p.addWeight) +
-         (p.addWeight / 8.f) * (baseRating + goalRating + passRating + ballRating + borderRating + cellBorderRating + communicationRating + teammateRating);
+  return ballToGoalRating * (communicationRating * cellBorderRating * borderRating * ballRating * passRating * goalRating * baseRating * teammateRating * (1.f - p.addWeight) +
+                             (p.addWeight / 8.f) * (baseRating + goalRating + passRating + ballRating + borderRating + cellBorderRating + communicationRating + teammateRating));
 }

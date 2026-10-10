@@ -1,0 +1,59 @@
+#!/bin/sh
+
+BH_SYSTEM="linux"
+if test "$(uname)" == "Darwin" ; then
+    BH_SYSTEM="osx"
+elif test -e /proc/version && test ! -z "$(grep Microsoft /proc/version)" ; then
+    BH_SYSTEM="windows"
+fi
+BH_ARCH="x86"
+test -n "$(uname -m | grep arm)" && BH_ARCH="arm"
+
+BH_TMPDIR="$(mktemp -d -p /tmp 'bhuman.XXXXX')"
+BH_KEEP_TMPDIR=false
+
+BH_ONNX_RUNTIME_VERSION="1.22.0"
+BH_ONNX_RUNTIME_TARGETS="$BH_SYSTEM booster"
+
+mkdir -p "$BH_TMPDIR"
+
+
+
+echo_err () {
+  echo $@ >&2
+}
+
+is_integer () {
+  printf %d "$1" >/dev/null 2>&1
+}
+
+error_and_exit () {
+  local RETURN_CODE
+  local ERROR_MESSAGE
+
+  RETURN_CODE="$1"
+  shift 2> /dev/null
+  ERROR_MESSAGE="$@"
+
+  test -n "$RETURN_CODE" || RETURN_CODE=0
+  is_integer "$RETURN_CODE" || {
+    ERROR_MESSAGE="$RETURN_CODE $ERROR_MESSAGE"
+    RETURN_CODE=0
+  }
+
+  test "$BH_KEEP_TMPDIR" = "true" && return
+  #Does tmpdir exist and is safe to delete?
+  test -n "$BH_TMPDIR" && test -d "$BH_TMPDIR" && test -n "$(echo "$BH_TMPDIR" | grep '^/tmp/bhuman.')" && {
+    rm -r "$BH_TMPDIR"
+  }
+
+  test -n "$ERROR_MESSAGE" && {
+    echo_err "$ERROR_MESSAGE" >&2
+  }
+
+  trap - EXIT
+  exit $RETURN_CODE
+}
+
+
+trap "error_and_exit 0" EXIT

@@ -32,6 +32,7 @@ STREAMABLE(SkillRequest,
     mark,
     observe,
     clear,
+    waitShoot,
   });
 
   struct Builder
@@ -47,6 +48,7 @@ STREAMABLE(SkillRequest,
     static SkillRequest mark(const Vector2f& player);
     static SkillRequest observe(const Vector2f& point);
     static SkillRequest clear();
+    static SkillRequest waitShoot(int target);
   },
 
   (Type)(none) skill, /**< The skill that shall run. */

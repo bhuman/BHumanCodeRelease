@@ -11,7 +11,6 @@
 option((SkillBehaviorControl) PlayDead)
 {
   theMotionRequest.motion = MotionRequest::playDead;
-  theMotionRequest.energySavingWalk = false;
   theLibCheck.inc(LibCheck::motionRequest);
 
   initial_state(execute)

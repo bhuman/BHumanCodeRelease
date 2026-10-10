@@ -39,6 +39,7 @@
 #include "Framework/Module.h"
 #include "Representations/Configuration/SetupPoses.h"
 #include "Representations/Infrastructure/GameState.h"
+#include <deque>
 
 MODULE(SetupPosesProvider,
 {,
@@ -53,7 +54,7 @@ MODULE(SetupPosesProvider,
 class SetupPosesProvider : public SetupPosesProviderBase
 {
 private:
-  std::vector<int> robotOrderFromGC;       /**< The numbers of the robots of which the GC claims that they are not substitutes. */
+  std::deque<int> robotOrderFromGC;        /**< The numbers of the robots of which the GC claims that they are not substitutes. */
   bool representationHasBeenInitialized;   /**< Data has been written to the representation at least once, i.e. it is valid. */
 
   /** Updates the setup poses */

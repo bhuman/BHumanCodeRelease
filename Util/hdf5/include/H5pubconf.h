@@ -1,6 +1,4 @@
-#ifdef TARGET_ROBOT
-#include "H5pubconfNaoV6.h"
-#elif defined LINUX
+#if defined LINUX
 #include "H5pubconfLinux.h"
 #elif defined WINDOWS
 #include "H5pubconfWindows.h"

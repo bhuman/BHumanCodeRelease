@@ -1,0 +1,30 @@
+<RCC>
+  <qresource prefix="/">
+    <file>Icons/Player/icons8-back-50.png</file>
+    <file>Icons/Player/icons8-end-50.png</file>
+    <file>Icons/Player/icons8-fast-forward-50.png</file>
+    <file>Icons/Player/icons8-forward-50.png</file>
+    <file>Icons/Player/icons8-pause-50.png</file>
+    <file>Icons/Player/icons8-reset-50.png</file>
+    <file>Icons/Player/icons8-rewind-50.png</file>
+    <file>Icons/Player/icons8-stop-50.png</file>
+    <file>Icons/icons8-drag-50.png</file>
+    <file>Icons/icons8-emergency-50.png</file>
+    <file>Icons/icons8-emergency-reset-50.png</file>
+    <file>Icons/icons8-hierarchy-50.png</file>
+    <file>Icons/icons8-image-50.png</file>
+    <file>Icons/icons8-parallel-workflow-50.png</file>
+    <file>Icons/icons8-price-tag-50.png</file>
+    <file>Icons/icons8-remote-50.png</file>
+    <file>Icons/icons8-squats-50.png</file>
+    <file>Icons/icons8-stadium-50.png</file>
+    <file>Icons/icons8-standing-man-50.png</file>
+    <file>Icons/icons8-start-50.png</file>
+    <file>Icons/icons8-stopwatch-50.png</file>
+    <file>Icons/icons8-synchronize-50.png</file>
+    <file>Icons/icons8-upload-50.png</file>
+    <file>Icons/icons8-view-50.png</file>
+    <file>Icons/b-human.png</file>
+    <file>Icons/robot.png</file>
+  </qresource>
+</RCC>

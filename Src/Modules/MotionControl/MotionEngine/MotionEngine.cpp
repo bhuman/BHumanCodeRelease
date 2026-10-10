@@ -8,14 +8,15 @@
 
 #include "MotionEngine.h"
 #include "Debugging/Annotation.h"
-#include "Framework/Settings.h"
-#include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
 #include "Debugging/Debugging.h"
+#include "Framework/Settings.h"
 #include "Math/BHMath.h"
 #include "Math/Rotation.h"
-#include "Tools/Motion/MotionUtilities.h"
 #include "Modules/Infrastructure/InterThreadProviders/PerceptionProviders.h"
+#include "Platform/BHAssert.h"
+#include "Platform/SystemCall.h"
+#include "Streaming/Global.h"
+#include "Tools/Motion/MotionUtilities.h"
 
 MAKE_MODULE(MotionEngine);
 
@@ -23,18 +24,6 @@ MotionEngine::MotionEngine()
 {
   playDeadGenerator.createPhase = [this](const MotionRequest&, const MotionPhase& lastPhase) -> std::unique_ptr<MotionPhase>
   {
-    if(lastPhase.type != MotionPhase::playDead &&
-       lastPhase.type != MotionPhase::fall &&
-       !motionInfo.isKeyframeMotion(KeyframeMotionRequest::sitDown) &&
-       !motionInfo.isKeyframeMotion(KeyframeMotionRequest::keeperJumpLeft) &&
-       !motionInfo.isKeyframeMotion(KeyframeMotionRequest::genuflectStand) &&
-       !motionInfo.isKeyframeMotion(KeyframeMotionRequest::genuflectStandDefender))
-    {
-      KeyframeMotionRequest request;
-      request.keyframeMotion = KeyframeMotionRequest::sitDown;
-      request.mirror = false;
-      return theKeyframeMotionGenerator.createPhase(request, lastPhase);
-    }
     return std::make_unique<PlayDeadPhase>(lastPhase, *this);
   };
 
@@ -45,11 +34,8 @@ MotionEngine::MotionEngine()
   generators[MotionRequest::walkToPose] = &theWalkToPoseGenerator;
   generators[MotionRequest::walkToBallAndKick] = &theWalkToBallAndKickGenerator;
   generators[MotionRequest::dribble] = &theDribbleGenerator;
-  generators[MotionRequest::dive] = &theDiveGenerator;
-  generators[MotionRequest::special] = &theSpecialGenerator;
-  generators[MotionRequest::replayWalk] = &theReplayWalkRequestGenerator;
-  generators[MotionRequest::photoMode] = &thePhotoModeGenerator;
-  generators[MotionRequest::freeBallHolding] = &theFreeBallHoldingGenerator;
+  generators[MotionRequest::fallRequest] = &theFallGenerator;
+  generators[MotionRequest::prepare] = &thePrepareGenerator;
 
   phase = std::make_unique<PlayDeadPhase>(*this);
 }
@@ -64,26 +50,20 @@ void MotionEngine::update(JointRequest& jointRequest)
   // Update the state of the currently active phase.
   phase->update();
 
-  // Get oldest timestamp of lower, upper and cognition. If one thread stopped, the robot shall sit down
-  std::vector<unsigned> behaviorTimeStamps = { theCognitionFrameInfo.time, theUpperFrameInfo.time };
-  if(Global::getSettings().robotType == Settings::RobotType::nao)
-    behaviorTimeStamps.push_back(theLowerFrameInfo.time);
-  const unsigned int oldestBehaviorTimestamp = *std::min_element(std::begin(behaviorTimeStamps), std::end(behaviorTimeStamps));
-
   // Check if Cognition stopped or the IMU has an offset.
-  if(oldestBehaviorTimestamp != lastCognitionTime && !theGyroOffset.isIMUBad && theGyroOffset.offsetCheckFinished)
+  if(theRobotHealth.olderPerceptionTimestamp != lastOlderPerceptionTimestamp && !theGyroOffset.isIMUBad && theGyroOffset.offsetCheckFinished)
     forceSitDown = false;
-  else if(SystemCall::getMode() == SystemCall::physicalRobot &&
-          !forceSitDown &&
+  else if(!forceSitDown &&
           (theGyroOffset.isIMUBad || // Gyro has offsets
            (theFrameInfo.time > 110000 &&
-            theFrameInfo.getTimeSince(oldestBehaviorTimestamp) > emergencySitDownDelay))) // No new camera images
+            theRobotHealth.olderPerceptionTimestamp &&
+            theFrameInfo.getTimeSince(theRobotHealth.olderPerceptionTimestamp) > emergencySitDownDelay))) // No new camera images
   {
     forceSitDown = true;
     if(!theGyroOffset.isIMUBad)
     {
       OUTPUT_ERROR("No data from Cognition to Motion for more than " << ((emergencySitDownDelay + 500) / 1000) << " seconds.");
-      SystemCall::playSound("siren", true);
+      SystemCall::playSound("siren.wav", true);
       SystemCall::say("No cognition dae ta", true);
     }
     else
@@ -91,34 +71,45 @@ void MotionEngine::update(JointRequest& jointRequest)
   }
   else if(!theGyroOffset.offsetCheckFinished)  // Gyro offsets could not be checked yet
     forceSitDown = true;
-  lastCognitionTime = oldestBehaviorTimestamp;
+  lastOlderPerceptionTimestamp = theRobotHealth.olderPerceptionTimestamp;
 
   // Integrate special cases into the motion request.
   MotionRequest motionRequest = theMotionRequest;
   if(forceSitDown)
-    motionRequest.motion = MotionRequest::playDead;
+  {
+    // Booster robots can not just sitdown, theredown downgrade into the next safer motion
+    switch(phase->type)
+    {
+      case MotionPhase::walk:
+      case MotionPhase::stand:
+      case MotionPhase::getUp:
+        motionRequest.motion = MotionRequest::stand;
+        break;
+      default:
+        motionRequest.motion = MotionRequest::playDead;
+    }
+  }
 
   // 2.1 check if a FallPhase should start ...
-  const bool getUp = motionRequest.motion != MotionRequest::playDead && motionRequest.motion != MotionRequest::dive &&
-                     ((theFallDownState.state == FallDownState::fallen && (phase->type == MotionPhase::fall || phase->type == MotionPhase::playDead)) || theFallDownState.state == FallDownState::squatting) &&
-                     !((phase->type == MotionPhase::getUp || phase->type == MotionPhase::stand) && theFallDownState.state == FallDownState::squatting); // If we got this combination, then the robot finished the get up and is hold tilted
+  const bool getUp = motionRequest.motion != MotionRequest::playDead &&
+                     (theFallDownState.state == FallDownState::fallen && (phase->type == MotionPhase::fall || phase->type == MotionPhase::playDead));
+
   if(getUp)
   {
-    motionRequest.motion = (phase->type == MotionPhase::fall || phase->type == MotionPhase::playDead || phase->type == MotionPhase::keyframeMotion || phase->type == MotionPhase::getUp) ? MotionRequest::stand : MotionRequest::playDead;
-    motionRequest.standHigh = false;
+    motionRequest.motion = (phase->type == MotionPhase::fall || phase->type == MotionPhase::playDead || phase->type == MotionPhase::getUp) ? MotionRequest::stand : MotionRequest::playDead;
   }
 
   // Check if the fall engine should intervene (this can happen during phases).
   if(phase->type != MotionPhase::fall && theFallGenerator.shouldCatchFall(motionRequest))
-    phase = theFallGenerator.createPhase();
-  else if(phase->type != MotionPhase::freeze && theFreezeGenerator.shouldHandleBodyDisconnect(*phase))
-    phase = Global::getSettings().robotType == Settings::RobotType::t1 ? std::make_unique<PlayDeadPhase>(*this) : theFreezeGenerator.createPhase();
+    phase = theFallGenerator.createPhase(motionRequest, *phase);
+  else if(phase->type != MotionPhase::playDead && theMotionRobotHealth.frameLostStatus == MotionRobotHealth::bodyDisconnect)
+    phase = std::make_unique<PlayDeadPhase>(*this);
 
   // 2.1 Check if the phase is done, i.e. a new phase has to be started.
   else if(phase->isDone(motionRequest) || (motionRequest.motion == MotionRequest::playDead && forcePlayDead && phase->type != MotionPhase::playDead))
   {
     // Update motion info.
-    if(motionInfo.isKicking() && (phase->type == MotionPhase::kick || phase->type == MotionPhase::walk))
+    if(motionInfo.isKicking() && phase->type == MotionPhase::walk)
     {
       motionInfo.lastKickType = static_cast<KickInfo::KickType>(phase->kickType);
       motionInfo.lastKickTimestamp = theFrameInfo.time;
@@ -129,21 +120,23 @@ void MotionEngine::update(JointRequest& jointRequest)
         OUTPUT_ERROR("MotionEngine: Invalid Kick Type");
       }
     }
+    else if(theBallKickInformation.lastBallContactTimestamp > motionInfo.lastKickTimestamp)
+    {
+      motionInfo.lastKickType = KickInfo::rlKickDynamic; // Workaround
+      motionInfo.lastKickTimestamp = theBallKickInformation.lastBallContactTimestamp;
+    }
     // Safe information about the start time
     motionInfo.lastMotionPhaseStarted = theFrameInfo.time;
     motionInfo.getUpTryCounter = 0;
     motionInfo.odometryAtLastPhaseSwitch = theOdometryDataPreview;
-    motionInfo.odometryRequestAtLastPhaseSwitch = theOdometryTranslationRequest;
 
-    // Check if we want to save the last phase
-    theReplayWalkRequestGenerator.savePhase(*phase);
     std::unique_ptr<MotionPhase> newPhase = std::unique_ptr<MotionPhase>();
 
     // 2.2 create a new MotionPhase based on the MotionRequest
     // Create the next phase according to the request or get up if necessary.
 
     //should we intercept the ball?
-    if(motionRequest.shouldInterceptBall && motionRequest.motion != MotionRequest::dive)
+    if(!forceSitDown && motionRequest.shouldInterceptBall)
     {
       newPhase = theInterceptBallGenerator.createPhase(motionRequest, *phase);
     }
@@ -159,7 +152,11 @@ void MotionEngine::update(JointRequest& jointRequest)
       newPhase = generators[motionRequest.motion]->createPhase(motionRequest, *phase); // no, execute MotionRequest
     }
     // should the robot intentionally walk out of the ball line?
-    if(motionRequest.isWalking() && motionRequest.shouldWalkOutOfBallLine && !getUp && newPhase->type != MotionPhase::fall)
+    if(!forceSitDown
+       && (motionRequest.isWalking() || motionRequest.motion == MotionRequest::stand) // Walk or stand is requested
+       && motionRequest.shouldWalkOutOfBallLine // walking out of ball is request
+       && !getUp && newPhase->type != MotionPhase::fall // Robot is upright / not getting up. Fail-safe check
+       && (phase->type == MotionPhase::stand || phase->type == MotionPhase::walk)) // Also only if walk engine was last active
     {
       // set new motion phase
       auto walkOutRequest = theWalkOutOfBallDirection.createPhase(motionRequest, *phase, *newPhase);
@@ -216,7 +213,7 @@ void MotionEngine::update(JointRequest& jointRequest)
     motionInfo.speed = Pose2f(0_deg, 0.f, 0.f);
 
   // Copy the new joint request into the final one (in order to convert ignore, off and useDefault).
-  MotionUtilities::copy(newJoints, jointRequest, theStiffnessSettings, static_cast<Joints::Joint>(0),
+  MotionUtilities::copy(newJoints, jointRequest, static_cast<Joints::Joint>(0),
                         static_cast<Joints::Joint>(Joints::numOfJoints));
 
   // 6. some extra handling
@@ -237,7 +234,7 @@ void MotionEngine::update(JointRequest& jointRequest)
     {
       continue;
     }
-    else
+    else if(!jointRequest.isTorqueControl)
       theJointLimits.limits[joint].clamp(jointRequest.angles[joint]);
   }
 #ifndef NDEBUG
@@ -247,16 +244,6 @@ void MotionEngine::update(JointRequest& jointRequest)
     FAIL("Some joints are invalid.");
   }
 #endif
-
-  // Set stiffness of broken joints to 0.
-  for(const Joints::Joint joint : theDamageConfigurationBody.jointsToEraseStiffness)
-    jointRequest.stiffnessData.stiffnesses[joint] = 0;
-
-  for(const Joints::Joint joint : theJointPlay.getJointsWithSensorJump(JointPlay::broken))
-  {
-    if(brokenJointsReducesStiffnessList.end() != std::find(brokenJointsReducesStiffnessList.begin(), brokenJointsReducesStiffnessList.end(), joint))
-      jointRequest.stiffnessData.stiffnesses[joint] = std::min(jointRequest.stiffnessData.stiffnesses[joint], brokenJointAutomaticStiffness);
-  }
 
   // Let the request of turned off joints track the measurement.
   FOREACH_ENUM(Joints::Joint, joint)
@@ -269,11 +256,8 @@ void MotionEngine::update(JointRequest& jointRequest)
   jointRequest.timestamp = theFrameInfo.time;
 
   // Construct odometry update for this frame.
-  if(theFallDownState.state == FallDownState::falling || theFallDownState.state == FallDownState::fallen)
-    odometryOffset.rotation = 0_deg; // Postpone rotation change until being upright again to avoid huge variances in the self locator.
-  else
-    odometryOffset.rotation = Angle::normalize(Rotation::Euler::getZAngle(theInertialData.orientation3D) - odometryData.rotation);
-  odometryData += odometryOffset;
+  odometryOffset.rotation = theOdometryDataPreview.odometryChange.rotation;
+  odometryData = theOdometryDataPreview;
 }
 
 void MotionEngine::calcArmJoints(Arms::Arm arm, bool setJoints, JointRequest& jointRequest)
@@ -311,9 +295,8 @@ void MotionEngine::calcArmJoints(Arms::Arm arm, bool setJoints, JointRequest& jo
 bool PlayDeadPhase::isDone(const MotionRequest& motionRequest) const
 {
   return motionRequest.motion != MotionRequest::playDead &&
-         (SystemCall::getMode() == SystemCall::simulatedRobot
-          || Global::getSettings().robotType == Settings::nao
-          || engine.theGameState.playerState == GameState::PlayerState::penalizedManual);
+         (SystemCall::getMode() != SystemCall::physicalRobot
+          || motionRequest.motion == MotionRequest::prepare);
 }
 
 void PlayDeadPhase::calcJoints(const MotionRequest&, JointRequest& jointRequest, Pose2f&, MotionInfo& motionInfo)
@@ -325,18 +308,10 @@ void PlayDeadPhase::calcJoints(const MotionRequest&, JointRequest& jointRequest,
 
 std::unique_ptr<MotionPhase> PlayDeadPhase::createNextPhase(const MotionPhase& defaultNextPhase) const
 {
-  if(!(std::abs(engine.theInertialData.angle.y()) < engine.uprightAngle.y() && std::abs(engine.theInertialData.angle.x()) < engine.uprightAngle.x()))
-  {
-    if(engine.theFrameInfo.getTimeSince(uprightWarningTimestamp) > engine.uprightWarningTime)
-      SystemCall::say("Please hold my upper! body! upright");
-    return std::make_unique<PlayDeadPhase>(*this, engine);
-  }
-
   if(defaultNextPhase.type == MotionPhase::stand)
     return std::unique_ptr<MotionPhase>();
   MotionRequest request = engine.theMotionRequest;
-  request.motion = MotionRequest::stand;
-  request.standHigh = false;
+  request.motion = SystemCall::getMode() == SystemCall::simulatedRobot ? MotionRequest::stand : MotionRequest::prepare;
   return engine.theStandGenerator.createPhase(request, *this);
 }
 

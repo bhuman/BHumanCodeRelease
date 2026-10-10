@@ -199,7 +199,7 @@ public:
   void motionUpdate(const Matrix4f& movingA, const Matrix4f& movingATransposed,
                     const Vector4f& movingOdometryTranslation, const Vector4f& squaredProcessCov,
                     const Vector4f& odometryTranslationCov, const Matrix4f& movingOdometryRotationDeviationRotation,
-                    float friction, float deltaTime)
+                    const BallSpecification& ballSpecs, float deltaTime)
   {
     // save old position
     lastPosition = x.topRows<2>();
@@ -221,7 +221,7 @@ public:
     // add friction
     Vector2f newPosition = x.topRows<2>();
     Vector2f newVelocity = x.bottomRows<2>();
-    BallPhysics::applyFrictionToPositionAndVelocity(newPosition, newVelocity, deltaTime, friction);
+    BallPhysics::applyFrictionToPositionAndVelocity(newPosition, newVelocity, deltaTime, ballSpecs);
     x << newPosition, newVelocity;
   }
 

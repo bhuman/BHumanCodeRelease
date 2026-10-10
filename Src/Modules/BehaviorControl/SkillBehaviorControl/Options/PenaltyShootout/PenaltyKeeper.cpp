@@ -1,5 +1,6 @@
 #include "SkillBehaviorControl.h"
 #include "Tools/BehaviorControl/Interception.h"
+#include "Tools/Modeling/BallPhysics.h"
 
 option((SkillBehaviorControl) PenaltyKeeper)
 {
@@ -22,9 +23,7 @@ option((SkillBehaviorControl) PenaltyKeeper)
     const float vectorLengthFactor = (ballPositionRel.x() - offsetToYAxis) / ballToIntersectPositionVector.x();
     ballToIntersectPositionVector *= vectorLengthFactor;
     const float s = ballToIntersectPositionVector.norm();
-    const float a = theBallSpecification.friction;
-    ASSERT(a < 0.f);
-    const float timeToIntersectYAxis = BallPhysics::timeForDistance(ballVelocityRel, s, a);
+    const float timeToIntersectYAxis = BallPhysics::timeForDistance(ballVelocityRel, s, theBallSpecification);
 
     return between<float>(timeToIntersectYAxis, 0.01f, 10.5f) && theFieldBall.ballWasSeen(500) && (theGameState.isPenaltyShootout() || theFieldBall.isRollingTowardsOwnGoal);
   };
@@ -39,8 +38,7 @@ option((SkillBehaviorControl) PenaltyKeeper)
     action
     {
       LookForward();
-      //Stand(); // TODO test if we want to take the risk of walking
-      Dive({.request = MotionRequest::Dive::prepare});
+      Stand();
     }
   }
 
@@ -53,11 +51,11 @@ option((SkillBehaviorControl) PenaltyKeeper)
     }
     action
     {
-      // Don't add other interception methods here until InterceptBall can handle them.
-      const unsigned interceptionMethods = bit(Interception::jumpLeft) | bit(Interception::jumpRight);// | bit(Interception::walk);
-      InterceptBall({.interceptionMethods = interceptionMethods,
-                     .allowGetUp = !theGameState.isPenaltyShootout(),
-                     .allowDive = theBehaviorParameters.keeperJumpingOn});
+      WalkToPoint({.target = {theBallModel.estimate.position.angle(), theFieldInterceptBall.interceptedEndPositionRelative},
+                   .rough = true,
+                   .disableObstacleAvoidance = true,
+                   .disableStanding = true,
+                   .disableAvoidFieldBorder = true});
     }
   }
 
@@ -65,11 +63,11 @@ option((SkillBehaviorControl) PenaltyKeeper)
   {
     action
     {
-      // Don't add other interception methods here until InterceptBall can handle them.
-      const unsigned interceptionMethods = bit(Interception::jumpLeft) | bit(Interception::jumpRight);// | bit(Interception::walk);
-      InterceptBall({.interceptionMethods = interceptionMethods,
-                     .allowGetUp = !theGameState.isPenaltyShootout(),
-                     .allowDive = theBehaviorParameters.keeperJumpingOn});
+      WalkToPoint({.target = {theBallModel.estimate.position.angle(), theFieldInterceptBall.interceptedEndPositionRelative},
+                   .rough = true,
+                   .disableObstacleAvoidance = true,
+                   .disableStanding = true,
+                   .disableAvoidFieldBorder = true});
     }
   }
 }

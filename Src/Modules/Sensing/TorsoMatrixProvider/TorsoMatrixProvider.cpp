@@ -24,8 +24,6 @@ void TorsoMatrixProvider::update(TorsoMatrix& torsoMatrix)
   torsoMatrix.translation << 0.5f * (fromLeftFoot.head<2>() + fromRightFoot.head<2>()), std::max(fromLeftFoot.z(), fromRightFoot.z());
   torsoMatrix.rotation = torsoRotation;
 
-  torsoMatrix.covariance << Matrix3f::Zero(), Matrix3f::Zero(), Matrix3f::Zero(), theInertialData.orientation3DCov;
-
   // valid?
-  torsoMatrix.isValid = theGroundContactState.contact;
+  torsoMatrix.isValid = true;
 }

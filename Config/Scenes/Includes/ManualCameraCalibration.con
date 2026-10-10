@@ -1,0 +1,23 @@
+for Color mr CustomCalibrationLines CustomCalibrationLinesProvider
+
+echo While the robot is waiting for the user's input:
+echo Ctrl to select the first point of a line, Shift to select the second point.
+echo Ctrl + Shift + I to create a line of type closeGoalAreaConnectingLine
+echo Ctrl + Shift + J to create a line of type innerGoalAreaParallelLine
+echo Ctrl + Shift + K to create a line of type goalLineGoalAreaParallelLine
+echo Ctrl + Shift + L to create a line of type farGoalAreaConnectingLine
+echo Ctrl + Shift + V to start sampling
+vid all representation:FieldLines:image off
+dr module:GameStateProvider:calibration
+
+vid color module:CustomCalibrationLinesProvider
+
+vic all ctrl set module:CustomCalibrationLinesProvider:pointA x = $1; y = $2;
+vic all shift set module:CustomCalibrationLinesProvider:pointB x = $1; y = $2;
+
+# Ctrl + Shift + (I | J | K | L)
+kc press I set module:CustomCalibrationLinesProvider:lineType closeGoalAreaConnectingLine \n dr module:CustomCalibrationLinesProvider:submitLine
+kc press J set module:CustomCalibrationLinesProvider:lineType innerGoalAreaParallelLine \n dr module:CustomCalibrationLinesProvider:submitLine
+kc press K set module:CustomCalibrationLinesProvider:lineType goalLineGoalAreaParallelLine \n dr module:CustomCalibrationLinesProvider:submitLine
+kc press L set module:CustomCalibrationLinesProvider:lineType farGoalAreaConnectingLine \n dr module:CustomCalibrationLinesProvider:submitLine
+kc press V dr option:ManualCameraCalibration:prepareRecording

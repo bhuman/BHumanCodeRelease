@@ -3,7 +3,7 @@
  *
  * Implements methods for coordinate system transformations.
  *
- * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ * @author Tim Laue
  */
 
 #include "Transformation.h"

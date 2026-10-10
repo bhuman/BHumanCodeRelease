@@ -1,13 +1,13 @@
 #include "Obstacle.h"
 #include "Math/Probabilistics.h"
 
-Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
+Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right,
                    unsigned int lastSeen, Type type) :
-  covariance(covariance), center(center), left(left), right(right), velocity(velocity), lastSeen(lastSeen), type(type)
+  covariance(covariance), center(center), left(left), right(right), lastSeen(lastSeen), type(type)
 {}
 
 Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, float radius, unsigned int lastSeen, Type type) :
-  covariance(covariance), center(center), velocity(Vector2f::Zero()), lastSeen(lastSeen), type(type)
+  covariance(covariance), center(center), lastSeen(lastSeen), type(type)
 {
   left = right = center.normalized(radius);
   left.rotateLeft();

@@ -28,13 +28,9 @@ class SettingsArea : public QWidget
   Presets& presets; /**< The presets for the different teams. */
   RobotsTable* table; /**< The table with information about the state of the robots. */
   int presetIndex; /**< The index of the selected preset. */
-  enum Mode {robots, image, logs} mode = robots; /**< The deployment mode. */
+  enum Mode {robots, logs} mode = robots; /**< The deployment mode. */
   bool restart; /**< Restart bhuman after deploying? */
   bool deleteLogs; /**< Delete internal logs while deploying? */
-  int playerNumber; /**< Default player number for image. */
-  bool reboot; /**< Reboot after flashing image? */
-  bool usbCheck; /**< Check for USB drive before starting. */
-  bool date; /**< Add date to name of image file. */
   enum LogsMode {download, downloadAndDelete, justDelete} logsMode; /**< The mode for downloading logs. */
   bool close; /**< Close dialog after action. */
   std::map<std::string, int> teams; /**< All team names with their team number. */
@@ -58,12 +54,6 @@ class SettingsArea : public QWidget
    * @return The tab.
    */
   QWidget* createRobotsTab();
-
-  /**
-   * Create a tab for deploying to an image.
-   * @return The tab.
-   */
-  QWidget* createImageTab();
 
   /**
    * Create a tab for handling logs.

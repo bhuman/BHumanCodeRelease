@@ -14,6 +14,8 @@
 class FreeKickWall : public ActiveRole
 {
   const float normalizeValue = 1300.f; // threshold for normalize the old Vector
+  const float margin = 550.f;
+  const float normalizeGoalKickValue = 3200.f; // threshold for normalize the old Vector during goal kicks
   const float maxXValue = 500.f; // threshold for x Value on orthogonal line between penalty mark and ball
   const float maxYValue = 300.f; // threshold for y Value on orthogonal line between penalty mark and ball
   Vector2f currentTarget = Vector2f::Zero(); // current Target

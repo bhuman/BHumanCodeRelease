@@ -162,6 +162,15 @@ void SystemCall::mute(bool isMuted)
 
 int SystemCall::playSound(const char* name, bool force)
 {
+  {
+    const File file(std::string("Sounds/") + name, "rb");
+    if(!file.exists())
+    {
+      const std::string text(name);
+      const std::string::size_type p = text.find_last_of(".");
+      return say(text.substr(0, p).c_str(), force);
+    }
+  }
 #ifdef LINUX
   return SoundPlayer::play(name, isMuted && !force);
 #else

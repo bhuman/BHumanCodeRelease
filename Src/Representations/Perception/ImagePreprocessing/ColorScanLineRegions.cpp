@@ -1,23 +1,6 @@
 #include "ColorScanLineRegions.h"
 #include "Debugging/DebugDrawings.h"
 
-void ColorScanLineRegionsVertical::draw() const
-{
-  DEBUG_DRAWING("representation:ColorScanLineRegionsVertical:image", "drawingOnImage")
-  {
-    for(const ScanLine& line : scanLines)
-    {
-      for(const ScanLineRegion& r : line.regions)
-      {
-        // three pixel wide line out of three single pixel lines, to prevent line width to go over the end of the region range
-        LINE("representation:ColorScanLineRegionsVertical:image", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-        LINE("representation:ColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-        LINE("representation:ColorScanLineRegionsVertical:image", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-      }
-    }
-  }
-}
-
 void ColorScanLineRegionsVerticalClipped::draw() const
 {
   DEBUG_DRAWING("representation:ColorScanLineRegionsVerticalClipped:image", "drawingOnImage")
@@ -43,22 +26,6 @@ void ColorScanLineRegionsVerticalClipped::draw() const
         LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
         LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
         LINE("representation:ColorScanLineRegionsVerticalClipped:lowRes", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-      }
-    }
-  }
-}
-
-void CompressedColorScanLineRegionsVertical::draw() const
-{
-  DEBUG_DRAWING("representation:CompressedColorScanLineRegionsVertical:image", "drawingOnImage")
-  {
-    for(const ScanLine& line : scanLines)
-    {
-      for(const ScanLineRegion& r : line.regions)
-      {
-        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x - 1, r.range.from, line.x - 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
-        LINE("representation:CompressedColorScanLineRegionsVertical:image", line.x + 1, r.range.from, line.x + 1, r.range.to - 1, 1, Drawings::solidPen, r.getDrawColor());
       }
     }
   }

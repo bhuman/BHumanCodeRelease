@@ -1,7 +1,7 @@
 /**
  * @file BHumanMessageParticle.h
  *
- * @author <A href="mailto:jesse@tzi.de">Jesse Richter-Klug</A>
+ * @author Jesse Richter-Klug
  */
 
 #pragma once

@@ -12,6 +12,13 @@
 #include "Math/Geometry.h"
 #include "Math/Random.h"
 
+RatingRole::RatingRole()
+{
+  InMapFile stream("roleRatingRole.cfg");
+  ASSERT(stream.exists());
+  stream >> p;
+}
+
 void RatingRole::preProcess()
 {
   DECLARE_DEBUG_DRAWING("behavior:RatingRole:position", "drawingOnField");
@@ -48,7 +55,7 @@ Pose2f RatingRole::position(Side, const Pose2f& basePose, const std::vector<Vect
 
   gradientAscent(pos, p.numIterations);
 
-  const Angle rotation = KickSelection::calculateTargetRotation(ball, pos, opponentGoal);
+  const Angle rotation = (ball - theRobotPose.translation).angle();
   positionBuffer.push_front(pos);
   Vector2f usePos = pos;
   if(positionBuffer.full())
@@ -72,8 +79,7 @@ bool RatingRole::shouldStart(const Pose2f& target) const
       (std::abs(target.translation.x() - theRobotPose.translation.x()) > p.startTranslationThreshold ||
        std::abs(target.translation.y() - theRobotPose.translation.y()) > p.startTranslationThreshold)) ||
      // rotation diff
-     std::abs(Angle::normalize(theRobotPose.rotation - KickSelection::calculateTargetRotation(ball, theRobotPose.translation, opponentGoal))) > p.startAngle ||
-     std::abs(Angle::normalize(theRobotPose.rotation - (ball - theRobotPose.translation).angle())) > p.maxAngleToBall ||
+     std::abs(Angle::normalize(theRobotPose.rotation - target.rotation)) > p.startAngle ||
      // outside cell
      !Geometry::isPointInsideConvexPolygon(region.data(), static_cast<int>(region.size()), theRobotPose.translation))
     return true;
@@ -96,8 +102,7 @@ bool RatingRole::shouldStop(const Pose2f& target) const
       (std::abs(target.translation.x() - theRobotPose.translation.x()) < p.stopTranslationThreshold &&
        std::abs(target.translation.y() - theRobotPose.translation.y()) < p.stopTranslationThreshold)) &&
      // rotation diff
-     std::abs(Angle::normalize(theRobotPose.rotation - KickSelection::calculateTargetRotation(ball, theRobotPose.translation, opponentGoal))) < p.stopAngle &&
-     std::abs(Angle::normalize(theRobotPose.rotation - (ball - theRobotPose.translation).angle())) < p.maxAngleToBall &&
+     std::abs(Angle::normalize(theRobotPose.rotation - target.rotation)) < p.stopAngle &&
      // inside cell
      Geometry::isPointInsideConvexPolygon(region.data(), static_cast<int>(region.size()), theRobotPose.translation))
     return true;

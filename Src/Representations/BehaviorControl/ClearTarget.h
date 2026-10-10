@@ -16,9 +16,13 @@
 
 STREAMABLE(ClearTarget,
 {
-  FUNCTION(Vector2f()) getTarget; /**< Returns the dribbleTarget */
-  FUNCTION(void()) reset; /**< resets some variables */
-  FUNCTION(Angle()) getAngle; /**< Returns the dribbleAngle */
-  FUNCTION(KickInfo::KickType()) getKickType; /**< Returns the best kickType */
-  FUNCTION(float()) getRating, /**< Returns the xG-values times fieldFactor */
+  FUNCTION(void()) update; /**< Update clear target */
+  FUNCTION(void()) reset, /**< resets some variables */
+
+  (float)(20000.f) kickLength, /**< Kick length of last kick. */
+  (Angle)(0_deg) kickAngle, /**< Kick angle in global coordinates. */
+  (Vector2f)(Vector2f::Zero()) kickTarget,
+  (KickInfo::KickType)(KickInfo::numOfKickTypes) kickType, /**< The kick type. */
+  (float)(-1.f) rating,  /**< The xG-values times fieldFactor */
+  (bool)(false) isValid, /**< False if not updated this frame. */
 });

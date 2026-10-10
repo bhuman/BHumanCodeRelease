@@ -3,7 +3,7 @@
  *
  * Declaration of struct BallModel
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  */
 
 #pragma once
@@ -43,8 +43,6 @@ STREAMABLE(BallModel, COMMA public BHumanCompressedMessageParticle<BallModel>
   (unsigned)(0) timeWhenDisappeared, /**< The time when the ball was not seen in the image although it should have been there */
   (unsigned)(0) timeOfLastCollision, /**< The last point of time when the ball model computation incorporated a collision between the ball and the robot */
   (unsigned char)(0) seenPercentage, /**< How often was the ball seen in the recent past (0%...100%). */
-  (BallState) riskyMovingEstimate, /**< Do not use this, unless you are REALLY knowing what you are doing. If the normal estimate contains a stationary ball, this element might contain the most likely hypothesis for a rolling ball. Do not use this, unless you are REALLY knowing what you are doing. Do not ... */
-  (bool)(false) riskyMovingEstimateIsValid, /**< If set to true, riskyMovingEstimate contains some data. */
 });
 
 /**

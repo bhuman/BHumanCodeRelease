@@ -7,7 +7,7 @@ if [ "$(uname)" == "Darwin" ]; then
 else
   noOverwrite=-u
 fi
-keyFile=/tmp/id_rsa_nao
-cp $noOverwrite "$(dirname "${BASH_SOURCE[0]}")"/../../Install/Keys/id_rsa_nao $keyFile || true
+keyFile=/tmp/id_rsa_b-human
+cp $noOverwrite "$(dirname "${BASH_SOURCE[0]}")"/../../Install/Keys/id_rsa_b-human $keyFile || true
 chmod 600 $keyFile
 SSHOPTIONS="-c aes128-ctr -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"

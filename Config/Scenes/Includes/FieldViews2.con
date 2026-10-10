@@ -1,3 +1,16 @@
-call FieldViews3
-vfd worldState representation:ObstaclesFieldPercept:field
+# views relative to robot
+# from now, relative to estimated robot pose
+vfd worldState cognition:RobotPose
+vfd worldState representation:BallModel
+vfd worldState representation:MotionRequest
+vfd worldState representation:FieldBall:relative
+vfd worldState cognition:Reset
+
+vfd worldState perception:RobotPose
+vfd worldState representation:BallPercept:field
+vfd worldState representation:FieldLines:field
+vfd worldState representation:PenaltyMarkPercept:field
+vfd worldState representation:CenterCircleWithLine:field
+vfd worldState representation:FieldBoundary:field
+vfd worldState representation:RobotPercept:field
 vfd worldState perception:Reset

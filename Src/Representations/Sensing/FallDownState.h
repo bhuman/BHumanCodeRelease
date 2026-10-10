@@ -3,7 +3,7 @@
  *
  * Declaration of struct FallDownState
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  */
 
 #pragma once

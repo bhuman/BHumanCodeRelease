@@ -2,7 +2,7 @@
 
 option((SkillBehaviorControl) HandleIllegalAreas)
 {
-  const Angle margin = 30_deg;
+  const Angle margin = 15_deg;
   const int durationUntilAnticipatedIllegal = (theGameState.timeWhenStateEnds - theGameState.timeWhenStateStarted) / 2;
 
   auto approximateWalkTarget = [&]
@@ -64,10 +64,10 @@ option((SkillBehaviorControl) HandleIllegalAreas)
   {
     transition
     {
-      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 150.f, durationUntilAnticipatedIllegal))
+      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, theBehaviorParameters.illegalAreasSmallDistance, durationUntilAnticipatedIllegal))
         goto illegal;
-      else if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal) &&
-              theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), 150.f, durationUntilAnticipatedIllegal))
+      else if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, theBehaviorParameters.illegalAreasLargeDistance, durationUntilAnticipatedIllegal) &&
+              theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), theBehaviorParameters.illegalAreasSmallDistance, durationUntilAnticipatedIllegal))
         goto waiting;
     }
   }
@@ -76,9 +76,9 @@ option((SkillBehaviorControl) HandleIllegalAreas)
   {
     transition
     {
-      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal))
+      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, theBehaviorParameters.illegalAreasLargeDistance, durationUntilAnticipatedIllegal))
       {
-        if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), 300.f, durationUntilAnticipatedIllegal))
+        if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), theBehaviorParameters.illegalAreasLargeDistance, durationUntilAnticipatedIllegal))
           goto notIllegal;
         goto waiting;
       }
@@ -111,10 +111,10 @@ option((SkillBehaviorControl) HandleIllegalAreas)
   {
     transition
     {
-      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 300.f, durationUntilAnticipatedIllegal) &&
-         !theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), 300.f, durationUntilAnticipatedIllegal))
+      if(!theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, theBehaviorParameters.illegalAreasLargeDistance, durationUntilAnticipatedIllegal) &&
+         !theIllegalAreas.willPositionBeIllegalIn(theRobotPose * approximateWalkTarget(), theBehaviorParameters.illegalAreasLargeDistance, durationUntilAnticipatedIllegal))
         goto notIllegal;
-      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, 150.f, durationUntilAnticipatedIllegal))
+      if(theIllegalAreas.willPositionBeIllegalIn(theRobotPose.translation, theBehaviorParameters.illegalAreasSmallDistance, durationUntilAnticipatedIllegal))
         goto illegal;
     }
 
@@ -131,7 +131,7 @@ option((SkillBehaviorControl) HandleIllegalAreas)
       if(Rangea(-margin, margin).isInside(targetRelative.angle()))
         Stand();
       else
-        TurnToPoint({.target = targetRelative});
+        WalkToPoint({.target = {targetRelative.angle(), 0.f, 0.f}, .reduceWalkSpeedType = ReduceWalkSpeedType::slow});
     }
   }
 }

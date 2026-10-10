@@ -7,14 +7,12 @@
 #pragma once
 
 #include "Framework/Module.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 
 MODULE(TorsoMatrixProvider,
 {,
-  REQUIRES(GroundContactState),
   REQUIRES(InertialData),
   REQUIRES(RobotModel),
   PROVIDES(TorsoMatrix),

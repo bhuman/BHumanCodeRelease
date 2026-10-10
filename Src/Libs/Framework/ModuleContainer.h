@@ -30,8 +30,12 @@ struct Settings;
  */
 class ModuleContainer : public ThreadFrame
 {
+public:
+  using MessageHandler = std::function<bool(MessageQueue::Message message)>; /**< The type of a message handler. */
+  using MessageHandlerHandle = std::list<MessageHandler>::const_iterator; /**< Identifies a registered message handler. */
+
 private:
-  static thread_local std::list<std::function<bool(MessageQueue::Message message)>> messageHandlers; /**< A list of all MessageHandlers of this thread. */
+  static thread_local std::list<MessageHandler> messageHandlers; /**< A list of all MessageHandlers of this thread. */
 
   // Lists, since Sender.receiver would become invalid when resizing a vector.
   std::list<Receiver<ModulePacket>> receivers; /**< The list of all receivers of this thread. */
@@ -79,13 +83,24 @@ public:
   void connectWithDebug(Debug* debug, const Configuration::Thread& config);
 
   /**
-   * The function adds a MessageQueue::Handler for this thread.
+   * The function adds a \c MessageHandler for this thread.
    *
    * @param messageHandler The message handler.
+   * @return A handle to pass to \c removeMessageHandler.
    */
-  static void addMessageHandler(const std::function<bool(MessageQueue::Message message)>& messageHandler)
+  [[nodiscard]] static MessageHandlerHandle addMessageHandler(const MessageHandler& messageHandler)
   {
-    messageHandlers.emplace_back(messageHandler);
+    return messageHandlers.insert(messageHandlers.end(), messageHandler);
+  }
+
+  /**
+   * The function removes a \c MessageHandler from this thread.
+   *
+   * @param handle The handle returned by \c addMessageHandler when the handler was added.
+   */
+  static void removeMessageHandler(MessageHandlerHandle handle)
+  {
+    messageHandlers.erase(handle);
   }
 
 protected:

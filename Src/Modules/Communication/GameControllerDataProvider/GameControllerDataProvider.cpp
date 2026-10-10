@@ -64,13 +64,13 @@ bool GameControllerDataProvider::sendReturnPacket()
   RoboCup::RoboCupGameControlReturnData returnPacket;
   returnPacket.playerNum = static_cast<std::uint8_t>(Global::getSettings().playerNumber);
   returnPacket.teamNum = static_cast<std::uint8_t>(Global::getSettings().teamNumber);
-  returnPacket.fallen = !(theGroundContactState.contact && theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall) ||
+  returnPacket.fallen = !(theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall) ||
                         !(theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting) ?
                         1 : 0;
   returnPacket.pose[0] = theRobotPose.translation.x();
   returnPacket.pose[1] = theRobotPose.translation.y();
   returnPacket.pose[2] = theRobotPose.rotation;
-  returnPacket.ballAge = theBallModel.timeWhenLastSeen ? static_cast<float>(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen)) / 1000.f : -1.f;;
+  returnPacket.ballAge = theBallModel.timeWhenLastSeen ? static_cast<float>(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen)) / 1000.f : -1.f;
   returnPacket.ball[0] = theBallModel.estimate.position.x();
   returnPacket.ball[1] = theBallModel.estimate.position.y();
   return socket.write(reinterpret_cast<char*>(&returnPacket), sizeof(returnPacket));

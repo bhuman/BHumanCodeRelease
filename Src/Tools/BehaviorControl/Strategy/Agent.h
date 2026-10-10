@@ -33,6 +33,7 @@ STREAMABLE(Agent,
   (Vector2f)(Vector2f::Zero()) ballVelocity, /**< The estimated ball velocity of this agent. */
   (unsigned)(0) timeWhenBallLastSeen, /**< The most recent timestamp when this agent saw the ball. */
   (unsigned)(0) timeWhenBallDisappeared, /**< The most recent timestamp when the ball disappeared. */
+  (unsigned)(0) timeSinceDisagreeOnBall, /**< The time since disagree on ball started. */
   (bool)(false) disagreeOnBall, /**< Whether this agent disagrees with the local ball model (at the time when its last message was sent). */
 
   (bool)(false) isUpright, /**< Whether this agent is upright. */
@@ -46,7 +47,7 @@ STREAMABLE(Agent,
   (SetPlay::Type)(SetPlay::none) acceptedSetPlay, /**< The set play that this agent actually uses. */
   (int)(-1) setPlayStep, /**< The current step within the set play. */
   (Tactic::Position::Type)(Tactic::Position::none) position, /**< The position of this agent in the tactic. */
-  (Pose2f) basePose, /**< The pose from the tactic position. */
+  (Vector2f) baseTranslation, /**< The pose from the tactic position. */
   (std::vector<Vector2f>) baseArea, /**< The region in the Voronoi diagram of the base poses in the tactic. */
   (Role::Type)(Role::none) role, /**< The role of this agent. */
   (Role::Type)(Role::none) nextRole, /**< The role of this agent in the next step (because the old role is still needed during its computation). */

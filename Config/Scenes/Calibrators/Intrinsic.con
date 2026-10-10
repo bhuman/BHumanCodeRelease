@@ -2,10 +2,6 @@ dr off
 dr representation:JPEGImage
 dr representation:CameraInfo
 
-set representation:FilteredCurrent currents = { headYaw = 1; headPitch = 1; waistYaw = 0; lShoulderPitch = 1; lShoulderRoll = 1; lElbowYaw = 1; lElbowRoll = 1; lWristYaw = 1; lHand = 1; rShoulderPitch = 1; rShoulderRoll = 1; rElbowYaw = 1; rElbowRoll = 1; rWristYaw = 1; rHand = 1; lHipYawPitch = 1; lHipRoll = 1; lHipPitch = 1; lKneePitch = 1; lAnklePitch = 1; lAnkleRoll = 1; rHipYawPitch = 1; rHipRoll = 1; rHipPitch = 1; rKneePitch = 1; rAnklePitch = 1; rAnkleRoll = 1; }; legJointWithHighestCurrent = headYaw; isValid = false; legMotorMalfunction = false;
-
-set representation:CameraResolutionRequest resolutions = { upper = w1280h960; lower = w1280h960; };
-
 echo
 echo log start
 echo log stop

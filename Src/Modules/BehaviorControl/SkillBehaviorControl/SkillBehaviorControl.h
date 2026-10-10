@@ -10,54 +10,51 @@
 
 #include "Math/Random.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
+#include "Representations/BehaviorControl/BehaviorStateInformation.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/BehaviorControl/Challenge/RollingBallState.h"
 #include "Representations/BehaviorControl/ClearTarget.h"
 #include "Representations/BehaviorControl/DribbleTarget.h"
 #include "Representations/BehaviorControl/ExpectedGoals.h"
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/FieldInterceptBall.h"
+#include "Representations/BehaviorControl/InterceptBallInformation.h"
 #include "Representations/BehaviorControl/FieldRating.h"
-#include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
-#include "Representations/BehaviorControl/Leaderboards/BestKickState.h"
-#include "Representations/BehaviorControl/Leaderboards/FastestWalkState.h"
+#include "Representations/BehaviorControl/IllegalAreas.h"
+#include "Representations/BehaviorControl/KickAtGoalEvaluation.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/BehaviorControl/Libraries/LibLookActive.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/Libraries/LibWalk.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
 #include "Representations/BehaviorControl/PassEvaluation.h"
+#include "Representations/BehaviorControl/PassTargetEvaluation.h"
 #include "Representations/BehaviorControl/SkillRequest.h"
 #include "Representations/BehaviorControl/StrategyStatus.h"
-#include "Representations/Communication/SentTeamMessage.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/CameraCalibrationStatus.h"
-#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/HeadLimits.h"
-#include "Representations/Configuration/IMUCalibration.h"
 #include "Representations/Configuration/KickInfo.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JoystickState.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/EmergencyButtonState.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/Modeling/BallLostModel.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Modeling/GlobalTeammatesModel.h"
+#include "Representations/Modeling/GlobalOpponentsModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/RefereeSignal.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/ArmMotionInfo.h"
@@ -67,13 +64,10 @@
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
-#include "Representations/Perception/RefereeGestures/RefereeDetectionRequest.h"
+#include "Representations/Perception/ObstaclePercepts/RobotPercept.h"
 #include "Representations/Sensing/ArmContactModel.h"
-#include "Representations/Sensing/BallHoldingState.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/FootBumperState.h"
-#include "Representations/Sensing/IMUValueState.h"
+#include "Representations/Sensing/InertialData.h"
 #include "Tools/BehaviorControl/HeadOrientation.h"
 #include "Tools/BehaviorControl/Strategy/PositionRole.h"
 #include "Tools/Motion/ReduceWalkSpeedType.h"
@@ -94,79 +88,75 @@ MODULE(SkillBehaviorControl,
 {,
   REQUIRES(ArmContactModel),
   REQUIRES(ArmMotionInfo),
-  REQUIRES(BallHoldingState),
   REQUIRES(BallLostModel),
   REQUIRES(BallModel),
   REQUIRES(BallSpecification),
   REQUIRES(BehaviorParameters),
-  REQUIRES(BestKickState),
-  USES(CameraCalibration),
-  USES(CameraCalibrationStatus),
+  REQUIRES(CameraCalibration),
+  REQUIRES(CameraCalibrationStatus),
   REQUIRES(CameraInfo),
-  REQUIRES(CameraStatus),
   REQUIRES(ClearTarget),
-  REQUIRES(DamageConfigurationBody),
   REQUIRES(DribbleTarget),
+  REQUIRES(EmergencyButtonState),
   REQUIRES(EnhancedKeyStates),
   REQUIRES(ExpectedGoals),
   REQUIRES(ExtendedGameState),
   REQUIRES(FallDownState),
-  REQUIRES(FastestWalkState),
   REQUIRES(FieldBall),
   REQUIRES(FieldInterceptBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldRating),
-  REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
   REQUIRES(GameState),
-  REQUIRES(GlobalOpponentsModel),
   REQUIRES(GlobalTeammatesModel),
-  REQUIRES(IMUValueState),
+  REQUIRES(GlobalOpponentsModel),
   REQUIRES(HeadLimits),
   REQUIRES(HeadMotionInfo),
   REQUIRES(IllegalAreas),
-  USES(IMUCalibration),
   REQUIRES(IndirectKick),
+  REQUIRES(InertialData),
+  REQUIRES(InterceptBallInformation),
   REQUIRES(JointAngles),
-  REQUIRES(JointSensorData),
-  REQUIRES(KickInfo),
+  REQUIRES(JoystickState),
   REQUIRES(KeyStates),
+  REQUIRES(KickAtGoalEvaluation),
+  REQUIRES(KickInfo),
   REQUIRES(LibCheck),
-  REQUIRES(LibDemo),
   REQUIRES(LibLookActive),
   REQUIRES(LibPosition),
   REQUIRES(LibWalk),
   REQUIRES(MotionInfo),
-  REQUIRES(ObstaclesFieldPercept),
+  REQUIRES(RobotPercept),
   REQUIRES(ObstacleModel),
   REQUIRES(OdometryData),
   REQUIRES(PassEvaluation),
+  REQUIRES(PassTargetEvaluation),
   REQUIRES(PathPlanner),
-  REQUIRES(RefereeSignal),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotHealth),
   REQUIRES(RobotPose),
-  REQUIRES(RollingBallState),
-  REQUIRES(SentTeamMessage),
   REQUIRES(SkillRequest),
   REQUIRES(StrategyStatus),
+  REQUIRES(SystemSensorData),
   REQUIRES(TeamData),
   REQUIRES(TeamBallModel),
   REQUIRES(WalkingEngineOutput),
   PROVIDES(ActivationGraph),
   REQUIRES(ActivationGraph),
   PROVIDES(ArmMotionRequest),
+  PROVIDES(BehaviorStateInformation),
   PROVIDES(BehaviorStatus),
   PROVIDES(CalibrationRequest),
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
-  PROVIDES(RefereeDetectionRequest),
   LOADS_PARAMETERS(
   {,
-    (std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options,
-    (std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) playingOptions,
+    (cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option) root, /**< The root option. */
     (int) continueReceivePassTime, /**< If the teammate no longer communicates a pass, continue receive pass for this time. */
     (int) ignoreReceivePassAfterTime, /**< If the communicated pass is too old, ignore it. */
+    (Pose2f) maxWalkSpeedAtFieldBorder, /**< Max walk speed outside of the field. */
+    (float) outSideFieldBorderRange, /**< Scale down walk speed over this distance outside the field. */
+    (float) fieldBorderOffset, /**< Offset to field border to start scaling down speed. */
   }),
 });
 
@@ -188,6 +178,15 @@ private:
    * @param armMotionRequest The provided arm motion request.
    */
   void update(ArmMotionRequest& armMotionRequest) override { armMotionRequest = theArmMotionRequest; }
+
+  /**
+   * Updates the behavior state information.
+   * @param behaviorStateInformation The provided behavior state information.
+   */
+  void update(BehaviorStateInformation& behaviorStateInformation) override
+  {
+    behaviorStateInformation = theBehaviorStateInformation;
+  };
 
   /**
    * Updates the behavior status.
@@ -213,12 +212,6 @@ private:
    */
   void update(MotionRequest& motionRequest) override { motionRequest = theMotionRequest; }
 
-  /**
-   * Updates the optional image request.
-   * @param refereeDetectionRequest The provided optional image request.
-   */
-  void update(RefereeDetectionRequest& refereeDetectionRequest) override { refereeDetectionRequest = theRefereeDetectionRequest; }
-
   unsigned lastReceivePassRequestTimestamp = 0;
   int receivePassPlayerNumber = -1;
   bool isSlowingDownLookActive = false;
@@ -227,14 +220,18 @@ protected:
   /** Executes the skill request. */
   void executeRequest();
 
+  /**< Clips walk speed near field border. */
+  void handleWalkSpeedAtFieldBorder();
+
   unsigned timeWhenAnnouncedEmptySkillRequest = 0; /**< The last time when the robot said that its skill request is empty. */
+  unsigned lastBallOutOfFieldWaitTimestamp = 0; /**< The last time HandleBallOutOfField was active. */
 
   ArmMotionRequest theArmMotionRequest; /**< The arm motion request that is modified by the behavior. */
+  BehaviorStateInformation theBehaviorStateInformation; /**< Information about the state transitions of the behavior. */
   BehaviorStatus theBehaviorStatus; /**< The behavior status that is modified by the behavior. */
   CalibrationRequest theCalibrationRequest; /**< The camera calibration request that is modified by the behavior. */
   HeadMotionRequest theHeadMotionRequest; /**< The head motion request that is modified by the behavior. */
   MotionRequest theMotionRequest; /**< The motion request that is modified by the behavior. */
-  RefereeDetectionRequest theRefereeDetectionRequest; /**< The request that decides whether an optional image should be sent or not */
 
 #include "Options/Options.h"
 #include "Skills/Arms/Arms.h"

@@ -19,7 +19,7 @@
 #include "Streaming/Global.h"
 #include "Streaming/Output.h"
 
-thread_local std::list<std::function<bool(MessageQueue::Message message)>> ModuleContainer::messageHandlers;
+thread_local std::list<ModuleContainer::MessageHandler> ModuleContainer::messageHandlers;
 
 ModuleContainer::ModuleContainer(const Settings& settings, const std::string& robotName, const Configuration& config, const std::size_t index, Logger* logger) :
   ThreadFrame(settings, robotName),
@@ -201,11 +201,11 @@ bool ModuleContainer::handleMessage(MessageQueue::Message message)
       return true;
     }
     case idDebugRequest:
-      if(SystemCall::getMode() == SystemCall::logFileReplay || SystemCall::getMode() == SystemCall::remoteRobot)
+      if(SystemCall::getMode() == SystemCall::logFileReplay)
         debugRequestWaiting = true;
       [[fallthrough]];
     default:
-      for(const std::function<bool(MessageQueue::Message message)>& messageHandler : messageHandlers)
+      for(const MessageHandler& messageHandler : messageHandlers)
         if(messageHandler(message))
           return true;
       return ThreadFrame::handleMessage(message);

@@ -6,7 +6,6 @@
 #include "Platform/BHAssert.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 #include "Framework/Blackboard.h"
@@ -22,7 +21,7 @@ void FieldBoundary::draw() const
       Vector2i prev(0, getBoundaryY(0));
       for(const Vector2i& point : boundaryInImage)
       {
-        DOT("representation:FieldBoundary:image", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
+        DOT("representation:FieldBoundary:image", point.x(), point.y(), 1, ColorRGBA::orange, ColorRGBA::orange);
         LINE("representation:FieldBoundary:image", prev.x(), prev.y(), point.x(), point.y(), 1, Drawings::solidPen, ColorRGBA::orange);
         prev = point;
       }
@@ -32,15 +31,13 @@ void FieldBoundary::draw() const
 
   DEBUG_DRAWING("representation:FieldBoundary:field", "drawingOnField")
     if(isValid && Blackboard::getInstance().exists("CameraInfo")
-       && Blackboard::getInstance().exists("CameraMatrix")
-       && Blackboard::getInstance().exists("ImageCoordinateSystem"))
+       && Blackboard::getInstance().exists("CameraMatrix"))
     {
       const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
       const CameraMatrix& cameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
-      const ImageCoordinateSystem& imageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
       Vector2f prev, last;
-      if(Transformation::imageToRobot(imageCoordinateSystem.toCorrected(Vector2i(0, getBoundaryY(0))), cameraMatrix, cameraInfo, prev)
-         && Transformation::imageToRobot(imageCoordinateSystem.toCorrected(Vector2i(cameraInfo.width, getBoundaryY(cameraInfo.width))), cameraMatrix, cameraInfo, last))
+      if(Transformation::imageToRobot(Vector2i(0, getBoundaryY(0)), cameraMatrix, cameraInfo, prev)
+         && Transformation::imageToRobot(Vector2i(cameraInfo.width, getBoundaryY(cameraInfo.width)), cameraMatrix, cameraInfo, last))
       {
         for(const Vector2f& point : boundaryOnField)
         {

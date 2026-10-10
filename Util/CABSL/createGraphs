@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
   case $1 in
     "-a")
       shift
-      data=`cat $1`
+      data="$(cat $1)"
       ;;
     "-m")
       shift
@@ -51,7 +51,7 @@ while [ $# -gt 0 ]; do
       ;;
     "-p")
       format=pdf
-      urlPath=file://.`pwd`/
+      urlPath=file://."$(pwd)"/
       ;;
     -*)
       echo >&2 "error: unknown option '$1'"
@@ -65,7 +65,7 @@ while [ $# -gt 0 ]; do
 done
 
 # Check arguments
-dotAvailable=`which "$dot" || true`
+dotAvailable="$(which "$dot" || true)"
 if [ "$#" == 0 ]; then
   usage
   exit 1
@@ -79,20 +79,20 @@ fi
 
 # Collect the relevant information from the options
 if [ -z "$cpp" ]; then
-  base=`dirname "$1"`
-  fileList=`grep "#include[ 	][ 	]*\"" <"$1" | sed "s%^[ 	]*#include[ 	]*\"\([^\"]*\)\".*$%$base/\1%"`
-  files=`while read file; do
+  base="$(dirname "$1")"
+  fileList="$(grep "#include[ 	][ 	]*\"" <"$1" | sed "s%^[ 	]*#include[ 	]*\"\([^\"]*\)\".*$%$base/\1%")"
+  files="$(while read file; do
     if [ -e "$file" ]; then
       echo "$file"
     fi
-  done <<<"$fileList"`
+  done <<<"$fileList")"
 else
-  files=`for file in "$@"; do
+  files="$(for file in "$@"; do
     echo "$file"
-  done`
+  done)"
 fi
-options=`grep -h "^[ 	]*option[ 	]*(" $files | sed -E "s%^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[ 	]*)?([A-Za-z_][A-Za-z0-9_]*).*$%\2%" | tr '\n' '|' | sed "s%|$%%"`
-lines=`cat <<<"$data" ; cat $files \
+options="$(grep -h "^[ 	]*option[ 	]*(" $files | sed -E "s%^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[ 	]*)?([A-Za-z_][A-Za-z0-9_]*).*$%\2%" | tr '\n' '|' | sed "s%|$%%")"
+lines="$(cat $files \
 | sed "s%//.*%%" \
 | tr '\t' ' ' \
 | tr -d '\r' \
@@ -100,11 +100,25 @@ lines=`cat <<<"$data" ; cat $files \
 | sed -e "s%/\*\([^*]*\*[^/]\)*[^*]*\*\**/%%g" \
   -e "s%[ 	]*	%	%g" \
 | tr '\t' '\n' \
-| grep -E "^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[   ]*)?[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($options|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)" \
+| grep -E "^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[   ]*)?[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($options|select_option|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)" \
 | sed -E -e "s%^[ 	]*option[ 	]*\([ 	]*(\([A-Za-z_][A-Za-z0-9_]*\)[   ]*)?([A-Za-z_][A-Za-z0-9_]*).*%option \2%" \
-  -e "s%(^|^.*[^A-Za-z0-9_])($options)[ 	]*\(.*%call \2%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])($options|select_option)[ 	]*\(.*%call \2%" \
   -e "s%(^|^.*[^A-Za-z0-9_])(state|initial_state|target_state|aborted_state)[ 	]*\(([A-Za-z_][A-Za-z0-9_]*).*%\2 \3%" \
-  -e "s%(^|^.*[^A-Za-z0-9_])goto[ 	][ 	]*([A-Za-z_][A-Za-z0-9_]*).*%goto \2%"`
+  -e "s%(^|^.*[^A-Za-z0-9_])goto[ 	][ 	]*([A-Za-z_][A-Za-z0-9_]*).*%goto \2%")"
+
+# Adding lines for select_option
+lines="$(while read line; do
+  type="$(sed "s% .*%%" <<<"$line")"
+  id="$(sed "s%[^ ]* %%" <<<"$line")"
+  if [ "$type" == "option" ]; then
+    option=$id
+  elif [ "$line" == "call select_option" ]; then
+    grep <<<"$data" "^$option" \
+    | sed 's%.* %call %'
+    continue
+  fi
+  echo "$line"
+done <<<"$lines")"
 
 # Generate temporary files containing all nodes and edges
 optionsTmp=/tmp/options.tmp
@@ -112,8 +126,8 @@ rm -f "$optionsTmp"
 touch /tmp/timestamp
 option=
 while read line; do
-  type=`sed "s% .*%%" <<<"$line"`
-  id=`sed "s%[^ ]* %%" <<<"$line"`
+  type="$(sed "s% .*%%" <<<"$line")"
+  id="$(sed "s%[^ ]* %%" <<<"$line")"
   label=`sed -E -e "s%_%\\\\\n%g" -e "s%([a-z])([A-Z])%\1\\\\\n\2%g" <<<"$id" | tr '[:upper:]' '[:lower:]'`
   if [ "$type" == "option" ]; then
     option=$id
@@ -152,7 +166,7 @@ while read line; do
     echo "$state [shape = doubleoctagon, regular = true, label = \"$label\", tooltip = \"aborted_state '$id'\"];" >>"$internalTmp"
   elif [ "$type" == "goto" ]; then
     if [ -z "$state" ]; then
-      common=`echo "$common $id"`
+      common="$(echo "$common $id")"
     elif [ "$state" != "$id" ]; then
       echo "$state -> $id;" >>"$internalTmp"
     fi
@@ -169,7 +183,7 @@ rm /tmp/timestamp
 
 # Write the main option graph
 if [ -z "$cpp" ]; then
-  file=`basename "${1%.*}.$format"`
+  file="$(basename "${1%.*}.$format")"
 else
   file="$cpp.$format"
 fi
@@ -185,12 +199,12 @@ echo "Writing graph '$file'" >&2
 ) | "$dot" -T$format >"$file"
 
 # Write graphs for all options
-options=`tr '|' '\n' <<<"$options"`
+options="$(tr '|' '\n' <<<"$options")"
 while read option; do
   internalTmp=/tmp/internal_$option.tmp
   if [ -e "$internalTmp" ]; then
     externalTmp=/tmp/external_$option.tmp
-    file=`basename "${option%.*}.$format"`
+    file="$(basename "${option%.*}.$format")"
     label=`sed -E -e "s%_% %g" -e "s%([a-z])([A-Z])%\1 \2%g" <<<"$option" | tr '[:upper:]' '[:lower:]'`
     echo "Writing graph '$file'" >&2
     (

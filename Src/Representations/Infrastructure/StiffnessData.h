@@ -30,10 +30,6 @@ STREAMABLE(StiffnessData,
   (ENUM_INDEXED_ARRAY(int, Joints::Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
 });
 
-STREAMABLE_WITH_BASE(StiffnessSettings, StiffnessData,
-{,
-});
-
 inline StiffnessData::StiffnessData()
 {
   resetToDefault();
@@ -45,32 +41,28 @@ inline int StiffnessData::mirror(const Joints::Joint& joint) const
   {
     case Joints::lShoulderPitch:
     case Joints::lShoulderRoll:
+    case Joints::lElbowPitch:
     case Joints::lElbowYaw:
-    case Joints::lElbowRoll:
-    case Joints::lWristYaw:
-    case Joints::lHand:
-      return stiffnesses[joint - Joints::lShoulderPitch + Joints::rShoulderPitch];
+      return stiffnesses[joint - Joints::firstLeftArmJoint + Joints::firstRightArmJoint];
     case Joints::rShoulderPitch:
     case Joints::rShoulderRoll:
+    case Joints::rElbowPitch:
     case Joints::rElbowYaw:
-    case Joints::rElbowRoll:
-    case Joints::rWristYaw:
-    case Joints::rHand:
-      return stiffnesses[joint - Joints::rShoulderPitch + Joints::lShoulderPitch];
-    case Joints::lHipYawPitch:
-    case Joints::lHipRoll:
+      return stiffnesses[joint - Joints::firstRightArmJoint + Joints::firstLeftArmJoint];
     case Joints::lHipPitch:
+    case Joints::lHipRoll:
+    case Joints::lHipYaw:
     case Joints::lKneePitch:
     case Joints::lAnklePitch:
     case Joints::lAnkleRoll:
-      return stiffnesses[joint - Joints::lHipYawPitch + Joints::rHipYawPitch];
-    case Joints::rHipYawPitch:
-    case Joints::rHipRoll:
+      return stiffnesses[joint - Joints::firstLeftLegJoint + Joints::firstRightLegJoint];
     case Joints::rHipPitch:
+    case Joints::rHipRoll:
+    case Joints::rHipYaw:
     case Joints::rKneePitch:
     case Joints::rAnklePitch:
     case Joints::rAnkleRoll:
-      return stiffnesses[joint - Joints::rHipYawPitch + Joints::lHipYawPitch];
+      return stiffnesses[joint - Joints::firstRightLegJoint + Joints::firstLeftLegJoint];
     default:
       return stiffnesses[joint];
   }

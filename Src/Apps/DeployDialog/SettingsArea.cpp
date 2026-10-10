@@ -25,6 +25,10 @@
 #include "Streaming/InStreams.h"
 #include "../../Util/SimRobot/Src/SimRobot/Theme.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+#define stateChanged checkStateChanged
+#endif
+
 /** A horizontal line to separate different rows in the preset tabs. */
 class Line : public QFrame
 {
@@ -92,12 +96,8 @@ SettingsArea::SettingsArea(Presets& presets, QDialog* dialog, RobotsTable* table
   mode = static_cast<Mode>(settings.value("mode", robots).toInt());
   restart = settings.value("restart", true).toBool();
   deleteLogs = settings.value("deleteLogs", false).toBool();
-  playerNumber = settings.value("playerNumber", 5).toInt();
-  reboot = settings.value("reboot", false).toBool();
-  usbCheck = settings.value("usbCheck", false).toBool();
-  date = settings.value("date", false).toBool();
   logsMode = static_cast<LogsMode>(settings.value("logsMode", download).toInt());
-  close = settings.value("close", true).toBool();
+  close = settings.value("close", false).toBool();
 
   // Read known teams.
   Teams teams;
@@ -117,19 +117,14 @@ SettingsArea::SettingsArea(Presets& presets, QDialog* dialog, RobotsTable* table
   connect(deployButton, &QPushButton::clicked, dialog, &QDialog::accept);
   auto updateDeployButton = [=, this]
   {
-    deployButton->setText(mode == robots ? "Deploy" : mode == image ? "Write" : logsMode == justDelete ? "Delete" : "Download");
-    if(mode == image)
-      deployButton->setEnabled(true);
-    else
-    {
-      for(const std::string& player : selectedPreset->players)
-        if(player != "_")
-        {
-          deployButton->setEnabled(true);
-          return;
-        }
-      deployButton->setEnabled(false);
-    }
+    deployButton->setText(mode == robots ? "Deploy" : logsMode == justDelete ? "Delete" : "Download");
+    for(const std::string& player : selectedPreset->players)
+      if(player != "_")
+      {
+        deployButton->setEnabled(true);
+        return;
+      }
+    deployButton->setEnabled(false);
   };
   updateDeployButton();
   connect(table, &RobotsTable::robotAssignmentChanged, updateDeployButton);
@@ -142,7 +137,6 @@ SettingsArea::SettingsArea(Presets& presets, QDialog* dialog, RobotsTable* table
   QTabWidget* modesWidget = new QTabWidget();
   layout->addWidget(modesWidget);
   modesWidget->addTab(createRobotsTab(), "Robots");
-  modesWidget->addTab(createImageTab(), "Image");
   modesWidget->addTab(createLogsTab(updateDeployButton), "Logs");
   auto selectMode = [=, this](int index)
   {
@@ -377,46 +371,11 @@ QWidget* SettingsArea::createRobotsTab()
   connect(restartSelector, &QCheckBox::stateChanged, [&](int state) {restart = state != Qt::Unchecked;});
   layout->addWidget(restartSelector);
 
-  QCheckBox* deleteLogsSelector = new QCheckBox("Delete logs on internal drive");
+  QCheckBox* deleteLogsSelector = new QCheckBox("Delete logs");
   deleteLogsSelector->setChecked(deleteLogs);
   deleteLogsSelector->setFocusPolicy(Qt::StrongFocus);
   connect(deleteLogsSelector, &QCheckBox::stateChanged, [&](int state) {deleteLogs = state != Qt::Unchecked;});
   layout->addWidget(deleteLogsSelector);
-
-  return widget;
-}
-
-QWidget* SettingsArea::createImageTab()
-{
-  QWidget* widget = new QWidget();
-  QGridLayout* layout = new QGridLayout(widget);
-
-  QFormLayout* playerNumberLayout = new QFormLayout();
-  playerNumberLayout->setFormAlignment(Qt::AlignLeft);
-  layout->addLayout(playerNumberLayout, 0, 0);
-  QSpinBox* playerNumberSelector = new QSpinBox();
-  playerNumberSelector->setRange(1, presets.teams.empty() ? 7 : static_cast<int>(presets.teams[0]->players.size()));
-  playerNumberSelector->setValue(playerNumber);
-  connect(playerNumberSelector, &QSpinBox::valueChanged, this, [&](int number) {playerNumber = number;});
-  playerNumberLayout->addRow("Player", playerNumberSelector);
-
-  QCheckBox* usbCheckSelector = new QCheckBox("USB check");
-  usbCheckSelector->setChecked(usbCheck);
-  usbCheckSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(usbCheckSelector, &QCheckBox::stateChanged, [&](int state) {usbCheck = state != Qt::Unchecked;});
-  layout->addWidget(usbCheckSelector, 0, 1);
-
-  QCheckBox* dateSelector = new QCheckBox("Add date");
-  dateSelector->setChecked(date);
-  dateSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(dateSelector, &QCheckBox::stateChanged, [&](int state) {date = state != Qt::Unchecked;});
-  layout->addWidget(dateSelector, 1, 0);
-
-  QCheckBox* rebootSelector = new QCheckBox("Reboot");
-  rebootSelector->setChecked(reboot);
-  rebootSelector->setFocusPolicy(Qt::StrongFocus);
-  connect(rebootSelector, &QCheckBox::stateChanged, [&](int state) {reboot = state != Qt::Unchecked;});
-  layout->addWidget(rebootSelector, 1, 1);
 
   return widget;
 }
@@ -466,8 +425,6 @@ void SettingsArea::writeOutput(std::map<std::string, Robot>& robots) const
     std::cout << std::endl;
     return;
   }
-  else if(mode == image)
-    std::cout << "-i -p " << playerNumber << " ";
   else
     table->writeOutput(robots, false);
 
@@ -480,23 +437,10 @@ void SettingsArea::writeOutput(std::map<std::string, Robot>& robots) const
             << " -m " << selectedPreset->magicNumber
             << " -w " << selectedPreset->wlanConfig
             << " -v " << selectedPreset->volume;
-
-  if(mode == image)
-  {
-    if(usbCheck)
-      std::cout << " -u";
-    if(date)
-      std::cout << " -d";
-    if(reboot)
-      std::cout << " -b";
-  }
-  else
-  {
-    if(deleteLogs)
-      std::cout << " -d";
-    if(restart)
-      std::cout << " -b";
-  }
+  if(deleteLogs)
+    std::cout << " -d";
+  if(restart)
+    std::cout << " -b";
   std::cout << std::endl;
 }
 
@@ -506,10 +450,6 @@ bool SettingsArea::modified(const QSettings& settings) const
          || mode != settings.value("mode", false).toInt()
          || restart != settings.value("restart", true).toBool()
          || deleteLogs != settings.value("deleteLogs", false).toBool()
-         || playerNumber != settings.value("playerNumber", 5).toInt()
-         || reboot != settings.value("reboot", false).toBool()
-         || usbCheck != settings.value("usbCheck", false).toBool()
-         || date != settings.value("date", false).toBool()
          || logsMode != settings.value("logsMode", download).toInt()
          || close != settings.value("close", true).toBool();
 }
@@ -520,10 +460,6 @@ bool SettingsArea::save(QSettings& settings) const
   settings.setValue("mode", mode);
   settings.setValue("restart", restart);
   settings.setValue("deleteLogs", deleteLogs);
-  settings.setValue("playerNumber", playerNumber);
-  settings.setValue("reboot", reboot);
-  settings.setValue("usbCheck", usbCheck);
-  settings.setValue("date", date);
   settings.setValue("logsMode", logsMode);
   settings.setValue("close", close);
   return close;

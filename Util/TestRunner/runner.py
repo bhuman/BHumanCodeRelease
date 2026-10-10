@@ -36,7 +36,7 @@ def parse_arguments():
         argparse.Namespace: Parsed arguments.
     """
     parser = argparse.ArgumentParser(description="B-Human Test Runner")
-    parser.add_argument("scene", help="Path to the scene file (.ros2) or directory.")
+    parser.add_argument("scene", help="Path to the scene file (.ros3) or directory.")
     parser.add_argument("--env", choices=["debug", "develop", "release"], default="release",
                         help="Environment mode: release, debug, or develop (default: release).")
     parser.add_argument("--testcmd", help="Test command enclosed in double quotes.")
@@ -208,10 +208,10 @@ class TestConfig:
             str: The absolute path to the scene file.
 
         Raises:
-            ValueError: If the scene file does not have the .ros2 extension.
+            ValueError: If the scene file does not have the .ros3 extension.
         """
-        if not scene.endswith(".ros2"):
-            raise ValueError("Scene file must have the .ros2 extension.")
+        if not scene.endswith(".ros3"):
+            raise ValueError("Scene file must have the .ros3 extension.")
         return os.path.normpath(scene if os.path.isabs(scene) else pjoin(BaseConfig.bhuman_root, scene))
 
 
@@ -260,7 +260,7 @@ class TestRunner:
 
         # Due to relative includes in config files, we cannot use any other directories than bhuman
         scene_dir = os.path.dirname(scene_src)
-        scene_dst = pjoin(scene_dir, f"{dst_filename}.ros2")
+        scene_dst = pjoin(scene_dir, f"{dst_filename}.ros3")
 
         config_src = pjoin(scene_dir, f"{src_filename}.con")
         config_dst = pjoin(scene_dir, f"{dst_filename}.con")
@@ -517,7 +517,7 @@ def process_scene_for_test(scene_file):
     Prepare a scene file by extracting the test command and updating configuration.
 
     Args:
-        scene_file (str): Path to the original scene file (.ros2).
+        scene_file (str): Path to the original scene file (.ros3).
 
     Returns:
         tuple: 
@@ -543,7 +543,7 @@ def process_scene_for_test(scene_file):
         return None, None
 
     new_scene_name = f"{scene_basename}_{crc32hex(testcmd)}"
-    new_scene_file = pjoin(BaseConfig.temp_scenes_dir, new_scene_name + ".ros2")
+    new_scene_file = pjoin(BaseConfig.temp_scenes_dir, new_scene_name + ".ros3")
     new_config_file = pjoin(BaseConfig.temp_scenes_dir, new_scene_name + ".con")
 
     shutil.copy(scene_file, new_scene_file)
@@ -566,7 +566,7 @@ def find_test_scenes(scene_dir):
     """
     scenes = []
     for file in os.listdir(scene_dir):
-        if file.endswith(".ros2"):
+        if file.endswith(".ros3"):
             scenes.append(pjoin(scene_dir, file))
 
     test_scenes = []

@@ -3,7 +3,9 @@
  *
  * This file implements a representation to request a resolution change.
  *
- * @author Dana Jenett, Alexis Tsogias, Felix Thielke
+ * @author Dana Jenett
+ * @author Alexis Tsogias
+ * @author Felix Thielke
  */
 
 #pragma once
@@ -14,71 +16,70 @@
 
 STREAMABLE(CameraResolutionRequest,
 {
-  ENUM(Resolutions,
+  ENUM(Resolution,
   {,
-    defaultRes, /**< Use resolutions as specified in the config file. */
-    w320h240,   /**< 160x240 in YUV422 */
-    w640h480,   /**< 320x480 in YUV422 */
-    w1280h960,  /**< 640x960 in YUV422 */
-    w424h240,   /**< 212x240 in YUV422 */
-    w480x270,   /**< 240x270 in YUV422 */
-    w640h360,   /**< 320x360 in YUV422 */
-    w848h480,   /**< 424x480 in YUV422 */
-    w1280h720,  /**< 640x720 in YUV422 */
-    w1280h800,  /**< 640x800 in YUV422 */
-    noRequest,  /**< Keep the resolution as it is. */
+    defaultRes,    /**< Use resolutions as specified in the config file. */
+
+    // RealSense
+    w424h240f5,    /**< 212x240 in YUV422 at  5 Hz */
+    w424h240f15,   /**< 212x240 in YUV422 at 15 Hz */
+    w424h240f30,   /**< 212x240 in YUV422 at 30 Hz */
+    w424h240f60,   /**< 212x240 in YUV422 at 60 Hz */
+    w424h240f90,   /**< 212x240 in YUV422 at 90 Hz */
+
+    w480h270f5,    /**< 240x270 in YUV422 at  5 Hz */
+    w480h270f15,   /**< 240x270 in YUV422 at 15 Hz */
+    w480h270f30,   /**< 240x270 in YUV422 at 30 Hz */
+    w480h270f60,   /**< 240x270 in YUV422 at 60 Hz */
+    w480h270f90,   /**< 240x270 in YUV422 at 90 Hz */
+
+    // MIPI
+    w544h448f30,   /**< 272x224 in YUV422 at 30 Hz */
+
+    // X5
+    w544h448f60,   /**< 272x224 in YUV422 at 60 Hz */
+
+    // RealSense
+    w640h360f5,    /**< 320x360 in YUV422 at  5 Hz */
+    w640h360f15,   /**< 320x360 in YUV422 at 15 Hz */
+    w640h360f30,   /**< 320x360 in YUV422 at 30 Hz */
+    w640h360f60,   /**< 320x360 in YUV422 at 60 Hz */
+    w640h360f90,   /**< 320x360 in YUV422 at 90 Hz */
+
+    // RealSense
+    w640h480f5,    /**< 320x480 in YUV422 at  5 Hz */
+    w640h480f15,   /**< 320x480 in YUV422 at 15 Hz */
+    w640h480f30,   /**< 320x480 in YUV422 at 30 Hz */
+
+    // RealSense
+    w640h480f60,   /**< 320x480 in YUV422 at 60 Hz */
+
+    w848h480f5,    /**< 424x480 in YUV422 at  5 Hz */
+    w848h480f15,   /**< 424x480 in YUV422 at 15 Hz */
+    w848h480f30,   /**< 424x480 in YUV422 at 30 Hz */
+    w848h480f60,   /**< 424x480 in YUV422 at 60 Hz */
+
+    w1280h720f5,   /**< 640x720 in YUV422 at  5 Hz */
+    w1280h720f15,  /**< 640x720 in YUV422 at 15 Hz */
+    w1280h720f30,  /**< 640x720 in YUV422 at 30 Hz */
+
+    // RealSense
+    w1280h800f5,   /**< 640x800 in YUV422 at 5 Hz  */
+    w1280h800f15,  /**< 640x800 in YUV422 at 15 Hz */
+    w1280h800f30,  /**< 640x800 in YUV422 at 30 Hz */
+
+    noRequest,     /**< Keep the resolution as it is. */
   });
 
   /**
-   * Set resolution based on setting for a certain camera.
-   * @param camera The resolution for which camera?
-   * @param cameraInfo The width and height are written here.
+   * Set resolution based on setting for the camera.
+   * @param cameraInfo The width, height, and frameRate are written here.
    */
-  void apply(const CameraInfo::Camera camera, CameraInfo& cameraInfo) const
+  void apply(CameraInfo& cameraInfo) const
   {
-    switch(resolutions[camera])
-    {
-      case CameraResolutionRequest::w320h240:
-        cameraInfo.width = 320;
-        cameraInfo.height = 240;
-        break;
-      case CameraResolutionRequest::w424h240:
-        cameraInfo.width = 424;
-        cameraInfo.height = 240;
-        break;
-      case CameraResolutionRequest::w480x270:
-        cameraInfo.width = 480;
-        cameraInfo.height = 270;
-        break;
-      case CameraResolutionRequest::w640h360:
-        cameraInfo.width = 640;
-        cameraInfo.height = 360;
-        break;
-      case CameraResolutionRequest::w640h480:
-        cameraInfo.width = 640;
-        cameraInfo.height = 480;
-        break;
-      case CameraResolutionRequest::w848h480:
-        cameraInfo.width = 848;
-        cameraInfo.height = 480;
-        break;
-      case CameraResolutionRequest::w1280h720:
-        cameraInfo.width = 1280;
-        cameraInfo.height = 720;
-        break;
-      case CameraResolutionRequest::w1280h800:
-        cameraInfo.width = 1280;
-        cameraInfo.height = 800;
-        break;
-      case CameraResolutionRequest::w1280h960:
-        cameraInfo.width = 1280;
-        cameraInfo.height = 960;
-        break;
-      default:
-        FAIL("Unknown resolution.");
-        break;
-    }
+    VERIFY(sscanf(TypeRegistry::getEnumName(resolution), "w%dh%df%d",
+                  &cameraInfo.width, &cameraInfo.height, &cameraInfo.frameRate) == 3);
   },
 
-  (ENUM_INDEXED_ARRAY(Resolutions, CameraInfo::Camera))({defaultRes, defaultRes}) resolutions, /**< The desired resolutions */
+  (Resolution)(defaultRes) resolution, /**< The desired resolutions */
 });

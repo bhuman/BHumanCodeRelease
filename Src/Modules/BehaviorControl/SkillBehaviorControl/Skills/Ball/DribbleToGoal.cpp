@@ -15,34 +15,42 @@
 #include <map>
 
 option((SkillBehaviorControl) DribbleToGoal,
-       defs((float)(1000.f) dribbleRange, /**< Planned look ahead dribble kick range. */
-            (float)(500.f) lookActiveMinBallDistance)) /**< If the ball is at least this far away, use lookActive with withBall = true. */
+       args((KickPrecision) alignPrecisely),
+       load((Rangef) minKickRange, /**< Planned look ahead dribble kick range. */
+            (float) lookActiveMinBallDistance, /**< If the ball is at least this far away, use lookActive with withBall = true. */
+            (float) awayRange,
+            (float) closeRange))
 {
-  common_transition
-  {
-    if(theFieldBall.positionRelative.squaredNorm() > sqr(500.f))
-      goto away;
-    else
-      goto close;
-  }
+  const float useMinKickRange = mapToRange(theFieldBall.positionOnField.x(), theFieldDimensions.xPosOpponentPenaltyArea * 0.5f, theFieldDimensions.xPosOpponentGoalArea, std::min(minKickRange.max, theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea * 0.5f), minKickRange.min);
 
   initial_state(away)
   {
+    transition
+    {
+      if(theFieldBall.positionRelative.squaredNorm() < sqr(closeRange))
+        goto close;
+    }
     action
     {
-      GoToBallAndDribble({.targetDirection = -theRobotPose.rotation});
+      GoToBallAndDribble({.targetDirection = -theRobotPose.rotation, .alignPrecisely = alignPrecisely});
     }
   }
 
   state(close)
   {
+    transition
+    {
+      if(theFieldBall.positionRelative.squaredNorm() > sqr(awayRange))
+        goto away;
+    }
     action
     {
-      const Angle dribbleAngle = Angle::normalize(theDribbleTarget.calculateDribbleAngle(theFieldInterceptBall.interceptedEndPositionOnField) - theRobotPose.rotation);
+      const Angle dribbleAngle = Angle::normalize(theDribbleTarget.calculateDribbleAngle(theFieldBall.positionOnField) - theRobotPose.rotation);
       // TODO set kickLength to something higher?
       GoToBallAndDribble({.targetDirection = dribbleAngle,
-                          .kickLength = dribbleRange,
-                          .lookActiveWithBall = theFieldInterceptBall.interceptedEndPositionRelative.squaredNorm() > sqr(lookActiveMinBallDistance)});
+                          .alignPrecisely = alignPrecisely,
+                          .kickLength = useMinKickRange,
+                          .lookActiveWithBall = theFieldBall.positionRelative.squaredNorm() > sqr(lookActiveMinBallDistance)});
     }
   }
 }

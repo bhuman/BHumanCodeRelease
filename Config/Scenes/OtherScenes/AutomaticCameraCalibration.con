@@ -1,3 +1,0 @@
-call ../Includes/CameraCalibration
-
-call ../Includes/AutomaticCameraCalibration

@@ -51,7 +51,7 @@ MODULE(PathPlannerProvider,
     (float) radiusAvoidanceTolerance, /**< Radius range in which robot is partially pushed away (in mm). */
     (float) rotationPenalty, /**< Penalty factor for rotating towards first intermediate target in mm/radian. Stabilizes path selection. */
     (float) switchPenalty, /**< Penalty for selecting a different turn direction around first obstacle in mm. */
-    (bool) useFastestWalkLeaderboardBarriers, /**< Whether the barriers for the Fastest Walk Leaderboard Challenge should be used. */
+    (int) forgetDelay, /**< The minimum period of inactivity after which the planner forgets it previous decision on which side to pass the first obstacle (in ms). */
   }),
 });
 
@@ -229,7 +229,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
   const std::vector<Geometry::Line> borders; /**< The border of the field plus a tolerance. */
   Rotation lastDir = cw; /**< Last direction selected when walking around first obstacle. */
   unsigned timeWhenLastPlayedSound = 0; /**< Used to limit frequency of sound playback. */
-  bool pathPlannerWasActive = false; /**< Was the path planner active in previous frame? */
+  unsigned timeWhenPathPlannerWasActive = 0; /**< When was the path planner last active? */
 
   /**
    * Provide a representation that is able to plan a path using this module.
@@ -242,8 +242,9 @@ class PathPlannerProvider : public PathPlannerProviderBase
    * @param target The target the robot tries to reach.
    * @param excludeOwnPenaltyArea Also generate barriers for the own penalty area.
    * @param excludeOpponentPenaltyArea Also generate barriers for the opponent penalty area.
+   * @param ignoreBall Ignore the ball.
    */
-  void createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea);
+  void createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, const bool ignoreBall);
 
   /**
    * Clip penalty area barriers to make a position reachable.
@@ -260,8 +261,9 @@ class PathPlannerProvider : public PathPlannerProviderBase
    * @param excludeOwnPenaltyArea Filter out obstacles inside the own penalty area and the own goal.
    * @param excludeOpponentPenaltyArea Filter out obstacles inside the opponents penalty area and the own goal.
    * @param excludeCenterCircle Add the center circle as an obstacle.
+   * @param ignoreBall Ignore the ball.
    */
-  void createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle);
+  void createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea, bool excludeCenterCircle, const bool ignoreBall);
 
   /**
    * Determine the radius of an obstacle.

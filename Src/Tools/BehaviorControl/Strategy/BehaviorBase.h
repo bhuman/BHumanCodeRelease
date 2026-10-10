@@ -16,8 +16,11 @@
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/FieldInterceptBall.h"
 #include "Representations/BehaviorControl/IndirectKick.h"
+#include "Representations/BehaviorControl/KickAtGoalEvaluation.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/PassEvaluation.h"
+#include "Representations/BehaviorControl/PassTargetEvaluation.h"
+#include "Representations/Communication/GameControllerData.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/BehaviorParameters.h"
 #include "Representations/Configuration/FieldDimensions.h"
@@ -28,7 +31,6 @@
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Framework/Blackboard.h"
 #include "Framework/Module.h"
 
@@ -44,13 +46,16 @@
   _(FieldInterceptBall) \
   _(FieldDimensions) \
   _(FrameInfo) \
+  _(GameControllerData) \
   _(GameState) \
   _(GlobalOpponentsModel) \
   _(GlobalTeammatesModel) \
   _(IndirectKick) \
+  _(KickAtGoalEvaluation) \
   _(LibPosition) \
   _(MotionInfo) \
   _(PassEvaluation) \
+  _(PassTargetEvaluation) \
   _(RobotPose) \
   _(TeamBallModel)
 

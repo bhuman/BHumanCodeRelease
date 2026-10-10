@@ -7,9 +7,8 @@
  */
 
 #include "Perception.h"
-#include "Modules/Infrastructure/CameraProvider/CameraProvider.h"
-#include "Modules/Infrastructure/CameraProvider/OrbbecProvider.h"
 #include "Modules/Infrastructure/CameraProvider/RealSenseProvider.h"
+#include "Modules/Infrastructure/CameraProvider/X5CameraProvider.h"
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
 
 REGISTER_EXECUTION_UNIT(Perception)
@@ -17,9 +16,8 @@ REGISTER_EXECUTION_UNIT(Perception)
 bool Perception::beforeFrame()
 {
   return (LogDataProvider::isFrameDataComplete()
-          && CameraProvider::isFrameDataComplete()
-          && OrbbecProvider::isFrameDataComplete()
-          && RealSenseProvider::isFrameDataComplete());
+          && RealSenseProvider::isFrameDataComplete()
+          && X5CameraProvider::isFrameDataComplete());
 }
 
 void Perception::beforeModules()
@@ -40,9 +38,8 @@ bool Perception::afterFrame()
       Thread::getCurrentThread()->setPriority(10);
     Thread::yield();
     BH_TRACE_MSG("before waitForFrameData");
-    CameraProvider::waitForFrameData();
-    OrbbecProvider::waitForFrameData();
     RealSenseProvider::waitForFrameData();
+    X5CameraProvider::waitForFrameData();
     if(SystemCall::getMode() == SystemCall::physicalRobot)
       Thread::getCurrentThread()->setPriority(0);
   }

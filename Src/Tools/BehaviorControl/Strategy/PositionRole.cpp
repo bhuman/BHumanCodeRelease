@@ -17,19 +17,21 @@ PositionRole::Type PositionRole::fromPosition(Tactic::Position::Type type)
   {
     case Tactic::Position::goalkeeper:
       return goalkeeper;
-    case Tactic::Position::attackingGoalkeeper:
-      return attackingGoalkeeper;
     case Tactic::Position::defender:
     case Tactic::Position::defenderL:
+    case Tactic::Position::defenderC:
+    case Tactic::Position::defenderCL:
+    case Tactic::Position::defenderCR:
     case Tactic::Position::defenderR:
       return defender;
     case Tactic::Position::midfielder:
-    case Tactic::Position::midfielderM:
+    case Tactic::Position::midfielderA:
+    case Tactic::Position::midfielderD:
     case Tactic::Position::midfielderL:
     case Tactic::Position::midfielderR:
       return midfielder;
     case Tactic::Position::forward:
-    case Tactic::Position::forwardM:
+    case Tactic::Position::forwardC:
     case Tactic::Position::forwardL:
     case Tactic::Position::forwardR:
       return forward;
@@ -43,19 +45,22 @@ PositionRole::Side PositionRole::sideFromPosition(Tactic::Position::Type type)
   switch(type)
   {
     case Tactic::Position::goalkeeper:
-    case Tactic::Position::attackingGoalkeeper:
     case Tactic::Position::defender:
     case Tactic::Position::midfielder:
     case Tactic::Position::forward:
       return unspecified;
-    case Tactic::Position::midfielderM:
-    case Tactic::Position::forwardM:
+    case Tactic::Position::defenderC:
+    case Tactic::Position::midfielderA:
+    case Tactic::Position::midfielderD:
+    case Tactic::Position::forwardC:
       return center;
     case Tactic::Position::defenderL:
+    case Tactic::Position::defenderCL:
     case Tactic::Position::midfielderL:
     case Tactic::Position::forwardL:
       return left;
     case Tactic::Position::defenderR:
+    case Tactic::Position::defenderCR:
     case Tactic::Position::midfielderR:
     case Tactic::Position::forwardR:
       return right;
@@ -90,9 +95,9 @@ bool PositionRole::shouldStop(const Pose2f&) const
 
 SkillRequest PositionRole::execute(const Agent& self, const Agents& teammates)
 {
-  Pose2f target = position(sideFromPosition(self.position), self.basePose, self.baseArea, self, teammates);
+  Pose2f target = position(sideFromPosition(self.position), self.baseTranslation, self.baseArea, self, teammates);
   if(theGameState.isKickOff() && self.acceptedSetPlay != SetPlay::none)
-    target = self.basePose;
+    target = self.baseTranslation;
 
   // Theoretically we should use shouldStop and shouldStart of the base class when the base pose is used
   if(theMotionInfo.executedPhase != MotionPhase::stand ? !shouldStop(target) : shouldStart(target))

@@ -8,6 +8,7 @@
 
 #include "WalkAtSpeedEngine.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Framework/Settings.h"
 
 MAKE_MODULE(WalkAtSpeedEngine);
 
@@ -58,11 +59,11 @@ std::unique_ptr<MotionPhase> WalkAtSpeedEngine::createPhase(const Pose2f& walkTa
     stepTarget.translation.y() *= -1.f;
 
   const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(lastPhase, stepTarget);
-  stepTarget.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeedScaled).clamped(walkTarget.rotation * walkSpeedScaled.rotation);
+  stepTarget.rotation = theWalkGenerator.getRotationRange(isLeftPhase, walkSpeedScaled, stepTarget).clamped(walkTarget.rotation * walkSpeedScaled.rotation);
 
   std::vector<Vector2f> translationPolygon;
   std::vector<Vector2f> translationPolygonNoCenter;
-  theWalkGenerator.getTranslationPolygon(isLeftPhase, stepTarget.rotation, lastPhase, walkSpeedScaled, translationPolygon, translationPolygonNoCenter, false, false);
+  theWalkGenerator.getTranslationPolygon(isLeftPhase, stepTarget.rotation, lastPhase, walkSpeedScaled, stepTarget, translationPolygon, translationPolygonNoCenter, false, false, false);
 
   Vector2f backRight(0.f, 0.f);
   Vector2f frontLeft(0.f, 0.f);
@@ -76,7 +77,5 @@ std::unique_ptr<MotionPhase> WalkAtSpeedEngine::createPhase(const Pose2f& walkTa
 
   stepTarget.translation.x() = walkSpeedScaled.translation.x() >= 0.f ? frontLeft.x() : backRight.x();
   stepTarget.translation.y() = walkSpeedScaled.translation.y() >= 0.f ? frontLeft.y() : backRight.y();
-  if(isLeftPhase == (stepTarget.translation.y() < 0.f))
-    stepTarget.translation.y() = 0.f;
   return theWalkGenerator.createPhase(stepTarget, lastPhase, 0.f);
 }

@@ -8,13 +8,14 @@
 
 #include "SkillBehaviorControl.h"
 
-option((SkillBehaviorControl) PlaySoccer)
+option((SkillBehaviorControl) PlaySoccer,
+       load((std::vector<cabsl::Cabsl<SkillBehaviorControl>::OptionInfos::Option>) options))
 {
   initial_state(selectOption)
   {
     action
     {
-      select_option(options); //@options
+      select_option(options);
     }
   }
 }

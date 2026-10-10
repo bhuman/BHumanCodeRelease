@@ -100,7 +100,7 @@ void SectorWheel::addSector(const Rangea& angleRange, float distance, Sector::Ty
 }
 
 /**
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  */
 void SectorWheel::addSectorNormalized(const Rangea& angleRange, float distance, Sector::Type type)
 {

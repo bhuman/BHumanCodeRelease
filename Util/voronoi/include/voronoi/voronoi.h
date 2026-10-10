@@ -1245,7 +1245,9 @@ void jcv_boxshape_fillgaps(const jcv_clipper* clipper, jcv_context_internal* all
             //  Current on the corner, Next on another border (another corner in between)
 
             int next_edge_flags = jcv_get_edge_flags(&next->pos[0], &clipper->min, &clipper->max);
-            if (current_edge_flags & next_edge_flags)
+            if (!next_edge_flags)
+              break;
+            else if (current_edge_flags & next_edge_flags)
             {
                 // Current and Next on the same border
                 jcv_graphedge* gap = jcv_alloc_graphedge(allocator);

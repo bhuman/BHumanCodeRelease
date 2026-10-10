@@ -18,47 +18,37 @@
 
 REGISTER_EXECUTION_UNIT(Cognition)
 
-thread_local bool Cognition::isUpper = false;
-
 Cognition::Cognition()
 {
-  Blackboard::getInstance().alloc<UpperFrameInfo>("UpperFrameInfo").time = minTime;
-  Blackboard::getInstance().alloc<LowerFrameInfo>("LowerFrameInfo").time = minTime;
+  Blackboard::getInstance().alloc<ColorFrameInfo>("ColorFrameInfo").time = minTime;
 }
 
 Cognition::~Cognition()
 {
-  Blackboard::getInstance().free("UpperFrameInfo");
-  Blackboard::getInstance().free("LowerFrameInfo");
+  Blackboard::getInstance().free("ColorFrameInfo");
 }
 
 bool Cognition::beforeFrame()
 {
   // Currently replaying a log file?
-  const bool replay = (SystemCall::getMode() == SystemCall::logFileReplay || SystemCall::getMode() == SystemCall::remoteRobot)
+  const bool replay = SystemCall::getMode() == SystemCall::logFileReplay
                       && LogDataProvider::exists();
 
   // During replay if there is no new frame and no delayed frame, there is nothing to process
   if(replay && !LogDataProvider::isFrameDataComplete(false) && !delayedLogCounter)
   {
-    acceptNext = false;
     return false;
   }
 
-  const unsigned lowerFrameTime = static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["LowerFrameInfo"]))->time;
-  const unsigned upperFrameTime = static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["UpperFrameInfo"]))->time;
-
-  const bool upperIsLate = static_cast<int>(lowerFrameTime - upperFrameTime) >= 100;
-  const bool lowerIsLate = static_cast<int>(upperFrameTime - lowerFrameTime) >= 100 || Global::getSettings().robotType == Settings::t1;
-  upperIsNew |= upperFrameTime != lastUpperFrameTime && upperFrameTime >= lastAcceptedTime;
-  lowerIsNew |= lowerFrameTime != lastLowerFrameTime && lowerFrameTime >= lastAcceptedTime;
-  lastUpperFrameTime = upperFrameTime;
-  lastLowerFrameTime = lowerFrameTime;
+  const unsigned frameTime = static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()
+    ["ColorFrameInfo"]))->time;
 
   // Begin a new frame if either there is data for a new one left over from
   // the previous frame or we have two from which we can choose.
-  if(acceptNext || (upperIsNew && lowerIsNew) || (upperIsNew && lowerIsLate) || (lowerIsNew && upperIsLate))
+  if(frameTime != lastFrameTime)
   {
+    lastFrameTime = frameTime;
+
     // The frame will be processed, so no delay and no data waiting anymore
     delayedLogCounter = 0;
 
@@ -66,33 +56,6 @@ bool Cognition::beforeFrame()
     if(replay)
       LogDataProvider::isFrameDataComplete();
 
-    // We switch between upper and lower except if one of them is really late
-    if(upperIsLate)
-      isUpper = false;
-    else if(lowerIsLate)
-      isUpper = true;
-    else
-      isUpper ^= true;
-
-    if(isUpper)
-    {
-      lastAcceptedTime = upperFrameTime;
-      upperIsNew = false;
-
-      // The other frame can only be used if not older than the current one.
-      lowerIsNew &= upperFrameTime <= lowerFrameTime;
-    }
-    else
-    {
-      lastAcceptedTime = lowerFrameTime;
-      lowerIsNew = false;
-
-      // The other frame can only be used if not older than the current one.
-      upperIsNew &= lowerFrameTime <= upperFrameTime;
-    }
-
-    // The other frame should also be processed immediately if there is one left.
-    acceptNext = (isUpper && lowerIsNew) || (!isUpper && upperIsNew);
     return true;
   }
   else if(replay)
@@ -106,7 +69,6 @@ bool Cognition::beforeFrame()
     {
       LogDataProvider::isFrameDataComplete();
       delayedLogCounter = 1;
-      lastAcceptedTime = 0;
       return Global::getDebugRequestTable().pollCounter > 0;
     }
   }
@@ -141,5 +103,5 @@ void Cognition::afterModules()
 bool Cognition::afterFrame()
 {
   // If there is already a frame waiting to be processed, do not wait for the next one to arrive.
-  return !acceptNext && !delayedLogCounter;
+  return !delayedLogCounter;
 }

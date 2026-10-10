@@ -35,7 +35,7 @@ MODULE(BallSearchParticlesProvider,
   DEFINES_PARAMETERS(
   {,
     (unsigned)(200) numOfParticles,
-    (float)(3500.f) maxViewDistance,
+    (float)(4500.f) maxViewDistance,
     (float)(200) obstacleOffset,
     (unsigned)(500) cellWidth,
     (unsigned)(500) cellHeight,

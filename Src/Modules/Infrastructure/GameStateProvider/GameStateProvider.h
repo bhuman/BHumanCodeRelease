@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/Communication/GameControllerData.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
@@ -16,57 +15,49 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/Modeling/BallInGoal.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Whistle.h"
+#include "Representations/MotionControl/DampingState.h"
 #include "Representations/Sensing/IMUValueState.h"
 #include "Framework/Module.h"
 #include "Math/RingBuffer.h"
 
 MODULE(GameStateProvider,
 {,
-  REQUIRES(BallInGoal),
   USES(BallModel),
   REQUIRES(BallSpecification),
-  USES(BehaviorStatus),
+  REQUIRES(DampingState),
   REQUIRES(EnhancedKeyStates),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameControllerData),
   REQUIRES(IMUValueState),
   REQUIRES(MotionInfo),
-  REQUIRES(RefereeSignal),
   USES(RobotPose),
-  USES(TeamBallModel),
   REQUIRES(TeamData),
   REQUIRES(Whistle),
   PROVIDES(GameState),
   LOADS_PARAMETERS(
   {,
-    (unsigned) unstiffHeadButtonPressDuration, /**< How long the head buttons need to be pressed until the robot transitions to unstiff (in ms). Must be at least as long as KeyStateEnhancer::releaseTimeOut. */
-    (unsigned) calibrationHeadButtonPressDuration, /**< How long the front head button needs to be pressed until the robot transitions to calibration (in ms). */
-    (int) unstiffAfterHalfDuration, /**< How long the game state needs to be finished until the robot transitions to unstiff (in ms). */
     (int) gameControllerTimeout, /**< Time after which the GameController is assumed to be inactive (in ms). */
     (int) ballSaveInterval, /**< Minimum time between ball measurements that are added to the buffer (in ms). */
     (float) ballHasMovedTolerance, /**< Minimum distance between ball measurements to consider the ball to be moving (in mm). */
+    (float) ballHasMovedDuringKickOffTolerance, /**< Minimum distance between ball measurements to consider the ball to be moving during kick-off (in mm). */
     (float) ballHasMovedCloseToRobotThreshold, /**< Offset from the minimum distance that a ball can have to a legally positioned robot before it is considered as having moved (in mm). */
     (unsigned) ballOutOfCenterCircleCounterThreshold, /**< How often the ball must have been "seen" out of the center circle to leave the kick-off state. */
     (float) ballOutOfCenterCircleTolerance, /**< The center circle is extended by this offset (in mm). */
-    (unsigned) minVotersForWhistle, /**< The minimum number of robots that participate in majority vote. */
     (int) maxWhistleTimeDifference, /**< Time window size of all whistles considered together (in ms). */
     (float) minWhistleAverageConfidence, /**< Minimum confidence of all considered whistles required for a detection. */
-    (int) ignoreWhistleAfterKickOff, /**< Time whistles are ignored after switching to PLAYING after a kick-off (in ms). */
-    (int) ignoreWhistleAfterPenaltyKick, /**< Time whistles are ignored after switching to PLAYING after the begin of a penalty kick (in ms). */
-    (bool) checkWhistleForGoal, /**< Use the whistle to transition to the READY state after a goal. */
-    (bool) checkBallForGoal, /**< Check the ball position in addition to the whistle when transitioning to the READY state after a goal. */
-    (unsigned) acceptWhistleBeforeGoal, /**< Whistles less than this before the ball was seen in goal are still accepted. */
+    (bool) useMaxWhistleConfidence, /**< Use the maximum whistle confidence instead of the average. */
     (int) gameControllerOperatorDelay, /**< Delay with which the operator of the GameController enters the referee's decisions. */
-    (int) acceptBallInGoalDelay, /**< Time since when a ball must have been seen in a goal to accept as a valid goal when referee whistles (in ms). */
-    (int) acceptPastWhistleDelay, /**< How old can whistles be to be accepted after canceling READY (in ms)? */
     (float) confidenceIntervalToLegalPositionFree, /**< If the next legal position for the ball is outside this interval the ball is considered free. standard deviation based on the current quality of the ball model. */
     (float) confidenceIntervalToLegalPositionNotFree, /**< If the next legal position for the ball is outside this interval the ball is not considered free anymore. standard deviation based on the current quality of the ball model. */
     (float) ballPlacementTolerance, /**< Tolerance of a ball positioned by a referee */
     (unsigned) minOwnFreeKickDelay, /**< Delay after the start of a free kick until a kick is valid. (in ms) */
+
+    /* The following are constants for robot state switches. */
+    (unsigned) pressDurationUnstiffToPrepare, /**< Time the stand button needs to be pressed to switch from inactive to active. */
+    (unsigned) ignoreMainButtonPressDuration, /**< If button is pressed for too long, do not consider it pressed. */
 
     /* The following are constants from the rule book: */
     (int) kickOffSetupDuration, /**< Duration of a READY phase for a kick-off (in ms). */
@@ -75,7 +66,6 @@ MODULE(GameStateProvider,
     (int) penaltyKickDuration, /**< Duration of a penalty kick (both during the game and in a penalty shoot-out) (in ms). */
     (int) freeKickDuration, /**< Duration of a free kick (in ms). */
     (int) playingSignalDelay, /**< Delay after which the GameController sends the PLAYING state after a kick-off / penalty kick (in ms). */
-    (int) goalSignalDelay, /**< Delay after which the GameController sends the READY state after a goal (in ms). */
   }),
 });
 
@@ -111,11 +101,11 @@ class GameStateProvider : public GameStateProviderBase
   bool checkBallHasMoved(const GameState& gameState) const;
 
   /**
-   * Checks whether a player as been penalized for illegal motion in SET.
+   * Checks whether a player as been penalized for motion in SET.
    * @param from Lower timestamp bound on the start of penalties.
-   * @return Has a player been penalized for illegal motion in SET after the last (guessed) game state change?
+   * @return Has a player been penalized for motion in SET after the last (guessed) game state change?
    */
-  bool checkForIllegalMotionInSetPenalty(unsigned from) const;
+  bool checkForMotionInSetPenalty(unsigned from) const;
 
   /**
    * Checks whether the ball is on a position that is considered legal in the given state
@@ -128,46 +118,16 @@ class GameStateProvider : public GameStateProviderBase
   bool checkBallLegal(const GameState::State& gameState, const float confidenceIntervalToLegalPosition) const;
 
   /**
-   * Checks whether at least one robot on the team detected a certain referee signal.
-   * @param gameState The current game state including when the state began.
-   * @param signal The signal that is searched for.
-   * @return Was that signal detected since the current state started?
-   */
-  bool checkForRefereeSignal(const GameState& gameState, const RefereeSignal::Signal signal) const;
-
-  /**
    * Updates the buffer of balls for determining whether the ball has moved.
    * @param gameState The current game state.
    */
   void updateBallBuffer(const GameState& gameState);
 
-  /** Updates timestamps when players have been penalized for illegal motion in SET. */
-  void updateIllegalMotionInSetTimestamps();
+  /** Updates timestamps when players have been penalized for motion in SET. */
+  void updateMotionInSetTimestamps();
 
-  /** Updates timestamps when a player have been penalized for illegal position. */
-  void updateIllegalPosition();
-
-  /** Updates which teammates got penalized for pushing. */
-  void updatePenalizedForPushing();
-
-  /**
-   * Computes \c isKickingTeam when a set play related to player pushing begins.
-   * @param gameControllerData The data from the GameController.
-   */
-  void updateKickingTeamForPushing(const GameControllerData& gameControllerData);
-
-  /**
-   * Update kicking team if a referee signal was detected.
-   * @param gameState The current game state. It might be updated by this method.
-   */
-  void updateKickingTeamByRefereeSignal(GameState& gameState);
-
-  /**
-   * If an illegal position penalty is given during a free kick, it is usually
-   * clear who the kicking team must be. This method updates \c isKickingTeam.
-   * @param gameState The current game state. It might be updated by this method.
-   */
-  void updateKickingTeamByIllegalPosition(GameState& gameState);
+  /** Updates timestamps when a player have been penalized for illegal positioning. */
+  void updateIllegalPositioningTimestamps();
 
   /**
    * Extracts the B-Human game phase from raw GameController data.
@@ -192,21 +152,17 @@ class GameStateProvider : public GameStateProviderBase
 
   GameState::State lastGameControllerState = GameState::beforeHalf; /**< The last state sent by the GameController. */
   bool gameStateOverridden = false; /**< Whether the game state is currently overridden (i.e. not the state received by the GameController). */
-  bool manualPenaltyShootoutForOwnTeam = false; /**< Whether the player should be a penalty striker when using the button interface. */
   unsigned timeWhenStateNotAfterHalf = 0; /**< Last timestamp when the state was not "after half". */
   RingBuffer<Vector2f, 30> ballPositions; /**< Buffer of (robot-relative) ball positions to check whether the ball moved. */
   unsigned lastBallAddedToBuffer = 0; /**< Timestamp of the last ball percept that has been added to the buffer. */
   unsigned ballOutOfCenterCircleCounter = 0; /**< How often the ball was "seen" out of the center circle during the current kick-off. */
   unsigned lastBallUsedForCenterCircleCounter = 0; /**< Timestamp of the last ball percept (or teammates ball) that has been used for the center circle counter. */
-  std::vector<unsigned> illegalMotionInSetTimestamps; /**< Timestamps for all players when their illegal motion in SET penalty began. */
-  std::vector<unsigned> illegalPositionTimestampsOwnTeam; /**< Timestamps for all players in the own team when their illegal position penalty began. */
-  std::vector<unsigned> illegalPositionTimestampsOpponentTeam; /**< Timestamps for all opponent players when their illegal position penalty began. */
+  std::vector<unsigned> motionInSetTimestamps; /**< Timestamps for all players when their illegal motion in SET penalty began. */
+  std::vector<unsigned> illegalPositioningTimestampsOwnTeam; /**< Timestamps for all players in the own team when their illegal positioning penalty began. */
+  std::vector<unsigned> illegalPositioningTimestampsOpponentTeam; /**< Timestamps for all opponent players when their illegal positioning penalty began. */
   unsigned timeOfLastIntegratedGameControllerData = 0; /**< Timestamp of the last GameControllerData that has been integrated into the state. */
   unsigned timeWhenStateStartedBeforeWhistle = 0; /**< Timestamp of the start of the state before a transition was triggered by a whistle. */
   unsigned timeWhenStateStartedBeforeBallMoved = 0; /**< Timestamp of the start of the state before a transition was triggered by ball movement. */
   unsigned timeWhenSwitchedToPlayingViaWhistle = 0; /**< Timestamp when a transition to PLAYING (kick-off/penalty kick/penalty shot) was triggered by a whistle. */
   unsigned minWhistleTimestamp = 0; /**< Lower bound for whistle timestamps to consider for transitions. */
-  std::vector<bool> penalizedForPushingOwnTeam; /**< Whether there is a penalty for pushing for all players in the own team. */
-  bool isKickingTeam = false; /**< Whether a kick is for the own team. */
-  unsigned timeWhenKickingTeamWasOverridden = 0; /**< The last time the kicking team was overridden. */
 };

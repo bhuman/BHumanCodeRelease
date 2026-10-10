@@ -45,7 +45,7 @@ protected:
     PUBLISH(EnumInfo::reg);
     PUBLISH(reg);
     for(int i = 0; i < EnumInfo::numOfElements; ++i)
-      Streaming::streamIt(stream, TypeRegistry::getEnumName(static_cast<Enum>(i)), (*this)[i]);
+      Streaming::streamIt(stream, nameTable[i], (*this)[i]);
   }
 
   void write(Out& stream) const override
@@ -53,7 +53,7 @@ protected:
     PUBLISH(EnumInfo::reg);
     PUBLISH(reg);
     for(int i = 0; i < EnumInfo::numOfElements; ++i)
-      Streaming::streamIt(stream, TypeRegistry::getEnumName(static_cast<Enum>(i)), (*this)[i]);
+      Streaming::streamIt(stream, nameTable[i], (*this)[i]);
   }
 
 private:
@@ -61,6 +61,11 @@ private:
   {
     REG_CLASS(EnumIndexedArray);
     for(int i = 0; i < EnumInfo::numOfElements; ++i)
-      TypeRegistry::addAttribute(_type, typeid(Elem).name(), TypeRegistry::getEnumName(static_cast<Enum>(i)));
+      TypeRegistry::addAttribute(_type, typeid(Elem).name(), (nameTable[i] = TypeRegistry::getEnumName(static_cast<Enum>(i))));
   }
+
+  static const char* nameTable[EnumInfo::numOfElements];
 };
+
+template<typename Elem, typename Enum, typename EnumInfo>
+const char* EnumIndexedArray<Elem, Enum, EnumInfo>::nameTable[] = {nullptr};

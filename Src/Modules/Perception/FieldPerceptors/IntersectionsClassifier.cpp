@@ -95,7 +95,8 @@ void IntersectionsClassifier::addIntersection(IntersectionsPercept& theIntersect
 
 bool IntersectionsClassifier::classifyIntersection(IntersectionCandidates::IntersectionCandidate& intersection)
 {
-  STOPWATCH("module:IntersectionsClassifier:network") {
+  STOPWATCH("module:IntersectionsClassifier:network")
+  {
     const unsigned patchSize = intersection.imagePatch.height;
     PatchUtilities::extractPatch(Vector2i(patchSize/2, patchSize/2), Vector2i(patchSize, patchSize), Vector2i(patchSize, patchSize), intersection.imagePatch, network.input(0).data());
     *(network.input(1).data()) = intersection.distance;

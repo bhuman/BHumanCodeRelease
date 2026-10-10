@@ -14,7 +14,6 @@
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Network/UdpComm.h"
 #include "Framework/Module.h"
 
@@ -23,7 +22,6 @@ MODULE(GameControllerDataProvider,
   USES(BallModel),
   REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
-  REQUIRES(GroundContactState),
   REQUIRES(MotionInfo),
   USES(RobotPose),
   PROVIDES(GameControllerData),

@@ -81,49 +81,40 @@ void BallSearchParticlesProvider::reset(BallSearchParticles& theBallSearchPartic
 {
   theBallSearchParticles.particles.clear();
 
-  if(theGameState.isKickIn())
+  switch(theGameState.state)
   {
-    // place half of the particles on each touchline
-    const int particlesPerSide = numOfParticles / 2;
-    const float distBetweenParticles = (2 * theFieldDimensions.xPosOpponentGoalLine) / particlesPerSide;
-    for(int i = 0; i < particlesPerSide; i++)
+    case GameState::ownKickIn:
+    case GameState::opponentKickIn:
     {
-      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine + distBetweenParticles * i, theFieldDimensions.yPosRightTouchline);
-      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine + distBetweenParticles * i, theFieldDimensions.yPosLeftTouchline);
+      // place half of the particles on each touchline
+      const int particlesPerSide = numOfParticles / 2;
+      const float distBetweenParticles = (2 * theFieldDimensions.xPosOpponentGoalLine) / particlesPerSide;
+      for(int i = 0; i < particlesPerSide; i++)
+      {
+        theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine + distBetweenParticles * i, theFieldDimensions.yPosRightTouchline);
+        theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine + distBetweenParticles * i, theFieldDimensions.yPosLeftTouchline);
+      }
     }
-  }
-  else if(theGameState.isCornerKick())
-  {
-    if(theGameState.isForOwnTeam() || !theGameState.kickingTeamKnown)
-    {
+    case GameState::ownCornerKick:
       theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
-      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalLine, -theFieldDimensions.yPosRightTouchline);
-    }
-    if(theGameState.isForOpponentTeam() || !theGameState.kickingTeamKnown)
-    {
-      theBallSearchParticles.particles.emplace_back(-theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosRightTouchline);
-      theBallSearchParticles.particles.emplace_back(-theFieldDimensions.xPosOpponentGoalLine, -theFieldDimensions.yPosRightTouchline);
-    }
-  }
-  else if(theGameState.isGoalKick())
-  {
-    if(theGameState.isForOwnTeam() || !theGameState.kickingTeamKnown)
-    {
-      theBallSearchParticles.particles.emplace_back(-theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea);
-      theBallSearchParticles.particles.emplace_back(-theFieldDimensions.xPosOpponentGoalArea, -theFieldDimensions.yPosRightGoalArea);
-    }
-    if(theGameState.isForOpponentTeam() || !theGameState.kickingTeamKnown)
-    {
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalLine, theFieldDimensions.yPosLeftTouchline);
+      break;
+    case GameState::opponentCornerKick:
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosRightTouchline);
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalLine, theFieldDimensions.yPosLeftTouchline);
+      break;
+    case GameState::ownGoalKick:
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosRightGoalArea);
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOwnGoalArea, theFieldDimensions.yPosLeftGoalArea);
+      break;
+    case GameState::opponentGoalKick:
       theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosRightGoalArea);
-      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalArea, -theFieldDimensions.yPosRightGoalArea);
-    }
-  }
-  else
-  {
-    while(theBallSearchParticles.particles.size() < numOfParticles)
-    {
-      theBallSearchParticles.particles.emplace_back(createRandomParticle());
-    }
+      theBallSearchParticles.particles.emplace_back(theFieldDimensions.xPosOpponentGoalArea, theFieldDimensions.yPosLeftGoalArea);
+      break;
+    default:
+      while(theBallSearchParticles.particles.size() < numOfParticles)
+        theBallSearchParticles.particles.emplace_back(createRandomParticle());
+      break;
   }
 }
 

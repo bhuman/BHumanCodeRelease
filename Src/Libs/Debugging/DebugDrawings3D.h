@@ -157,9 +157,9 @@ class DrawingManager3D : public DrawingManager {};
         0x7f,\
         0x5f\
       };\
-      digit = digits[std::abs(digit)];\
+      const unsigned char segmentMask = digits[std::abs(digit)];\
       for(int i = 0; i < 7; ++i)\
-        if(digit & (1 << i))\
+        if(segmentMask & (1 << i))\
         {\
           Vector3f from = pos - points[i] * digitSize;\
           Vector3f to = pos - points[i + 1] * digitSize;\

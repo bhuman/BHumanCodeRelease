@@ -32,7 +32,7 @@ LogDataProvider::LogDataProvider() :
   states.fill(unknown);
   if(SystemCall::getMode() == SystemCall::logFileReplay)
     OUTPUT(idTypeInfoRequest, bin, '\0');
-  ModuleContainer::addMessageHandler(handleMessage);
+  messageHandlerHandle = ModuleContainer::addMessageHandler(handleMessage);
 }
 
 LogDataProvider::~LogDataProvider()
@@ -40,6 +40,7 @@ LogDataProvider::~LogDataProvider()
   if(logTypeInfo)
     delete logTypeInfo;
 
+  ModuleContainer::removeMessageHandler(messageHandlerHandle);
   theInstance = nullptr;
 }
 
@@ -170,18 +171,6 @@ bool LogDataProvider::handleMessage2(MessageQueue::Message message)
       handle<CameraImage, FrameInfo>(message, "CameraImage", "FrameInfo",
                                      [&](CameraImage& source, FrameInfo& target)
                                      {target.time = source.timestamp;});
-      return true;
-
-    case idCameraInfo:
-      handle<CameraInfo, ImageCoordinateSystem>(message, "CameraInfo", "ImageCoordinateSystem",
-                                                [&](CameraInfo& source, ImageCoordinateSystem& target)
-                                                {target.cameraInfo = source;});
-      return true;
-
-    case idImageCoordinateSystem:
-      handle<ImageCoordinateSystem, CameraInfo>(message, "ImageCoordinateSystem", "CameraInfo",
-                                                [&](ImageCoordinateSystem& target, CameraInfo& source)
-                                                {target.cameraInfo = source;});
       return true;
 
     case idFrameInfo:

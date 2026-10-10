@@ -4,7 +4,7 @@
  * This file implements a module that detects and prepares intersections candidates for classifying.
  *
  * @author Arne Böckmann
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  * @author Felix Thielke
  * @author Laurens Schiefelbein
  * @author Kevin Dehmlow
@@ -16,6 +16,7 @@
 
 #include "Framework/Module.h"
 #include "ImageProcessing/PatchUtilities.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/MeasurementCovariance.h"
@@ -44,7 +45,7 @@ MODULE(IntersectionsCandidatesProvider,
       (float) normFactor, /**< factor to normalize the distance to the intersection from the robot */
       // Parameters for saving Patches to use as training data for the neural network model
       (bool) savePatches, /**< save patch of every found intersection candidate */
-      /** absolute path or relative path from current working directory where to store the patches (ReplayRobot works in Config/Scenes) */
+      /** absolute path or relative path from current working directory (i.e. parent directory of the scene file) where to store the patches */
       (std::string) baseDirectory,
       (std::string) logFileName, /**< name of the replayed logfile for naming the stored patches */
     }),

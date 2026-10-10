@@ -6,7 +6,7 @@ basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
 
 rm -f "$basePath/../../Config/Scenes/Includes/replay.con"
 log=
-scene=ReplayRobot
+scene=K1/Replay
 while [ $# -gt 0 ]; do
   echo "sl LOG$log \"$(realpath "$1")\"" >>"$basePath/../../Config/Scenes/Includes/replay.con"
   log=$((log+1))
@@ -14,7 +14,7 @@ while [ $# -gt 0 ]; do
   ip="$(grep '^ *lan' "$basePath/../../Config/Robots/${name%%_*}/network.cfg" | sed -e 's%[^"]*"%%' -e 's%".*%%')"
   source "$basePath/setupTarget" "$ip"
   if [ "$TARGET_NAME" == "Booster" ]; then
-    scene=$TARGET_MODEL/BoosterReplay
+    scene=$TARGET_MODEL/Replay
   fi
   shift
 done

@@ -15,6 +15,7 @@
 #include "Debugging/Annotation.h"
 #include "Debugging/Plot.h"
 #include "Math/Constants.h"
+#include "Math/Geometry.h"
 #include "Platform/File.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
@@ -48,6 +49,7 @@ WhistleDetector::WhistleDetector()
   in = fftw_alloc_real(samples.capacity());
   std::memset(in, 0, sizeof(double) * samples.capacity());
   out = fftw_alloc_complex(amplitudes.size());
+  tempOut = fftw_alloc_complex(amplitudes.size());
   {
     SYNC;
     fft = fftw_plan_dft_r2c_1d(static_cast<int>(samples.capacity()), in, out, FFTW_MEASURE);
@@ -60,6 +62,7 @@ WhistleDetector::~WhistleDetector()
 {
   SYNC;
   fftw_destroy_plan(fft);
+  fftw_free(tempOut);
   fftw_free(out);
   fftw_free(in);
 }
@@ -149,6 +152,7 @@ void WhistleDetector::detect(Whistle& theWhistle)
 
   // Run FFT.
   STOPWATCH("module:WhistleDetector:FFT") fftw_execute(fft);
+  STOPWATCH("module:WhistleDetector:remap") remapSpectrum();
 
   // These variables are set inside the STOPWATCH, but are also needed outside.
   float relLimitCount;
@@ -205,8 +209,8 @@ void WhistleDetector::detect(Whistle& theWhistle)
   STOPWATCH("module:WhistleDetector:detect")
   {
     //do WhistleDetection PM
-    const Range<unsigned> pos(static_cast<unsigned>(currentFreq.min * samples.capacity() / theAudioData.sampleRate),
-                              static_cast<unsigned>(currentFreq.max * samples.capacity() / theAudioData.sampleRate));
+    const Range<unsigned> pos(static_cast<unsigned>(currentFreq.min * samples.capacity() / sampleRate),
+                              static_cast<unsigned>(currentFreq.max * samples.capacity() / sampleRate));
 
     // find whistle peak between min. freq. position and  max. freq. position
     peak = std::max_element(amplitudes.begin() + pos.min + 1, amplitudes.begin() + pos.max);
@@ -249,7 +253,7 @@ void WhistleDetector::detect(Whistle& theWhistle)
      && pmConfidenceBuffer.back() > averageThreshold * thresholdRatio)  // whistle detected this frame, min of #attack detections needed
   {
     lastTimeCandidateDetected = theFrameInfo.time;
-    const unsigned detectedWhistleFrequency = static_cast<unsigned>((peak - amplitudes.begin()) * theAudioData.sampleRate / samples.capacity());
+    const unsigned detectedWhistleFrequency = static_cast<unsigned>((peak - amplitudes.begin()) * sampleRate / samples.capacity());
     if(++detectionCount >= minDetections && confidence / averageThreshold > bestConfidence)
     {
       bestConfidence = confidence / averageThreshold;
@@ -297,8 +301,8 @@ void WhistleDetector::draw()
     };
 
     // transform sample rate to fft size to debug image size
-    const Range<unsigned> xRange(static_cast<unsigned>(currentFreq.min * samples.capacity() / theAudioData.sampleRate * fft.width / amplitudes.size()),
-                                 static_cast<unsigned>(currentFreq.max * samples.capacity() / theAudioData.sampleRate * fft.width / amplitudes.size()));
+    const Range<unsigned> xRange(static_cast<unsigned>(currentFreq.min * samples.capacity() / sampleRate * fft.width / amplitudes.size()),
+                                 static_cast<unsigned>(currentFreq.max * samples.capacity() / sampleRate * fft.width / amplitudes.size()));
 
     // draw main detection rect
     for(unsigned x = xRange.min; x <= xRange.max; ++x)
@@ -317,7 +321,7 @@ void WhistleDetector::draw()
       const unsigned yTemp = std::min(fft.height - 1, static_cast<unsigned>(amplitudes[xTemp]));
 
       // draw vertical grid
-      if(xTemp * theAudioData.sampleRate / samples.capacity() >= grid)
+      if(xTemp * sampleRate / samples.capacity() >= grid)
       {
         drawLine(x, 0, x, fft.height - 1, 0x505050);
         grid += 1000;
@@ -346,4 +350,33 @@ void WhistleDetector::draw()
     // set counter to next vertical line
     SEND_DEBUG_IMAGE("module:WhistleDetector:chroma", chroma);
   }
+}
+
+void WhistleDetector::remapSpectrum()
+{
+  if(theAudioData.sampleRate == sampleRate)
+    return;
+
+  const float dfOrigin = static_cast<float>(theAudioData.sampleRate) / samples.size();
+  const float dfTarget = static_cast<float>(sampleRate) / samples.size();
+
+  for(unsigned k = 0; k < amplitudes.size(); ++k)
+  {
+    const float frequency = k * dfTarget;
+
+    // No information above Nyquist frequency
+    if(frequency > theAudioData.sampleRate / 2)
+      tempOut[k][0] = tempOut[k][1] = 0.01; // Zero would result in NaN network output
+    else
+    {
+      const float pos = frequency / dfOrigin; // Position in original spectrum
+      const size_t i0 = static_cast<int>(pos);
+      const size_t i1 = std::min(i0 + 1, amplitudes.size() - 1);
+      const float a = pos - i0;
+      tempOut[k][0] = (1.f - a) * out[i0][0] + a * out[i1][0];
+      tempOut[k][1] = (1.f - a) * out[i0][1] + a * out[i1][1];
+    }
+  }
+
+  std::memcpy(out, tempOut, sizeof(double) * amplitudes.size() * 2);
 }

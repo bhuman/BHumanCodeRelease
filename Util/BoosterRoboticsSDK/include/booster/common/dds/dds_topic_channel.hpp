@@ -5,8 +5,6 @@
 
 #include <booster/common/dds/dds_entity.hpp>
 
-using namespace eprosima::fastdds::dds;
-
 namespace booster {
 namespace common {
 
@@ -22,7 +20,11 @@ public:
 
     void SetWriter(
         const DdsPublisherPtr &publisher,
-        const DataWriterQos &qos) {
+        const DdsDataWriterQos &qos) {
+        if (publisher == nullptr || topic_ == nullptr) {
+            std::cerr << "Failed to create writer: publisher or topic is not initialized." << std::endl;
+            return;
+        }
         auto raw_writer = publisher->create_datawriter(topic_.get(), qos);
         if (raw_writer == nullptr) {
             std::cerr << "Failed to create writer." << std::endl;
@@ -33,15 +35,19 @@ public:
 
     void SetReader(
         const DdsSubscriberPtr &subscriber,
-        const DataReaderQos &qos,
-        const DdsReaderCallback &cb) {
+        const DdsDataReaderQos &qos,
+        const DdsReaderCallback &cb,
+        const DdsReaderExecutorOptions &executor_options = {}) {
+        if (subscriber == nullptr || topic_ == nullptr) {
+            std::cerr << "Failed to create reader: subscriber or topic is not initialized." << std::endl;
+            return;
+        }
         listener_ = std::make_shared<DdsReaderListener<MSG>>();
+        listener_->SetExecutorOptions(executor_options);
         listener_->SetCallback(cb);
-        reader_ = DdsReaderPtr(subscriber->create_datareader(
-                                   topic_.get(),
-                                   qos,
-                                   listener_.get()),
-                               [](DdsReader *reader) {});
+        reader_ = DdsReaderPtr(
+            subscriber->create_datareader(topic_.get(), qos, listener_.get()),
+            [](DdsReader *reader) {});
         if (reader_ == nullptr) {
             std::cerr << "Failed to create reader." << std::endl;
             return;
@@ -56,10 +62,48 @@ public:
         return reader_;
     }
 
+    DdsReaderExecutorMetrics GetReaderExecutorMetrics() const {
+        if (listener_ == nullptr) {
+            return DdsReaderExecutorMetrics();
+        }
+        return listener_->GetExecutorMetrics();
+    }
+
+    size_t GetMatchedSubscriptionsCount() const {
+        if (writer_ == nullptr) {
+            return 0;
+        }
+
+        DdsPublicationMatchedStatus status;
+        if (writer_->get_publication_matched_status(status) != ReturnCode_t::RETCODE_OK) {
+            return 0;
+        }
+
+        return status.current_count > 0 ? static_cast<size_t>(status.current_count) : 0;
+    }
+
+    size_t GetMatchedPublicationsCount() const {
+        if (reader_ == nullptr) {
+            return 0;
+        }
+
+        DdsSubscriptionMatchedStatus status;
+        if (reader_->get_subscription_matched_status(status) != ReturnCode_t::RETCODE_OK) {
+            return 0;
+        }
+
+        return status.current_count > 0 ? static_cast<size_t>(status.current_count) : 0;
+    }
+
     bool Write(MSG *msg) {
-        // const MSG *const_msg_ptr = &msg;
-        // MSG *non_const_msg_ptr = const_cast<MSG *>(const_msg_ptr);
-        // return writer_->write(static_cast<void *>(&non_const_msg_ptr));
+        if (writer_ == nullptr) {
+            std::cerr << "Write failed: writer is not initialized." << std::endl;
+            return false;
+        }
+        if (msg == nullptr) {
+            std::cerr << "Write failed: message is null." << std::endl;
+            return false;
+        }
         return writer_->write(msg);
     }
 

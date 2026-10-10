@@ -108,7 +108,6 @@
 #include <unordered_map>
 #include "Math/Eigen.h" // Not used, but avoids naming conflicts
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Streaming/FunctionList.h"
 #include "Streaming/InStreams.h"
@@ -507,7 +506,7 @@ namespace cabsl
      */
     void beginFrame(unsigned frameTime)
     {
-      if(SystemCall::getMode() == SystemCall::logFileReplay && frameTime < lastFrameTime)
+      if(frameTime && frameTime < lastFrameTime)
         _currentFrameTime = frameTime;
       else
         _currentFrameTime = std::max(frameTime, lastFrameTime + 1);
@@ -1087,7 +1086,7 @@ namespace cabsl
  * The actual code generated for the state macros above.
  * An unreachable goto statement ensures that there is an initial state.
  * @param name The name of the state.
- * @param line The line number in which the state is defined of 0 for the initial state.
+ * @param line The line number in which the state is defined or 0 for the initial state.
  * @param stateType The type of the state.
  */
 #define _state(name, line, stateType) \

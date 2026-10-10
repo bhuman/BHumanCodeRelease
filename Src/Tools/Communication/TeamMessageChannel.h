@@ -2,7 +2,7 @@
  * @file Tools/Communication/TeamMessageChannel.h
  * The file declares a class for the team communication between robots.
  *
- * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Jesse Richter-Klug
  *
  * based on TeamHandler authored by
  * @author Thomas Röfer

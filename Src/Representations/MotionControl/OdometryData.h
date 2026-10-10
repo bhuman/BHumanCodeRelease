@@ -20,18 +20,7 @@ STREAMABLE_WITH_BASE(OdometryData, Pose2f,
 STREAMABLE_WITH_BASE(OdometryDataPreview, OdometryData,
 {,
   (Pose2f) odometryChange, /**< The change in the odometry compared to last frame. */
-});
-
-STREAMABLE_WITH_BASE(MotionOdometryData, OdometryData,
-{,
-});
-
-STREAMABLE_WITH_BASE(OtherOdometryData, OdometryData,
-{,
-});
-
-STREAMABLE_WITH_BASE(OdometryTranslationRequest, OdometryData,
-{,
+  (Angle)(0_deg) rotationOffsetAtStart, /**< The rotation offset when the software started. */
 });
 
 /**

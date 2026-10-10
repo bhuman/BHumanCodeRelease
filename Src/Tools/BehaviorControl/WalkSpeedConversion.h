@@ -24,7 +24,8 @@ namespace WalkSpeedConversion
 
   inline Pose2f convertSpeedRatio(ReduceWalkSpeedType::ReduceWalkSpeedType reduceWalkSpeedType, const Pose2f& speed, const Pose2f& target,
                                   const FrameInfo& theFrameInfo, const GameState& theGameState,
-                                  const FieldBall& theFieldBall, const WalkingEngineOutput& theWalkingEngineOutput)
+                                  const FieldBall& theFieldBall, const WalkingEngineOutput& theWalkingEngineOutput,
+                                  const bool isStriker = false)
   {
     Pose2f walkingSpeedRatio = speed;
     const float targetDistance = target.translation.norm();
@@ -33,11 +34,23 @@ namespace WalkSpeedConversion
     {
       case ReduceWalkSpeedType::slow:
       {
-        const float ballDistance = theFieldBall.recentBallEndPositionRelative().norm();
-        walkingSpeedRatio.rotation = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.rotation / theWalkingEngineOutput.maxSpeed.rotation);
-        walkingSpeedRatio.translation.x() = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.translation.x() / theWalkingEngineOutput.maxSpeed.translation.x());
-        walkingSpeedRatio.translation.y() = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.translation.y() / theWalkingEngineOutput.maxSpeed.translation.y());
-        break;
+        // Striker shall walk slower close to the ball
+        // Non-Strikers shall walk slower away from the ball, but fast near it to be able to walk fast away
+        if(isStriker)
+        {
+          walkingSpeedRatio.rotation = theWalkingEngineOutput.energyEfficientWalkSpeed.rotation / theWalkingEngineOutput.maxSpeed.rotation;
+          walkingSpeedRatio.translation.x() = theWalkingEngineOutput.energyEfficientWalkSpeed.translation.x() / theWalkingEngineOutput.maxSpeed.translation.x();
+          walkingSpeedRatio.translation.y() = theWalkingEngineOutput.energyEfficientWalkSpeed.translation.y() / theWalkingEngineOutput.maxSpeed.translation.y();
+          break;
+        }
+        else
+        {
+          const float ballDistance = theFieldBall.recentBallEndPositionRelative().norm();
+          walkingSpeedRatio.rotation = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.rotation / theWalkingEngineOutput.maxSpeed.rotation);
+          walkingSpeedRatio.translation.x() = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.translation.x() / theWalkingEngineOutput.maxSpeed.translation.x());
+          walkingSpeedRatio.translation.y() = mapToRange(ballDistance, ballDistanceSpeedReductionRange.min, ballDistanceSpeedReductionRange.max, 1.f, theWalkingEngineOutput.energyEfficientWalkSpeed.translation.y() / theWalkingEngineOutput.maxSpeed.translation.y());
+          break;
+        }
       }
       case ReduceWalkSpeedType::normal:
       {
@@ -51,8 +64,8 @@ namespace WalkSpeedConversion
         ASSERT(theGameState.timeWhenStateEnds != 0);
 
         // Time to reach the target
-        const float ttrpSlow = KickSelection::calcTTRP(target, Pose2f(theWalkingEngineOutput.energyEfficientWalkSpeed.rotation, theWalkingEngineOutput.energyEfficientWalkSpeed.translation.x(), theWalkingEngineOutput.energyEfficientWalkSpeed.translation.y()));
-        const float ttrpNormal = KickSelection::calcTTRP(target, Pose2f(theWalkingEngineOutput.noEfficientWalkSpeed.rotation, theWalkingEngineOutput.noEfficientWalkSpeed.translation.x(), theWalkingEngineOutput.noEfficientWalkSpeed.translation.y()));
+        const float ttrpNormal = KickSelection::calcTTRP(target, theWalkingEngineOutput.noEfficientWalkSpeed);
+        const float ttrpSlow = std::max(ttrpNormal + 1.f, KickSelection::calcTTRP(target, theWalkingEngineOutput.energyEfficientWalkSpeed));
 
         // Time left in current state
         const float timeLeft = std::max(-theFrameInfo.getTimeSince(theGameState.timeWhenStateEnds) - bufferTime, 0.f);

@@ -16,21 +16,24 @@ class Midfielder : public RatingRole
 {
   STREAMABLE(Parameters,
   {,
-    (float)(2000.f) sigmaBase, /**< standard deviation for rating dependent on base position */
-    (float)(1000.f) sigmaTeam, /**< standard deviation for rating dependent on distance to teammates */
-    (float)(600.f) sigmaFieldBorder, /**< standard deviation for rating dependent on distance to field border */
-    (float)(50.f) sigmaCellBorder, /**< standard deviation for rating dependent on distance to cell border */
-    (float)(2500.f) ballDistance, /**< preferred distance to ball */
-    (float)(1000.f) sigmaBall, /**< standard deviation for rating dependent on distance to ball */
-    (float)(0.7f) startThreshold, /**< the rating has to be at least this much better (normalized to the new found one) at the destination to start moving */
-    (float)(0.3f) stopThreshold, /**< if the rating is not at least this much better (normalized to the new found one) at the destination stop moving */
-    (float)(0.5f) baseShiftX, /**< factor by which the base pose is moved toward the X position of the ball */
-    (float)(0.5f) maxBaseShiftY, /**< factor by which the base pose is moved toward the Y position of the ball at maximum */
-    (float)(1000.f) smoothBaseShiftYDistance, /**< distance from the mid line in which the base shift in Y direction is smoothed linearly */
-    (float)(0.5f) minBallRating, /**< minimal value of the rating depending on the distance to the ball */
-    (float)(0.5f) minGoalRating, /**< minimal value of the goal rating */
-    (float)(1000.f) sigmaCommunication, /**< standard deviation for rating dependent on the last target position */
-    (float)(0.5f) minCommunicationRating, /**< minimal value of the rating depending on the last target position */
+    (float) sigmaBase, /**< standard deviation for rating dependent on base position */
+    (float) sigmaTeam, /**< standard deviation for rating dependent on distance to teammates */
+    (float) sigmaFieldBorder, /**< standard deviation for rating dependent on distance to field border */
+    (float) sigmaCellBorder, /**< standard deviation for rating dependent on distance to cell border */
+    (float) ballDistance, /**< preferred distance to ball */
+    (float) sigmaBall, /**< standard deviation for rating dependent on distance to ball */
+    (float) startThreshold, /**< the rating has to be at least this much better (normalized to the new found one) at the destination to start moving */
+    (float) stopThreshold, /**< if the rating is not at least this much better (normalized to the new found one) at the destination stop moving */
+    (float) baseShiftX, /**< factor by which the base pose is moved toward the X position of the ball */
+    (float) maxBaseShiftY, /**< factor by which the base pose is moved toward the Y position of the ball at maximum */
+    (float) smoothBaseShiftYDistance, /**< distance from the mid line in which the base shift in Y direction is smoothed linearly */
+    (float) minBallRating, /**< minimal value of the rating depending on the distance to the ball */
+    (float) minGoalRating, /**< minimal value of the goal rating */
+    (float) sigmaCommunication, /**< standard deviation for rating dependent on the last target position */
+    (float) minCommunicationRating, /**< minimal value of the rating depending on the last target position */
+    (float) minNotAllowedBallDistance, /**< The distance to the ball that is not allowed. */
+    (float) ballBorderDistanceRatio, /**< Use the distance between ball and the baseArea to ensure, there is always area for a good ball position. */
+    (float) minBallNotAllowedDistance, /**< Minimal interpolation rating very close to the ball. */
   });
 
   void preProcess() override;
@@ -39,4 +42,15 @@ class Midfielder : public RatingRole
   float rating(const Vector2f& pos) const override;
 
   Parameters p;
+
+  bool robotLeftOfLine = false;
+
+  bool calcBall = true;
+  bool calcBase = true;
+  bool calcPass = true;
+  bool calcCellBorder = true;
+  float maxBallDistanceToBorderPoints = 0.f;
+
+public:
+  Midfielder();
 };

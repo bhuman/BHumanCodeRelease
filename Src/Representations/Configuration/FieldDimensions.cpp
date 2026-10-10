@@ -135,11 +135,24 @@ void FieldDimensions::drawLines() const
     const ColorRGBA lineColor(224, 224, 224);
     for(const LinesTable::Line& line : fieldLines.lines)
     {
-      if(!line.isPartOfCircle)
+      if(line.partOf != LinesTable::Line::circle)
         LINE("field lines", line.from.x(), line.from.y(), line.to.x(), line.to.y(), fieldLinesWidth, Drawings::solidPen, lineColor);
     }
 
     CIRCLE("field lines", centerCircle.center.x(), centerCircle.center.y(), centerCircle.radius, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
+
+    if(!marksAreCrosses)
+      for(const Vector2f& mark : marks)
+        CIRCLE("field lines", mark.x(), mark.y(), markRadius, 0.f, Drawings::noPen, lineColor, Drawings::solidBrush, lineColor);
+
+    if(hasCornerArcs)
+    {
+      const float angle = std::atan2(fieldLinesWidth, cornerArcRadius);
+      ARC("field lines", xPosOwnGoalLine - fieldLinesWidth / 2.f, yPosLeftTouchline + fieldLinesWidth / 2.f, cornerArcRadius, -angle, -pi_2 + 2.f * angle, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
+      ARC("field lines", xPosOwnGoalLine - fieldLinesWidth / 2.f, yPosRightTouchline - fieldLinesWidth / 2.f, cornerArcRadius, angle, pi_2 - 2.f * angle, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
+      ARC("field lines", xPosOpponentGoalLine + fieldLinesWidth / 2.f, yPosLeftTouchline + fieldLinesWidth / 2.f, cornerArcRadius, pi + angle, pi_2 - 2.f * angle, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
+      ARC("field lines", xPosOpponentGoalLine + fieldLinesWidth / 2.f, yPosRightTouchline - fieldLinesWidth / 2.f, cornerArcRadius, pi - angle, -pi_2 + 2.f * angle, fieldLinesWidth, Drawings::solidPen, lineColor, Drawings::noBrush, ColorRGBA::black);
+    }
   }
 
   DEBUG_DRAWING("half meter grid", "drawingOnField")
@@ -191,14 +204,14 @@ void FieldDimensions::drawPolygons() const
       const ColorRGBA& opp = colors[gameState.opponentTeam.fieldPlayerColor];
 
       Vector2f goal[4];
-      goal[0] = Vector2f(xPosOwnGoalLine - fieldLinesWidth * 0.5f, yPosLeftGoal);
-      goal[1] = Vector2f(xPosOwnGoalLine - fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[0] = Vector2f(xPosOwnGoalLine - fieldLinesWidth / 2.f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOwnGoalLine - fieldLinesWidth / 2.f, yPosRightGoal);
       goal[2] = Vector2f(xPosOwnGoal, yPosRightGoal);
       goal[3] = Vector2f(xPosOwnGoal, yPosLeftGoal);
       POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, own, Drawings::solidBrush, own);
 
-      goal[0] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth * 0.5f, yPosLeftGoal);
-      goal[1] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[0] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth / 2.f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOpponentGoalLine + fieldLinesWidth / 2.f, yPosRightGoal);
       goal[2] = Vector2f(xPosOpponentGoal, yPosRightGoal);
       goal[3] = Vector2f(xPosOpponentGoal, yPosLeftGoal);
       POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, opp, Drawings::solidBrush, opp);
@@ -222,7 +235,7 @@ void FieldDimensions::drawDimensions(bool showValues) const
 {
   const float thickness = 10.f;
   const float ends = fieldLinesWidth;
-  const float fontSize = ends * 3;
+  const float fontSize = ends * 5;
   const float xText = centerCircleRadius + fontSize;
 
   auto drawX = [showValues, thickness, ends, fontSize]([[maybe_unused]] float x, [[maybe_unused]] float y,
@@ -262,8 +275,9 @@ void FieldDimensions::drawDimensions(bool showValues) const
   drawY((xPosOwnPenaltyArea - centerCircleRadius) / 2.f, 0, yPosLeftTouchline, 0, "yPosLeftTouchline");
   drawY(-centerCircleRadius, -centerCircleRadius, centerCircleRadius, 0, "centerCircleRadius");
   drawY(xPosOwnGoalPost + goalPostRadius + ends, yPosRightGoal - goalPostRadius, goalPostRadius, ends, "goalPostRadius");
-  drawY(xPosOwnPenaltyMark + fieldLinesWidth / 2.f + ends, -penaltyMarkSize / 2.f, penaltyMarkSize, ends, "penaltyMarkSize");
+  drawY(xPosOwnPenaltyMark + fieldLinesWidth / 2.f + ends, -markRadius, markRadius, ends, "markRadius");
   drawY(xPosOwnPenaltyArea + fieldLinesWidth / 2.f + ends, yPosRightPenaltyArea - fieldLinesWidth / 2.f, fieldLinesWidth, ends, "fieldLinesWidth");
+  drawY(xPosOwnGoalLine + cornerArcRadius - fieldLinesWidth / 2.f, yPosLeftTouchline - cornerArcRadius + fieldLinesWidth / 2.f, cornerArcRadius, 0, "cornerArcRadius");
 }
 
 void FieldDimensions::draw3D() const
@@ -290,14 +304,15 @@ void FieldDimensions::draw3D() const
     // Lines
     for(const LinesTable::Line& line : fieldLines.lines)
     {
+      const float lengthOffset = line.partOf == LinesTable::Line::mark ? 0.f : (line.partOf == LinesTable::Line::circle ? 0.1f : 0.5f) * fieldLinesWidth;
       const float length = (line.to - line.from).norm();
       const Pose2f turn((line.to - line.from).angle(), line.from);
       const Vector2f relative[4] =
       {
-        {(line.isPartOfCircle ? 0.1f : 0.5f) * -fieldLinesWidth, fieldLinesWidth / 2.f},
-        {(line.isPartOfCircle ? 0.1f : 0.5f) * -fieldLinesWidth, -fieldLinesWidth / 2.f},
-        {length + (line.isPartOfCircle ? 0.1f : 0.5f) * fieldLinesWidth, -fieldLinesWidth / 2.f},
-        {length + (line.isPartOfCircle ? 0.1f : 0.5f) * fieldLinesWidth, fieldLinesWidth / 2.f}
+        {-lengthOffset, fieldLinesWidth / 2.f},
+        {-lengthOffset, -fieldLinesWidth / 2.f},
+        {length + lengthOffset, -fieldLinesWidth / 2.f},
+        {length + lengthOffset, fieldLinesWidth / 2.f}
       };
       const Vector2f points[4] =
       {
@@ -313,6 +328,10 @@ void FieldDimensions::draw3D() const
              Vector3f(points[3].x(), points[3].y(), 0.f),
              lineColor);
     }
+
+    if(!marksAreCrosses)
+      for(const Vector2f& mark : marks)
+        CYLINDER3D("representation:FieldDimensions", mark.x(), mark.y(), 0.f, 0.f, 0.f, 0.f, markRadius, 1.f, lineColor);
 
     // Goals
     {
@@ -334,12 +353,12 @@ void FieldDimensions::draw3D() const
   }
 }
 
-void FieldDimensions::LinesTable::push(const Vector2f& from, const Vector2f& to, bool isPartOfCircle)
+void FieldDimensions::LinesTable::push(const Vector2f& from, const Vector2f& to, Line::PartOf partOf)
 {
   LinesTable::Line line;
   line.from = from;
   line.to = to;
-  line.isPartOfCircle = isPartOfCircle;
+  line.partOf = partOf;
   lines.push_back(line);
 }
 
@@ -351,138 +370,52 @@ void FieldDimensions::LinesTable::pushCircle(const Vector2f& center, float radiu
     p1 = Vector2f(std::sin(a), std::cos(a)) * radius;
     if(a > 0)
     {
-      push(center + p1, center + p2, true);
-      push(center + Vector2f(p1.x(), -p1.y()), center + Vector2f(p2.x(), -p2.y()), true);
-      push(center + Vector2f(-p1.x(), p1.y()), center + Vector2f(-p2.x(), p2.y()), true);
-      push(center - p1, center - p2, true);
-      push(center + Vector2f(p1.y(), p1.x()), center + Vector2f(p2.y(), p2.x()), true);
-      push(center + Vector2f(p1.y(), -p1.x()), center + Vector2f(p2.y(), -p2.x()), true);
-      push(center + Vector2f(-p1.y(), p1.x()), center + Vector2f(-p2.y(), p2.x()), true);
-      push(center + Vector2f(-p1.y(), -p1.x()), center + Vector2f(-p2.y(), -p2.x()), true);
+      push(center + p1, center + p2, Line::circle);
+      push(center + Vector2f(p1.x(), -p1.y()), center + Vector2f(p2.x(), -p2.y()), Line::circle);
+      push(center + Vector2f(-p1.x(), p1.y()), center + Vector2f(-p2.x(), p2.y()), Line::circle);
+      push(center - p1, center - p2, Line::circle);
+      push(center + Vector2f(p1.y(), p1.x()), center + Vector2f(p2.y(), p2.x()), Line::circle);
+      push(center + Vector2f(p1.y(), -p1.x()), center + Vector2f(p2.y(), -p2.x()), Line::circle);
+      push(center + Vector2f(-p1.y(), p1.x()), center + Vector2f(-p2.y(), p2.x()), Line::circle);
+      push(center + Vector2f(-p1.y(), -p1.x()), center + Vector2f(-p2.y(), -p2.x()), Line::circle);
     }
     p2 = p1;
   }
 }
 
+void FieldDimensions::LinesTable::pushCross(const Vector2f& center, float radius)
+{
+  push(center - Vector2f(0.f, radius), center + Vector2f(0.f, radius), Line::mark);
+  push(center - Vector2f(radius, 0.f), center + Vector2f(radius, 0.f), Line::mark);
+}
+
 void FieldDimensions::read(In& stream)
 {
-  In* theStream = &stream;
+  STREAM_BASE(SimpleFieldDimensions);
 
-  // read from a file?
-  if(dynamic_cast<InMapFile*>(theStream))
-  {
-    // if yes, try to load JSON file instead
-#ifdef TARGET_ROBOT
-    const char* filename = "/media/usb/field_dimensions.json";
-#else
-    const char* filename = "field_dimensions.json";
-#endif
-    InMapFile jsonStream(filename, ~bit(InMap::unusedAttribute));
-    if(jsonStream.exists())
-    {
-      STREAMABLE(Dimensions,
-      {
-        STREAMABLE(Field,
-        {,
-          (float) length,
-          (float) width,
-          (float) penaltyCrossSize,
-          (float) penaltyAreaLength,
-          (float) penaltyAreaWidth,
-          (float) penaltyCrossDistance,
-          (float) centerCircleDiameter,
-          (float) borderStripWidth,
-        });
+  std::vector<LinesTable::Line>& fieldLines(straightFieldLines.lines);
+  std::vector<LinesTable::Line>& goalFrameLines(this->goalFrameLines.lines);
 
-        STREAMABLE(Goal,
-        {,
-          (float) postDiameter,
-          (float) height,
-          (float) innerWidth,
-          (float) depth,
-        }),
+  STREAM(goalFrameLines);
+  STREAM(fieldLines);
+  STREAM(centerCircle);
+  STREAM(marksAreCrosses);
+  STREAM(marks);
+  STREAM(corners);
 
-        (Field) field,
-        (Goal) goal,
-      }) dims;
+  // merge straightFieldLines, centerCircle and cross-marks to fieldLines
+  this->fieldLines = straightFieldLines;
+  this->fieldLines.pushCircle(centerCircle.center, centerCircle.radius, centerCircle.numOfSegments);
+  if(marksAreCrosses)
+    for(const Vector2f& mark : marks)
+      this->fieldLines.pushCross(mark, markRadius - fieldLinesWidth / 2.f);
 
-      STREAMABLE(DimensionsOpt,
-      {
-        STREAMABLE(Field,
-        {,
-          (float)(-1.f) goalBoxAreaLength,
-          (float)(-1.f) goalBoxAreaWidth,
-        }),
-
-        (Field) field,
-      }) dimsOpt;
-
-      jsonStream >> dims;
-      InMapFile(filename, ~(bit(InMap::missingAttribute) | bit(InMap::unusedAttribute))) >> dimsOpt;
-
-      const float lineWidth = 0.05f;
-      // The rulebook says this offset from the touchline should be 0.5m.
-      // However, it should be at least 0.2m inwards from the carpet border, unless the border strip is too narrow.
-      const float returnFromPenaltyOffsetY = std::clamp(dims.field.borderStripWidth - 0.2f, 0.f, 0.5f);
-
-      // pre-define some values and use a template for field dimensions to generate everything else
-      theStream = new InSymbolicMapFile(dimsOpt.field.goalBoxAreaLength != -1.f
-                                        && (std::abs(dimsOpt.field.goalBoxAreaLength - dims.field.penaltyAreaLength) > 0.001f
-                                            || std::abs(dimsOpt.field.goalBoxAreaWidth - dims.field.penaltyAreaWidth) > 0.001f)
-                                        ? "fieldDimensions2020.cfg" : "fieldDimensions2015.cfg",
-      {
-        {"xPosOpponentFieldBorder", dims.field.length * 500.f + dims.field.borderStripWidth * 1000.f},
-        {"xPosOpponentGoal", dims.field.length * 500.f - lineWidth * 500.f + dims.goal.depth * 1000.f},
-        {"xPosOpponentGoalPost", dims.field.length * 500.f + lineWidth * 500.f},
-        {"xPosOpponentGoalLine", dims.field.length * 500.f},
-        {"xPosOpponentPenaltyArea", dims.field.length * 500.f - dims.field.penaltyAreaLength * 1000.f},
-        {"xPosOpponentPenaltyMark", dims.field.length * 500.f - dims.field.penaltyCrossDistance * 1000.f},
-        {"xPosOpponentGoalArea", dims.field.length * 500.f - dimsOpt.field.goalBoxAreaLength * 1000.f},
-        {"yPosLeftFieldBorder", dims.field.width * 500.f + dims.field.borderStripWidth * 1000.f},
-        {"yPosLeftReturnFromPenalty", dims.field.width * 500.f + returnFromPenaltyOffsetY * 1000.f},
-        {"yPosLeftTouchline", dims.field.width * 500.f},
-        {"yPosLeftPenaltyArea", dims.field.penaltyAreaWidth * 500.f},
-        {"yPosLeftGoal", dims.goal.innerWidth * 500.f + dims.goal.postDiameter * 500.f},
-        {"yPosLeftGoalArea", dimsOpt.field.goalBoxAreaWidth * 500.f},
-        {"fieldLinesWidth", lineWidth * 1000.f},
-        {"centerCircleRadius", dims.field.centerCircleDiameter * 500.f},
-        {"goalPostRadius", dims.goal.postDiameter * 500.f},
-        {"goalHeight", dims.goal.height * 1000.f},
-        {"penaltyMarkSize", dims.field.penaltyCrossSize * 1000.f},
-        {"xPenaltyMarkClose", dims.field.length * 500.f - dims.field.penaltyCrossDistance * 1000.f - dims.field.penaltyCrossSize * 500.f},
-        {"xPenaltyMarkFar", dims.field.length * 500.f - dims.field.penaltyCrossDistance * 1000.f + dims.field.penaltyCrossSize * 500.f},
-        {"penaltyMarkRadius", dims.field.penaltyCrossSize * 500.f}
-      });
-    }
-  }
-
-  {
-    In& stream = *theStream;
-
-    STREAM_BASE(SimpleFieldDimensions);
-
-    std::vector<LinesTable::Line>& fieldLines(straightFieldLines.lines);
-    std::vector<LinesTable::Line>& goalFrameLines(this->goalFrameLines.lines);
-
-    STREAM(goalFrameLines);
-    STREAM(fieldLines);
-    STREAM(centerCircle);
-    STREAM(corners);
-
-    // merge straightFieldLines and centerCircle to fieldLines
-    this->fieldLines = straightFieldLines;
-    this->fieldLines.pushCircle(centerCircle.center, centerCircle.radius, centerCircle.numOfSegments);
-
-    // merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame
-    fieldLinesWithGoalFrame.lines.clear();
-    for(LinesTable::Line& line : this->fieldLines.lines)
-      fieldLinesWithGoalFrame.lines.push_back(line);
-    for(LinesTable::Line& line : goalFrameLines)
-      fieldLinesWithGoalFrame.lines.push_back(line);
-  }
-
-  if(theStream != &stream)
-    delete theStream;
+  // merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame
+  fieldLinesWithGoalFrame.lines.clear();
+  for(LinesTable::Line& line : this->fieldLines.lines)
+    fieldLinesWithGoalFrame.lines.push_back(line);
+  for(LinesTable::Line& line : goalFrameLines)
+    fieldLinesWithGoalFrame.lines.push_back(line);
 }
 
 void FieldDimensions::write(Out& stream) const
@@ -495,6 +428,8 @@ void FieldDimensions::write(Out& stream) const
   STREAM(goalFrameLines);
   STREAM(fieldLines);
   STREAM(centerCircle);
+  STREAM(marksAreCrosses);
+  STREAM(marks);
   STREAM(corners);
 }
 
@@ -505,5 +440,7 @@ void FieldDimensions::reg()
   REG(std::vector<LinesTable::Line>, goalFrameLines);
   REG(std::vector<LinesTable::Line>, fieldLines);
   REG(centerCircle);
+  REG(marksAreCrosses);
+  REG(marks);
   REG(corners);
 }

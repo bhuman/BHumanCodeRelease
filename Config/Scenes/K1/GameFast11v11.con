@@ -1,0 +1,5 @@
+call ../Includes/Fast
+call ../Includes/11vs11
+
+dr representation:SetupPoses:place
+dr debugDrawing3d:representation:GameState:playerNumber

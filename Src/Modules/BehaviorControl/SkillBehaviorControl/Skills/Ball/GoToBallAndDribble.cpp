@@ -12,14 +12,11 @@ option((SkillBehaviorControl) GoToBallAndDribble,
        args((Angle) targetDirection,
             (KickPrecision) alignPrecisely,
             (float) kickLength,
-            (bool) lookActiveWithBall,
-            (PreStepType) preStepType,
-            (bool) turnKickAllowed,
-            (const Rangea&) directionPrecision),
+            (bool) lookActiveWithBall),
        defs((float)(1000.f) switchToPathPlannerDistance, /**< If the target is further away than this distance, the path planner is used. */
             (float)(900.f) switchToLibWalkDistance)) /**< If the target is closer than this distance, LibWalk is used. */
 {
-  const Pose2f dribblePose(targetDirection, theFieldInterceptBall.interceptedEndPositionRelative);
+  const Pose2f dribblePose(targetDirection, theFieldBall.positionRelative);
 
   if(lookActiveWithBall)
     LookActive({.withBall = true,
@@ -38,14 +35,11 @@ option((SkillBehaviorControl) GoToBallAndDribble,
     action
     {
       PublishMotion({.target = dribblePose.translation});
-      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * dribblePose, {1.f, 1.f, 1.f});
+      auto obstacleAvoidance = thePathPlanner.plan(theRobotPose * dribblePose, {1.f, 1.f, 1.f}, /*ignoreBall*/true);
       Dribble({.targetDirection = targetDirection,
                .obstacleAvoidance = obstacleAvoidance,
                .alignPrecisely = alignPrecisely,
-               .kickLength = kickLength,
-               .preStepType = preStepType,
-               .turnKickAllowed = turnKickAllowed,
-               .directionPrecision = directionPrecision});
+               .kickLength = kickLength});
     }
   }
 
@@ -64,10 +58,7 @@ option((SkillBehaviorControl) GoToBallAndDribble,
       Dribble({.targetDirection = targetDirection,
                .obstacleAvoidance = obstacleAvoidance,
                .alignPrecisely = alignPrecisely,
-               .kickLength = kickLength,
-               .preStepType = preStepType,
-               .turnKickAllowed = turnKickAllowed,
-               .directionPrecision = directionPrecision});
+               .kickLength = kickLength});
     }
   }
 }

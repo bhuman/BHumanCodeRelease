@@ -14,9 +14,9 @@
 MAKE_MODULE(StrategyBehaviorControl, StrategyBehaviorControl::getExtModuleInfo);
 
 StrategyBehaviorControl::StrategyBehaviorControl() :
-  theBehavior(theBallDropInModel, theBallSearchParticles, theBallSpecification, theExtendedGameState,
-              theFieldBall, theFieldDimensions, theFieldInterceptBall,
-              theFrameInfo, theGameState, theTeamBallModel, theLibDemo)
+  theBehavior(theBallSearchParticles, theBallSpecification, theBehaviorParameters,
+              theExtendedGameState, theFieldBall, theFieldDimensions, theFieldInterceptBall,
+              theFrameInfo, theGameState, theIndirectKick, theTeamBallModel, theWalkingEngineOutput)
 {}
 
 std::vector<ModuleBase::Info> StrategyBehaviorControl::getExtModuleInfo()
@@ -144,16 +144,17 @@ Agent* StrategyBehaviorControl::updateAgents()
   {
     for(Agent& agent : agents)
     {
-      agent.lastKnownPose = agent.basePose.translation;
+      agent.lastKnownPose = agent.baseTranslation;
       // Pretend that all other agents are where they are supposed to be and see the ball where they are supposed to see it - until the first message in playing arrives.
       if(&agent != self)
       {
-        agent.pose = agent.basePose;
+        agent.pose = agent.baseTranslation;
         agent.ballPosition = agent.pose.inverse() * (theGameState.isPenaltyKick() ? Vector2f(theGameState.isForOwnTeam() ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark, 0.f) :  Vector2f::Zero());
         agent.ballVelocity = Vector2f::Zero();
         agent.timeWhenBallLastSeen = agent.timestamp;
         agent.timeWhenBallDisappeared = agent.timestamp;
         agent.disagreeOnBall = false;
+        agent.timeSinceDisagreeOnBall = theFrameInfo.time;
         agent.isUpright = true;
         agent.timeWhenLastUpright = agent.timestamp;
         if(self)
@@ -189,7 +190,7 @@ void StrategyBehaviorControl::updateAgentBySelf(Agent& agent)
   agent.timeWhenBallDisappeared = theBallModel.timeWhenDisappeared;
   agent.disagreeOnBall = false;
   agent.isUpright = (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting) &&
-                    (theGroundContactState.contact && theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall);
+                    (theMotionInfo.executedPhase != MotionPhase::getUp && theMotionInfo.executedPhase != MotionPhase::fall);
   if(agent.isUpright)
     agent.timeWhenLastUpright = theFrameInfo.time;
   agent.proposedTactic = theStrategyStatus.proposedTactic;
@@ -231,20 +232,25 @@ void StrategyBehaviorControl::updateAgentByTeamMessage(Agent& agent, const Recei
       // One could instead check abs(teamMessage.theBallModel.timeWhenLastSeen - theBallModel.timeWhenLastSeen).
       // This is upper-bounded by 1000 here, but if both balls are old, it doesn't really matter anyway since the ball can have moved long ago and neither robot would become striker.
       agent.disagreeOnBall = false;
+      agent.timeSinceDisagreeOnBall = teamMessage.theBallModel.timeWhenLastSeen;
     }
     else
     {
       // Compare "now", i.e. propagate the teammate's ball to the current time.
-      const Vector2f itsBallInRobot = BallPhysics::propagateBallPosition(teamMessage.theBallModel.estimate.position, teamMessage.theBallModel.estimate.velocity, static_cast<float>(theFrameInfo.getTimeSince(teamMessage.theFrameInfo.time)) / 1000.f, theBallSpecification.friction);
+      const Vector2f itsBallInRobot = BallPhysics::propagateBallPosition(teamMessage.theBallModel.estimate.position, teamMessage.theBallModel.estimate.velocity, static_cast<float>(theFrameInfo.getTimeSince(teamMessage.theFrameInfo.time)) / 1000.f, theBallSpecification);
       const Vector2f itsBallOnField = teamMessage.theRobotPose * itsBallInRobot;
       const Vector2f myBallOnField = theRobotPose * theBallModel.estimate.position;
 
       const float maxDistanceToBall = std::max(itsBallInRobot.norm(), theBallModel.estimate.position.norm());
-      const float baseThreshold = mapToRange(maxDistanceToBall, 2500.f, 7500.f, 777.f, 1554.f);
+      const float baseThreshold = mapToRange(maxDistanceToBall, 2500.f, 15000.f, 777.f, 3000.f);
 
+      // As goal keeper, expect everyone else to accept your ball
+      // This prevents the goal keeper to become strike in the most random situations
       agent.disagreeOnBall = (itsBallOnField - myBallOnField).squaredNorm() > sqr(baseThreshold + (agent.disagreeOnBall ? 0.f : 222.f));
     }
   }
+  if(!agent.disagreeOnBall)
+    agent.timeSinceDisagreeOnBall = teamMessage.theBallModel.timeWhenLastSeen;
   agent.isUpright = teamMessage.theRobotStatus.isUpright;
   agent.timeWhenLastUpright = teamMessage.theRobotStatus.timeWhenLastUpright;
   agent.proposedTactic = teamMessage.theStrategyStatus.proposedTactic;

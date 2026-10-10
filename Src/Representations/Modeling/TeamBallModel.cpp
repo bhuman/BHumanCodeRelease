@@ -3,7 +3,7 @@
  *
  * Implementation of drawings for the TeamBallModel
  *
- * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
+ * @author Tim Laue
  * @contributor Liam Hurwitz
  */
 

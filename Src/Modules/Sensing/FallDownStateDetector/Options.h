@@ -4,14 +4,20 @@
  */
 option(Root)
 {
+  common_transition
+  {
+    if(theMotionInfo.executedPhase == MotionPhase::playDead || theMotionInfo.executedPhase == MotionPhase::prepare)
+      goto pickedUp;
+  }
+
   initial_state(pickedUp)
   {
     transition
     {
       if(toUpright)
         goto upright;
-      else if(toSquatting)
-        goto squatting;
+      else if(forcePickUpFallTransition)
+        goto fall;
     }
     action
     {
@@ -29,37 +35,6 @@ option(Root)
       }
       else if(!torsoUpright)
         goto staggering;
-      else if(!theGroundContactState.contact && !disablePickUp)
-        goto uprightToPickedUp;
-      else if(toSquatting)
-      {
-        say("squatting");
-        goto squatting;
-      }
-    }
-    action
-    {
-      setState(FallDownState::upright);
-    }
-  }
-
-  state(uprightToPickedUp)
-  {
-    transition
-    {
-      if(falling)
-      {
-        goto preFall;
-      }
-      else if(!torsoUpright)
-        goto staggering;
-      else if(theGroundContactState.contact)
-        goto upright;
-      else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
-      {
-        say("Picked up");
-        goto pickedUp;
-      }
     }
     action
     {
@@ -103,11 +78,6 @@ option(Root)
         say("Upright");
         goto upright;
       }
-      else if(toSquatting && stable)
-      {
-        say("Squatting");
-        goto squatting;
-      }
       else
       {
         goto staggering;
@@ -128,11 +98,6 @@ option(Root)
         say("Upright");
         goto upright;
       }
-      else if(toSquatting && stable)
-      {
-        say("Squatting");
-        goto squatting;
-      }
       else if(isPickedUp)
       {
         say("Picked up");
@@ -142,52 +107,6 @@ option(Root)
     action
     {
       Fall();
-    }
-  }
-
-  state(squatting)
-  {
-    transition
-    {
-      if(falling)
-      {
-        say("Falling");
-        goto fall;
-      }
-      else if(toUpright)
-      {
-        say("Upright");
-        goto upright;
-      }
-      else if(!theGroundContactState.contact && !disablePickUp)
-        goto squattingToPickedUp;
-    }
-    action
-    {
-      setState(FallDownState::squatting, direction);
-    }
-  }
-
-  state(squattingToPickedUp)
-  {
-    transition
-    {
-      if(falling)
-      {
-        say("Falling");
-        goto fall;
-      }
-      else if(theGroundContactState.contact)
-        goto squatting;
-      else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
-      {
-        say("Picked up");
-        goto pickedUp;
-      }
-    }
-    action
-    {
-      setState(FallDownState::squatting);
     }
   }
 }

@@ -1,9 +1,9 @@
 /**
  * @file Stopwatch.h
  * The file declares the stopwatch macros.
- * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
+ * @author Matthias Jüngel
  * @author Thomas Röfer
- * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
+ * @author Arne Böckmann
  */
 
 #pragma once

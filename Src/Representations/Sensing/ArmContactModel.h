@@ -2,10 +2,10 @@
  * @file ArmContactModel.h
  *
  * Declaration of struct ArmContactModel.
- * @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>
- * @author <a href="mailto:simont@informatik.uni-bremen.de">Simon Taddiken</a>
- * @author <a href="mailto:arneboe@informatik.uni-bremen.de">Arne Böckmann</a>
- * @author <a href="mailto:lrust@uni-bremen.de">Lukas Rust</a>
+ * @author Fynn Feldpausch
+ * @author Simon Taddiken
+ * @author Arne Böckmann
+ * @author Lukas Rust
  *
  */
 
