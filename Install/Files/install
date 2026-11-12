@@ -41,14 +41,6 @@ configureServices() {
   fi
 }
 
-setPassword() {
-  if [ -z "$DELETE" ]; then
-    echo "$1:\$6\$yoHR/vLF\$I8DTr3sRt1XIDbB0LdWgfuBl57jQk3K7CUtnhMqS7OJ3C.NHybfH48OAqTgvEf57dMUhHOhO6cKnbnoAGSDtM." | sudo chpasswd -e
-  else
-    echo "$1:\$y\$j9T\$q7nQb4jB2Pj.FttLFhlj01\$0gYTAUxWzcbiDodqjcG/GQCdYi9eoVPpOQN5mvRx/L." | sudo chpasswd -e
-  fi
-}
-
 # Stop bhuman service if it exists
 systemctl --user list-unit-files bhuman.service >/dev/null && systemctl --user stop bhuman.service
 
@@ -80,9 +72,6 @@ if [ $USER == master ]; then
 
   # Start daemon again
   sudo systemctl start booster-daemon
-
-  # Set or remove B-Human password
-  setPassword master
 
   # Make sure everything is written to disk before a reboot
   sync
@@ -272,9 +261,6 @@ if [ -f /opt/booster/robot_info.txt ]; then
     sudo systemctl start booster-daemon
   fi
 fi
-
-# Set or remove B-Human password
-setPassword booster
 
 if [ -n "$DELETE_ALL" ]; then
   echo "Removing B-Human directories"

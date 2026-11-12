@@ -95,7 +95,7 @@ parseOptions() {
 }
 
 copyFiles() {
-  message "Installing ssh key. If prompted, please enter the robot's password (Initially 123456. If updating, the B-Human password)."
+  message "Installing ssh key. If prompted, please enter the robot's password."
   key="$(cat "${baseDir}/Keys/id_rsa_b-human.pub")"
   ssh ${SSHOPTIONS} ${2}@${1} "mkdir -p .ssh && chmod 700 .ssh && echo >>.ssh/authorized_keys \"$key\" && sort -u .ssh/authorized_keys -o .ssh/authorized_keys && chmod 600 .ssh/authorized_keys" || fatal "Can't append ssh key to '.ssh/authorized_keys'"
 
